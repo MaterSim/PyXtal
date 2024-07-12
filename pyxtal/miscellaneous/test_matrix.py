@@ -37,14 +37,7 @@ def shear_matrix(a, b, c):
 
 def random_strain():
     a, b, c = 0, 0, 0
-    while (
-        a < 30 * deg
-        or b < 30 * deg
-        or c < 30 * deg
-        or a > 150 * deg
-        or b > 150 * deg
-        or c > 150 * deg
-    ):
+    while a < 30 * deg or b < 30 * deg or c < 30 * deg or a > 150 * deg or b > 150 * deg or c > 150 * deg:
         mat = strain_matrix(normal(scale=0.1), normal(scale=0.1), normal(scale=0.1))
         a, b, c = alpha(mat), beta(mat), gamma(mat)
     return mat

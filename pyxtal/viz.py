@@ -87,9 +87,7 @@ def addlines(view, orig, axes, viewer=None):
             )
 
 
-def display_atomic(
-    struc, size=(600, 300), scale=0.25, radius=0.10, supercell=(1, 1, 1), show_wp=False
-):
+def display_atomic(struc, size=(600, 300), scale=0.25, radius=0.10, supercell=(1, 1, 1), show_wp=False):
     """
     display the molecular crystals generated from pyxtal. If the animation is False,
     only dump the structure to cif and let py3Dmol display it. If animation is on,
@@ -124,9 +122,7 @@ def display_atomic(
         A, B, C = supercell
         view.replicateUnitCell(A, B, C)
         if show_wp:
-            view.setStyle(
-                {"sym": 2}, {"sphere": {"scale": scale * 1.1, "color": "blue"}}
-            )
+            view.setStyle({"sym": 2}, {"sphere": {"scale": scale * 1.1, "color": "blue"}})
     return view.zoomTo()
 
 
@@ -188,9 +184,7 @@ def display_molecular(
     return view.zoomTo()
 
 
-def display_molecular_site(
-    site, id=None, size=(400, 300), axis=True, ax_id=range(3), box=False
-):
+def display_molecular_site(site, id=None, size=(400, 300), axis=True, ax_id=range(3), box=False):
     """
     display the Wyckoff site in the molecular crystals generated from pyxtal.
 
@@ -217,9 +211,7 @@ def display_molecular_site(
         view.addModel(mol.to(fmt="xyz"), "xyz")
         if axis:
             axes = site.molecule.get_principle_axes(mol.cart_coords)
-            addlines(
-                view, mol.cart_coords.mean(axis=0), axes.T[ax_id] * 5, viewer=(0, 1)
-            )
+            addlines(view, mol.cart_coords.mean(axis=0), axes.T[ax_id] * 5, viewer=(0, 1))
         if box:
             center_spec = {"x": center[0], "y": center[1], "z": center[2]}
             w_spec = {"x": cell[0, 0], "y": cell[0, 1], "z": cell[0, 2]}
@@ -339,9 +331,7 @@ def display_mol_crystals(
         def conf_viewer(idx):
             return strucs[idx].show(size=size, supercell=supercell, axis=axis)
 
-        interact(
-            conf_viewer, idx=IntSlider(min=0, max=len(strucs) - 1, description="id:")
-        )
+        interact(conf_viewer, idx=IntSlider(min=0, max=len(strucs) - 1, description="id:"))
         return None
 
     elif animation == "movie":
@@ -386,9 +376,7 @@ def display_crystals(strucs, size=(600, 300), supercell=(1, 1, 1), labels=None):
     interact(conf_viewer, idx=IntSlider(min=0, max=len(strucs) - 1, description="id:"))
 
 
-def display_cluster(
-    molecules, cell, Ps, cmap="YlGn", s_opacity=0.5, size=(400, 300), style="sphere"
-):
+def display_cluster(molecules, cell, Ps, cmap="YlGn", s_opacity=0.5, size=(400, 300), style="sphere"):
     import numpy as np
     import py3Dmol
     from matplotlib import cm, colors
@@ -425,16 +413,10 @@ def display_cluster(
         color = "greenCarbon"
         opacity = 0.65
         if style == "sphere":
-            model.setStyle(
-                {}, {"sphere": {"colorscheme": color, "scale": 0.5, "opacity": opacity}}
-            )
+            model.setStyle({}, {"sphere": {"colorscheme": color, "scale": 0.5, "opacity": opacity}})
         else:
-            model.setStyle(
-                {}, {"stick": {"colorscheme": color, "radius": 0.1, "opacity": opacity}}
-            )
+            model.setStyle({}, {"stick": {"colorscheme": color, "radius": 0.1, "opacity": opacity}})
 
-        view.addSurface(
-            py3Dmol.VDW, {"opacity": s_opacity, "color": colors.rgb2hex(cmaps[i - 1])}
-        )
+        view.addSurface(py3Dmol.VDW, {"opacity": s_opacity, "color": colors.rgb2hex(cmaps[i - 1])})
 
     return view.zoomTo({"model": list(models.values())})

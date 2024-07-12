@@ -188,9 +188,7 @@ class atom_site:
         self.position = SymmOp(tran).operate(self.position)
         self.position -= np.floor(self.position)
         self.wp = self.wp.equivalent_set(indices[self.wp.index])  # update the wp index
-        self.site_symm = site_symm(
-            self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim
-        )
+        self.site_symm = site_symm(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
         self.update()
 
     def update(self, pos=None, reset_wp=False):
@@ -222,7 +220,6 @@ class atom_site:
         diffs -= np.rint(diffs)
         diffs[:, axis] = 0
         return diffs0 - diffs
-
 
     def get_disp(self, pos, lattice, translation):
         """
@@ -469,9 +466,7 @@ class mol_site:
         xyz, _ = self._get_coords_and_species(absolute=True, first=True)
         dict0 = {"smile": self.molecule.smile}
         dict0["rotor"] = self.molecule.get_torsion_angles(xyz)
-        dict0["orientation"], dict0["rmsd"], dict0["reflect"] = (
-            self.molecule.get_orientation(xyz)
-        )
+        dict0["orientation"], dict0["rmsd"], dict0["reflect"] = self.molecule.get_orientation(xyz)
         dict0["rotor"]
         # rdkit_mol = self.molecule.rdkit_mol(self.molecule.smile)
         # conf0 = rdkit_mol.GetConformer(0)
@@ -479,9 +474,7 @@ class mol_site:
         # print("save matrix"); print(self.orientation.r.as_matrix())
         # print("save angle"); print(self.orientation.r.as_euler('zxy', degrees=True))
         # print("angle"); print(dict0["orientation"])
-        dict0["center"] = self.position - np.floor(
-            self.position
-        )  # self.molecule.get_center(xyz)
+        dict0["center"] = self.position - np.floor(self.position)  # self.molecule.get_center(xyz)
         dict0["number"] = self.wp.number
         dict0["index"] = self.wp.index
         dict0["PBC"] = self.wp.PBC
@@ -536,9 +529,7 @@ class mol_site:
 
         return display_molecular_site(self, id, **kwargs)
 
-    def _get_coords_and_species(
-        self, absolute=False, PBC=False, first=False, unitcell=False
-    ):
+    def _get_coords_and_species(self, absolute=False, PBC=False, first=False, unitcell=False):
         """
         Used to generate coords and species for get_coords_and_species
 
@@ -894,9 +885,7 @@ class mol_site:
         if id is None:
             coord2 = coords[m_length:]  # rest molecular coords
         else:
-            coord2 = coords[
-                m_length * (id) : m_length * (id + 1)
-            ]  # rest molecular coords
+            coord2 = coords[m_length * (id) : m_length * (id + 1)]  # rest molecular coords
 
         return self.get_distances(coord1, coord2, ignore=ignore)
 
@@ -978,9 +967,7 @@ class mol_site:
             m2 = m_length1
 
         # compute the distance matrix
-        d, _ = self.get_distances(
-            coord1 - np.floor(coord1), coord2 - np.floor(coord2), m2
-        )
+        d, _ = self.get_distances(coord1 - np.floor(coord1), coord2 - np.floor(coord2), m2)
         # print("short dist", len(c1), len(c2), d.min())
 
         if np.min(d) < np.max(tols_matrix):
@@ -989,9 +976,7 @@ class mol_site:
                 return False
         return True
 
-    def get_neighbors_auto(
-        self, factor=1.1, max_d=4.0, ignore_E=True, detail=False, etol=-5e-2
-    ):
+    def get_neighbors_auto(self, factor=1.1, max_d=4.0, ignore_E=True, detail=False, etol=-5e-2):
         """
         Find the neigboring molecules
 
@@ -1005,9 +990,7 @@ class mol_site:
             min_ds: list of shortest distances
             neighs: list of neighboring molecular xyzs
         """
-        mol_center = np.dot(
-            self.position - np.floor(self.position), self.lattice.matrix
-        )
+        mol_center = np.dot(self.position - np.floor(self.position), self.lattice.matrix)
         numbers = self.molecule.mol.atomic_numbers
         coord1, _ = self._get_coords_and_species(first=True, unitcell=True)
         tm = Tol_matrix(prototype="vdW", factor=factor)
@@ -1130,9 +1113,7 @@ class mol_site:
         else:
             return min_ds, neighs, Ps, engs
 
-    def get_neighbors_wp2(
-        self, wp2, factor=1.1, max_d=4.0, ignore_E=True, detail=False, etol=-5e-2
-    ):
+    def get_neighbors_wp2(self, wp2, factor=1.1, max_d=4.0, ignore_E=True, detail=False, etol=-5e-2):
         """
         Find the neigboring molecules from a 2nd wp site
 

@@ -158,7 +158,13 @@ class planes:
             center, lower, upper = slab
             for group in groups:
                 # Center is within the group
-                if group[1] <= center <= group[2] or lower >= group[1] and upper <= group[2] or lower <= group[1] and upper >= group[2]:
+                if (
+                    group[1] <= center <= group[2]
+                    or lower >= group[1]
+                    and upper <= group[2]
+                    or lower <= group[1]
+                    and upper >= group[2]
+                ):
                     new = False
                 # to include
                 elif lower - 1 <= group[1] and upper - 1 >= group[2] or lower - 1 >= group[1] and upper - 1 <= group[2]:
@@ -260,8 +266,7 @@ if __name__ == "__main__":
                 splanes = [
                     splane
                     for splane in splanes
-                    if splane.repeat_distance > p.d_min
-                    and p.get_cp_factor(list(splane.orientation.hkl)) > p.cp_factor
+                    if splane.repeat_distance > p.d_min and p.get_cp_factor(list(splane.orientation.hkl)) > p.cp_factor
                 ]
                 if len(splanes) > len(ps):
                     for splane in splanes:

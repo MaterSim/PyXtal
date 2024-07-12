@@ -118,9 +118,7 @@ class molecular_crystal:
             if no_check_compability:
                 compat, self.degrees = True, True
             else:
-                compat, self.degrees = self.group.check_compatible(
-                    self.numMols, self.valid_orientations
-                )
+                compat, self.degrees = self.group.check_compatible(self.numMols, self.valid_orientations)
             if not compat:
                 msg = "Compoisition " + str(self.numMols)
                 msg += " not compatible with symmetry "
@@ -192,9 +190,7 @@ class molecular_crystal:
             if isinstance(mol, pyxtal_molecule):
                 p_mol = mol
             else:
-                p_mol = pyxtal_molecule(
-                    mol, seed=self.seed, torsions=torsions[i], tm=self.tol_matrix
-                )
+                p_mol = pyxtal_molecule(mol, seed=self.seed, torsions=torsions[i], tm=self.tol_matrix)
             self.molecules.append(p_mol)
 
     def set_orientations(self):
@@ -327,9 +323,7 @@ class molecular_crystal:
         for i, numMol in enumerate(self.numMols):
             pyxtal_mol = self.molecules[i]
             valid_ori = self.valid_orientations[i]
-            output = self._set_mol_wyckoffs(
-                i, numMol, pyxtal_mol, valid_ori, mol_sites_total
-            )
+            output = self._set_mol_wyckoffs(i, numMol, pyxtal_mol, valid_ori, mol_sites_total)
             if output is not None:
                 mol_sites_total.extend(output)
             else:
@@ -389,20 +383,14 @@ class molecular_crystal:
                 mult = wp.multiplicity  # remember the original multiplicity
 
                 pt = site[key] if type(site) is dict else self.lattice.generate_point()
-                    # merge coordinates if the atoms are close
+                # merge coordinates if the atoms are close
                 mtol = pyxtal_mol.radius * 0.5
-                pt, wp, oris = wp.merge(
-                    pt, self.lattice.matrix, mtol, valid_ori, self.group
-                )
+                pt, wp, oris = wp.merge(pt, self.lattice.matrix, mtol, valid_ori, self.group)
 
                 if wp is not False:
                     if site is not None and mult != wp.multiplicity:
                         continue
-                    if (
-                        self.dim == 2
-                        and self.thickness is not None
-                        and self.thickness < 0.1
-                    ):
+                    if self.dim == 2 and self.thickness is not None and self.thickness < 0.1:
                         pt[-1] = 0.5
 
                     ms0 = self._set_orientation(pyxtal_mol, pt, oris, wp)

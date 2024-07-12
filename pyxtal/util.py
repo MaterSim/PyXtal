@@ -98,9 +98,7 @@ def symmetrize(pmg, tol=1e-3, a_tol=5.0, style="pyxtal", hn=None):
     if hn is None:
         hn = Hall(dataset["number"], style=style).hall_default
     if hn != dataset["hall_number"]:
-        dataset = get_symmetry_dataset(
-            atoms, tol, angle_tolerance=a_tol, hall_number=hn
-        )
+        dataset = get_symmetry_dataset(atoms, tol, angle_tolerance=a_tol, hall_number=hn)
     cell = dataset["std_lattice"]
     pos = dataset["std_positions"]
     numbers = dataset["std_types"]
@@ -131,9 +129,7 @@ def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0, style="pyxtal", hn=None):
     # if hn is None:
     #    hn = Hall(s._space_group_data['number'], style=style).hall_default
     if hn != s._space_group_data["hall_number"]:
-        s._space_group_data = get_symmetry_dataset(
-            s._cell, tol, angle_tolerance=a_tol, hall_number=hn
-        )
+        s._space_group_data = get_symmetry_dataset(s._cell, tol, angle_tolerance=a_tol, hall_number=hn)
     return s.get_symmetrized_structure(), s.get_space_group_number()
 
 
@@ -188,10 +184,7 @@ def parse_cif(filename, header=False, spg=False, eng=False, csd=False, sim=False
                 if start is not None:
                     tmp = []
                     for l in lines[start : end - 1]:
-                        if (
-                            len(re.findall(r"[0-9][B-C]", l)) > 0
-                            or len(re.findall(r"[A-Z][0-9]\' [0-9]", l)) > 0
-                        ):
+                        if len(re.findall(r"[0-9][B-C]", l)) > 0 or len(re.findall(r"[A-Z][0-9]\' [0-9]", l)) > 0:
                             # print(l) #; import sys; sys.exit()
                             continue
                         tmp.append(l)
@@ -210,10 +203,7 @@ def parse_cif(filename, header=False, spg=False, eng=False, csd=False, sim=False
         # Last one
         tmp = []
         for l in lines[start:]:
-            if (
-                len(re.findall(r"[0-9][B-D]", l)) > 0
-                or len(re.findall(r"[A-Z][0-9]\' [0-9]", l)) > 0
-            ):
+            if len(re.findall(r"[0-9][B-D]", l)) > 0 or len(re.findall(r"[A-Z][0-9]\' [0-9]", l)) > 0:
                 # print(l);
                 continue
             tmp.append(l)
@@ -323,9 +313,7 @@ def search_csd_code_by_pubchem(cid):
             data = json.loads(contents, cls=MontyDecoder)
             if "Section" in data["Record"]["Section"][0]:
                 if len(data["Record"]["Section"][0]["Section"]) == 3:
-                    infos = data["Record"]["Section"][0]["Section"][2]["Section"][0][
-                        "Information"
-                    ]
+                    infos = data["Record"]["Section"][0]["Section"][2]["Section"][0]["Information"]
                     for info in infos:
                         csd_codes.append(info["Value"]["StringWithMarkup"][0]["String"])
     except:
@@ -562,9 +550,7 @@ def generate_wp_lib(
             max_fu = max([int(len(g[0]) / max(composition)), 1])
         count = 0
         for i in range(max_fu, min_fu - 1, -1):
-            letters, _, wp_ids = g.list_wyckoff_combinations(
-                composition * i, numWp=(min_wp, max_wp), Nmax=100000
-            )
+            letters, _, wp_ids = g.list_wyckoff_combinations(composition * i, numWp=(min_wp, max_wp), Nmax=100000)
             for _j, wp in enumerate(wp_ids):
                 wp_dofs = 0
                 num = 0
@@ -702,9 +688,7 @@ def split_list_by_ratio(nums, ratio):
         group2.pop()
 
     solutions = []
-    nums = sorted(
-        nums, reverse=True
-    )  # Optional: Sorting can sometimes speed up the process
+    nums = sorted(nums, reverse=True)  # Optional: Sorting can sometimes speed up the process
 
     find_splits(0, 0, 0, [], [])
     return solutions

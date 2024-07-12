@@ -123,12 +123,8 @@ class benchmark:
         ase = self.ase["reference"].copy()
         # ase = dftb_relax(ase, self.skf_dir, kresol=0.08, logfile=logfile)
         ase, _ = DFTB(ase, self.skf_dir, mode="relax", kresol=0.08, disp=disp)
-        ase, _ = DFTB(
-            ase, self.skf_dir, mode="vc-relax", step=300, kresol=0.06, disp=disp
-        )
-        ase = DFTB_relax(
-            ase, self.skf_dir, opt_cell=True, kresol=0.06, disp=disp, logfile=logfile
-        )
+        ase, _ = DFTB(ase, self.skf_dir, mode="vc-relax", step=300, kresol=0.06, disp=disp)
+        ase = DFTB_relax(ase, self.skf_dir, opt_cell=True, kresol=0.06, disp=disp, logfile=logfile)
         xtal = pyxtal(molecular=True)
         pmg = ase2pymatgen(ase)
         xtal.from_seed(pmg, molecules=self.smiles)
@@ -229,9 +225,7 @@ class benchmark:
         struc = self.xtal["reference"].copy()
         g_info = self.gulp_info
         t0 = time()
-        calc = GULP_relax(
-            struc, "ben", opt="conv", steps=step[0], stepmx=stepmx[0], atom_info=g_info
-        )
+        calc = GULP_relax(struc, "ben", opt="conv", steps=step[0], stepmx=stepmx[0], atom_info=g_info)
         calc.run(clean=self.clean)  # ; print(os.getcwd()); import sys; sys.exit()
         if not calc.optimized:
             raise RuntimeError("GULP calculation is wrong")
@@ -249,9 +243,7 @@ class benchmark:
         if not calc.optimized:
             raise RuntimeError("GULP calculation is wrong")
         struc = calc.structure
-        calc = GULP_relax(
-            struc, "ben", opt="conp", steps=step[2], stepmx=stepmx[2], atom_info=g_info
-        )
+        calc = GULP_relax(struc, "ben", opt="conp", steps=step[2], stepmx=stepmx[2], atom_info=g_info)
         # print(struc)
         calc.run(clean=self.clean)  # , pause=True); import sys; sys.exit()
         struc = calc.structure

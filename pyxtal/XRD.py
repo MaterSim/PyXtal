@@ -12,9 +12,7 @@ from scipy.interpolate import interp1d
 
 from pyxtal.database.element import Element
 
-ATOMIC_SCATTERING_PARAMS = loadfn(
-    resource_filename("pyxtal", "database/atomic_scattering_params.json")
-)
+ATOMIC_SCATTERING_PARAMS = loadfn(resource_filename("pyxtal", "database/atomic_scattering_params.json"))
 
 
 class XRD:
@@ -209,9 +207,7 @@ class XRD:
 
         if self.ncpu == 1:
             N_cycles = range(N_cycle)
-            Is = get_all_intensity(
-                N_cycles, N_atom, self.per_N, positions, self.hkl_list, s2s, coeffs, zs
-            )
+            Is = get_all_intensity(N_cycles, N_atom, self.per_N, positions, self.hkl_list, s2s, coeffs, zs)
         else:
             import multiprocessing as mp
 
@@ -297,16 +293,12 @@ class XRD:
                     Is[t[1] : t[2]] += t[3]
 
         # Lorentz polarization factor
-        lfs = (1 + np.cos(2 * self.theta) ** 2) / (
-            np.sin(self.theta) ** 2 * np.cos(self.theta)
-        )
+        lfs = (1 + np.cos(2 * self.theta) ** 2) / (np.sin(self.theta) ** 2 * np.cos(self.theta))
 
         # Preferred orientation factor
         if self.preferred_orientation is not False:
             G = self.march_parameter
-            pos = ((G * np.cos(self.theta)) ** 2 + 1 / G * np.sin(self.theta) ** 2) ** (
-                -3 / 2
-            )
+            pos = ((G * np.cos(self.theta)) ** 2 + 1 / G * np.sin(self.theta) ** 2) ** (-3 / 2)
         else:
             pos = np.ones(N_hkls)
 
@@ -334,9 +326,7 @@ class XRD:
             for id in range(len(self.hkl_list)):
                 hkl, d_hkl = self.hkl_list[id], self.d_hkl[id]
                 # find where the scattered angles are equal
-                ind = np.where(
-                    np.abs(np.subtract(two_thetas, _two_thetas[id])) < TWO_THETA_TOL
-                )
+                ind = np.where(np.abs(np.subtract(two_thetas, _two_thetas[id])) < TWO_THETA_TOL)
                 if len(ind[0]) > 0:
                     # append intensity, hkl plane, and thetas to lists
                     self.peaks[two_thetas[ind[0][0]]][0] += Is[id] * lfs[id] * pos[id]
@@ -371,9 +361,7 @@ class XRD:
                 x.append(k)
                 y.append(v[0])
 
-                hkls.append(
-                    [{"hkl": hkl, "multiplicity": mult} for hkl, mult in fam.items()]
-                )
+                hkls.append([{"hkl": hkl, "multiplicity": mult} for hkl, mult in fam.items()])
                 d_hkls.append(v[2])
 
         self.theta2 = x
@@ -503,9 +491,7 @@ class XRD:
             x_min, x_max = xlim[0], xlim[1]
 
         if ax is None:
-            fig, axes = plt.subplots(
-                1, 1, figsize=figsize
-            )  # plt.figure(figsize=figsize)
+            fig, axes = plt.subplots(1, 1, figsize=figsize)  # plt.figure(figsize=figsize)
             axes.set_title("PXRD of " + self.name)
         else:
             axes = ax
@@ -518,9 +504,7 @@ class XRD:
                     label = self.draw_hkl(i[2:5])
                     axes.text(i[0] - dx / 40, i[-1], label[0] + label[1] + label[2])
         else:
-            spectra = self.get_profile(
-                method=profile, res=res, user_kwargs={"FWHM": fwhm}
-            )
+            spectra = self.get_profile(method=profile, res=res, user_kwargs={"FWHM": fwhm})
             label = "Profile: " + profile if legend is None else legend
             axes.plot(spectra[0], spectra[1], label=label)
             axes.legend()
@@ -580,9 +564,7 @@ class XRD:
         if profile is None:
             fig = go.Figure(data=[trace1])
         else:
-            spectra = self.get_profile(
-                method=profile, res=res, user_kwargs={"FWHM": FWHM}
-            )
+            spectra = self.get_profile(method=profile, res=res, user_kwargs={"FWHM": FWHM})
             trace2 = go.Scatter(x=spectra[0], y=spectra[1], name="Profile: " + profile)
             fig = go.Figure(data=[trace2, trace1])
 
@@ -698,11 +680,7 @@ class Profile:
                     + 0.07842 * fwhm_g * fwhm_l**4
                     + fwhm_l**5
                 ) ** (1 / 5)
-                eta = (
-                    1.36603 * fwhm_l / fwhm
-                    - 0.47719 * (fwhm_l / fwhm) ** 2
-                    + 0.11116 * (fwhm_l / fwhm) ** 3
-                )
+                eta = 1.36603 * fwhm_l / fwhm - 0.47719 * (fwhm_l / fwhm) ** 2 + 0.11116 * (fwhm_l / fwhm) ** 3
                 tmp = pseudo_voigt(two_theta, px, fwhm, eta)
 
             elif self.method == "mod_pseudo-voigt":
@@ -714,9 +692,7 @@ class Profile:
                 eta_l = self.kwargs["eta_l"]
 
                 fwhm = np.sqrt(
-                    U * np.tan(np.pi * two_theta / 2 / 180) ** 2
-                    + V * np.tan(np.pi * two_theta / 2 / 180)
-                    + W
+                    U * np.tan(np.pi * two_theta / 2 / 180) ** 2 + V * np.tan(np.pi * two_theta / 2 / 180) + W
                 )
                 x = px - two_theta
                 tmp = mod_pseudo_voigt(x, fwhm, A, eta_h, eta_l, N)
@@ -876,10 +852,7 @@ def mod_pseudo_voigt(x, fwhm, A, eta_h, eta_l, N):
                 + A * (eta_h + np.sqrt(np.pi * np.log(2)) * (1 - eta_h))
             )
             * (
-                eta_l
-                * 2
-                / (np.pi * fwhm)
-                * (1 + ((1 + A) / A) ** 2 * (dx / fwhm) ** 2) ** (-1)
+                eta_l * 2 / (np.pi * fwhm) * (1 + ((1 + A) / A) ** 2 * (dx / fwhm) ** 2) ** (-1)
                 + (1 - eta_l)
                 * np.sqrt(np.log(2) / np.pi)
                 * 2
@@ -982,9 +955,7 @@ def get_all_intensity(N_cycles, N_atom, per_N, positions, hkls, s2s, coeffs, zs)
     return Is
 
 
-def get_all_intensity_par(
-    cpu, queue, cycles, Start, End, hkl_per_proc, positions, hkls, s2s, coeffs, zs
-):
+def get_all_intensity_par(cpu, queue, cycles, Start, End, hkl_per_proc, positions, hkls, s2s, coeffs, zs):
     # print("proc", cpu, cycles)
     Is = np.zeros(End - Start)
     # print(cpu, Start, End)
@@ -1044,9 +1015,7 @@ if __name__ == "__main__":
 
     parser = OptionParser()
     parser.add_option("-f", "--cif", dest="cif", help="cif file name")
-    parser.add_option(
-        "-s", "--step", dest="step", type=int, default=20, help="steps, optional"
-    )
+    parser.add_option("-s", "--step", dest="step", type=int, default=20, help="steps, optional")
 
     (options, args) = parser.parse_args()
     thetas = [5, 50]
@@ -1080,17 +1049,13 @@ if __name__ == "__main__":
         ax1.plot(ref_pxrd[0], ref_pxrd[1], label="ref")
         ax2.plot(ref_pxrd[0], ref_pxrd[1], label="ref")
         s.from_seed(pmg, molecules=smiles)
-        pxrd = s.get_XRD(thetas=thetas).get_profile(
-            res=0.15, user_kwargs={"FWHM": 0.25}
-        )
+        pxrd = s.get_XRD(thetas=thetas).get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
         (s, val0, val1) = pxrd_refine(s, ref_pxrd, thetas, steps=0)
         ax1.plot(pxrd[0], pxrd[1], label=f"Init: {val1:6.3f}")
 
         (s, val0, val1) = pxrd_refine(s, ref_pxrd, thetas, steps=options.step)
         ax2.plot(pxrd[0], pxrd[1], label=f"Opt: {val1:6.3f}")
-        pxrd = s.get_XRD(thetas=thetas).get_profile(
-            res=0.15, user_kwargs={"FWHM": 0.25}
-        )
+        pxrd = s.get_XRD(thetas=thetas).get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
         ax2.legend()
         ax1.legend()
 

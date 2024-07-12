@@ -2,7 +2,6 @@ import sys
 import warnings
 from copy import deepcopy
 from optparse import OptionParser
-from random import choice
 from time import time
 
 import matplotlib.pyplot as plt
@@ -148,11 +147,7 @@ class LJ_prediction:
     def __init__(self, numIons, seed=None):
         self.numIons = numIons
         ref = Collection("clusters")[str(numIons)]
-        print(
-            "\nReference for LJ {:3d} is {:12.3f} eV, PG: {:4s}".format(
-                numIons, ref["energy"], ref["pointgroup"]
-            )
-        )
+        print("\nReference for LJ {:3d} is {:12.3f} eV, PG: {:4s}".format(numIons, ref["energy"], ref["pointgroup"]))
         self.reference = ref
         self.time0 = time()
         self.rng = np.random.default_rng(seed)
@@ -166,7 +161,7 @@ class LJ_prediction:
                 run = False
         return cluster.cart_coords
 
-    def predict(self, dim=3, maxN=100, ncpu=2, pgs=(2,33), method=1):
+    def predict(self, dim=3, maxN=100, ncpu=2, pgs=(2, 33), method=1):
         print(f"\nPerforming random search at {dim:d}D space\n")
         cycle = range(maxN)
         if ncpu > 1:
@@ -187,9 +182,7 @@ class LJ_prediction:
         for dct in res:
             if dct["ground"]:
                 N_success += 1
-        print(
-            f"\nHit the ground state {N_success:4d} times out of {maxN:4d} attempts\n"
-        )
+        print(f"\nHit the ground state {N_success:4d} times out of {maxN:4d} attempts\n")
         return res
 
     def relaxation(self, dim, pgs, method, ind):

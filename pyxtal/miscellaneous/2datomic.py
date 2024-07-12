@@ -94,12 +94,8 @@ if __name__ == "__main__":
         for _i in range(attempts):
             start = time()
             sg = Layergroup(num).sgnumber
-            multiplicity = len(
-                get_wyckoffs(sg)[0]
-            )  # multiplicity of the general position
-            rand_crystal = random_crystal_2D(
-                num, system, [multiplicity], options.thickness, options.factor
-            )
+            multiplicity = len(get_wyckoffs(sg)[0])  # multiplicity of the general position
+            rand_crystal = random_crystal_2D(num, system, [multiplicity], options.thickness, options.factor)
             end = time()
             timespent = np.around((end - start), decimals=2)
             if rand_crystal.valid:
@@ -114,11 +110,7 @@ if __name__ == "__main__":
                         rand_crystal.volume,
                     )
                 else:
-                    print(
-                        "Space group requested: "
-                        + str(sg)
-                        + " Could not calculate generated"
-                    )
+                    print("Space group requested: " + str(sg) + " Could not calculate generated")
 
                 # Print additional information about the structure
                 if verbosity > 0:

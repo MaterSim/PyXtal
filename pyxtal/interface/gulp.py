@@ -197,9 +197,7 @@ class GULP_OC:
             os.remove(self.dump)
 
     def to_ase(self):
-        return Atoms(
-            self.sites, scaled_positions=self.frac_coords, cell=self.lattice.matrix
-        )
+        return Atoms(self.sites, scaled_positions=self.frac_coords, cell=self.lattice.matrix)
 
     def to_pymatgen(self):
         from pymatgen.core.structure import Structure
@@ -234,26 +232,16 @@ class GULP_OC:
                 f.write("nosymmetry\n")
 
             f.write("\ncell\n")
-            f.write(
-                f"{a:12.6f}{b:12.6f}{c:12.6f}{alpha:12.6f}{beta:12.6f}{gamma:12.6f}\n"
-            )
+            f.write(f"{a:12.6f}{b:12.6f}{c:12.6f}{alpha:12.6f}{beta:12.6f}{gamma:12.6f}\n")
             f.write("\nfractional\n")
 
             if self.symmetry and self.pyxtal is not None:
                 # Use pyxtal here
                 for site in self.pyxtal.atom_sites:
                     symbol, coord = site.specie, site.position
-                    f.write(
-                        "{:4s} {:12.6f} {:12.6f} {:12.6f} core \n".format(
-                            symbol, *coord
-                        )
-                    )
+                    f.write("{:4s} {:12.6f} {:12.6f} {:12.6f} core \n".format(symbol, *coord))
                     if self.ff == "catlow" and symbol == "O":
-                        f.write(
-                            "{:4s} {:12.6f} {:12.6f} {:12.6f} shell \n".format(
-                                symbol, *coord
-                            )
-                        )
+                        f.write("{:4s} {:12.6f} {:12.6f} {:12.6f} shell \n".format(symbol, *coord))
 
                 # Tested for all space groups
                 f.write(f"\nspace\n{self.pyxtal.group.number:d}\n")
@@ -261,9 +249,7 @@ class GULP_OC:
             else:
                 # All coordinates
                 for coord, site in zip(self.frac_coords, self.sites):
-                    f.write(
-                        "{:4s} {:12.6f} {:12.6f} {:12.6f} core \n".format(site, *coord)
-                    )
+                    f.write("{:4s} {:12.6f} {:12.6f} {:12.6f} core \n".format(site, *coord))
             species = self.structure.species if self.species is not None else list(set(self.sites))
 
             f.write("\nSpecies\n")
@@ -342,9 +328,7 @@ class GULP_OC:
                         for _t in range(3 - len(g)):
                             g.append(" ")
                         for j in range(2):
-                            min_index = [
-                                i + 1 for i, e in enumerate(g[j][1:]) if e == "-"
-                            ]
+                            min_index = [i + 1 for i, e in enumerate(g[j][1:]) if e == "-"]
                             if j == 0 and len(min_index) != 0:
                                 if len(min_index) == 1:
                                     g[2] = g[1]
@@ -535,9 +519,7 @@ class GULP_OC:
             else:
                 f.write(f"opti stress {self.opt:s} conj molecule nomod qok\n")
             f.write("\ncell\n")
-            f.write(
-                f"{a:12.6f}{b:12.6f}{c:12.6f}{alpha:12.6f}{beta:12.6f}{gamma:12.6f}\n"
-            )
+            f.write(f"{a:12.6f}{b:12.6f}{c:12.6f}{alpha:12.6f}{beta:12.6f}{gamma:12.6f}\n")
             f.write("\nfractional\n")
 
             symbols = []
@@ -577,18 +559,14 @@ class GULP_OC:
                 rot = op.rotation_matrix.T
                 trans = op.translation_vector
                 for i in range(3):
-                    f.write(
-                        "{:6.3f} {:6.3f} {:6.3f} {:6.3f}\n".format(*rot[i, :], trans[i])
-                    )
+                    f.write("{:6.3f} {:6.3f} {:6.3f} {:6.3f}\n".format(*rot[i, :], trans[i]))
 
             # bond type
             if self.bond_type:
                 for bond in mol.molTopol.bonds:
                     for i in range(len(site.wp)):
                         count = i * len(coords)
-                        f.write(
-                            f"connect {bond.atoms[0].id + count:4d} {bond.atoms[1].id + count:4d}\n"
-                        )
+                        f.write(f"connect {bond.atoms[0].id + count:4d} {bond.atoms[1].id + count:4d}\n")
             f.write(f"\nlibrary {self.ff:s}.lib\n")
             # f.write('\nlibrary {:s}\n'.format(self.ff))
             if "OCSP_GULP_LIB" in os.environ:

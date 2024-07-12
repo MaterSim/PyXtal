@@ -10,16 +10,12 @@ for sg in sgs:
         for i, p in enumerate(wp):
             if i == 0:
                 for op in p:
-                    rot = SymmOp.from_rotation_and_translation(
-                        op.rotation_matrix, [0, 0, 0]
-                    )
+                    rot = SymmOp.from_rotation_and_translation(op.rotation_matrix, [0, 0, 0])
                     if rot not in seen:
                         seen.append(rot)
             elif i != 0:
                 for op in p:
-                    rot = SymmOp.from_rotation_and_translation(
-                        op.rotation_matrix, [0, 0, 0]
-                    )
+                    rot = SymmOp.from_rotation_and_translation(op.rotation_matrix, [0, 0, 0])
                     if rot not in seen:
                         params = [sg]
                         if params not in failed:

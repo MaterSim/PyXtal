@@ -249,9 +249,7 @@ def test_atomic():
     skip = []  # [124, 139, 166, 167, 196, 202, 203, 204, 207, 209, 210, 216, 217, 219, 220, 221, 223, 225, 226, 227, 228, 229, 230] #slow to generate
     for sg in range(1, 231):
         if sg not in skip:
-            multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(
-                sg
-            )  # multiplicity of the general position
+            multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(sg)  # multiplicity of the general position
             start = time()
             rand_crystal = random_crystal(sg, ["C"], [multiplicity], 1.0)
             end = time()
@@ -307,23 +305,9 @@ def test_atomic():
                         t += " xxxxx"
                         outstructs.append(rand_crystal.struct)
                         outstrings.append(str("3D_Atomic_" + str(sg) + ".vasp"))
-                print(
-                    "\t"
-                    + str(sg)
-                    + "\t|\t"
-                    + str(ans1)
-                    + "\t|\t"
-                    + str(ans2)
-                    + "\t|\t"
-                    + t
-                )
+                print("\t" + str(sg) + "\t|\t" + str(ans1) + "\t|\t" + str(ans2) + "\t|\t" + t)
             else:
-                print(
-                    "~~~~ Error: Could not generate space group "
-                    + str(sg)
-                    + " after "
-                    + t
-                )
+                print("~~~~ Error: Could not generate space group " + str(sg) + " after " + t)
                 failed.append(sg)
     if slow != []:
         print("~~~~ The following space groups took more than 60 seconds to generate:")
@@ -338,9 +322,7 @@ def test_atomic():
 def test_molecular():
     global outstructs
     global outstrings
-    print(
-        "=== Testing generation of molecular 3D crystals. This may take some time. ==="
-    )
+    print("=== Testing generation of molecular 3D crystals. This may take some time. ===")
     from time import time
 
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -356,9 +338,7 @@ def test_molecular():
     skip = []  # [24, 183, 202, 203, 209, 210, 216, 219, 225, 226, 227, 228, 229, 230] #slow
     for sg in range(1, 231):
         if sg not in skip:
-            multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(
-                sg
-            )  # multiplicity of the general position
+            multiplicity = len(get_wyckoffs(sg)[0]) / cellsize(sg)  # multiplicity of the general position
             start = time()
             rand_crystal = molecular_crystal(sg, ["H2O"], [multiplicity], 2.5)
             end = time()
@@ -414,23 +394,9 @@ def test_molecular():
                         t += " xxxxx"
                         outstructs.append(rand_crystal.struct)
                         outstrings.append(str("3D_Molecular_" + str(sg) + ".vasp"))
-                print(
-                    "\t"
-                    + str(sg)
-                    + "\t|\t"
-                    + str(ans1)
-                    + "\t|\t"
-                    + str(ans2)
-                    + "\t|\t"
-                    + t
-                )
+                print("\t" + str(sg) + "\t|\t" + str(ans1) + "\t|\t" + str(ans2) + "\t|\t" + t)
             else:
-                print(
-                    "~~~~ Error: Could not generate space group "
-                    + str(sg)
-                    + " after "
-                    + t
-                )
+                print("~~~~ Error: Could not generate space group " + str(sg) + " after " + t)
                 failed.append(sg)
     if slow != []:
         print("~~~~ The following space groups took more than 60 seconds to generate:")
@@ -486,12 +452,7 @@ def test_atomic_2D():
                 symbol = g.symbol
                 print("\t" + str(sg) + "\t|\t" + symbol + "\t|\t" + t)
             else:
-                print(
-                    "~~~~ Error: Could not generate layer group "
-                    + str(sg)
-                    + " after "
-                    + t
-                )
+                print("~~~~ Error: Could not generate layer group " + str(sg) + " after " + t)
                 failed.append(sg)
     if slow != []:
         print("~~~~ The following layer groups took more than 60 seconds to generate:")
@@ -506,9 +467,7 @@ def test_atomic_2D():
 def test_molecular_2D():
     global outstructs
     global outstrings
-    print(
-        "=== Testing generation of molecular 2D crystals. This may take some time. ==="
-    )
+    print("=== Testing generation of molecular 2D crystals. This may take some time. ===")
     from time import time
 
     from pyxtal.molecular_crystal import molecular_crystal_2D
@@ -549,12 +508,7 @@ def test_molecular_2D():
                 symbol = g.symbol
                 print("\t" + str(sg) + "\t|\t" + symbol + "\t|\t" + t)
             else:
-                print(
-                    "~~~~ Error: Could not generate layer group "
-                    + str(sg)
-                    + " after "
-                    + t
-                )
+                print("~~~~ Error: Could not generate layer group " + str(sg) + " after " + t)
                 failed.append(sg)
     if slow != []:
         print("~~~~ The following layer groups took more than 60 seconds to generate:")
@@ -626,23 +580,9 @@ def test_atomic_1D():
                         t += " xxxxx"
                         outstructs.append(rand_crystal.struct)
                         outstrings.append(str("1D_Atomic_" + str(num) + ".vasp"))
-                print(
-                    "\t"
-                    + str(num)
-                    + "\t|\t"
-                    + str(ans1)
-                    + "\t|\t"
-                    + str(ans2)
-                    + "\t|\t"
-                    + t
-                )
+                print("\t" + str(num) + "\t|\t" + str(ans1) + "\t|\t" + str(ans2) + "\t|\t" + t)
             else:
-                print(
-                    "~~~~ Error: Could not generate layer group "
-                    + str(num)
-                    + " after "
-                    + t
-                )
+                print("~~~~ Error: Could not generate layer group " + str(num) + " after " + t)
                 failed.append(num)
     if slow != []:
         print("~~~~ The following layer groups took more than 60 seconds to generate:")
@@ -657,9 +597,7 @@ def test_atomic_1D():
 def test_molecular_1D():
     global outstructs
     global outstrings
-    print(
-        "=== Testing generation of molecular 1D crystals. This may take some time. ==="
-    )
+    print("=== Testing generation of molecular 1D crystals. This may take some time. ===")
     from time import time
 
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -716,23 +654,9 @@ def test_molecular_1D():
                         t += " xxxxx"
                         outstructs.append(rand_crystal.struct)
                         outstrings.append(str("1D_Molecular_" + str(num) + ".vasp"))
-                print(
-                    "\t"
-                    + str(num)
-                    + "\t|\t"
-                    + str(ans1)
-                    + "\t|\t"
-                    + str(ans2)
-                    + "\t|\t"
-                    + t
-                )
+                print("\t" + str(num) + "\t|\t" + str(ans1) + "\t|\t" + str(ans2) + "\t|\t" + t)
             else:
-                print(
-                    "~~~~ Error: Could not generate layer group "
-                    + str(num)
-                    + " after "
-                    + t
-                )
+                print("~~~~ Error: Could not generate layer group " + str(num) + " after " + t)
                 failed.append(num)
     if slow != []:
         print("~~~~ The following layer groups took more than 60 seconds to generate:")
@@ -747,9 +671,7 @@ def test_molecular_1D():
 def test_cluster():
     global outstructs
     global outstrings
-    print(
-        "=== Testing generation of point group clusters. This may take some time. ==="
-    )
+    print("=== Testing generation of point group clusters. This may take some time. ===")
     from time import time
 
     from pyxtal.crystal import random_cluster
@@ -761,9 +683,7 @@ def test_cluster():
     skip = []  # [32,55,56]#[28,29,30,31,32,55,56]
     for sg in range(1, 57):
         if sg not in skip:
-            multiplicity = len(
-                Group(sg, dim=0)[0]
-            )  # multiplicity of the general position
+            multiplicity = len(Group(sg, dim=0)[0])  # multiplicity of the general position
             start = time()
             rand_crystal = random_cluster(sg, ["C"], [multiplicity], 1.0)
             end = time()
@@ -791,12 +711,7 @@ def test_cluster():
                 pgsymbol = Group(sg, dim=0).symbol
                 print("\t" + str(sg) + "\t|\t" + pgsymbol + "\t|\t" + t)
             else:
-                print(
-                    "~~~~ Error: Could not generate space group "
-                    + str(sg)
-                    + " after "
-                    + t
-                )
+                print("~~~~ Error: Could not generate space group " + str(sg) + " after " + t)
                 failed.append(sg)
     if slow != []:
         print("~~~~ The following space groups took more than 60 seconds to generate:")
@@ -838,7 +753,6 @@ def test_modules():
 
     print("Importing pymatgen...")
     try:
-
         print("Success!")
     except Exception as e:
         fail(e)
@@ -852,7 +766,6 @@ def test_modules():
 
     print("Importing pandas...")
     try:
-
         print("Success!")
     except Exception as e:
         fail(e)
@@ -860,7 +773,6 @@ def test_modules():
 
     print("Importing spglib...")
     try:
-
         print("Success!")
     except Exception as e:
         fail(e)
@@ -868,14 +780,12 @@ def test_modules():
 
     print("Importing openbabel...")
     try:
-
         print("Success!")
     except:
         print("Error: could not import openbabel. Try reinstalling the package.")
 
     print("Importing pyxtal...")
     try:
-
         print("Success!")
     except Exception as e:
         fail(e)
@@ -1585,11 +1495,7 @@ if __name__ == "__main__":
                 break
         if outstructs != []:
             print("Some generated space groups did not match the expected group.")
-            print(
-                "POSCAR files for these groups will be output to the directory "
-                + outdir
-                + ":"
-            )
+            print("POSCAR files for these groups will be output to the directory " + outdir + ":")
         for struct, string in zip(outstructs, outstrings):
             fpath = outdir + "/" + string
             with contextlib.suppress(Exception):

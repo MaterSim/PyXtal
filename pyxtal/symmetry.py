@@ -825,9 +825,7 @@ class Group:
                     return False
         return True
 
-    def list_wyckoff_combinations(
-        self, numIons, quick=False, numWp=(None, None), Nmax=10000000
-    ):
+    def list_wyckoff_combinations(self, numIons, quick=False, numWp=(None, None), Nmax=10000000):
         """
         List all possible wyckoff combinations for the given formula. Note this
         is really designed for a light weight calculation. If the solution space
@@ -1163,13 +1161,8 @@ class Group:
                     wp_indices.append(j)
 
             wps = [wp_list[x] for x in wp_indices]
-            blocks = [
-                np.array([relation[j].count(s) for s in _site]) for j in wp_indices
-            ]
-            block_units = [
-                sum([int(x[:-1]) * block[j] for j, x in enumerate(_site)])
-                for block in blocks
-            ]
+            blocks = [np.array([relation[j].count(s) for s in _site]) for j in wp_indices]
+            block_units = [sum([int(x[:-1]) * block[j] for j, x in enumerate(_site)]) for block in blocks]
 
             # below is a brute force search for the valid combinations
             combo_storage = [np.zeros(len(block_units))]
@@ -1289,9 +1282,7 @@ class Group:
                 l_free0.append(False)
             else:
                 l_free0.append(True)
-        return self.clean_lists(
-            numIon, l_mult0, l_maxn0, l_free0, indices0, used_indices
-        )
+        return self.clean_lists(numIon, l_mult0, l_maxn0, l_free0, indices0, used_indices)
 
     def get_lists_mol(self, numIon, used_indices, orientations):
         """
@@ -1318,9 +1309,7 @@ class Group:
                     l_free0.append(False)
                 else:
                     l_free0.append(True)
-        return self.clean_lists(
-            numIon, l_mult0, l_maxn0, l_free0, indices0, used_indices
-        )
+        return self.clean_lists(numIon, l_mult0, l_maxn0, l_free0, indices0, used_indices)
 
     @staticmethod
     def clean_lists(numIon, l_mult0, l_maxn0, l_free0, indices0, used_indices):
@@ -1372,9 +1361,7 @@ class Group:
                 l_mult, l_maxn, l_free, indices = self.get_lists(numIon, used_indices)
             else:
                 vo = valid_orientations[id]
-                l_mult, l_maxn, l_free, indices = self.get_lists_mol(
-                    numIon, used_indices, vo
-                )
+                l_mult, l_maxn, l_free, indices = self.get_lists_mol(numIon, used_indices, vo)
             # print(numIon, l_mult, indices, l_maxn, l_free)
 
             # Loop over possible combinations
@@ -1470,9 +1457,7 @@ class Group:
             groups = []
             subgroups = []
             for g in previous_layer_groups:
-                subgroup_numbers = np.unique(
-                    Group(g, quick=True).get_max_subgroup_numbers()
-                )
+                subgroup_numbers = np.unique(Group(g, quick=True).get_max_subgroup_numbers())
 
                 # If a subgroup list has been found with H
                 # trace a path through the dictionary to build the path
@@ -1572,9 +1557,7 @@ class Group:
         for i in range(len(path[:-1])):
             g = path[i]
             h = path[i + 1]
-            options = set(
-                k_subgroup[str(g)]["subgroup"] + t_subgroup[str(g)]["subgroup"]
-            )
+            options = set(k_subgroup[str(g)]["subgroup"] + t_subgroup[str(g)]["subgroup"])
             # print(g, h, options)
             for _g in options:
                 ls = k_subgroup[str(_g)]["subgroup"] + t_subgroup[str(_g)]["subgroup"]
@@ -1585,7 +1568,6 @@ class Group:
         # https://stackoverflow.com/questions/2213923/removing-duplicates-from-a-list-of-lists
         solutions.sort()
         return [k for k, _ in itertools.groupby(solutions)]
-
 
     def path_to_general_wp(self, index=1, max_steps=1):
         """
@@ -1641,9 +1623,7 @@ class Group:
 
             for p in deepcopy(potential):
                 # Check there's only one wp.  #Check that the 1 wp is the general position
-                if (len(set(p[-1][3])) == 1) and (
-                    p[-1][3][0][-1] == Group(p[-1][2])[0].letter
-                ):
+                if (len(set(p[-1][3])) == 1) and (p[-1][3][0][-1] == Group(p[-1][2])[0].letter):
                     solutions.append(deepcopy(p)[1:])
                     potential.remove(p)
 
@@ -1870,19 +1850,13 @@ class Wyckoff_position:
         ops_all = get_wyckoffs(group, dim=dim)
         index = index_from_letter(letter, ops_all, dim=dim)
         if hn is not None:
-            wp = cls.from_group_and_index(
-                hn, index, dim, use_hall=True, wyckoffs=ops_all
-            )
+            wp = cls.from_group_and_index(hn, index, dim, use_hall=True, wyckoffs=ops_all)
         else:
-            wp = cls.from_group_and_index(
-                group, index, dim, style=style, wyckoffs=ops_all
-            )
+            wp = cls.from_group_and_index(group, index, dim, style=style, wyckoffs=ops_all)
         return wp
 
     @classmethod
-    def from_group_and_index(
-        cls, group, index, dim=3, use_hall=False, style="pyxtal", wyckoffs=None
-    ):
+    def from_group_and_index(cls, group, index, dim=3, use_hall=False, style="pyxtal", wyckoffs=None):
         """
         Creates a Wyckoff_position using the space group number and index
 
@@ -2356,9 +2330,7 @@ class Wyckoff_position:
             list of pymatgen SymmOp object
         """
         if idx >= len(self.symmetry):
-            raise ValueError(
-                f"Cannot pick {idx:d} in {len(self.symmetry):d} operations"
-            )
+            raise ValueError(f"Cannot pick {idx:d} in {len(self.symmetry):d} operations")
         ops = []
         for op in self.symmetry[idx]:
             hat = SymmOp.from_rotation_and_translation(hex_cell, [0, 0, 0])
@@ -2376,9 +2348,7 @@ class Wyckoff_position:
         for i, op in enumerate(self.ops):
             hat = SymmOp.from_rotation_and_translation(hex_cell, [0, 0, 0])
             op_tmp = hat * op * hat.inverse
-            ops[i] = op_tmp.from_rotation_and_translation(
-                op_tmp.rotation_matrix, op.translation_vector
-            )
+            ops[i] = op_tmp.from_rotation_and_translation(op_tmp.rotation_matrix, op.translation_vector)
             # ops[i].translation_vector = op.translation_vector
 
         return ops
@@ -2891,7 +2861,7 @@ class Wyckoff_position:
             new_vector += trans
             return new_vector
 
-        if [0, 0, 0] == PBC:
+        if PBC == [0, 0, 0]:
             return project_single(point, rot, trans)
         else:
             pt = filtered_coords(point)
@@ -3275,9 +3245,7 @@ class site_symmetry:
 
                 store = False
                 for i, ax in enumerate(all_sym_directions):
-                    ax0 = ax / np.linalg.norm(
-                        ax
-                    )  # ; print(opa.axis, ax, np.dot(_ax0, ax0))
+                    ax0 = ax / np.linalg.norm(ax)  # ; print(opa.axis, ax, np.dot(_ax0, ax0))
                     if np.isclose(abs(np.dot(_ax0, ax0)), 1):
                         store = True
                         break
@@ -3293,9 +3261,7 @@ class site_symmetry:
 
                         sys.exit()
                 else:
-                    raise ValueError(
-                        "Cannot parse the axis", opa.axis, all_sym_directions
-                    )
+                    raise ValueError("Cannot parse the axis", opa.axis, all_sym_directions)
 
             if self.inversion:
                 matrix[:, 1] = 1  # if inversion is present
@@ -3323,9 +3289,7 @@ class site_symmetry:
 
                 for i, ax in enumerate(all_sym_directions):
                     store = False
-                    ax0 = ax / np.linalg.norm(
-                        ax
-                    )  # ; print(opa.axis, ax, np.dot(opa.axis, ax0))
+                    ax0 = ax / np.linalg.norm(ax)  # ; print(opa.axis, ax, np.dot(opa.axis, ax0))
                     if np.isclose(abs(np.dot(_ax0, ax0)), 1):
                         store = True
                         break
@@ -3353,13 +3317,9 @@ class site_symmetry:
                         elif opa.rotation_order == 6:
                             matrix[i, 9] = 1
                         else:
-                            raise RuntimeError(
-                                "Unexpected rotinversion order", opa.order
-                            )
+                            raise RuntimeError("Unexpected rotinversion order", opa.order)
                 else:
-                    raise ValueError(
-                        "Cannot parse the axis", opa.axis, all_sym_directions
-                    )
+                    raise ValueError("Cannot parse the axis", opa.axis, all_sym_directions)
 
             if self.inversion:
                 matrix[:, 1] = 1  # if inversion is present
@@ -3876,18 +3836,14 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=np.eye(3), PBC=None):
         PBC = gen_pos.PBC if type(gen_pos) == Wyckoff_position else [1, 1, 1]
     # Convert point into a SymmOp
     if type(point) != SymmOp:
-        point = SymmOp.from_rotation_and_translation(
-            [[0, 0, 0], [0, 0, 0], [0, 0, 0]], np.array(point)
-        )
+        point = SymmOp.from_rotation_and_translation([[0, 0, 0], [0, 0, 0], [0, 0, 0]], np.array(point))
     symmetry = []
     for op in gen_pos:
         is_symmetry = True
         # Calculate the effect of applying op to point
         difference = SymmOp((op * point).affine_matrix - point.affine_matrix)
         # Check that the rotation matrix is unaltered by op
-        if not np.allclose(
-            difference.rotation_matrix, np.zeros((3, 3)), rtol=1e-3, atol=1e-3
-        ):
+        if not np.allclose(difference.rotation_matrix, np.zeros((3, 3)), rtol=1e-3, atol=1e-3):
             is_symmetry = False
         # Check that the displacement is less than tol
         displacement = difference.translation_vector
@@ -3905,9 +3861,7 @@ def site_symm(point, gen_pos, tol=1e-3, lattice=np.eye(3), PBC=None):
             (-z,x+1/2,-y+1/2) and (y+1/2,-z+1/2,-x), respectively, just shifted
             by (+1,-1,0) and (0,0,+1), respectively.
             """
-            el = SymmOp.from_rotation_and_translation(
-                op.rotation_matrix, op.translation_vector - np.rint(displacement)
-            )
+            el = SymmOp.from_rotation_and_translation(op.rotation_matrix, op.translation_vector - np.rint(displacement))
             symmetry.append(el)
     return symmetry
 

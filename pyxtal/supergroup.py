@@ -71,7 +71,7 @@ def new_path(path, paths):
     """
     check if it is a new path
     """
-    return all(path[:len(ref)] != ref for ref in paths)
+    return all(path[: len(ref)] != ref for ref in paths)
 
 
 def find_mapping_per_element(sites1, sites2, max_num=720):
@@ -385,13 +385,8 @@ class supergroup:
                     max_disp, trans, mapping, sp = self.calc_disps(id, sol, d_tol * 1.1)
                     # print(i, sp.H.number, sp.G.number, sol, max_disp, mapping)
                     if max_disp < d_tol:
-                        solutions.append(
-                            (sp, mapping, trans, self.wyc_set_id, max_disp)
-                        )
-                        if (
-                            max_solutions is not None
-                            and len(solutions) >= max_solutions
-                        ):
+                        solutions.append((sp, mapping, trans, self.wyc_set_id, max_disp))
+                        if max_solutions is not None and len(solutions) >= max_solutions:
                             done = True
                             break
 
@@ -423,9 +418,7 @@ class supergroup:
                 G_struc.source = f"supergroup {max_disp:6.3f}"
                 G_struc.disp = max_disp
                 G_strucs.append(G_struc)
-                new_sols.append(
-                    (sp, ordered_mapping, translation, wyc_set_id, max_disp)
-                )
+                new_sols.append((sp, ordered_mapping, translation, wyc_set_id, max_disp))
         return G_strucs, new_sols
 
     def calc_disps(self, split_id, solution, d_tol):
@@ -463,9 +456,7 @@ class supergroup:
         if len(mappings) > 0:
             mask = self.get_initial_mask(splitter)
             for mapping in mappings:
-                dist, trans, mask = self.symmetrize_dist(
-                    splitter, mapping, mask, None, d_tol
-                )
+                dist, trans, mask = self.symmetrize_dist(splitter, mapping, mask, None, d_tol)
                 dists.append(dist)
                 translations.append(trans)
                 masks.append(mask)
@@ -480,9 +471,7 @@ class supergroup:
                 if mask is None or len(mask) < 3:
 
                     def fun(translation, mapping, splitter, mask):
-                        return self.symmetrize_dist(
-                            splitter, mapping, mask, translation
-                        )[0]
+                        return self.symmetrize_dist(splitter, mapping, mask, translation)[0]
 
                     res = minimize(
                         fun,
@@ -566,13 +555,9 @@ class supergroup:
                     mask = _mask
             elif n == 2:
                 if splitter.group_type == "k":
-                    dist = self.symmetrize_site_double_k(
-                        splitter, i, coord_H, translation
-                    )
+                    dist = self.symmetrize_site_double_k(splitter, i, coord_H, translation)
                 else:
-                    dist = self.symmetrize_site_double_t(
-                        splitter, i, coord_H, translation
-                    )
+                    dist = self.symmetrize_site_double_t(splitter, i, coord_H, translation)
             else:
                 dist = self.symmetrize_site_multi(splitter, i, coord_H, translation)
 
@@ -613,18 +598,12 @@ class supergroup:
             coord_H, seq = self.get_coord_H(splitter, i, self.struc.atom_sites, mapping)
 
             if n == 1:
-                res = self.symmetrize_site_single(
-                    splitter, i, coord_H[0], translation, 0
-                )
+                res = self.symmetrize_site_single(splitter, i, coord_H[0], translation, 0)
             elif n == 2:
                 if splitter.group_type == "k":
-                    res = self.symmetrize_site_double_k(
-                        splitter, i, coord_H, translation, 0
-                    )
+                    res = self.symmetrize_site_double_k(splitter, i, coord_H, translation, 0)
                 else:
-                    res = self.symmetrize_site_double_t(
-                        splitter, i, coord_H, translation, 0
-                    )
+                    res = self.symmetrize_site_double_t(splitter, i, coord_H, translation, 0)
             else:
                 res = self.symmetrize_site_multi(splitter, i, coord_H, translation, 0)
 
@@ -700,16 +679,12 @@ class supergroup:
                         mask.append(m)
                 dist = 0
             else:
-                coord_G2, dist = search_G2(
-                    inv_rot, -tran, tmp, coord_H + translation, self.cell
-                )
+                coord_G2, dist = search_G2(inv_rot, -tran, tmp, coord_H + translation, self.cell)
 
             return dist, translation, mask
         else:
             tmp, _ = search_G1(splitter.G, rot, tran, coord_H + translation, wp1, op_G1)
-            coord_G2, _ = search_G2(
-                inv_rot, -tran, tmp, coord_H + translation, self.cell
-            )
+            coord_G2, _ = search_G2(inv_rot, -tran, tmp, coord_H + translation, self.cell)
             # print('XXXXXXXXX', coord_H+translation, tmp, coord_G2, dist)
             return tmp, [coord_G2], [coord_H]
 
@@ -879,12 +854,8 @@ class supergroup:
         # Also finds the corresponding G2 free parameters xyz for each coordinate
         for j in range(1, n):
             possible_coords = [x.operate(G2_xyz[0]) for x in splitter.G2_orbits[id][j]]
-            corresponding_coord, _ = get_best_match(
-                possible_coords, coord_G2[j], cell_G
-            )
-            index.append(
-                [np.all(x == corresponding_coord) for x in possible_coords].index(True)
-            )
+            corresponding_coord, _ = get_best_match(possible_coords, coord_G2[j], cell_G)
+            index.append([np.all(x == corresponding_coord) for x in possible_coords].index(True))
             corresponding_ops.append(splitter.G2_orbits[id][j][index[j]])
             G2_xyz[j] += find_xyz(corresponding_ops[j], coord_G2[j], quadrant)
         # print(G2_xyz)
@@ -906,9 +877,7 @@ class supergroup:
             for j in range(n):
                 coords_G1[j] = splitter.G1_orbits[id][j][index[j]].operate(final_xyz)
                 tmp = coord_H[j] + translation
-                coords_G2[j], _ = search_G2(
-                    inv_rot, -tran, coords_G1[j], tmp, self.cell
-                )
+                coords_G2[j], _ = search_G2(inv_rot, -tran, coords_G1[j], tmp, self.cell)
                 # dist_list.append(dist)
             # print("dist", dist)
             return coords_G1[0], coords_G2, coord_H
@@ -1205,9 +1174,7 @@ class supergroups:
             # print(i, sp.G.number, sp.H.number, wyc_set_id, match, trans)
         # print(self.struc_H)
         # print(struc0)
-        disps, _, _, _ = self.struc_H.get_disps_sets(
-            struc0, d_tol=1.0, keep_lattice=True
-        )
+        disps, _, _, _ = self.struc_H.get_disps_sets(struc0, d_tol=1.0, keep_lattice=True)
         if disps is not None:
             cell = struc0.lattice.matrix
             return self.struc_H.make_transitions(disps, lattice=cell, N_images=N_images)

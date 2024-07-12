@@ -86,9 +86,7 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05)
                 scc_iter=100,
             )
             s, eng = my.run(mode="vc-relax", step=int(steps / 2))
-            my = DFTB(
-                s, skf_dir, kresol=kresol, folder=".", scc_error=1e-4, scc_iter=100
-            )
+            my = DFTB(s, skf_dir, kresol=kresol, folder=".", scc_error=1e-4, scc_iter=100)
             s, eng = my.run(mode="vc-relax", step=int(steps / 2))
             s = my.struc
     except CalculationFailed:
@@ -609,9 +607,7 @@ class database_topology:
                             elif key == "dof":
                                 kvp[key] = xtal.get_dof()
                             elif key == "wps":
-                                kvp[key] == str(
-                                    s.wp.get_label() for s in xtal.atom_sites
-                                )
+                                kvp[key] == str(s.wp.get_label() for s in xtal.atom_sites)
                             elif key == "pearson_symbol":
                                 kvp[key] = xtal.get_Pearson_Symbol()
 
@@ -665,11 +661,9 @@ class database_topology:
             else:
                 for prop in unique_rows:
                     (natoms, spg, wps, topology) = prop
-                    if (
-                        natoms == row.natoms
-                        and spg == row.space_group_number
-                        and wps == row.wps
-                    ) and hasattr(row, "topology"):
+                    if (natoms == row.natoms and spg == row.space_group_number and wps == row.wps) and hasattr(
+                        row, "topology"
+                    ):
                         if row.topology == "aaa":
                             if row.topology_detail == topology:
                                 unique = False
@@ -684,15 +678,11 @@ class database_topology:
                             row.natoms,
                             row.space_group_number,
                             row.wps,
-                            row.topology
-                            if row.topology != "aaa"
-                            else row.topology_detail,
+                            row.topology if row.topology != "aaa" else row.topology_detail,
                         )
                     )
                 else:
-                    unique_rows.append(
-                        (row.natoms, row.space_group_number, row.wps, None)
-                    )
+                    unique_rows.append((row.natoms, row.space_group_number, row.wps, None))
             else:
                 to_delete.append(row.id)
         print(len(to_delete), "structures were deleted", to_delete)
@@ -730,9 +720,7 @@ class database_topology:
                     )
 
                 if unique and (
-                    "MAX_energy" in criteria
-                    and hasattr(row, "ff_energy")
-                    and row.ff_energy > criteria["MAX_energy"]
+                    "MAX_energy" in criteria and hasattr(row, "ff_energy") and row.ff_energy > criteria["MAX_energy"]
                 ):
                     unique = False
                     print(
@@ -785,11 +773,7 @@ class database_topology:
             if unique:
                 for prop in unique_rows:
                     (natoms, spg, wps, den, ff_energy) = prop
-                    if (
-                        natoms == row.natoms
-                        and spg == row.space_group_number
-                        and wps == row.wps
-                    ):
+                    if natoms == row.natoms and spg == row.space_group_number and wps == row.wps:
                         if hasattr(row, "ff_energy") and ff_energy is not None:
                             if abs(row.ff_energy - ff_energy) < etol:
                                 unique = False
@@ -810,17 +794,13 @@ class database_topology:
                         )
                     )
                 else:
-                    unique_rows.append(
-                        (row.natoms, row.space_group_number, row.wps, row.density, None)
-                    )
+                    unique_rows.append((row.natoms, row.space_group_number, row.wps, row.density, None))
             else:
                 to_delete.append(row.id)
         print(len(to_delete), "structures were deleted", to_delete)
         self.db.delete(to_delete)
 
-    def clean_structures_pmg(
-        self, ids=(None, None), min_id=None, dtol=5e-2, criteria=None
-    ):
+    def clean_structures_pmg(self, ids=(None, None), min_id=None, dtol=5e-2, criteria=None):
         """
         Clean up the db by removing the duplicate structures
         Here we check the follow criteria
@@ -864,9 +844,7 @@ class database_topology:
                     )
 
                 if unique and (
-                    "MAX_energy" in criteria
-                    and hasattr(row, "ff_energy")
-                    and row.ff_energy > criteria["MAX_energy"]
+                    "MAX_energy" in criteria and hasattr(row, "ff_energy") and row.ff_energy > criteria["MAX_energy"]
                 ):
                     unique = False
                     print(
@@ -1023,9 +1001,7 @@ class database_topology:
                 for i in range(ncpu):
                     id1 = i * N_cycle
                     id2 = min([id1 + N_cycle, len(ids)])
-                    args_list.append(
-                        (ids[id1:id2], xtals[id1:id2], ff, calc_folder, criteria)
-                    )
+                    args_list.append((ids[id1:id2], xtals[id1:id2], ff, calc_folder, criteria))
 
                 with ProcessPoolExecutor(max_workers=ncpu) as executor:
                     results = [executor.submit(gulp_opt_par, *p) for p in args_list]
@@ -1207,9 +1183,7 @@ class database_topology:
                     detail[:10],
                 )
                 # Unknown will be labeled as aaa
-                self.db.update(
-                    row.id, topology=name, dimension=dim, topology_detail=detail
-                )
+                self.db.update(row.id, topology=name, dimension=dim, topology_detail=detail)
             else:
                 print("Existing Topology", row.topology)
 
@@ -1288,11 +1262,7 @@ class database_topology:
             den = row.density
             dof = row.dof
             ps = row.pearson_symbol
-            sim = (
-                float(row.similarity)
-                if hasattr(row, "similarity") and row.similarity is not None
-                else None
-            )
+            sim = float(row.similarity) if hasattr(row, "similarity") and row.similarity is not None else None
             top = row.topology if hasattr(row, "topology") else None
             ff_eng = float(row.ff_energy) if hasattr(row, "ff_energy") else None
             vasp_eng = float(row.vasp_energy) if hasattr(row, "vasp_energy") else None
@@ -1411,11 +1381,7 @@ class database_topology:
                 for unique_prop in unique_props:
                     # (_id, _spg, _top, _top_detail, _ff_energy) = unique_prop
                     (_id, _dof, _top, _top_detail, _ff_energy) = unique_prop
-                    if (
-                        top == _top
-                        and top_detail == _top_detail
-                        and abs(ff_energy - _ff_energy) < etol
-                    ):
+                    if top == _top and top_detail == _top_detail and abs(ff_energy - _ff_energy) < etol:
                         if dof < _dof:
                             print("updating", row.id, top, ff_energy)
                             unique_prop = prop

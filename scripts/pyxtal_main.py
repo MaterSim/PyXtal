@@ -137,17 +137,11 @@ if __name__ == "__main__":
         numIons0 = np.array(numIons)
         rand_crystal = pyxtal(molecular=molecular)
         if dimension == 3:
-            rand_crystal.from_random(
-                3, sg, system, numIons0, factor, conventional=conventional
-            )
+            rand_crystal.from_random(3, sg, system, numIons0, factor, conventional=conventional)
         elif dimension == 2:
-            rand_crystal.from_random(
-                2, sg, system, numIons0, factor, thickness, conventional=conventional
-            )
+            rand_crystal.from_random(2, sg, system, numIons0, factor, thickness, conventional=conventional)
         elif dimension == 1:
-            rand_crystal.from_random(
-                1, sg, system, numIons0, factor, thickness, conventional=conventional
-            )
+            rand_crystal.from_random(1, sg, system, numIons0, factor, thickness, conventional=conventional)
         if dimension == 0:
             rand_crystal.from_random(0, sg, system, numIons0, factor)
         # Output a cif or xyz file

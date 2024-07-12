@@ -414,9 +414,7 @@ class TestOptLat(unittest.TestCase):
             assert sm.StructureMatcher().fit(pmg1, pmg2)
 
     def test_transform(self):
-        l = Lattice.from_para(
-            48.005, 7.320, 35.864, 90.000, 174.948, 90.000, ltype="monoclinic"
-        )
+        l = Lattice.from_para(48.005, 7.320, 35.864, 90.000, 174.948, 90.000, ltype="monoclinic")
         sites = [
             [0.0000, 0.0000, 0.1250],
             [0.2296, 0.7704, 0.5370],
@@ -976,9 +974,7 @@ class TestLattice(unittest.TestCase):
         assert abs(lat.beta - 1.495907) < 0.0001
 
     def test_optimize_multi(self):
-        l4 = Lattice.from_para(
-            71.364, 9.127, 10.075, 90.00, 20.80, 90.00, ltype="monoclinic"
-        )
+        l4 = Lattice.from_para(71.364, 9.127, 10.075, 90.00, 20.80, 90.00, ltype="monoclinic")
         lat, _ = l4.optimize_multi(7)
         assert abs(lat.beta - 1.7201) < 0.01
 
@@ -988,24 +984,16 @@ class TestLattice(unittest.TestCase):
         assert l0.a == 5
 
     def test_search_transformation(self):
-        l6 = Lattice.from_para(
-            3.454, 3.401, 5.908, 90.00, 105.80, 90.00, ltype="monoclinic"
-        )
-        l7 = Lattice.from_para(
-            6.028, 3.419, 6.028, 90.00, 146.92, 90.00, ltype="monoclinic"
-        )
+        l6 = Lattice.from_para(3.454, 3.401, 5.908, 90.00, 105.80, 90.00, ltype="monoclinic")
+        l7 = Lattice.from_para(6.028, 3.419, 6.028, 90.00, 146.92, 90.00, ltype="monoclinic")
         l7, _ = l7.optimize_multi()
         trans, diff = l7.search_transformation(l6)
         l7 = l7.transform_multi(trans)
         assert np.abs(l7.matrix - l6.matrix).sum() < 0.25
 
     def test_is_valid_lattice(self):
-        l8 = Lattice.from_para(
-            3.454, 3.401, 5.908, 90.00, 105.80, 91.00, ltype="monoclinic"
-        )
-        l9 = Lattice.from_para(
-            3.454, 3.401, 5.908, 90.00, 105.80, 90.00, ltype="monoclinic"
-        )
+        l8 = Lattice.from_para(3.454, 3.401, 5.908, 90.00, 105.80, 91.00, ltype="monoclinic")
+        l9 = Lattice.from_para(3.454, 3.401, 5.908, 90.00, 105.80, 90.00, ltype="monoclinic")
         l10 = Lattice.from_para(3.454, 3.401, 5.908, 90.00, 90.00, 90.00, ltype="cubic")
         assert not l8.is_valid_lattice()
         assert l9.is_valid_lattice()
@@ -1110,9 +1098,7 @@ class TestSubgroup(unittest.TestCase):
 
     def test_from_seed(self):
         coords = [[0, 0, 0], [0.75, 0.5, 0.75]]
-        lattice = pmg_Lattice.from_parameters(
-            a=3.84, b=3.84, c=3.84, alpha=120, beta=90, gamma=60
-        )
+        lattice = pmg_Lattice.from_parameters(a=3.84, b=3.84, c=3.84, alpha=120, beta=90, gamma=60)
         struct = Structure(lattice, ["Si", "C"], coords)
         s1 = pyxtal()
         s1.from_seed(struct)
@@ -1406,9 +1392,7 @@ class Test_operations(unittest.TestCase):
 
         def test_criteria(self):
             criteria = {"CN": {"B": 4, "N": 4}, "cutoff": 1.9, "exclude_ii": True}
-            xtals = xtal.substitute_1_2(
-                {"C": ["B", "N"]}, ratio=[1, 1], criteria=criteria
-            )
+            xtals = xtal.substitute_1_2({"C": ["B", "N"]}, ratio=[1, 1], criteria=criteria)
             assert xtals[0].check_validity(criteria)
 
 

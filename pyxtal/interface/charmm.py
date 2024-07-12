@@ -196,9 +196,7 @@ class CHARMM:
             f.write("coor stat select all end\n")
             f.write("Crystal Define @shape @a @b @c @alpha @beta @gamma\n")
             site0 = self.structure.mol_sites[0]
-            f.write(
-                f"Crystal Build cutoff 14.0 noperations {len(site0.wp.ops) - 1:d}\n"
-            )
+            f.write(f"Crystal Build cutoff 14.0 noperations {len(site0.wp.ops) - 1:d}\n")
             for i, op in enumerate(site0.wp.ops):
                 if i > 0:
                     f.write(f"({op.as_xyz_str():s})\n")
@@ -213,15 +211,11 @@ class CHARMM:
             f.write("@7 @8 @9 vfswitch !\n")
             f.write(f"mini {self.algo:s} nstep {self.steps[0]:d}\n")
             if len(self.steps) > 1:
-                f.write(
-                    f"mini {self.algo:s} lattice nstep {self.steps[1]:d} \n"
-                )
+                f.write(f"mini {self.algo:s} lattice nstep {self.steps[1]:d} \n")
             if len(self.steps) > 2:
                 f.write(f"mini {self.algo:s} nstep {self.steps[2]:d}\n")
 
-            f.write(
-                "coor conv SYMM FRAC ?xtla ?xtlb ?xtlc ?xtlalpha ?xtlbeta ?xtlgamma\n"
-            )  #
+            f.write("coor conv SYMM FRAC ?xtla ?xtlb ?xtlc ?xtlalpha ?xtlbeta ?xtlgamma\n")  #
             f.write(f"\nwrite coor pdb name {self.dump:s}\n")  #
             f.write("*CELL :  ?xtla  ?xtlb  ?xtlc ?xtlalpha ?xtlbeta ?xtlgamma\n")  #
             f.write(f"*Z = {len(site0.wp):d}\n")
@@ -651,11 +645,7 @@ class RTF:
                 {
                     "NAME": single["name"],
                     "CHARGE": single["charge"],
-                    "ATOM": [
-                        "ATOM {:6s} {:2s}{:12.6f}".format(
-                            count + l, l, float(single["charge"])
-                        )
-                    ],
+                    "ATOM": ["ATOM {:6s} {:2s}{:12.6f}".format(count + l, l, float(single["charge"]))],
                     "BOND": [],
                     "ANGL": [],
                     "DIHE": [],

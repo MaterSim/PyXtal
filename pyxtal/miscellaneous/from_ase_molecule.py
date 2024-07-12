@@ -1,13 +1,11 @@
 from copy import deepcopy
 
 from ase.build import molecule
-from pymatgen.symmetry.analyzer import PointGroupAnalyzer
-from pyxtal.operations import OperationAnalyzer
 from pymatgen.core import Molecule
+from pymatgen.symmetry.analyzer import PointGroupAnalyzer
 
-from pyxtal.molecule import (
-    orientation_in_wyckoff_position
-)
+from pyxtal.molecule import orientation_in_wyckoff_position
+from pyxtal.operations import OperationAnalyzer
 
 
 def get_ase_mol(molname):

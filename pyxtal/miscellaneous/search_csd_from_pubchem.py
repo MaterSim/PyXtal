@@ -53,9 +53,7 @@ def check_for_ccdc_structures(cid):
         response = urllib.request.urlopen(url)
         data = json.loads(response.read())
         if len(data["Record"]["Section"][0]["Section"]) == 3:
-            infos = data["Record"]["Section"][0]["Section"][2]["Section"][0][
-                "Information"
-            ]
+            infos = data["Record"]["Section"][0]["Section"][2]["Section"][0]["Information"]
             for info in infos:
                 csd_codes.append(info["Value"]["StringWithMarkup"][0]["String"])
     except:

@@ -126,7 +126,9 @@ def has_non_aromatic_ring(smiles):
     ring_info = mol.GetRingInfo()
 
     # Check each ring to see if it is aromatic; return True if a non-aromatic ring is found
-    return any(not all(mol.GetBondWithIdx(idx).GetIsAromatic() for idx in ring) for ring in ring_info.BondRings())  # No non-aromatic rings found
+    return any(
+        not all(mol.GetBondWithIdx(idx).GetIsAromatic() for idx in ring) for ring in ring_info.BondRings()
+    )  # No non-aromatic rings found
 
 
 def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5):
@@ -710,9 +712,7 @@ class pyxtal_molecule:
                     coefs[i1, i2, :] = [0, 3.65, 0]
 
                 elif [n1, n2] in [[8, 8]]:  # O-O
-                    if (
-                        False
-                    ):  # labels1[i1] == 'O_alcohol' and labels2[i2] == 'O_alcohol':
+                    if False:  # labels1[i1] == 'O_alcohol' and labels2[i2] == 'O_alcohol':
                         coefs[i1, i2, :] = [3607800, 5.00, 3372.0]
                     else:
                         coefs[i1, i2, :] = [46680, 3.74, 319.0]
@@ -1320,9 +1320,7 @@ class pyxtal_molecule:
                 for j, op_w in enumerate(symm_w):
                     if opa_w[j].axis is not None:
                         dot = np.dot(opa_w[i].axis, opa_w[j].axis)
-                        if (not np.isclose(dot, 1, rtol=rtol)) and (
-                            not np.isclose(dot, -1, rtol=rtol)
-                        ):
+                        if (not np.isclose(dot, 1, rtol=rtol)) and (not np.isclose(dot, -1, rtol=rtol)):
                             constraint2 = opa_w[j]
                             break
                 break
@@ -1449,12 +1447,8 @@ class pyxtal_molecule:
                         # m2 = o2.get_matrix(angle=0)
                         m1 = o1.matrix
                         m2 = o2.matrix
-                        new_op = SymmOp.from_rotation_and_translation(
-                            np.dot(m2, np.linalg.inv(m1)), [0, 0, 0]
-                        )
-                        P = SymmOp.from_rotation_and_translation(
-                            np.linalg.inv(m1), [0, 0, 0]
-                        )
+                        new_op = SymmOp.from_rotation_and_translation(np.dot(m2, np.linalg.inv(m1)), [0, 0, 0])
+                        P = SymmOp.from_rotation_and_translation(np.linalg.inv(m1), [0, 0, 0])
                         old_op = P * new_op * P.inverse
                         if self.pga.is_valid_op(old_op):
                             list_i.remove(j)

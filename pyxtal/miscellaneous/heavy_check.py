@@ -53,9 +53,7 @@ for i, name in enumerate(glob("pyxtal/miscellaneous/cifs/*.cif")):
             if valid:
                 # print(G, H)
                 if H > 2 and H != G and H in s.group.get_max_subgroup_numbers():
-                    struc_h = s.subgroup_once(
-                        eps=0.05, H=H, group_type=gtype, mut_lat=False
-                    )
+                    struc_h = s.subgroup_once(eps=0.05, H=H, group_type=gtype, mut_lat=False)
                     try:
                         sup = supergroups(struc_h, G=G, d_tol=0.3, max_per_G=500)
                         if sup.strucs is not None:
@@ -66,9 +64,7 @@ for i, name in enumerate(glob("pyxtal/miscellaneous/cifs/*.cif")):
                                     match = True
                                     break
                             if not match:
-                                print(
-                                    "Cannot recover the original structure", G, "<-", H
-                                )
+                                print("Cannot recover the original structure", G, "<-", H)
                         else:
                             print("Error in supergroup", G, "<-", H)
                     except RuntimeError:

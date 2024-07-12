@@ -323,9 +323,7 @@ class spherical_image:
         N: number of grid points on the unit sphere
     """
 
-    def __init__(
-        self, xtal, model="molecule", max_d=10, factor=2.2, lmax=13, sigma=0.1, N=10000
-    ):
+    def __init__(self, xtal, model="molecule", max_d=10, factor=2.2, lmax=13, sigma=0.1, N=10000):
         for i in range(len(xtal.mol_sites)):
             try:
                 numbers = xtal.mol_sites[i].molecule.mol.atomic_numbers
@@ -400,9 +398,7 @@ class spherical_image:
         """
         pts = []
         for i, _site in enumerate(self.xtal.mol_sites):
-            engs, pairs, dists = self.xtal.get_neighboring_dists(
-                i, factor=self.factor, max_d=self.max_d
-            )
+            engs, pairs, dists = self.xtal.get_neighboring_dists(i, factor=self.factor, max_d=self.max_d)
             pt = np.zeros([len(pairs), 3])
             pt[:, :2] = xyz2sph(pairs)
             pt[:, 2] = engs / np.sum(engs)
@@ -476,9 +472,7 @@ class spherical_image:
         """
         Plot the real molecular contacts in the crystal
         """
-        return self.xtal.show_mol_cluster(
-            id, factor=self.factor, max_d=self.max_d, ignore_E=False, plot=False
-        )
+        return self.xtal.show_mol_cluster(id, factor=self.factor, max_d=self.max_d, ignore_E=False, plot=False)
 
     def align(self, M=6):
         """

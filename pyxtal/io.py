@@ -32,9 +32,7 @@ def in_merged_coords(wp, pt, pts, cell):
     return False
 
 
-def write_cif(
-    struc, filename=None, header="", permission="w", sym_num=None, style="mp"
-):
+def write_cif(struc, filename=None, header="", permission="w", sym_num=None, style="mp"):
     """
     Export the structure in cif format
     The default setting for _atom_site follows the materials project cif
@@ -126,9 +124,7 @@ def write_cif(
                     for coord, specie in zip(coord0s, specie0s):
                         _, wp, _ = G1.merge(coord, struc.lattice.matrix, 0.05)
                         if len(wp) > mul:
-                            if not in_merged_coords(
-                                G1, [coord, specie], merges, struc.lattice.matrix
-                            ):
+                            if not in_merged_coords(G1, [coord, specie], merges, struc.lattice.matrix):
                                 # print("General Position", specie, coord)
                                 coords.append(coord)
                                 species.append(specie)
@@ -271,9 +267,7 @@ class structure_from_ext:
         self.group = group
         self.wyc = group[0]
 
-        molecules = search_molecules_in_crystal(
-            sym_struc, self.tol, ignore_HH=ignore_HH
-        )
+        molecules = search_molecules_in_crystal(sym_struc, self.tol, ignore_HH=ignore_HH)
 
         self.pmg_struc = sym_struc
         matrix = sym_struc.lattice.matrix

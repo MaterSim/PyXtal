@@ -104,9 +104,7 @@ def verify_distances(coordinates, species, lattice, factor=1.0, PBC=None):
                 specie2 = species[j]
                 diff = np.array(c2) - np.array(c1)
                 d_min = distance(diff, lattice, PBC=PBC)
-                radius = (
-                    Element(specie1).covalent_radius + Element(specie2).covalent_radius
-                )
+                radius = Element(specie1).covalent_radius + Element(specie2).covalent_radius
                 tol = factor * 0.5 * radius
                 if d_min < tol:
                     return False
@@ -142,7 +140,7 @@ def check_images(
     # If no PBC, there are no images to check
     if PBC is None:
         PBC = [1, 1, 1]
-    if [0, 0, 0] == PBC:
+    if PBC == [0, 0, 0]:
         return True
     # Create image coords from given coords and PBC
     coords = np.array(coords)
@@ -195,9 +193,7 @@ def distance(xyz, lattice, PBC=None):
     return np.min(np.linalg.norm(matrix, axis=1))
 
 
-def distance_matrix(
-    pts1, pts2, lattice, PBC=None, single=False, metric="euclidean"
-):
+def distance_matrix(pts1, pts2, lattice, PBC=None, single=False, metric="euclidean"):
     """
     Returns the distances between two sets of fractional coordinates.
     Takes into account the lattice metric and periodic boundary conditions.
@@ -218,7 +214,7 @@ def distance_matrix(
     """
     if PBC is None:
         PBC = [1, 1, 1]
-    if [0, 0, 0] != PBC:
+    if PBC != [0, 0, 0]:
         l1 = filtered_coords(pts1, PBC=PBC)
         l2 = filtered_coords(pts2, PBC=PBC)
         l1 = np.dot(l1, lattice)
@@ -341,6 +337,7 @@ def filtered_coords_euclidean(coords, PBC=None):
 
     if PBC is None:
         PBC = [1, 1, 1]
+
     def filter_vector_euclidean(vector):
         for i, a in enumerate(PBC):
             if a:
@@ -772,12 +769,8 @@ class OperationAnalyzer(SymmOp):
 
                     self.axis *= -1
                     self.type = "rotoinversion"
-                    self.order = OperationAnalyzer.get_order(
-                        self.angle, rotoinversion=True
-                    )
-                    self.rotation_order = OperationAnalyzer.get_order(
-                        self.angle, rotoinversion=False
-                    )
+                    self.order = OperationAnalyzer.get_order(self.angle, rotoinversion=True)
+                    self.rotation_order = OperationAnalyzer.get_order(self.angle, rotoinversion=False)
                     if self.parse_trans:
                         self.symbol = self.parse_glide_symmetry()
             elif np.linalg.det(self.m) == 0:
@@ -822,40 +815,22 @@ class OperationAnalyzer(SymmOp):
                     return "4_2"
                 elif abs(self.angle / trans - 2 * np.pi) < tol:
                     return "4_1"
-                elif (
-                    abs(self.angle / trans - np.pi) < tol
-                    or abs(self.angle / trans - 3 * np.pi) < tol
-                ):
+                elif abs(self.angle / trans - np.pi) < tol or abs(self.angle / trans - 3 * np.pi) < tol:
                     return "4_2"
-                elif (
-                    abs(self.angle / trans - 2 / 3 * np.pi) < tol
-                    or abs(self.angle / trans - 6 * np.pi) < tol
-                ):
+                elif abs(self.angle / trans - 2 / 3 * np.pi) < tol or abs(self.angle / trans - 6 * np.pi) < tol:
                     return "4_3"
             elif self.order == 6:
                 if abs(trans) < tol:  #
                     return "6_3"
                 elif abs(self.angle / trans - 2 * np.pi) < tol:
                     return "6_1"
-                elif (
-                    abs(self.angle / trans - np.pi) < tol
-                    or abs(self.angle / trans - 5 / 2 * np.pi) < tol
-                ):
+                elif abs(self.angle / trans - np.pi) < tol or abs(self.angle / trans - 5 / 2 * np.pi) < tol:
                     return "6_2"
-                elif (
-                    abs(self.angle / trans - 2 / 3 * np.pi) < tol
-                    or abs(self.angle / trans - 10 / 3 * np.pi) < tol
-                ):
+                elif abs(self.angle / trans - 2 / 3 * np.pi) < tol or abs(self.angle / trans - 10 / 3 * np.pi) < tol:
                     return "6_3"
-                elif (
-                    abs(self.angle / trans - 1 / 2 * np.pi) < tol
-                    or abs(self.angle / trans - 5 * np.pi) < tol
-                ):
+                elif abs(self.angle / trans - 1 / 2 * np.pi) < tol or abs(self.angle / trans - 5 * np.pi) < tol:
                     return "6_4"
-                elif (
-                    abs(self.angle / trans - 2 / 5 * np.pi) < tol
-                    or abs(self.angle / trans - 10 * np.pi) < tol
-                ):
+                elif abs(self.angle / trans - 2 / 5 * np.pi) < tol or abs(self.angle / trans - 10 * np.pi) < tol:
                     return "6_5"
 
         print("Cannot assign symbol", self.angle, trans)
@@ -896,9 +871,7 @@ class OperationAnalyzer(SymmOp):
                 ):
                     return "n"
                 elif np.linalg.norm(vec - np.array([1 / 2, 1 / 2, 1 / 2])) < tol:
-                    if np.isclose(
-                        abs(np.dot(self.axis, np.array([0, -0.7071, 0.7071]))), 1
-                    ) or np.isclose(
+                    if np.isclose(abs(np.dot(self.axis, np.array([0, -0.7071, 0.7071]))), 1) or np.isclose(
                         abs(np.dot(self.axis, np.array([-0.7071, 0, 0.7071]))), 1
                     ):
                         return "n"

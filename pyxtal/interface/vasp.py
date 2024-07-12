@@ -136,9 +136,7 @@ class VASP:
         myrun = vasprun(path)
         self.gap = myrun.values["gap"]
 
-    def run(
-        self, setup=None, pstress=0, level=0, clean=True, read_gap=False, walltime=None
-    ):
+    def run(self, setup=None, pstress=0, level=0, clean=True, read_gap=False, walltime=None):
         if walltime is not None:
             os.environ["VASP_COMMAND"] = "timeout " + max_time + " " + self.cmd
         else:
@@ -276,9 +274,7 @@ def optimize(
         levels = [0, 2, 3]
     time_total = 0
     for _i, level in enumerate(levels):
-        struc, eng, time, error = single_optimize(
-            struc, level, pstress, setup, path, clean, cmd, walltime
-        )
+        struc, eng, time, error = single_optimize(struc, level, pstress, setup, path, clean, cmd, walltime)
 
         time_total += time
         # print(eng, time, time_total, '++++++++++++++++++++++++++++++')
@@ -333,9 +329,7 @@ if __name__ == "__main__":
     print("Energy:", calc.energy)
     print("Forces", calc.forces)
 
-    struc, eng, time, _ = optimize(
-        struc, path="tmp", levels=[0, 1, 2], cmd=cmd, walltime="30s"
-    )
+    struc, eng, time, _ = optimize(struc, path="tmp", levels=[0, 1, 2], cmd=cmd, walltime="30s")
     print(struc)
     print("Energy:", eng)
     print("Time:", time)

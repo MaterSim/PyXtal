@@ -204,9 +204,7 @@ def DFTB_relax(
     if type(kresol) != list:
         kpts = Kgrid(struc, kresol)
     atom_types = set(struc.get_chemical_symbols())
-    kwargs = make_Hamiltonian(
-        skf_dir, atom_types, disp, kpts, scc_error=scc_error, use_omp=use_omp
-    )
+    kwargs = make_Hamiltonian(skf_dir, atom_types, disp, kpts, scc_error=scc_error, use_omp=use_omp)
 
     calc = Dftb(
         label="test",
@@ -321,9 +319,7 @@ class DFTB:
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
 
-    def get_calculator(
-        self, mode, step=500, ftol=1e-3, FixAngles=False, eVperA=True, md_params=None
-    ):
+    def get_calculator(self, mode, step=500, ftol=1e-3, FixAngles=False, eVperA=True, md_params=None):
         """
         get the ase style calculator
 
@@ -419,9 +415,7 @@ class DFTB:
         cwd = os.getcwd()
         os.chdir(self.folder)
 
-        self.calc = self.get_calculator(
-            mode, step, ftol, FixAngles, md_params=md_params
-        )
+        self.calc = self.get_calculator(mode, step, ftol, FixAngles, md_params=md_params)
         self.struc.set_calculator(self.calc)
         # self.struc.write('geo_o.gen', format='dftb')
         # execute the simulation
@@ -541,9 +535,7 @@ class Dftb(FileIOCalculator):
         self.atoms_input = None
         self.outfilename = "dftb.out"
 
-        FileIOCalculator.__init__(
-            self, restart, ignore_bad_restart_file, label, atoms, **kwargs
-        )
+        FileIOCalculator.__init__(self, restart, ignore_bad_restart_file, label, atoms, **kwargs)
 
         # kpoint stuff by ase
         self.kpts = kpts
@@ -629,21 +621,11 @@ class Dftb(FileIOCalculator):
                 outfile.write(3 * (1 + my_backsclash) * myspace + "} \n")
             outfile.write(3 * current_depth * myspace)
             if key.endswith("_") and len(value) > 0:
-                outfile.write(
-                    key.rstrip("_").rsplit("_")[-1] + " = " + str(value) + "{ \n"
-                )
-            elif (
-                key.endswith("_") and (len(value) == 0) and current_depth == 0
-            ):  # E.g. 'Options {'
-                outfile.write(
-                    key.rstrip("_").rsplit("_")[-1] + " " + str(value) + "{ \n"
-                )
-            elif (
-                key.endswith("_") and (len(value) == 0) and current_depth > 0
-            ):  # E.g. 'Hamiltonian_Max... = {'
-                outfile.write(
-                    key.rstrip("_").rsplit("_")[-1] + " = " + str(value) + "{ \n"
-                )
+                outfile.write(key.rstrip("_").rsplit("_")[-1] + " = " + str(value) + "{ \n")
+            elif key.endswith("_") and (len(value) == 0) and current_depth == 0:  # E.g. 'Options {'
+                outfile.write(key.rstrip("_").rsplit("_")[-1] + " " + str(value) + "{ \n")
+            elif key.endswith("_") and (len(value) == 0) and current_depth > 0:  # E.g. 'Hamiltonian_Max... = {'
+                outfile.write(key.rstrip("_").rsplit("_")[-1] + " = " + str(value) + "{ \n")
             elif key.count("_empty") == 1:
                 outfile.write(str(value) + " \n")
             else:
@@ -758,7 +740,6 @@ class Dftb(FileIOCalculator):
             gradients.append([float(word[k]) for k in range(3)])
         return np.array(gradients) * Hartree / Bohr
 
-
     def read_eigenvalues(self):
         """Read Eigenvalues from dftb output file (results.tag).
         Unfortunately, the order seems to be scrambled."""
@@ -780,18 +761,13 @@ class Dftb(FileIOCalculator):
         index_eig_end = index_eig_begin + nrow
         ncol_last = len(self.lines[index_eig_end - 1].split())
         if ncol - ncol_last > 0:
-            self.lines[index_eig_end - 1] = self.lines[index_eig_end - 1].replace(
-                "\n", ""
-            )
+            self.lines[index_eig_end - 1] = self.lines[index_eig_end - 1].replace("\n", "")
             self.lines[index_eig_end - 1] += " 0.0 " * (ncol - ncol_last)
             self.lines[index_eig_end - 1] += "\n"
         eig = np.loadtxt(self.lines[index_eig_begin:index_eig_end]).flatten()
         eig *= Hartree
         N = nkpt * nband
-        return [
-            eig[i * N : (i + 1) * N].reshape((nkpt, nband)) for i in range(nspin)
-        ]
-
+        return [eig[i * N : (i + 1) * N].reshape((nkpt, nband)) for i in range(nspin)]
 
     def read_fermi_levels(self):
         """Read Fermi level(s) from dftb output file (results.tag)."""

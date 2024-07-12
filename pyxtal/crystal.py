@@ -357,9 +357,7 @@ class random_crystal:
                         # print('good', pt, tol, len(wp.short_distances(pt, cell, tol)))
                 else:
                     # generate wp
-                    wp = choose_wyckoff(
-                        self.group, numIon - numIon_added, site, self.dim
-                    )
+                    wp = choose_wyckoff(self.group, numIon - numIon_added, site, self.dim)
                     if wp is not False:
                         # print(wp.letter)
                         # Generate a list of coords from ops
@@ -368,11 +366,7 @@ class random_crystal:
                 # print('good pt', pt)
                 if wp is not False:
                     # For pure planar structure
-                    if (
-                        self.dim == 2
-                        and self.thickness is not None
-                        and self.thickness < 0.1
-                    ):
+                    if self.dim == 2 and self.thickness is not None and self.thickness < 0.1:
                         pt[-1] = 0.5
                     new_site = atom_site(wp, pt, specie)
 

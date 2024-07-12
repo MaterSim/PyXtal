@@ -81,9 +81,7 @@ def ccdcid_scalper(cids):
         cid = str(cid)
         start = "https://pubchem.ncbi.nlm.nih.gov/"
         driver_location = sys.argv[1]
-        driver = webdriver.chrome.webdriver.WebDriver(
-            executable_path=str(driver_location)
-        )
+        driver = webdriver.chrome.webdriver.WebDriver(executable_path=str(driver_location))
         driver.get(start)
         time.sleep(2)
         elem = driver.find_element_by_css_selector("input")

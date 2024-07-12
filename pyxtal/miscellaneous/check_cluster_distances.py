@@ -3,13 +3,9 @@ from pyxtal.crystal import *
 
 def check_cluster_distances(cluster, tol):
     try:
-        dm = distance_matrix(
-            cluster.cart_coords, cluster.cart_coords, Euclidean_lattice, PBC=[0, 0, 0]
-        )
+        dm = distance_matrix(cluster.cart_coords, cluster.cart_coords, Euclidean_lattice, PBC=[0, 0, 0])
     except:
-        dm = distance_matrix(
-            cluster.coordinates, cluster.coordinates, Euclidean_lattice, PBC=[0, 0, 0]
-        )
+        dm = distance_matrix(cluster.coordinates, cluster.coordinates, Euclidean_lattice, PBC=[0, 0, 0])
     for i, x in enumerate(dm):
         for j, y in enumerate(x):
             if i != j and y < tol:

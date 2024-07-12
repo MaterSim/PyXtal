@@ -84,9 +84,7 @@ class GlobalOptimize:
         self.molecules = molecules
         self.block = block
         self.num_block = num_block
-        self.composition = (
-            [1] * len(self.smiles) if composition is None else composition
-        )
+        self.composition = [1] * len(self.smiles) if composition is None else composition
         self.N_torsion = 0
         for smi, comp in zip(self.smiles, self.composition):
             self.N_torsion += len(find_rotor_from_smile(smi)) * int(max([comp, 1]))
@@ -118,9 +116,7 @@ class GlobalOptimize:
             self.ff_style = ff_style
             self.ff_parameters = ff_parameters
             self.reference_file = reference_file
-            self.parameters = ForceFieldParameters(
-                self.smiles, style=ff_style, f_coef=1.0, s_coef=1.0, ncpu=self.ncpu
-            )
+            self.parameters = ForceFieldParameters(self.smiles, style=ff_style, f_coef=1.0, s_coef=1.0, ncpu=self.ncpu)
 
             # Preload two set for FF parameters 1 for opt and 2 for refinement
             if type(self.ff_parameters) == list:
@@ -147,9 +143,7 @@ class GlobalOptimize:
                         ff_style,
                     )
                     params0 = self.parameters.params_init.copy()
-                    self.parameters.export_parameters(
-                        self.wdir + "/" + self.ff_parameters, params0
-                    )
+                    self.parameters.export_parameters(self.wdir + "/" + self.ff_parameters, params0)
 
                 self.prepare_chm_info(params0)
 
@@ -236,9 +230,7 @@ class GlobalOptimize:
             ref_dics = self.parameters.load_references(self.reference_file)
             if self.ref_criteria is not None:
                 ref_dics = self.parameters.clean_ref_dics(ref_dics, self.ref_criteria)
-                ref_dics = self.parameters.cut_references_by_error(
-                    ref_dics, params_opt, dE=dE, FMSE=FMSE
-                )
+                ref_dics = self.parameters.cut_references_by_error(ref_dics, params_opt, dE=dE, FMSE=FMSE)
             # self.parameters.generate_report(ref_dics, params_opt)
         else:
             ref_dics = []
@@ -248,18 +240,14 @@ class GlobalOptimize:
         t0 = time()
         if len(ref_dics) > 100:  # no fit if ref_dics is large
             # Here we find the lowest engs and select only low-E struc
-            ref_engs = [
-                ref_dic["energy"] / ref_dic["replicate"] for ref_dic in ref_dics
-            ]
+            ref_engs = [ref_dic["energy"] / ref_dic["replicate"] for ref_dic in ref_dics]
             ref_e2 = np.array(ref_engs).min()
             print("Min Reference Energy", ref_e2)
 
             if len(err_dict) == 0:
                 # update the offset if necessary
                 _, params_opt = self.parameters.optimize_offset(ref_dics, params_opt)
-                results = self.parameters.evaluate_multi_references(
-                    ref_dics, params_opt, 1000, 1000
-                )
+                results = self.parameters.evaluate_multi_references(ref_dics, params_opt, 1000, 1000)
                 (ff_values, ref_values, rmse_values, r2_values) = results
                 err_dict = {"rmse_values": rmse_values}
 
@@ -272,15 +260,11 @@ class GlobalOptimize:
             rf_engs, rf_fors, rf_strs = [], [], []
             for numMol, xtal in zip(numMols, xtals):
                 struc = reset_lammps_cell(xtal)
-                lmp_struc, lmp_dat = self.parameters.get_lmp_input_from_structure(
-                    struc, numMol, set_template=False
-                )
+                lmp_struc, lmp_dat = self.parameters.get_lmp_input_from_structure(struc, numMol, set_template=False)
                 replicate = len(lmp_struc.atoms) / self.parameters.natoms_per_unit
 
                 try:
-                    e1, f1, s1 = get_lmp_efs(
-                        lmp_struc, lmp_in, lmp_dat
-                    )  # ; print('Debug KONTIQ', struc, e1)
+                    e1, f1, s1 = get_lmp_efs(lmp_struc, lmp_in, lmp_dat)  # ; print('Debug KONTIQ', struc, e1)
                 except:
                     e1 = self.E_max
 
@@ -380,9 +364,7 @@ class GlobalOptimize:
                 # import sys; sys.exit()
 
         ref_dics.extend(_ref_dics)
-        print(
-            f"Add {len(_ref_dics):d} references in {(time() - t0) / 60:.2f} min"
-        )
+        print(f"Add {len(_ref_dics):d} references in {(time() - t0) / 60:.2f} min")
         self.parameters.export_references(ref_dics, self.reference_file)
 
         # Optimize ff parameters if we get enough number of configurations
@@ -406,17 +388,13 @@ class GlobalOptimize:
                     ref_dics, opt_dict, params_opt, obj="R2", t0=0.1, steps=25
                 )
 
-                params_opt = self.parameters.set_sub_parameters(
-                    values, terms, params_opt
-                )
+                params_opt = self.parameters.set_sub_parameters(values, terms, params_opt)
                 opt_dict = self.parameters.get_opt_dict(terms, None, params_opt)
                 x, fun, values, it = self.parameters.optimize_local(
                     ref_dics, opt_dict, params_opt, obj="R2", steps=steps
                 )
 
-                params_opt = self.parameters.set_sub_parameters(
-                    values, terms, params_opt
-                )
+                params_opt = self.parameters.set_sub_parameters(values, terms, params_opt)
                 _, params_opt = self.parameters.optimize_offset(ref_dics, params_opt)
 
                 # To add Early termination
@@ -434,9 +412,7 @@ class GlobalOptimize:
             gen_prefix = "gen_" + str(gen)
 
         performance_fig = f"FF_performance_{gen_prefix:s}.png"
-        errs = self.parameters.plot_ff_results(
-            performance_fig, ref_dics, [params_opt], labels=gen_prefix
-        )
+        errs = self.parameters.plot_ff_results(performance_fig, ref_dics, [params_opt], labels=gen_prefix)
 
         param_fig = f"parameters_{gen_prefix:s}.png"
         self.parameters.plot_ff_parameters(param_fig, [params_opt])
@@ -588,9 +564,7 @@ class GlobalOptimize:
                         count = 0
                         for j in range(1, len(rep)):
                             if len(rep[j]) > N_id:  # for Cl-
-                                tor2[count : count + len(ref[j]) - N_id - 1] = ref[j][
-                                    N_id:-1
-                                ]
+                                tor2[count : count + len(ref[j]) - N_id - 1] = ref[j][N_id:-1]
                                 count += len(ref[j]) - N_id
 
                         diff2 = np.sum((tor1 - tor2) ** 2) / w2**2
@@ -638,13 +612,9 @@ class GlobalOptimize:
                 new = True
                 for ref in new_reps:
                     eng2 = ref[-1]
-                    pmg_s2 = (
-                        representation(rep[:-1], self.smiles).to_pyxtal().to_pymatgen()
-                    )
+                    pmg_s2 = representation(rep[:-1], self.smiles).to_pyxtal().to_pymatgen()
                     pmg_s2.remove_species("H")
-                    if abs(eng1 - eng2) < 1e-2 and sm.StructureMatcher().fit(
-                        pmg_s1, pmg_s2
-                    ):
+                    if abs(eng1 - eng2) < 1e-2 and sm.StructureMatcher().fit(pmg_s1, pmg_s2):
                         new = False
                         break
                 if new:

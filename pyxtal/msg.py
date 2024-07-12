@@ -30,7 +30,6 @@ class Error(Exception):
     """Base class for exceptions in this module."""
 
 
-
 class ConformerError(Error):
     """Exception raised for errors in the Compabality.
 

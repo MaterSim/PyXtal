@@ -23,9 +23,7 @@ def get_neighbors(struc, i, rcut):
     center = struc.cart_coords[i]
     struc.frac_coords[i]
     fcoords = struc.frac_coords
-    r, dists, inds, images = Lattice(lat).get_points_in_sphere(
-        fcoords, center=center, r=rcut, zip_results=False
-    )
+    r, dists, inds, images = Lattice(lat).get_points_in_sphere(fcoords, center=center, r=rcut, zip_results=False)
     ids = np.where(dists > 0.1)
     r = r[ids]
     r = np.dot(r, lat) - center
@@ -67,9 +65,7 @@ class LJ:
             r6 = np.power(r2, 3)
             r12 = np.power(r6, 2)
             energy += np.sum(4.0 * self.epsilon * (sigma12 / r12 - sigma6 / r6))
-            f = (24 * self.epsilon * (2.0 * sigma12 / r12 - sigma6 / r6) / r2)[
-                :, np.newaxis
-            ] * r
+            f = (24 * self.epsilon * (2.0 * sigma12 / r12 - sigma6 / r6) / r2)[:, np.newaxis] * r
             force[i] = f.sum(axis=0)
             stress += np.dot(f.T, r)
 
@@ -130,17 +126,13 @@ class FIRE:
         """
         initilaize the positions, energy, force for the 1st step
         """
-        self.energy, self.enthalpy, self.force, self.stress = self.model.calc(
-            self.struc
-        )
+        self.energy, self.enthalpy, self.force, self.stress = self.model.calc(self.struc)
         self.fmax = np.max(np.abs(np.vstack((self.stress, self.force)).flatten()))
         self.v = np.zeros((len(self.force) + 3, 3))
         # print('Initial Energy: {:12.4f}'.format(self.energy))
 
     def update(self, freq=50):
-        self.energy, self.enthalpy, self.force, self.stress = self.model.calc(
-            self.struc
-        )
+        self.energy, self.enthalpy, self.force, self.stress = self.model.calc(self.struc)
         self.fmax = np.max(np.abs(np.vstack((self.stress, self.force)).flatten()))
         if self.nsteps % freq == 0:
             logging.debug(
@@ -153,9 +145,7 @@ class FIRE:
 
         vf = np.vdot(f, self.v)
         if vf > 0.0:
-            self.v = (1.0 - self.a) * self.v + self.a * f / np.sqrt(
-                np.vdot(f, f)
-            ) * np.sqrt(np.vdot(self.v, self.v))
+            self.v = (1.0 - self.a) * self.v + self.a * f / np.sqrt(np.vdot(f, f)) * np.sqrt(np.vdot(self.v, self.v))
             if self.Nsteps > self.Nmin:
                 self.dt = min(self.dt * self.finc, self.dtmax)
                 self.a *= self.fa
@@ -191,9 +181,7 @@ class FIRE:
         # print(self.v)
         self.struc.lattice_matrix = pos[:3, :] - dr[:3, :]
         self.struc.cart_coords = pos[3:, :] - dr[3:, :]
-        self.struc.frac_coords = np.dot(
-            self.struc.cart_coords, np.linalg.inv(self.struc.lattice_matrix)
-        )
+        self.struc.frac_coords = np.dot(self.struc.cart_coords, np.linalg.inv(self.struc.lattice_matrix))
         self.volume = np.linalg.det(self.struc.lattice_matrix)
 
         # sg = get_symmetry_dataset((pos[:3, :], self.struc.frac_coords, [6]*4), symprec=0.1)['number']
@@ -243,9 +231,7 @@ class FIRE:
             wp_coords0 = apply_ops(gen_coord, ws.wp.generators_m)
             # Calculate the PBC translation applied to each point
             translations = original_coords - wp_coords0
-            frac_translations = np.dot(
-                translations, np.linalg.inv(self.struc.lattice_matrix)
-            )
+            frac_translations = np.dot(translations, np.linalg.inv(self.struc.lattice_matrix))
             frac_translations = np.round(frac_translations)
             cart_translations = np.dot(frac_translations, self.struc.lattice_matrix)
             # Subtract translations from original coords
@@ -256,9 +242,7 @@ class FIRE:
             # Find the average of the generating points
             average_point = np.sum(generating_points, axis=0) / ws.multiplicity
             # Convert to fractional coordinates
-            average_point = np.dot(
-                average_point, np.linalg.inv(self.struc.lattice_matrix)
-            )
+            average_point = np.dot(average_point, np.linalg.inv(self.struc.lattice_matrix))
             # Apply the WP operations to the averaged generating point
             wp_coords = apply_ops(average_point, ws.wp)
             # Convert back to Cartesian coordintes
@@ -284,9 +268,7 @@ class FIRE:
             # Find the average of the generating points
             average_point = np.sum(generating_points, axis=0) / ws.multiplicity
             # Convert to fractional coordinates
-            average_point = np.dot(
-                average_point, np.linalg.inv(self.struc.lattice_matrix)
-            )
+            average_point = np.dot(average_point, np.linalg.inv(self.struc.lattice_matrix))
             # For forces, we do not apply translational WP operations, so we truncate the ops
             matrices = np.array([op.affine_matrix[:3, :3] for op in ws.wp])
             # Apply the truncated WP operations to the averaged generating point
@@ -341,20 +323,14 @@ for _i in range(10):
         struc = (crystal1.lattice_matrix, crystal1.frac_coords, [6] * 4)
         eng, enth, force, stress = test.calc(crystal1)
         sg = get_symmetry_dataset(struc)["number"]
-        print(
-            f"\nBefore relaxation Space group:            {sg:4d}   Energy: {eng:12.4}  Enthalpy: {enth:12.4}"
-        )
+        print(f"\nBefore relaxation Space group:            {sg:4d}   Energy: {eng:12.4}  Enthalpy: {enth:12.4}")
 
-        dyn1 = FIRE(
-            crystal1, test, f_tol=1e-5, dt=0.2, maxmove=0.2
-        )  # , symmetrize=True)
+        dyn1 = FIRE(crystal1, test, f_tol=1e-5, dt=0.2, maxmove=0.2)  # , symmetrize=True)
         dyn1.run(500)
         eng, enth, force, stress = test.calc(crystal1)
         struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6] * 4)
         sg = get_symmetry_dataset(struc, symprec=0.1)["number"]
-        print(
-            f"After relaxation without symm Space group: {sg:4d}  Energy: {eng:12.4}  Enthalpy: {enth:12.4}"
-        )
+        print(f"After relaxation without symm Space group: {sg:4d}  Energy: {eng:12.4}  Enthalpy: {enth:12.4}")
 
         dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2, symmetrize=True)
         dyn1.run(500)
@@ -363,9 +339,7 @@ for _i in range(10):
         sg = get_symmetry_dataset(struc, symprec=0.02)["number"]
         if sg is None:
             sg = 0
-        print(
-            f"After relaxation with symm Space group:    {sg:4d}  Energy: {eng:12.4}  Enthalpy: {enth:12.4}"
-        )
+        print(f"After relaxation with symm Space group:    {sg:4d}  Energy: {eng:12.4}  Enthalpy: {enth:12.4}")
         # dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2)
         # struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6]*4)
         # sg =  get_symmetry_dataset(struc, symprec=0.02)['number']

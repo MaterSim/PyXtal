@@ -90,7 +90,7 @@ class Lattice:
             norm_matrix = np.ones([3, 3])
 
         elif self.ltype == "monoclinic":
-            if [1, 1, 1] == self.PBC:
+            if self.PBC == [1, 1, 1]:
                 norm_matrix = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 1]])
             else:
                 if self.unique_axis == "a":
@@ -296,9 +296,7 @@ class Lattice:
         trans_good = []
         tols_good = []
         for id in range(len(tols)):
-            if (tols[id, 0] < d_tol or tols[id, 1] < f_tol) and tols[
-                id, 2
-            ] < self.a_tol:
+            if (tols[id, 0] < d_tol or tols[id, 1] < f_tol) and tols[id, 2] < self.a_tol:
                 if switchs[id]:
                     trans[id].extend([[[1, 0, 0], [0, -1, 0], [0, 0, -1]]])
                 # print(tols[id], len(trans[id]))
@@ -359,7 +357,7 @@ class Lattice:
         # print(id, switchs[id])
         if abs(rms[ids[0]] - rms[ids[1]]) < 1e-3 and switchs[ids[0]] and not switchs[ids[1]]:
             id = ids[1]
-                # print("change id 1", id)
+            # print("change id 1", id)
         if id != 0 and abs(rms[0] - rms[id]) < 1.0:
             # print("change id 2", id, rms[0], rms[id])
             id = 0
@@ -989,11 +987,7 @@ class Lattice:
             ):
                 return False
         elif self.ltype in ["orthorhombic", "Orthorhombic"]:
-            if (
-                (self.alpha - np.pi / 2) > tol
-                or (self.beta - np.pi / 2) > tol
-                or (self.gamma - np.pi / 2) > tol
-            ):
+            if (self.alpha - np.pi / 2) > tol or (self.beta - np.pi / 2) > tol or (self.gamma - np.pi / 2) > tol:
                 return False
         elif self.ltype in ["monoclinic", "Monoclinic"]:
             if (self.alpha - np.pi / 2) > tol or (self.gamma - np.pi / 2) > tol:
@@ -1022,9 +1016,7 @@ class Lattice:
         (a1, b1, c1, alpha1, beta1, gamma1) = l1.get_para(degree=True)
         (a2, b2, c2, alpha2, beta2, gamma2) = l2.get_para(degree=True)
         abc_diff = np.abs(np.array([a2 - a1, b2 - b1, c2 - c1])).max()
-        ang_diff = np.abs(
-            np.array([alpha2 - alpha1, beta2 - beta1, gamma2 - gamma1])
-        ).max()
+        ang_diff = np.abs(np.array([alpha2 - alpha1, beta2 - beta1, gamma2 - gamma1])).max()
         return not (abc_diff > tol or ang_diff > a_tol)
 
     def get_diff(self, l_ref):
@@ -1034,9 +1026,7 @@ class Lattice:
         (a1, b1, c1, alpha1, beta1, gamma1) = self.get_para(degree=True)
         (a2, b2, c2, alpha2, beta2, gamma2) = l_ref.get_para(degree=True)
         abc_diff = np.abs(np.array([a2 - a1, b2 - b1, c2 - c1])).max()
-        abc_f_diff = np.abs(
-            np.array([(a2 - a1) / a1, (b2 - b1) / b1, (c2 - c1) / c1])
-        ).max()
+        abc_f_diff = np.abs(np.array([(a2 - a1) / a1, (b2 - b1) / b1, (c2 - c1) / c1])).max()
         ang_diff1 = abs(alpha1 - alpha2) + abs(beta1 - beta2) + abs(gamma1 - gamma2)
         ang_diff2 = abs(alpha1 - alpha2)
         ang_diff2 += abs(abs(beta1 - 90) - abs(beta2 - 90))
@@ -1348,9 +1338,7 @@ def generate_cellpara_2D(
                 - np.cos(gamma) ** 2
                 + 2 * (np.cos(alpha) * np.cos(beta) * np.cos(gamma))
             )
-            abc[NPA - 1] = (
-                abc[NPA - 1] / x
-            )  # scale thickness by outer product of vectors
+            abc[NPA - 1] = abc[NPA - 1] / x  # scale thickness by outer product of vectors
             ab = volume / (abc[NPA - 1] * x)
             ratio = a / b
             if NPA == 3:
@@ -1685,9 +1673,7 @@ def generate_cellpara_1D(
     raise VolumeError(msg)
 
 
-def generate_cellpara_0D(
-    ltype, volume, area=None, minvec=1.2, max_ratio=10.0, maxattempts=100, **kwargs
-):
+def generate_cellpara_0D(ltype, volume, area=None, minvec=1.2, max_ratio=10.0, maxattempts=100, **kwargs):
     """
     Generates a cell parameter (a, b, c, alpha, beta, gamma) according to the
     point group symmetry and number of atoms. If the generated lattice does
@@ -1871,9 +1857,7 @@ def gaussian(min, max, sigma=3.0):
             return x
 
 
-def random_vector(
-    minvec=None, maxvec=None, width=0.35, unit=False
-):
+def random_vector(minvec=None, maxvec=None, width=0.35, unit=False):
     """
     Generate a random vector for lattice constant generation. The ratios between
     x, y, and z of the returned vector correspond to the ratios between a, b,

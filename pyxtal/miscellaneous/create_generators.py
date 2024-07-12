@@ -9,17 +9,13 @@ PBC = [0, 0, 0]
 def rounded(op):
     v1 = op.translation_vector
     v2 = v1 - np.floor(v1)
-    if [1, 1, 1] == PBC:
+    if PBC == [1, 1, 1]:
         return SymmOp.from_rotation_and_translation(op.rotation_matrix, v2)
-    elif [1, 1, 0] == PBC:
-        return SymmOp.from_rotation_and_translation(
-            op.rotation_matrix, [v2[0], v2[1], v1[2]]
-        )
-    elif [0, 0, 1] == PBC:
-        return SymmOp.from_rotation_and_translation(
-            op.rotation_matrix, [v1[0], v1[1], v2[2]]
-        )
-    elif [0, 0, 0] == PBC:
+    elif PBC == [1, 1, 0]:
+        return SymmOp.from_rotation_and_translation(op.rotation_matrix, [v2[0], v2[1], v1[2]])
+    elif PBC == [0, 0, 1]:
+        return SymmOp.from_rotation_and_translation(op.rotation_matrix, [v1[0], v1[1], v2[2]])
+    elif PBC == [0, 0, 0]:
         return op
     return None
 

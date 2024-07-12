@@ -257,9 +257,7 @@ class representation:
                     n_mol = 4
                 else:
                     n_torsion = len(find_rotor_from_smile(smile))
-                    n_mol = (
-                        8 + n_torsion
-                    )  # (wp_id, x, y, z, ori_x, ori_y, ori_z, inv) + torsion
+                    n_mol = 8 + n_torsion  # (wp_id, x, y, z, ori_x, ori_y, ori_z, inv) + torsion
                 # inversion
                 # print(n_mol, n_cell, len(inputs))
                 inputs[n_cell] = int(inputs[n_cell])

@@ -228,9 +228,7 @@ class GA(GlobalOptimize):
                     id2 = min([id1 + N_cycle, len(current_xtals)])
                     # os.makedirs(folder, exist_ok=True)
                     ids = range(id1, id2)
-                    job_tags = [
-                        self.tag + "-g" + str(gen) + "-p" + str(id) for id in ids
-                    ]
+                    job_tags = [self.tag + "-g" + str(gen) + "-p" + str(id) for id in ids]
                     xtals = current_xtals[id1:id2]
                     mutates = [xtal is not None for xtal in xtals]
                     my_args = [xtals, ids, mutates, job_tags, *args]
@@ -275,9 +273,7 @@ class GA(GlobalOptimize):
             if ref_pxrd is None:
                 engs = self._apply_gaussian(current_reps, current_engs)
             else:
-                engs = self._apply_gaussian(
-                    current_reps, -1 * np.array(current_matches)
-                )
+                engs = self._apply_gaussian(current_reps, -1 * np.array(current_matches))
 
             # Store the best structures
             count = 0
@@ -312,7 +308,7 @@ class GA(GlobalOptimize):
             self.N_struc = len(self.engs)
 
             # Update the FF parameters if necessary
-            #import sys; sys.exit()
+            # import sys; sys.exit()
             if self.ff_opt:
                 N_max = min([int(self.N_pop * 0.6), 50])
                 ids = np.argsort(engs)
@@ -320,14 +316,10 @@ class GA(GlobalOptimize):
                 print("Select Good structures for FF optimization", len(xtals))
                 N_added = self.ff_optimization(xtals, N_added)
 
-
             elif match is not None:
-                match = self.early_termination(current_xtals,
-                                               current_matches,
-                                               current_engs,
-                                               current_tags,
-                                               ref_pmg,
-                                               ref_eng)
+                match = self.early_termination(
+                    current_xtals, current_matches, current_engs, current_tags, ref_pmg, ref_eng
+                )
                 print("Early termination")
                 return
 
@@ -373,9 +365,7 @@ if __name__ == "__main__":
         default=10,
         help="Population size, optional",
     )
-    parser.add_argument(
-        "-n", "--ncpu", dest="ncpu", type=int, default=1, help="cpu number, optional"
-    )
+    parser.add_argument("-n", "--ncpu", dest="ncpu", type=int, default=1, help="cpu number, optional")
     parser.add_argument("--ffopt", action="store_true", help="enable ff optimization")
 
     options = parser.parse_args()
