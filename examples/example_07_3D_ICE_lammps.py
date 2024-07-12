@@ -1,18 +1,17 @@
-from pyxtal import pyxtal
-from pyxtal.interface.lammpslib import run_lammpslib as lmp_run
-from pyxtal.interface.lammpslib import opt_lammpslib as lmp_opt
-from spglib import get_symmetry_dataset
-from random import choice
+import logging
+import os
+
+import numpy as np
 from ase.db import connect
 from lammps import lammps
-import numpy as np
-import os
-import logging
+from spglib import get_symmetry_dataset
+
+from pyxtal import pyxtal
+from pyxtal.interface.lammpslib import opt_lammpslib as lmp_opt
+from pyxtal.interface.lammpslib import run_lammpslib as lmp_run
 
 log_file = "07-results.log"
-logging.basicConfig(
-    format="%(asctime)s| %(message)s", filename=log_file, level=logging.INFO
-)
+logging.basicConfig(format="%(asctime)s| %(message)s", filename=log_file, level=logging.INFO)
 
 calc_folder = "07-tmp"  # store tmp files for lammps and lasp
 for folder in [calc_folder]:
@@ -39,10 +38,11 @@ parameters = [
 
 filename = "07.db"
 logfile = calc_folder + "/log"
+rng = np.random.default_rng()
 with connect(filename) as db:
     for i in range(100):
         while True:
-            sg, numIons = choice(range(3, 231)), choice(range(4, 12))
+            sg, numIons = rng.choice(range(3, 231)), rng.choice(range(4, 12))
             struc = pyxtal(molecular=True)
             struc.from_random(3, sg, ["H2O"], [numIons], force_pass=True)
             if struc.valid:
@@ -83,19 +83,15 @@ with connect(filename) as db:
             path=calc_folder,
             opt_cell=True,
         )
-        s, _ = lmp_run(
-            s, lmp, parameters, molecule=True, method="opt", path=calc_folder
-        )
+        s, _ = lmp_run(s, lmp, parameters, molecule=True, method="opt", path=calc_folder)
 
         Eng = s.get_potential_energy() * 96 / len(s) * 3
         Vol = s.get_volume() / len(s) * 3
         try:
             spg = get_symmetry_dataset(s, symprec=1e-1)["international"]
-        except:
+        except Exception:
             spg = "P1"
-        strs = "{:4d} {:6.3f} eV/atom {:4d} {:6.3f} A^3 {:10s}-->{:10s}".format(
-            i, Eng, numIons, Vol, struc.group.symbol, spg
-        )
+        strs = f"{i:4d} {Eng:6.3f} eV/atom {numIons:4d} {Vol:6.3f} A^3 {struc.group.symbol:10s}-->{spg:10s}"
         logging.info(strs)
         print(strs)
         permutation = np.argsort(s.numbers)

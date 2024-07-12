@@ -1,36 +1,40 @@
+"""This is a script to
+1, generate random structures.
+2, perform multiple steps of optmization with ASE-VASP.
+
+Requirement:
+You must have ASE installed and can call vasp from ASE.
+"""
+
+import warnings
+from time import time
+
+import numpy as np
+from ase.db import connect
+
 from pyxtal import pyxtal
 from pyxtal.interface.vasp import optimize
-from ase.db import connect
-from random import randint
-from time import time
-import warnings
 
 warnings.filterwarnings("ignore")
 
-"""
-This is a script to 
-1, generate random structures
-2, perform multiple steps of optmization with ASE-VASP
 
-Requirement:
-You must have ASE installed and can call vasp from ASE
-"""
 N = 10
 elements = {"C": [2, 4]}
 levels = [0, 2]  # , 3]
 dir1 = "Calc"
 filename = "C-VASP.db"
+rng = np.random.default_rng()
 
 for i in range(N):
     t0 = time()
     while True:
-        sg = randint(2, 230)
+        sg = rng.integers(2, 230)
         species = []
         numIons = []
-        for ele in elements.keys():
+        for ele in elements:
             species.append(ele)
             if len(elements[ele]) == 2:
-                num = randint(elements[ele][0], elements[ele][1])
+                num = rng.integers(elements[ele][0], elements[ele][1])
                 numIons.append(num)
             else:
                 numIons.append(elements[ele])
@@ -54,10 +58,10 @@ for i in range(N):
             }
             db.write(s, key_value_pairs=kvp)
         cputime /= 60.0
-        strs = "{:3d}".format(i)
-        strs += " {:12s} -> {:12s}".format(crystal.group.symbol, struc.group.symbol)
-        strs += " {:6.3f} eV/atom".format(energy / len(s))
-        strs += " {:6.2f} min".format(cputime)
+        strs = f"{i:3d}"
+        strs += f" {crystal.group.symbol:12s} -> {struc.group.symbol:12s}"
+        strs += f" {energy / len(s):6.3f} eV/atom"
+        strs += f" {cputime:6.2f} min"
         print(strs)
 
         # from pyxtal.interface.vasp import single_point

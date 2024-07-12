@@ -1,62 +1,56 @@
-from pyxtal import pyxtal
+"""This is a script to:
+1, generate random clusters.
+2, perform optimization.
+3, compare the efficiency of different algos (CG, BFGS).
+"""
+
+import logging
+import warnings
 from optparse import OptionParser
-from random import randint, choice
-from pyxtal.database.collection import Collection
+
 import numpy as np
+
+from pyxtal import pyxtal
+from pyxtal.database.collection import Collection
 from pyxtal.optimize.myscipy_optimize import (
-    _minimize_cg,
     _minimize_bfgs,
+    _minimize_cg,
     _minimize_tpgd,
 )
 from pyxtal.potentials.LJ_cluster import LJ, LJ_force
 
-import logging
-import warnings
-
 warnings.filterwarnings("ignore")
-logging.basicConfig(
-    format="%(asctime)s :: %(message)s", filename="results.log", level=logging.INFO
-)
-
-"""
-This is a script to 
-1, generate random clusters
-2, perform optimization 
-3, compare the efficiency of different algos (CG, BFGS)
-"""
+logging.basicConfig(format="%(asctime)s :: %(message)s", filename="results.log", level=logging.INFO)
 
 
 def single_optimize(pos, dim=3, kt=0.5, mu=0.1, beta=1.001, shift=False, method="mycg"):
-    """
-    perform optimization for a given cluster
+    """Perform optimization for a given cluster.
+
     Args:
-    pos: N*dim0 array representing the atomic positions
-    dim: dimension of the hyper/normal space
-    kt: perturbation factors
+        pos: N*dim0 array representing the atomic positions
+        dim: dimension of the hyper/normal space
+        kt: perturbation factors
+        mu: the weight for the punishing function
+        beta: the factor for the punishing function
+        shift: whether to shift the cluster to the center
+        method: the optimization method
 
     output:
-    energy: optmized energy
-    pos: optimized positions
+        energy: optmized energy
+        pos: optimized positions
+        niter: number of iterations
     """
     N_atom = len(pos)
     pos = pos.flatten()
-    res = _minimize_tpgd(
-        LJ, pos, args=(dim, mu, shift), jac=LJ_force, beta=beta, gtol=1e-4, maxiter=50
-    )
+    res = _minimize_tpgd(LJ, pos, args=(dim, mu, shift), jac=LJ_force, beta=beta, gtol=1e-4, maxiter=50)
     niter = res.nit
     pos = res.x
     if method == "mycg":
-        res = _minimize_cg(
-            LJ, pos, args=(dim, mu, shift), jac=LJ_force, beta=beta, gtol=1e-4
-        )
+        res = _minimize_cg(LJ, pos, args=(dim, mu, shift), jac=LJ_force, beta=beta, gtol=1e-4)
     elif method == "mybfgs":
-        res = _minimize_bfgs(
-            LJ, pos, args=(dim, mu, shift), jac=LJ_force, beta=beta, gtol=1e-4
-        )
+        res = _minimize_bfgs(LJ, pos, args=(dim, mu, shift), jac=LJ_force, beta=beta, gtol=1e-4)
     elif method == "mytpgd":
-        res = _minimize_tpgd(
-            LJ, pos, args=(dim, mu, shift), jac=LJ_force, beta=beta, gtol=1e-4
-        )
+        res = _minimize_tpgd(LJ, pos, args=(dim, mu, shift), jac=LJ_force, beta=beta, gtol=1e-4)
     niter += res.nit
     energy = res.fun
     pos = np.reshape(res.x, (N_atom, dim))
@@ -64,39 +58,34 @@ def single_optimize(pos, dim=3, kt=0.5, mu=0.1, beta=1.001, shift=False, method=
 
 
 class LJ_prediction:
-    """
-    A class to perform global optimization on LJ clusters
-    Args:
-
-    Attributes:
-
-    """
+    """A class to perform global optimization on LJ clusters."""
 
     def __init__(self, numIons):
+        """Initialize the class with the number of ions."""
         self.numIons = numIons
         ref = Collection("clusters")[str(numIons)]
-        print(
-            "\nReference for LJ {0:3d} is {1:12.3f} eV, PG: {2:4s}".format(
-                numIons, ref["energy"], ref["pointgroup"]
-            )
-        )
+        print(f"\nReference for LJ {numIons:3d} is {ref["energy"]:12.3f} eV, PG: {ref["pointgroup"]:4s}")
+
         self.reference = ref
 
-    def generate_cluster(self, pgs=range(2, 33)):
+    def generate_cluster(self, pgs: tuple[int, int], cluster_factor=0.6, seed=None):
+        """Generate a random cluster with a given point group and number of ions."""
+        rng = np.random.default_rng(seed)
         run = True
         while run:
-            pg = choice(pgs)
+            pg = rng.integers(pgs)
             cluster = pyxtal()
-            cluster.from_random(0, pg, ["H"], [self.numIons], 0.6)
+            cluster.from_random(0, pg, ["H"], [self.numIons], cluster_factor)
             if cluster.valid:
                 run = False
         return cluster._get_coords_and_species(absolute=True)[0]
 
-    def predict(self, maxN=100, ncpu=2, pgs=range(2, 33)):
+    def predict(self, maxN: int = 100, ncpu: int = 2, pgs: tuple[int, int] = (2, 33)):
+        """Predict the energy of LJ clusters."""
         cycle = range(maxN)
         if ncpu > 1:
-            from multiprocessing import Pool
             from functools import partial
+            from multiprocessing import Pool
 
             with Pool(ncpu) as p:
                 func = partial(self.relaxation, pgs)
@@ -104,21 +93,18 @@ class LJ_prediction:
                 p.close()
                 p.join()
         else:
-            res = []
-            for i in cycle:
-                res.append(self.relaxation(pgs, i))
+            res = [self.relaxation(pgs) for _ in cycle]
 
         return res
 
-    def relaxation(self, pgs, ind):
+    def relaxation(self, pgs: tuple[int, int], **kwargs):
+        """Perform relaxation for a given cluster."""
         pos = self.generate_cluster(pgs)
         res = []
         for method in ["mycg", "mybfgs", "mytpgd"]:
             pos1 = pos.copy()
             energy1, pos1, it1 = single_optimize(pos1, method=method)
-            print(
-                "Optmization {:10s}  3D: {:10.4f}  {:6d} ".format(method, energy1, it1)
-            )
+            print(f"Optmization {method:10s}  3D: {energy1:10.4f}  {it1:6d} ")
             res.append([energy1, it1])
         res = np.array(res)
         return res.flatten()

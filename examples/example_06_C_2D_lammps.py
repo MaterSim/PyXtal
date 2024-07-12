@@ -1,19 +1,20 @@
-from pyxtal import pyxtal
-from pyxtal.interface.lammpslib import run_lammpslib as lmp_run
-from pyxtal.interface.lammpslib import opt_lammpslib as lmp_opt
-from pyxtal.interface.gulp import single_optimize as gulp_opt
+import logging
+import os
+
+import numpy as np
 import pymatgen.analysis.structure_matcher as sm
-from pymatgen.io.ase import AseAtomsAdaptor
-from ase.spacegroup.symmetrize import check_symmetry
-from random import choice
 from ase.db import connect
 from lammps import lammps
-import numpy as np
-import os
-import logging
+from pymatgen.io.ase import AseAtomsAdaptor
+
+from pyxtal import pyxtal
+from pyxtal.interface.gulp import single_optimize as gulp_opt
+from pyxtal.interface.lammpslib import opt_lammpslib as lmp_opt
+from pyxtal.interface.lammpslib import run_lammpslib as lmp_run
 
 
 def new_struc(db, s, eng):
+    """Check if the structure is new."""
     s_pmg = AseAtomsAdaptor().get_structure(s)
     for row in db.select():
         ref = db.get_atoms(id=row.id)
@@ -28,9 +29,7 @@ log_file = "06-results.log"
 if os.path.exists(log_file):
     os.remove(log_file)
 
-logging.basicConfig(
-    format="%(asctime)s| %(message)s", filename=log_file, level=logging.INFO
-)
+logging.basicConfig(format="%(asctime)s| %(message)s", filename=log_file, level=logging.INFO)
 
 
 calc_folder = "06-tmp/"  # store tmp files for lammps and lasp
@@ -56,10 +55,11 @@ pgs = [3, 11, 12, 13, 23, 24, 25, 26, 49, 55, 56, 65, 69, 70, 73, 75]
 
 logfile = calc_folder + "/log"
 filename = "06.db"
+rng = np.random.default_rng()
 with connect(filename) as db:
     for i in range(100):
         while True:
-            sg, numIons = choice(pgs), choice(range(3, 24))
+            sg, numIons = rng.choice(pgs), rng.choice(range(3, 24))
             struc = pyxtal()
             struc.from_random(2, sg, ["C"], [numIons], thickness=0, force_pass=True)
             if struc.valid:
@@ -102,8 +102,9 @@ with connect(filename) as db:
             pos = s.get_positions()[:, 2]
             thickness = max(pos) - min(pos)
             new = new_struc(db, s, eng)
-            strs = "{:4d} {:6.3f} eV/atom *{:2d} {:6.3f} {:10s}->{:10s} {:}".format(
-                i, eng / len(s), len(s), thickness, struc.group.symbol, spg, new
+            strs = (
+                f"{i:4d} {eng / len(s):6.3f} eV/atom *{len(s):2d} {thickness:6.3f} "
+                f"{struc.group.symbol:10s}->{spg:10s} {new}"
             )
             logging.info(strs)
             print(strs)

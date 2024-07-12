@@ -1,18 +1,18 @@
-from scipy.optimize import minimize
-from scipy.spatial.distance import pdist, cdist
-import numpy as np
+"""This is a script to
+1, generate random clusters.
+2, perform optimization.
+"""
+
 from time import time
 
-"""
-This is a script to 
-1, generate random clusters
-2, perform optimization
-"""
+import numpy as np
+from scipy.optimize import minimize
+from scipy.spatial.distance import cdist, pdist
 
 
 def LJ(pos, dim=3):
-    """
-    Calculate the total energy
+    """Calculate the total energy.
+
     Args:
         pos: 1D array with N*dim numbers representing the atomic positions
         dim: dimension of the hyper/normal space
@@ -26,14 +26,12 @@ def LJ(pos, dim=3):
     distance = pdist(pos)
     r6 = np.power(distance, 6)
     r12 = np.multiply(r6, r6)
-    Eng = np.sum(4 * (1 / r12 - 1 / r6))
-
-    return Eng
+    return np.sum(4 * (1 / r12 - 1 / r6))
 
 
 def LJ_force(pos, dim=3):
-    """
-    Calculate the total energy
+    """Calculate the LF Forces.
+
     Args:
         pos: 1D array with N*dim numbers representing the atomic positions
         dim: dimension of the hyper/normal space
@@ -57,12 +55,11 @@ def LJ_force(pos, dim=3):
 
 
 def single_optimize(pos):
-    """
-    perform optimization for a given cluster
+    """Perform optimization for a given cluster.
 
     Args:
-        pos: N*dim0 array representing the atomic positions
-        dim: dimension of the hyper/normal space
+        pos: N*dim0 array representing the atomic positions.
+        dim: dimension of the hyper/normal space.
 
     output:
         energy: optmized energy
@@ -79,8 +76,9 @@ def single_optimize(pos):
 if __name__ == "__main__":
     N = 38
     L = 10
+    rng = np.random.default_rng()
     for i in range(20):
         t0 = time()
-        pos0 = L * np.random.random_sample((N * 3,))
+        pos0 = L * rng.random((N * 3,))
         eng, pos = single_optimize(pos0)
         print(i, eng, time() - t0)
