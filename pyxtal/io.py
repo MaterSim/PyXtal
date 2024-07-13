@@ -2,9 +2,10 @@
 This module handles reading and write crystal files.
 """
 
+import importlib.resources
+
 import numpy as np
 from monty.serialization import loadfn
-from pkg_resources import resource_filename
 from pymatgen.core.bonds import CovalentBond
 from pymatgen.core.structure import Molecule, Structure
 
@@ -16,7 +17,8 @@ from pyxtal.symmetry import Group
 from pyxtal.util import get_symmetrized_pmg
 from pyxtal.wyckoff_site import atom_site, mol_site
 
-bonds = loadfn(resource_filename("pyxtal", "database/bonds.json"))
+with importlib.resources.as_file(importlib.resources.files("pyxtal") / "database" / "bonds.json") as path:
+    bonds = loadfn(path)
 
 
 def in_merged_coords(wp, pt, pts, cell):

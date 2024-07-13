@@ -303,7 +303,7 @@ class GA(GlobalOptimize):
             print(gen_out)
 
             # Save the reps for next move
-
+            prev_xtals = current_xtals  # ; print(self.engs)
             self.min_energy = np.min(np.array(self.engs))
             self.N_struc = len(self.engs)
 
