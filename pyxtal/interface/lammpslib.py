@@ -1,5 +1,6 @@
 """ASE LAMMPS Calculator Library Version"""
 
+import importlib.resources
 import os
 
 import ase.units
@@ -10,7 +11,6 @@ from ase.optimize import LBFGS
 from ase.optimize.fire import FIRE
 from ase.spacegroup.symmetrize import FixSymmetry
 from lammps import lammps
-from pkg_resources import resource_filename
 
 
 #
@@ -207,7 +207,8 @@ class LAMMPSlib(Calculator):
             os.makedirs(self.folder)
         self.lammps_data = self.folder + "/data.lammps"
         self.lammps_in = self.folder + "/in.lammps"
-        self.ffpath = resource_filename("pyxtal", "potentials")
+        with importlib.resources.as_file(importlib.resources.files("pyxtal") / "potentials") as path:
+            self.ffpath = str(path)
         self.lmpcmds = lmpcmds
         self.paras = []
         if lmpcmds is not None:
