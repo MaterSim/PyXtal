@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Check out repo
-      - uses: actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -27,7 +27,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: pip install .[test] --no-deps --upgrade
+        run: pip install .[test]
 
       - name: Run Tests
-        run: python -m pytest pyxtal/test_all.py
+        run: pytest pyxtal/test_all.py
