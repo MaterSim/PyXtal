@@ -584,14 +584,15 @@ class orientation_order:
 
 
 if __name__ == "__main__":
-    from pkg_resources import resource_filename
+    import importlib.resources
 
     from pyxtal import pyxtal
 
-    cif_path = resource_filename("pyxtal", "database/cifs/")
+    with importlib.resources.as_file(importlib.resources.files("pyxtal") / "database" / "cifs") as path:
+        cif_path = path
     c1 = pyxtal(molecular=True)
     for name in ["benzene", "resorcinol", "aspirin", "naphthalene"]:
-        c1.from_seed(seed=cif_path + name + ".cif", molecules=[name])
+        c1.from_seed(seed=str(cif_path / f"{name}.cif"), molecules=[name])
         for model in ["contact", "molecule"]:
             print(name, model)
             sph = spherical_image(c1, model=model, lmax=18)

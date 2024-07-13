@@ -1,6 +1,7 @@
+import importlib.resources
+
 import numpy as np
 import pymatgen.analysis.structure_matcher as sm
-from pkg_resources import resource_filename
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from rdkit import Chem
@@ -24,7 +25,8 @@ lists = [
 for mol in lists:
     (smi, cif) = mol
     m = Chem.MolFromSmiles(smi)
-    cif = resource_filename("pyxtal", "database/cifs/") + cif
+    with importlib.resources.as_file(importlib.resources.files("pyxtal") / "database" / "cifs") as path:
+        cif = str(path / cif)
     m2 = Chem.AddHs(m)
     m3 = Chem.AddHs(m2)
     AllChem.EmbedMultipleConfs(m3)

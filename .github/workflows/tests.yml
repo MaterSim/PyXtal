@@ -5,6 +5,8 @@ on:
     paths:
       - '**.py' # only run workflow when source files changed
   pull_request:
+    branches:
+      - master
     paths:
       - '**.py'
 
@@ -28,8 +30,7 @@ jobs:
         run: pip install uv
 
       - name: Install dependencies
-        run: |
-          uv pip install .[test] --system
+        run: uv pip install .[test] --system
 
       - name: Run Tests
         run: pytest tests/test_all.py
