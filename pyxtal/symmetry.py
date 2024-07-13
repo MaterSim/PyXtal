@@ -3122,7 +3122,7 @@ def index_from_letter(letter, group, dim=3):
     letters1 = letters
     # See whether the group has an "o" Wyckoff position
     checko = False
-    if type(group) == Group and group.dim == 0 or dim == 0:
+    if isinstance(group, Group) and group.dim == 0 or dim == 0:
         checko = True
     if checko is True and len(group[-1]) == 1 and group[-1][0] == SymmOp.from_xyz_str("0,0,0"):
         # o comes before a
@@ -3249,7 +3249,7 @@ class site_symmetry:
                 _ax0 = opa.axis / np.linalg.norm(opa.axis)
 
                 store = False
-                for ax in all_sym_directions:
+                for i, ax in enumerate(all_sym_directions):
                     ax0 = ax / np.linalg.norm(ax)  # ; print(opa.axis, ax, np.dot(_ax0, ax0))
                     if np.isclose(abs(np.dot(_ax0, ax0)), 1):
                         store = True
@@ -3292,7 +3292,7 @@ class site_symmetry:
             elif opa.type != "identity":
                 _ax0 = opa.axis / np.linalg.norm(opa.axis)
 
-                for ax in all_sym_directions:
+                for i, ax in enumerate(all_sym_directions):
                     store = False
                     ax0 = ax / np.linalg.norm(ax)  # ; print(opa.axis, ax, np.dot(opa.axis, ax0))
                     if np.isclose(abs(np.dot(_ax0, ax0)), 1):

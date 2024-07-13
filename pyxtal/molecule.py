@@ -12,10 +12,9 @@ import networkx as nx
 import numpy as np
 from monty.serialization import loadfn
 from pkg_resources import resource_filename
-
-# External Libraries
 from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer, generate_full_symmops
+from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation
 
 from pyxtal.constants import single_smiles
@@ -23,8 +22,6 @@ from pyxtal.database.collection import Collection
 from pyxtal.database.element import Element
 from pyxtal.msg import AtomTypeError, ConformerError
 from pyxtal.operations import OperationAnalyzer, SymmOp, angle, rotate_vector
-
-# PyXtal imports
 from pyxtal.symmetry import Group
 from pyxtal.tolerance import Tol_matrix
 
@@ -167,11 +164,10 @@ def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5):
 
     m0 = pyxtal_molecule(smile + ".smi", fix=True)
     _, valid = m0.get_orientations_in_wps(wps)
+    mols = []
     if valid:
         # print('torsion', m0.get_torsion_angles())
-        mols = [m0]
-    else:
-        mols = []
+        mols.append(m0)
 
     for i in range(N_iter):
         mol = get_conformers(smile, seed=i)
@@ -752,6 +748,7 @@ class pyxtal_molecule:
         """
         show the molecule
         """
+        from pyxtal.viz import display_molecules
 
         return display_molecules(self.mol)
 
@@ -1529,11 +1526,12 @@ class Orientation:
     def __init__(self, matrix=None, degrees=2, axis=None):
         self.matrix = np.array(matrix)
         self.degrees = degrees
+
         if degrees == 1:
             if axis is None:
                 raise ValueError("axis is required for orientation")
-            else:
-                axis /= np.linalg.norm(axis)
+
+            axis /= np.linalg.norm(axis)
         self.axis = axis
 
         self.r = Rotation.from_matrix(self.matrix)
@@ -1617,7 +1615,8 @@ class Orientation:
         if not ignore_constraint:
             if self.degrees == 0:
                 raise ValueError("cannot rotate")
-            elif self.degrees == 1:
+
+            if self.degrees == 1:
                 axis = self.axis
                 vec = Rotation.from_matrix(matrix).as_rotvec()
                 if angle(vec, self.axis) > 1e-2 and angle(vec, -self.axis) > 1e-2:
@@ -1770,7 +1769,7 @@ def make_graph(mol, tol=0.2):
     for i, site in enumerate(mol._sites):
         names[i] = site.specie.value
         if names[i] not in ["C", "H", "O", "N", "S", "P", "Si", "F", "Cl", "Br", "I"]:
-            raise ValueError(name[i] + " is not supported")
+            raise ValueError(f"{names[i]} is not supported")
 
     for i in range(len(mol) - 1):
         site1 = mol.sites[i]
