@@ -2,6 +2,7 @@
 Module for handling molecules.
 """
 
+import importlib.resources
 import os
 import re
 from copy import deepcopy
@@ -11,7 +12,6 @@ from random import choice
 import networkx as nx
 import numpy as np
 from monty.serialization import loadfn
-from pkg_resources import resource_filename
 
 # External Libraries
 from pymatgen.core.structure import Molecule
@@ -29,7 +29,9 @@ from pyxtal.symmetry import Group
 from pyxtal.tolerance import Tol_matrix
 
 # Define functions
-bonds = loadfn(resource_filename("pyxtal", "database/bonds.json"))
+with importlib.resources.as_file(importlib.resources.files("pyxtal") / "database" / "bonds.json") as path:
+    bonds = loadfn(path)
+
 molecule_collection = Collection("molecules")
 
 

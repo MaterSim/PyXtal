@@ -3,16 +3,19 @@ Module for XRD simulation (experimental stage)
 """
 
 import collections
+import importlib.resources
 import os
 
 import numpy as np
 from monty.serialization import loadfn
-from pkg_resources import resource_filename
 from scipy.interpolate import interp1d
 
 from pyxtal.database.element import Element
 
-ATOMIC_SCATTERING_PARAMS = loadfn(resource_filename("pyxtal", "database/atomic_scattering_params.json"))
+with importlib.resources.as_file(
+    importlib.resources.files("pyxtal") / "database" / "atomic_scattering_params.json"
+) as path:
+    ATOMIC_SCATTERING_PARAMS = loadfn(path)
 
 
 class XRD:
