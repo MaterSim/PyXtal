@@ -2,7 +2,8 @@
 Global Optimizer
 """
 
-from concurrent.futures import ProcessPoolExecutor
+import threading
+from concurrent.futures import ProcessPoolExecutor, TimeoutError
 from random import sample
 from time import time
 from typing import Optional, Union
@@ -116,7 +117,11 @@ class GA(GlobalOptimize):
             E_max,
         )
 
-        print(self.full_str())
+        # setup timeout for each optimization call
+        self.timeout = 60.0 * self.N_pop / self.ncpu
+        strs = self.full_str()
+        self.logging.info(strs)
+        print(strs)
 
     def full_str(self):
         s = str(self)
@@ -151,6 +156,7 @@ class GA(GlobalOptimize):
 
         for gen in range(self.N_gen):
             print(f"\nGeneration {gen:d} starts")
+            self.logging.info(f"Generation {gen:d} starts")
             self.generation = gen + 1
             t0 = time()
 
@@ -210,7 +216,7 @@ class GA(GlobalOptimize):
                 self.skip_ani,
             ]
 
-            gen_results = [None] * len(current_xtals)
+            gen_results = [(None, None)] * len(current_xtals)
             if self.ncpu == 1:
                 for pop in range(len(current_xtals)):
                     xtal = current_xtals[pop]
@@ -234,14 +240,41 @@ class GA(GlobalOptimize):
                     my_args = [xtals, ids, mutates, job_tags, *args]
                     args_lists.append(tuple(my_args))
 
-                with ProcessPoolExecutor(max_workers=self.ncpu) as executor:
-                    results = [executor.submit(optimizer_par, *p) for p in args_lists]
-                    # loop each cpu
+                def process_with_timeout(results, timeout):
+                    #self.logging.info("Timeout: %d seconds", timeout)
                     for result in results:
-                        # loop each pop
-                        for res in result.result():
-                            (id, xtal, match) = res
-                            gen_results[id] = (xtal, match)
+                        try:
+                        #if True:
+                            # Get the result with timeout
+                            res_list = result.result(timeout=timeout)
+                            for res in res_list:
+                                (id, xtal, match) = res
+                                gen_results[id] = (xtal, match)
+                        except TimeoutError:
+                            self.logging.info("ERROR: Opt timed out after %d seconds", timeout)
+                        except Exception as e:
+                            self.logging.info("ERROR: An unexpected error occurred: %s", str(e))
+                    return gen_results
+
+                def run_with_global_timeout(timeout):
+                    with ProcessPoolExecutor(max_workers=self.ncpu) as executor:
+                        results = [executor.submit(optimizer_par, *p) for p in args_lists]
+                        gen_results = process_with_timeout(results, timeout)
+                    return gen_results
+
+                # Run the execution with a global timeout
+                global_timeout = self.timeout  # Set your global timeout value here
+                thread = threading.Thread(target=lambda: run_with_global_timeout(global_timeout))
+                thread.start()
+                thread.join(timeout=global_timeout)
+
+                if thread.is_alive():
+                    self.logging.info("ERROR: Global execution timed out after %d seconds", global_timeout)
+                    thread.join()  # Ensure thread is terminated
+
+                #with ProcessPoolExecutor(max_workers=self.ncpu) as executor:
+                #    results = [executor.submit(optimizer_par, *p) for p in args_lists]
+                #    gen_results = process_with_timeout(executor, results, self.timeout)
 
             # Summary and Ranking
             for id, res in enumerate(gen_results):
@@ -266,7 +299,9 @@ class GA(GlobalOptimize):
                     self.engs.append(xtal.energy / sum(xtal.numMols))
                     # print(output)
 
-            print(f"Generation {gen:d} finishes")  # ; import sys; sys.exit()
+            strs = f"Generation {gen:d} finishes"  # ; import sys; sys.exit()
+            print(strs)
+            self.logging.info(strs)
             t1 = time()
 
             # Apply Gaussian
@@ -325,6 +360,7 @@ class GA(GlobalOptimize):
                                                ref_eng)
                 if match is not None:
                     print("Early termination")
+                    self.logging.info("Early termination")
                     return match
 
         return

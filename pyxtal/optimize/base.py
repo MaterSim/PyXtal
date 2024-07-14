@@ -10,6 +10,7 @@ import os
 from random import sample
 from time import time
 from typing import Optional, Union
+import logging
 
 import numpy as np
 import pymatgen.analysis.structure_matcher as sm
@@ -101,6 +102,7 @@ class GlobalOptimize:
 
         # Generation and Optimization
         self.workdir = workdir
+        self.log_file = self.workdir + '/loginfo'
         self.ncpu = N_cpu
         self.skip_ani = skip_ani
         self.randomizer = randomizer
@@ -143,7 +145,7 @@ class GlobalOptimize:
                         ff_style,
                     )
                     params0 = self.parameters.params_init.copy()
-                    self.parameters.export_parameters(self.wdir + "/" + self.ff_parameters, params0)
+                    self.parameters.export_parameters(self.workdir + "/" + self.ff_parameters, params0)
 
                 self.prepare_chm_info(params0)
 
@@ -158,6 +160,13 @@ class GlobalOptimize:
             with open(self.workdir + "/" + cif, "w") as f:
                 f.writelines(str(self))
         # print(self)
+
+        # Setup logger
+        logging.getLogger().handlers.clear()
+        logging.basicConfig(format = "%(asctime)s| %(message)s",
+                filename = self.log_file,
+                level = logging.INFO)
+        self.logging = logging
 
     def __str__(self):
         s = "\n-------Global Crystal Structure Prediction------"

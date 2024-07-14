@@ -399,8 +399,11 @@ def optimizer_single(
         if ref_pmg is not None:
             pmg_s1 = xtal.to_pymatgen()
             pmg_s1.remove_species("H")
-
-            rmsd = matcher.get_rms_dist(ref_pmg, pmg_s1)
+            # Prevent the false call of matcher call
+            try:
+                rmsd = matcher.get_rms_dist(ref_pmg, pmg_s1)
+            except:
+                rmsd = None
             if rmsd is not None:
                 # Further refine the structure
                 match = True
