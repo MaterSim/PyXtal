@@ -264,6 +264,7 @@ class molecular_crystal:
                         unique_axis=unique_axis,
                         thickness=self.thickness,
                         area=self.area,
+                        min_special=max([mol.get_max_length() for mol in self.molecules]),
                     )
                     good_lattice = True
                     break

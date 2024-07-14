@@ -805,9 +805,9 @@ class mol_site:
             ijk_lists = []
             for id in range(3):
                 if self.PBC[id]:
-                    if not ignore and abc[id] > 25 and self.radius < 10:
+                    if not ignore and abc[id] > 50.0 and self.radius < 10:
                         ijk_lists.append([0])
-                    elif abc[id] < 7.0:
+                    elif abc[id] < 8.5:
                         ijk_lists.append([-3, -2, -1, 0, 1, 2, 3])
                     else:
                         ijk_lists.append([-1, 0, 1])
@@ -866,7 +866,6 @@ class mol_site:
             a distance matrix (M, N, N)
             list of molecular xyz (M, N, 3)
         """
-        len(self.numbers)
         coord1, _ = self._get_coords_and_species(first=True, unitcell=True)
 
         return self.get_distances(coord1, coord1, center=False, ignore=ignore)
@@ -918,7 +917,6 @@ class mol_site:
         Returns:
             True or False
         """
-        len(self.numbers)
         tols_matrix = self.tols_matrix
         # Check periodic images
         d, _ = self.get_dists_auto()

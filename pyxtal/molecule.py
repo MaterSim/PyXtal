@@ -368,6 +368,16 @@ class pyxtal_molecule:
                 dims[i] = max([dims[i] + r, 3.4])  # for planar molecules
         return Box(dims)
 
+    def get_lengths(self):
+        if not hasattr(self, 'box'):
+            self.box = self.get_box()
+        return self.box.width, self.box.height, self.box.length
+
+    def get_max_length(self):
+        w, h, l = self.get_lengths()
+        return max([w, h, l])
+
+
     def get_box_coordinates(self, xyz, padding=0, resolution=1.0):
         """
         create the points cloud to describe the molecular box
