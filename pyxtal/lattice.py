@@ -76,6 +76,7 @@ class Lattice:
                 "min_l",
                 "mid_l",
                 "max_l",
+                "min_special", #min special for mole
             ]:
                 setattr(self, key, value)
                 self.kwargs[key] = value
@@ -1127,6 +1128,7 @@ def generate_cellpara(
     minvec=1.2,
     minangle=np.pi / 6,
     max_ratio=10.0,
+    min_special=None,
     maxattempts=100,
     **kwargs,
 ):
@@ -1153,6 +1155,7 @@ def generate_cellpara(
         a 6-length array representing the lattice of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
+    min_special = kwargs.get("min_special", min_special) #; print("min_special", min_special)
     maxangle = np.pi - minangle
     for _n in range(maxattempts):
         # Triclinic
@@ -1185,6 +1188,11 @@ def generate_cellpara(
             a = vec[0] * np.cbrt(abc) / np.cbrt(xyz)
             b = vec[1] * np.cbrt(abc) / np.cbrt(xyz)
             c = vec[2] * np.cbrt(abc) / np.cbrt(xyz)
+            if min_special is not None and c < min_special:
+                coef = random.uniform(0.8, 1.2) * min_special / c
+                c *= coef
+                b /= np.sqrt(coef)
+                a /= np.sqrt(coef)
         # Orthorhombic
         # elif sg <= 74:
         elif ltype in ["orthorhombic"]:
