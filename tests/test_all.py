@@ -702,7 +702,8 @@ class TestMolecular(unittest.TestCase):
     def test_single_specie(self):
         struc = pyxtal(molecular=True)
         struc.from_random(3, 36, ["H2O"], sites=[["8b"]])
-        struc.to_file()
+        struc.to_file("tmp-molecular.cif")
+        os.remove("tmp-molecular.cif")
         assert struc.valid
 
         # test space group
@@ -855,7 +856,8 @@ class TestAtomic3D(unittest.TestCase):
     def test_single_specie(self):
         struc = pyxtal()
         struc.from_random(3, 225, ["C"], [4], 1.2, conventional=False)
-        struc.to_file()
+        struc.to_file("tmp-3d.cif")
+        os.remove("tmp-3d.cif")
         assert struc.valid
 
     def test_mutiple_species(self):
@@ -916,7 +918,8 @@ class TestAtomic2D(unittest.TestCase):
     def test_single_specie(self):
         struc = pyxtal()
         struc.from_random(2, 20, ["C"], [4], 1.0, thickness=2.0)
-        struc.to_file()
+        struc.to_file("tmp-2d.cif")
+        os.remove("tmp-2d.cif")
         assert struc.valid
 
     def test_mutiple_species(self):
@@ -929,7 +932,8 @@ class TestAtomic1D(unittest.TestCase):
     def test_single_specie(self):
         struc = pyxtal()
         struc.from_random(1, 20, ["C"], [4], 1.0)
-        struc.to_file()
+        struc.to_file("tmp-1d.cif")
+        os.remove("tmp-1d.cif")
         assert struc.valid
 
     def test_mutiple_species(self):

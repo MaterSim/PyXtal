@@ -9,6 +9,7 @@ from monty.serialization import loadfn
 from pymatgen.core.bonds import CovalentBond
 from pymatgen.core.structure import Molecule, Structure
 
+from pyxtal import pyxtal
 from pyxtal.constants import logo
 from pyxtal.lattice import Lattice
 from pyxtal.molecule import Orientation, compare_mol_connectivity, pyxtal_molecule
@@ -34,19 +35,17 @@ def in_merged_coords(wp, pt, pts, cell):
     return False
 
 
-def write_cif(struc, filename=None, header="", permission="w", sym_num=None, style="mp"):
-    """
-    Export the structure in cif format
-    The default setting for _atom_site follows the materials project cif
+def get_cif_str_for_pyxtal(struc: pyxtal, header: str = "", sym_num=None, style: str = "mp"):
+    """Get the cif string for a given structure. The default setting for
+    _atom_site follows the materials project cif
+
+    TODO make this a method of the pyxtal class
 
     Args:
         struc: pyxtal structure object
-        filename: path of the structure file
         header: additional information
-        permission: write(`w`) or append(`a+`) to the given file
         sym_num: the number of symmetry operations, None means writing all symops
         style: `icsd` or `mp` (used in pymatgen)
-
     """
     if struc.molecular:
         sites = struc.mol_sites
@@ -161,6 +160,25 @@ def write_cif(struc, filename=None, header="", permission="w", sym_num=None, sty
             lines += "{:12.6f}{:12.6f}{:12.6f} 1\n".format(*coord)
     lines += "#END\n\n"
 
+    return lines
+
+
+def write_cif(struc, filename=None, header="", permission="w", sym_num=None, style="mp"):
+    """
+    Export the structure in cif format
+    The default setting for _atom_site follows the materials project cif
+
+    Args:
+        struc: pyxtal structure object
+        filename: path of the structure file
+        header: additional information
+        permission: write(`w`) or append(`a+`) to the given file
+        sym_num: the number of symmetry operations, None means writing all symops
+        style: `icsd` or `mp` (used in pymatgen)
+
+    """
+    lines = get_cif_str_for_pyxtal(struc, header=header, sym_num=sym_num, style=style)
+
     if filename is None:
         return lines
     else:
@@ -238,14 +256,14 @@ class structure_from_ext:
             add_H: whether or not add the H atoms
         """
 
-        for ref_mol in ref_mols:
+        for i, ref_mol in enumerate(ref_mols):
             if isinstance(ref_mol, str):
-                ref_mol = pyxtal_molecule(ref_mol, fix=True)
+                ref_mols[i] = pyxtal_molecule(ref_mol, fix=True)
             elif isinstance(ref_mol, pyxtal_molecule):
-                ref_mol = ref_mol
+                continue
             else:
                 print(type(ref_mol))
-                raise NameError("reference molecule cannot be defined")
+                raise NameError(f"reference molecule of type {type(ref_mol)} cannot be defined")
 
         if isinstance(struc, str):
             pmg_struc = Structure.from_file(struc)
