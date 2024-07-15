@@ -420,7 +420,7 @@ class molecular_crystal:
         """
         # Use a Wyckoff_site object for the current site
         self.numattempts += 1
-        ori = random.choice(oris).copy()
+        ori = self.random_state.choice(oris).copy()
         ori.change_orientation(flip=True)
         ms0 = mol_site(pyxtal_mol, pt, ori, wp, self.lattice)
         # Check distances within the WP
