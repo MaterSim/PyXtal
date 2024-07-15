@@ -2,7 +2,9 @@
 Global Optimizer
 """
 
-import threading
+#import threading
+import psutil
+import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, TimeoutError
 from random import sample
 from time import time
@@ -194,7 +196,7 @@ class GA(GlobalOptimize):
                     current_xtals[count] = self._crossover(xtal1, xtal2)
                     count += 1
 
-            # Local optimization
+            # Local optimization (QZ: to move the block to base.py)
             args = [
                 self.randomizer,
                 self.optimizer,
@@ -241,11 +243,8 @@ class GA(GlobalOptimize):
                     args_lists.append(tuple(my_args))
 
                 def process_with_timeout(results, timeout):
-                    #self.logging.info("Timeout: %d seconds", timeout)
                     for result in results:
                         try:
-                        #if True:
-                            # Get the result with timeout
                             res_list = result.result(timeout=timeout)
                             for res in res_list:
                                 (id, xtal, match) = res
@@ -256,25 +255,41 @@ class GA(GlobalOptimize):
                             self.logging.info("ERROR: An unexpected error occurred: %s", str(e))
                     return gen_results
 
-                def run_with_global_timeout(timeout):
-                    with ProcessPoolExecutor(max_workers=self.ncpu) as executor:
+                def run_with_global_timeout(ncpu, args_lists, timeout, return_dict):
+                    with ProcessPoolExecutor(max_workers=ncpu) as executor:
                         results = [executor.submit(optimizer_par, *p) for p in args_lists]
                         gen_results = process_with_timeout(results, timeout)
-                    return gen_results
+                        return_dict['gen_results'] = gen_results
 
-                # Run the execution with a global timeout
-                global_timeout = self.timeout  # Set your global timeout value here
-                thread = threading.Thread(target=lambda: run_with_global_timeout(global_timeout))
-                thread.start()
-                thread.join(timeout=global_timeout)
+                # Set your global timeout value here
+                global_timeout = self.timeout
 
-                if thread.is_alive():
+                # Run multiprocess
+                manager = multiprocessing.Manager()
+                return_dict = manager.dict()
+                p = multiprocessing.Process(target=run_with_global_timeout,
+                        args=(self.ncpu, args_lists, global_timeout, return_dict))
+                p.start()
+                p.join(global_timeout)
+
+                if p.is_alive():
                     self.logging.info("ERROR: Global execution timed out after %d seconds", global_timeout)
-                    thread.join()  # Ensure thread is terminated
+                    #p.terminate()
+                    # Ensure all child processes are terminated
+                    child_processes = psutil.Process(p.pid).children(recursive=True)
+                    self.logging.info("Checking child process total: %d", len(child_processes))
+                    for proc in child_processes:
+                        #self.logging.info("Checking child process ID: %d", pid)
+                        try:
+                            #proc = psutil.Process(pid)
+                            if proc.status() == 'running': #is_running():
+                                proc.terminate()
+                                self.logging.info("Terminate abnormal child process ID: %d", proc.pid)
+                        except psutil.NoSuchProcess:
+                            self.logging.info("ERROR: PID %d does not exist", proc.pid)
+                    p.join()
 
-                #with ProcessPoolExecutor(max_workers=self.ncpu) as executor:
-                #    results = [executor.submit(optimizer_par, *p) for p in args_lists]
-                #    gen_results = process_with_timeout(executor, results, self.timeout)
+                gen_results = return_dict.get('gen_results', {})
 
             # Summary and Ranking
             for id, res in enumerate(gen_results):

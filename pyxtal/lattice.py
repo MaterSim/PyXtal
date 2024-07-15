@@ -1174,25 +1174,14 @@ def generate_cellpara(
             vec = random_vector()
             abc = volume / x
             xyz = vec[0] * vec[1] * vec[2]
-            a = vec[0] * np.cbrt(abc) / np.cbrt(xyz)
-            b = vec[1] * np.cbrt(abc) / np.cbrt(xyz)
-            c = vec[2] * np.cbrt(abc) / np.cbrt(xyz)
         # Monoclinic
         elif ltype in ["monoclinic"]:
             alpha, gamma = np.pi / 2, np.pi / 2
             beta = gaussian(minangle, maxangle)
             x = np.sin(beta)
             vec = random_vector()
-            xyz = vec[0] * vec[1] * vec[2]
             abc = volume / x
-            a = vec[0] * np.cbrt(abc) / np.cbrt(xyz)
-            b = vec[1] * np.cbrt(abc) / np.cbrt(xyz)
-            c = vec[2] * np.cbrt(abc) / np.cbrt(xyz)
-            if min_special is not None and c < min_special:
-                coef = random.uniform(0.8, 1.2) * min_special / c
-                c *= coef
-                b /= np.sqrt(coef)
-                a /= np.sqrt(coef)
+            xyz = vec[0] * vec[1] * vec[2]
         # Orthorhombic
         # elif sg <= 74:
         elif ltype in ["orthorhombic"]:
@@ -1201,9 +1190,6 @@ def generate_cellpara(
             vec = random_vector()
             xyz = vec[0] * vec[1] * vec[2]
             abc = volume / x
-            a = vec[0] * np.cbrt(abc) / np.cbrt(xyz)
-            b = vec[1] * np.cbrt(abc) / np.cbrt(xyz)
-            c = vec[2] * np.cbrt(abc) / np.cbrt(xyz)
         # Tetragonal
         # elif sg <= 142:
         elif ltype in ["tetragonal"]:
@@ -1226,6 +1212,21 @@ def generate_cellpara(
             alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
             s = (volume) ** (1.0 / 3.0)
             a, b, c = s, s, s
+
+        # resort a/b/c if min_special is not None for mol. xtals
+        if ltype in ["triclinic", "monoclinic", "orthorhombic"]:
+            vec *= np.cbrt(abc) / np.cbrt(xyz)
+            if min_special is not None:
+                ax = random.choice([0, 1, 2])
+                if vec[ax] < min_special:
+                    coef = random.uniform(0.8, 1.2) * min_special / vec[ax]
+                    for i in range(3):
+                        if i == ax:
+                            vec[i] *= coef
+                        else:
+                            vec[i] /= np.sqrt(coef)
+            [a, b, c] = vec
+
         # Check that lattice meets requirements
         maxvec = (a * b * c) / (minvec**2)
 
