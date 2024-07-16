@@ -162,7 +162,7 @@ class random_crystal:
                         # keep the record of wp index
                         id = self.group.get_index_by_letter(item[0])
                         self.sites[specie].append((id, item[1]))
-                elif isinstance(sites[i], list | tuple):
+                elif isinstance(sites[i], (list, tuple)):
                     for site in sites[i]:
                         if type(site) is tuple:
                             (letter, x, y, z) = site
