@@ -9,7 +9,6 @@ from monty.serialization import loadfn
 from pymatgen.core.bonds import CovalentBond
 from pymatgen.core.structure import Molecule, Structure
 
-from pyxtal import pyxtal
 from pyxtal.constants import logo
 from pyxtal.lattice import Lattice
 from pyxtal.molecule import Orientation, compare_mol_connectivity, pyxtal_molecule
@@ -35,7 +34,7 @@ def in_merged_coords(wp, pt, pts, cell):
     return False
 
 
-def get_cif_str_for_pyxtal(struc: pyxtal, header: str = "", sym_num=None, style: str = "mp"):
+def get_cif_str_for_pyxtal(struc, header: str = "", sym_num=None, style: str = "mp"):
     """Get the cif string for a given structure. The default setting for
     _atom_site follows the materials project cif
 

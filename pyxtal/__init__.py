@@ -6,7 +6,6 @@ main pyxtal module to create the pyxtal class
 import itertools
 import json
 from copy import deepcopy
-from random import choice, sample
 
 import numpy as np
 from ase import Atoms
@@ -171,7 +170,7 @@ class pyxtal:
 
     """
 
-    def __init__(self, molecular=False):
+    def __init__(self, molecular=False, random_state=None):
         self.valid = False
         self.molecular = molecular
         self.standard_setting = True
@@ -185,6 +184,8 @@ class pyxtal:
         self.dim = 3
         self.factor = 1.0
         self.PBC = [1, 1, 1]
+        self.random_state = np.random.default_rng(random_state)
+
         if molecular:
             self.molecules = []
             self.mol_sites = []
@@ -272,6 +273,7 @@ class pyxtal:
         block=None,
         num_block=None,
         seed=None,
+        random_state=None,
         tm=None,
         use_hall=False,
     ):
@@ -325,22 +327,24 @@ class pyxtal:
                     conventional=conventional,
                     tm=tm,
                     seed=seed,
+                    random_state=random_state,
                     use_hall=use_hall,
                 )
             else:
                 struc = random_crystal(
-                    dim,
-                    group,
-                    species,
-                    numIons,
-                    factor,
-                    thickness,
-                    area,
-                    lattice,
-                    sites,
-                    conventional,
-                    tm,
+                    dim=dim,
+                    group=group,
+                    species=species,
+                    numIons=numIons,
+                    factor=factor,
+                    thickness=thickness,
+                    area=area,
+                    lattice=lattice,
+                    sites=sites,
+                    conventional=conventional,
+                    tm=tm,
                     use_hall=use_hall,
+                    random_state=random_state,
                 )
             if force_pass or struc.valid:
                 quit = True
@@ -474,9 +478,7 @@ class pyxtal:
         if self.valid:
             d = sym_struc.composition.as_dict()
             species = list(d.keys())
-            numIons = []
-            for ele in species:
-                numIons.append(int(d[ele]))
+            numIons = [int(d[ele]) for ele in species]
             self.numIons = numIons
             self.species = species
             if hn is None:
@@ -569,9 +571,9 @@ class pyxtal:
             if exclude_H:
                 pmg_struc.remove_species("H")
             res = pmg_struc.get_all_neighbors(r)
-            for i, neighs in enumerate(res):
-                for n in neighs:
-                    pairs.append([pmg_struc.sites[i].specie, n.specie, n.nn_distance])
+            pairs = [
+                [pmg_struc.sites[i].specie, n.specie, n.nn_distance] for i, neighs in enumerate(res) for n in neighs
+            ]
         else:
             raise NotImplementedError("Does not support cluster for now")
         return pairs
@@ -716,7 +718,7 @@ class pyxtal:
         idx, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, idx, max_cell, min_cell)
         # randomly choose a subgroup from the available list
         if N_groups is not None and len(idx) >= N_groups:
-            idx = sample(idx, N_groups)
+            idx = self.random_state.choice(idx, N_groups)
             # print('max_sub_group', len(idx), max_subgroups)
 
         valid_splitters = []
@@ -838,7 +840,7 @@ class pyxtal:
         # Try 100 times to see if a valid split can be found
         count = 0
         while count < 100:
-            id = choice(idx)
+            id = self.random_state.choice(idx)
             gtype = (t_types + k_types)[id]
             if gtype == "k":
                 id -= len(t_types)
@@ -905,8 +907,8 @@ class pyxtal:
         for site_id, site in enumerate(new_struc.atom_sites):
             if site.specie in perms:
                 site_ids.append(site_id)
-        N = choice(range(1, len(site_ids))) if len(site_ids) > 1 else 1
-        sub_ids = sample(site_ids, N)
+        N = self.random_state.choice(range(1, len(site_ids))) if len(site_ids) > 1 else 1
+        sub_ids = self.random_state.choice(site_ids, N)
         for sub_id in sub_ids:
             key = new_struc.atom_sites[sub_id].specie
             new_struc.atom_sites[sub_id].specie = perms[key]
@@ -1165,9 +1167,8 @@ class pyxtal:
             self.numIons = numIons
             numspecies = self.numIons
         for i, s in zip(numspecies, species):
-            if type(s) == int:
-                s = Element(s).short_name
-            formula += f"{s:s}{int(i):d}"
+            specie = Element(s).short_name if isinstance(s, str) else s
+            formula += f"{specie:s}{int(i):d}"
         self.formula = formula
 
     def get_zprime(self, integer=False):
@@ -1466,13 +1467,10 @@ class pyxtal:
         """
         Save the model as a dictionary
         """
-        sites = []
         if self.molecular:
-            for site in self.mol_sites:
-                sites.append(site.save_dict())
+            sites = [site.save_dict() for site in self.mol_sites]
         else:
-            for site in self.atom_sites:
-                sites.append(site.save_dict())
+            sites = [site.save_dict() for site in self.atom_sites]
 
         return {
             "lattice": self.lattice.matrix,
@@ -1504,18 +1502,17 @@ class pyxtal:
         self.numMols = dict0["numMols"]
         self.valid = dict0["valid"]
         self.formula = dict0["formula"]
-        sites = []
+
         if dict0["molecular"]:
             self.molecules = [None] * len(self.numMols)
-            for site in dict0["sites"]:
-                msite = mol_site.load_dict(site)
-                sites.append(msite)
+            sites = [mol_site.load_dict(site) for site in dict0["sites"]]
+            # TODO: this for loop makes repeated calls for duplicated molecules
+            for msite in sites:
                 if self.molecules[msite.type] is None:
                     self.molecules[msite.type] = msite.molecule
             self.mol_sites = sites
         else:
-            for site in dict0["sites"]:
-                sites.append(atom_site.load_dict(site))
+            sites = [atom_site.load_dict(site) for site in dict0["sites"]]
             self.atom_sites = sites
 
     def build(self, group, species, numIons, lattice, sites, tol=1e-2, dim=3, use_hall=False):
@@ -1578,15 +1575,12 @@ class pyxtal:
         wp0 = self.group[0]
         for sp, wps in zip(species, sites):
             for wp in wps:
-                if type(wp) is dict:  # dict
+                if isinstance(wp, dict):  # dict
                     for pair in wp.items():
                         (key, pos) = pair
                         _wp = choose_wyckoff(self.group, site=key)
                         if _wp is not False:
-                            if _wp.get_dof() == 0:  # fixed pos
-                                pt = [0.0, 0.0, 0.0]
-                            else:
-                                pt = _wp.get_all_positions(pos)[0]
+                            pt = [0.0, 0.0, 0.0] if _wp.get_dof() == 0 else _wp.get_all_positions(pos)[0]
                             _sites.append(atom_site(_wp, pt, sp))
                         else:
                             raise RuntimeError("Cannot interpret site", key)
@@ -2237,12 +2231,7 @@ class pyxtal:
         if seq is None:
             seq = np.argsort(self.numIons)
 
-        sites = []
-        for i in seq:
-            for site in self.atom_sites:
-                if self.species[i] == site.specie:
-                    sites.append(site)
-        self.atom_sites = sites
+        self.atom_sites = [site for i in seq for site in self.atom_sites if self.species[i] == site.specie]
 
     def get_transition(self, ref_struc, d_tol=1.0, d_tol2=0.3, N_images=2, max_path=30, both=False):
         """
@@ -2840,7 +2829,7 @@ class pyxtal:
         pmg = self.to_pymatgen()
         pmg.replace_species(dicts)
         if self.molecular:
-            for _e1e in dicts:
+            for ele in dicts:
                 smi = [m.smile.replace(ele, dicts[ele]) + ".smi" for m in self.molecules]
             self.from_seed(pmg, smi)
         else:
@@ -3500,6 +3489,7 @@ class pyxtal:
 
         if "Dimension" in criteria:
             try:
+                # TODO: unclear what is the criteria_cutoff
                 dim1 = self.get_dimensionality(criteria_cutoff)
             except:
                 dim1 = 3
@@ -3564,7 +3554,7 @@ class pyxtal:
         sites_mul = [range(min([min_wp, site.wp.multiplicity])) for site in self.atom_sites]
         ids = list(itertools.product(*sites_mul))
         if len(ids) > N_max:
-            ids = sample(ids, N_max)
+            ids = self.random_state.choice(ids, N_max)
 
         print(f"Number of augments {len(ids):4d} from ", self.get_xtal_string())
         for sites_id in ids:

@@ -4,7 +4,6 @@ Common utlities for global search
 
 import os
 import warnings
-from random import choice
 from time import time
 
 import numpy as np
@@ -491,12 +490,10 @@ def compute(row, pmg, work_dir, skf_dir, info=None):
         gulp_info=g_info,
     )
     file1, file2 = "/pyxtal.prm", "/pyxtal.rtf"
-    prm = open(w_dir + file1, "w")
-    prm.write(c_info["prm"])
-    prm.close()
-    rtf = open(w_dir + file2, "w")
-    rtf.write(c_info["rtf"])
-    rtf.close()
+    with open(w_dir + file1, "w") as prm:
+        prm.write(c_info["prm"])
+    with open(w_dir + file2, "w") as rtf:
+        rtf.write(c_info["rtf"])
 
     # reference
     print("\n", row.csd_code, row.mol_smi, pmg.volume)
@@ -512,7 +509,7 @@ def compute(row, pmg, work_dir, skf_dir, info=None):
             data[key]["diff"] = ben.diff[calc]
             data[key]["cif"] = ben.xtal[calc].to_file()
             data[key]["energy"] = ben.energy[calc] / sum(ben.xtal[calc].numMols)
-        except:
+        except:  # noqa: PERF203
             print("=====Calculation is wrong ", calc, row.csd_code)
             data[key]["energy"] = 100000
 
@@ -535,12 +532,10 @@ if __name__ == "__main__":
 
     # Prepare prm
     c_info = row.data["charmm_info"]
-    prm = open(w_dir + "/pyxtal.prm", "w")
-    prm.write(c_info["prm"])
-    prm.close()
-    rtf = open(w_dir + "/pyxtal.rtf", "w")
-    rtf.write(c_info["rtf"])
-    rtf.close()
+    with open(w_dir + "/pyxtal.prm", "w") as prm:
+        prm.write(c_info["prm"])
+    with open(w_dir + "/pyxtal.rtf", "w") as rtf:
+        rtf.write(c_info["rtf"])
 
     # Relax expt. xtal
     res = optimizer(xtal1, c_info, w_dir)

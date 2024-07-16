@@ -7,11 +7,11 @@ import os
 import re
 from copy import deepcopy
 from operator import itemgetter
-from random import choice
 
 import networkx as nx
 import numpy as np
 from monty.serialization import loadfn
+from numpy.random import Generator
 from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer, generate_full_symmops
 from scipy.spatial.distance import cdist
@@ -234,6 +234,7 @@ class pyxtal_molecule:
         fix=False,
         torsions=None,
         seed=None,
+        random_state=None,
         tm=Tol_matrix(prototype="molecular"),
         symtol=0.3,
     ):
@@ -245,8 +246,13 @@ class pyxtal_molecule:
             seed = 0xF00D
         self.seed = seed
 
+        if isinstance(random_state, Generator):
+            self.random_state = random_state.spawn(1)[0]
+        else:
+            self.random_state = np.random.default_rng(random_state)
+
         # Parse molecules: either file or molecule name
-        if type(mol) == str:
+        if isinstance(mol, str):
             tmp = mol.split(".")
             self.name = tmp[0]
             if len(tmp) > 1:
@@ -813,7 +819,7 @@ class pyxtal_molecule:
                     pruneRmsThresh=0.5,
                 )
                 N_confs = mol.GetNumConformers()
-                conf_id = choice(range(N_confs))
+                conf_id = self.random_state.choice(range(N_confs))
                 conf = mol.GetConformer(conf_id)
                 # xyz = conf.GetPositions()
                 # res = AllChem.MMFFOptimizeMoleculeConfs(mol)
@@ -1524,9 +1530,14 @@ class Orientation:
             if degrees is equal to 1
     """
 
-    def __init__(self, matrix=None, degrees=2, axis=None):
+    def __init__(self, matrix=None, degrees=2, axis=None, random_state=None):
         self.matrix = np.array(matrix)
         self.degrees = degrees
+
+        if isinstance(random_state, Generator):
+            self.random_state = random_state.spawn(1)[0]
+        else:
+            self.random_state = np.random.default_rng(random_state)
 
         if degrees == 1:
             if axis is None:
@@ -1598,8 +1609,8 @@ class Orientation:
             r1 = Rotation.from_rotvec(self.angle * self.axis)
 
             if self.degrees == 2 and flip and np.random.random() > 0.5:
-                ax = choice(["x", "y", "z"])
-                angle0 = choice([90, 180, 270])
+                ax = self.random_state.choice(["x", "y", "z"])
+                angle0 = self.random_state.choice([90, 180, 270])
                 r2 = Rotation.from_euler(ax, angle0, degrees=True)
                 r1 = r2 * r1
             self.r = r1 * self.r

@@ -6,20 +6,24 @@ A base class for global optimization including
 - QRS
 """
 
+from __future__ import annotations
+
 import os
-from random import sample
 from time import time
-from typing import Optional, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pymatgen.analysis.structure_matcher as sm
+from numpy.random import Generator
 from ost.parameters import ForceFieldParameters, compute_r2, get_lmp_efs
 
-from pyxtal.lattice import Lattice
 from pyxtal.molecule import find_rotor_from_smile, pyxtal_molecule
 from pyxtal.optimize.common import optimizer, randomizer
 from pyxtal.representation import representation
 from pyxtal.util import new_struc
+
+if TYPE_CHECKING:
+    from pyxtal.lattice import Lattice
 
 
 class GlobalOptimize:
@@ -54,29 +58,36 @@ class GlobalOptimize:
         self,
         smiles: str,
         workdir: str,
-        sg: Union[int, list[int]],
+        sg: int | list[int],
         tag: str,
-        info: Optional[dict[any, any]] = None,
+        info: dict[any, any] | None = None,
         ff_opt: bool = False,
         ff_style: str = "openff",
         ff_parameters: str = "parameters.xml",
         reference_file: str = "references.xml",
-        ref_criteria: Optional[dict[any, any]] = None,
+        ref_criteria: dict[any, any] | None = None,
         N_cpu: int = 1,
-        cif: Optional[str] = None,
-        block: Optional[list[any]] = None,
-        num_block: Optional[list[any]] = None,
-        composition: Optional[list[any]] = None,
-        lattice: Optional[Lattice] = None,
-        torsions: Optional[list[any]] = None,
-        molecules: Optional[list[pyxtal_molecule]] = None,
-        sites: Optional[list[any]] = None,
+        cif: str | None = None,
+        block: list[any] | None = None,
+        num_block: list[any] | None = None,
+        composition: list[any] | None = None,
+        lattice: Lattice | None = None,
+        torsions: list[any] | None = None,
+        molecules: list[pyxtal_molecule] | None = None,
+        sites: list[any] | None = None,
         use_hall: bool = False,
         skip_ani: bool = True,
         factor: float = 1.1,
         eng_cutoff: float = 5.0,
         E_max: float = 1e10,
+        random_state=None,
     ):
+        # General information
+        if isinstance(random_state, Generator):
+            self.random_state = random_state.spawn(1)[0]
+        else:
+            self.random_state = np.random.default_rng(random_state)
+
         # Molecular information
         self.smile = smiles
         self.smiles = self.smile.split(".")  # list
@@ -346,7 +357,7 @@ class GlobalOptimize:
             N_selected = min([N_min, self.ncpu])
             print("Create the reference data by augmentation", N_selected)
             if len(xtals) >= N_selected:
-                ids = sample(list(range(len(xtals))), N_selected)
+                ids = self.random_state.choice(list(range(len(xtals))), N_selected)
                 xtals = [xtals[id] for id in ids]
                 numMols = [numMols[id] for id in ids]
 

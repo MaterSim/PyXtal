@@ -2,7 +2,6 @@
 import importlib.util
 import os
 import unittest
-from random import choice, shuffle
 
 import numpy as np
 import pymatgen.analysis.structure_matcher as sm
@@ -402,10 +401,11 @@ class TestOptLat(unittest.TestCase):
                 assert sm.StructureMatcher().fit(pmg1, pmg3)
 
     def test_molecular_from_random(self):
+        rng = np.random.default_rng(0)
         sgs = [5, 7, 8, 12, 13, 14]
         c1 = pyxtal(molecular=True)
         for _i in range(20):
-            sg = choice(sgs)
+            sg = rng.choice(sgs)
             c1.from_random(3, sg, ["aspirin"])
             pmg1 = c1.to_pymatgen()
             c2 = c1.copy()
@@ -1230,13 +1230,14 @@ class TestPartial(unittest.TestCase):
 
 class resort(unittest.TestCase):
     def test_molecule(self):
+        rng = np.random.default_rng(0)
         # glycine dihydrate
         cif = cif_path + "gdh.cif"
         struc = pyxtal(molecular=True)
         struc.from_seed(seed=cif, molecules=["Glycine-z", "H2O"])
         N1 = len(struc.mol_sites)
         l = list(range(len(struc.mol_sites)))
-        shuffle(l)
+        rng.shuffle(l)
         struc.mol_sites = [struc.mol_sites[i] for i in l]
         struc.resort()
         N2 = len(struc.mol_sites)
@@ -1245,10 +1246,11 @@ class resort(unittest.TestCase):
     def test_atom(self):
         cif = cif_path + "aspirin.cif"
         struc = pyxtal()
+        rng = np.random.default_rng(0)
         struc.from_seed(seed=cif)
         N1 = len(struc.atom_sites)
         l = list(range(len(struc.atom_sites)))
-        shuffle(l)
+        rng.shuffle(l)
         struc.atom_sites = [struc.atom_sites[i] for i in l]
         struc.resort()
         N2 = len(struc.atom_sites)

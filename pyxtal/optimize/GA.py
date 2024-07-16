@@ -2,18 +2,22 @@
 Global Optimizer
 """
 
+from __future__ import annotations
+
 from concurrent.futures import ProcessPoolExecutor
-from random import sample
 from time import time
-from typing import Optional, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
+from numpy.random import Generator
 
-from pyxtal.lattice import Lattice
-from pyxtal.molecule import pyxtal_molecule
 from pyxtal.optimize.base import GlobalOptimize
 from pyxtal.optimize.common import optimizer_par, optimizer_single
 from pyxtal.representation import representation
+
+if TYPE_CHECKING:
+    from pyxtal.lattice import Lattice
+    from pyxtal.molecule import pyxtal_molecule
 
 
 class GA(GlobalOptimize):
@@ -52,33 +56,39 @@ class GA(GlobalOptimize):
         self,
         smiles: str,
         workdir: str,
-        sg: Union[int, list],
+        sg: int | list,
         tag: str,
-        info: Optional[dict[any, any]] = None,
+        info: dict[any, any] | None = None,
         ff_opt: bool = False,
         ff_style: str = "openff",
         ff_parameters: str = "parameters.xml",
         reference_file: str = "references.xml",
-        ref_criteria: Optional[dict[any, any]] = None,
+        ref_criteria: dict[any, any] | None = None,
         N_gen: int = 10,
         N_pop: int = 10,
-        fracs: Optional[list] = None,
+        fracs: list | None = None,
         N_cpu: int = 1,
-        cif: Optional[str] = None,
-        block: Optional[list[any]] = None,
-        num_block: Optional[list[any]] = None,
-        composition: Optional[list[any]] = None,
-        lattice: Optional[Lattice] = None,
-        torsions: Optional[list[any]] = None,
-        molecules: Optional[list[pyxtal_molecule]] = None,
-        sites: Optional[list[any]] = None,
+        cif: str | None = None,
+        block: list[any] | None = None,
+        num_block: list[any] | None = None,
+        composition: list[any] | None = None,
+        lattice: Lattice | None = None,
+        torsions: list[any] | None = None,
+        molecules: list[pyxtal_molecule] | None = None,
+        sites: list[any] | None = None,
         use_hall: bool = False,
         skip_ani: bool = True,
         factor: float = 1.1,
         eng_cutoff: float = 5.0,
         E_max: float = 1e10,
         verbose: bool = False,
+        random_state: int | None = None,
     ):
+        if isinstance(random_state, Generator):
+            self.random_state = random_state.spawn(1)[0]
+        else:
+            self.random_state = np.random.default_rng(random_state)
+
         # GA parameters:
         if fracs is None:
             fracs = [0.6, 0.4, 0.0]
@@ -303,7 +313,6 @@ class GA(GlobalOptimize):
             print(gen_out)
 
             # Save the reps for next move
-            prev_xtals = current_xtals  # ; print(self.engs)
             self.min_energy = np.min(np.array(self.engs))
             self.N_struc = len(self.engs)
 
@@ -317,17 +326,14 @@ class GA(GlobalOptimize):
                 N_added = self.ff_optimization(xtals, N_added)
 
             else:
-                match = self.early_termination(current_xtals,
-                                               current_matches,
-                                               current_engs,
-                                               current_tags,
-                                               ref_pmg,
-                                               ref_eng)
+                match = self.early_termination(
+                    current_xtals, current_matches, current_engs, current_tags, ref_pmg, ref_eng
+                )
                 if match is not None:
                     print("Early termination")
                     return match
 
-        return
+        return None
 
     def _selTournament(self, fitness, factor=0.35):
         """
@@ -335,7 +341,7 @@ class GA(GlobalOptimize):
         individuals, *k* times. The list returned contains
         references to the input *individuals*.
         """
-        IDs = sample(set(range(len(fitness))), int(len(fitness) * factor))
+        IDs = self.random_state.choice(set(range(len(fitness))), int(len(fitness) * factor))
         min_fit = np.argmin(fitness[IDs])
         return IDs[min_fit]
 
@@ -391,12 +397,10 @@ if __name__ == "__main__":
         if "charmm_info" in row.data:
             # prepare charmm input
             chm_info = row.data["charmm_info"]
-            prm = open(wdir + "/calc/pyxtal.prm", "w")
-            prm.write(chm_info["prm"])
-            prm.close()
-            rtf = open(wdir + "/calc/pyxtal.rtf", "w")
-            rtf.write(chm_info["rtf"])
-            rtf.close()
+            with open(wdir + "/calc/pyxtal.prm", "w") as prm:
+                prm.write(chm_info["prm"])
+            with open(wdir + "/calc/pyxtal.rtf", "w") as rtf:
+                rtf.write(chm_info["rtf"])
         else:
             # Make sure we generate the initial guess from ambertools
             if os.path.exists("parameters.xml"):

@@ -55,6 +55,7 @@ class Lattice:
         # Set required parameters
         if PBC is None:
             PBC = [1, 1, 1]
+
         if ltype in ltype_keywords:
             self.ltype = ltype.lower()
         elif ltype is None:
@@ -68,7 +69,12 @@ class Lattice:
         self.dim = sum(PBC)
         self.kwargs = {}
         self.random = True
-        self.random_state = np.random.default_rng()
+
+        if isinstance(random_state, Generator):
+            self.random_state = random_state.spawn(1)[0]
+        else:
+            self.random_state = np.random.default_rng(random_state)
+
         # Set optional values
         self.allow_volume_reset = True
         for key, value in kwargs.items():
@@ -602,6 +608,7 @@ class Lattice:
                 raise ValueError(msg)
         else:
             self.reset_matrix()
+
         para = matrix2para(self.matrix)
         self.a, self.b, self.c, self.alpha, self.beta, self.gamma = para
         self.volume = np.linalg.det(self.matrix)
@@ -677,9 +684,7 @@ class Lattice:
             allowed_ids = [[0, 1, 2]]
 
         if random:
-            from random import choice
-
-            ids = choice(allowed_ids)
+            ids = self.random_state.choice(allowed_ids)
         else:
             if ids not in allowed_ids:
                 print(ids)
@@ -716,9 +721,7 @@ class Lattice:
             allowed_ids = ["No"]
 
         if random:
-            from random import choice
-
-            ids = choice(allowed_ids)
+            ids = self.random_state.choice(allowed_ids)
         else:
             if ids not in allowed_ids:
                 print(ids)
@@ -1834,6 +1837,7 @@ def para2matrix(cell_para, radians=True, format="upper"):
     sin_gamma = np.sin(gamma)
     sin_alpha = np.sin(alpha)
     matrix = np.zeros([3, 3])
+
     if format == "lower":
         # Generate a lower-diagonal matrix
         c1 = c * cos_beta

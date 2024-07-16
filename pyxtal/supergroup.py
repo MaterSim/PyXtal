@@ -6,10 +6,10 @@ import functools
 import itertools
 import operator
 from copy import deepcopy
-from random import sample
 
 import numpy as np
 import pymatgen.analysis.structure_matcher as sm
+from numpy.random import Generator
 from scipy.optimize import minimize
 
 import pyxtal.symmetry as sym
@@ -338,13 +338,18 @@ class supergroup:
         G: target supergroup number
     """
 
-    def __init__(self, struc, G):
+    def __init__(self, struc, G, random_state=None):
         # initilize the necesary parameters
         self.solutions = []
         self.error = True
         self.G = sym.Group(G)
         group_type = "k" if self.G.point_group == struc.group.point_group else "t"
         self.group_type = group_type
+
+        if isinstance(random_state, Generator):
+            self.random_state = random_state.spawn(1)[0]
+        else:
+            self.random_state = np.random.default_rng(random_state)
 
         # list of all alternative wycsets
         strucs = struc.get_alternatives()
@@ -379,7 +384,7 @@ class supergroup:
                 (id, sols) = sols
                 if len(sols) > max_per_G:
                     print("Warning: ignore some solutions: ", len(sols) - max_per_G)
-                    sols = sample(sols, max_per_G)
+                    sols = self.random_state.choice(sols, max_per_G)
                     # sols=[(['8c'], ['4a', '4b'], ['4b', '8c', '8c'])]
                 for _i, sol in enumerate(sols):
                     max_disp, trans, mapping, sp = self.calc_disps(id, sol, d_tol * 1.1)
