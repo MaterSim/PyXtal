@@ -88,12 +88,8 @@ def find_mapping_per_element(sites1, sites2, max_num=720):
     """
 
     unique_letters = list(set(sites1))
-    site1_letter_indices = []
-    for letter in unique_letters:
-        site1_letter_indices.append([i for i, x in enumerate(sites1) if x == letter])
-    site2_letter_bins = []
-    for lbin in sites2:
-        site2_letter_bins.append([unique_letters.index(x) for x in lbin])
+    site1_letter_indices = [[i for i, x in enumerate(sites1) if x == letter] for letter in unique_letters]
+    site2_letter_bins = [[unique_letters.index(x) for x in lbin] for lbin in sites2]
 
     combo_list = []
     for s in site2_letter_bins:
@@ -380,14 +376,14 @@ class supergroup:
         done = False
         if len(self.solutions) > 0:
             # extract the valid
-            for sols in self.solutions:
-                (id, sols) = sols
+            for idx, sols in self.solutions:
                 if len(sols) > max_per_G:
                     print("Warning: ignore some solutions: ", len(sols) - max_per_G)
-                    sols = self.random_state.choice(sols, max_per_G)
+                    sols = [sols[i] for i in self.random_state.choice(len(sols), max_per_G)]  # noqa: PLW2901
                     # sols=[(['8c'], ['4a', '4b'], ['4b', '8c', '8c'])]
+
                 for _i, sol in enumerate(sols):
-                    max_disp, trans, mapping, sp = self.calc_disps(id, sol, d_tol * 1.1)
+                    max_disp, trans, mapping, sp = self.calc_disps(idx, sol, d_tol * 1.1)
                     # print(i, sp.H.number, sp.G.number, sol, max_disp, mapping)
                     if max_disp < d_tol:
                         solutions.append((sp, mapping, trans, self.wyc_set_id, max_disp))
@@ -471,23 +467,21 @@ class supergroup:
             id = np.argmin(dists)
             translation = translations[id]
             mask = masks[id]
-            if 0.2 < max_disp < d_tol:
+            if 0.2 < max_disp < d_tol and (mask is None or len(mask) < 3):
                 # optimize disp further
-                if mask is None or len(mask) < 3:
+                def fun(translation, mapping, splitter, mask):
+                    return self.symmetrize_dist(splitter, mapping, mask, translation)[0]
 
-                    def fun(translation, mapping, splitter, mask):
-                        return self.symmetrize_dist(splitter, mapping, mask, translation)[0]
-
-                    res = minimize(
-                        fun,
-                        translations[id],
-                        args=(mappings[id], splitter, mask),
-                        method="Nelder-Mead",
-                        options={"maxiter": 10},
-                    )
-                    if res.fun < max_disp:
-                        max_disp = res.fun
-                        translation = res.x
+                res = minimize(
+                    fun,
+                    translations[id],
+                    args=(mappings[id], splitter, mask),
+                    method="Nelder-Mead",
+                    options={"maxiter": 10},
+                )
+                if res.fun < max_disp:
+                    max_disp = res.fun
+                    translation = res.x
             return max_disp, translation, mappings[id], splitter
         else:
             print("bug in findding the mappings", solution)
@@ -658,11 +652,12 @@ class supergroup:
 
         # choose the best coord1_H
         coords_H = apply_ops(base, ops_H)
-        ds = []
-        for coord_H in coords_H:
-            coord_G2 = coord_H + translation if translation is not None else coord_H
-            coord_G1, diff = search_G1(splitter.G, rot, tran, coord_G2, wp1, op_G1)
-            ds.append(diff)
+        ds = [
+            search_G1(splitter.G, rot, tran, coord_H + translation if translation is not None else coord_H, wp1, op_G1)[
+                1
+            ]
+            for coord_H in coords_H
+        ]
 
         ds = np.array(ds)
         minID = np.argmin(ds)
@@ -679,9 +674,7 @@ class supergroup:
                 diff = coord_G2 - coord_H
                 diff -= np.rint(diff)
                 translation = diff.copy()
-                for m in range(3):
-                    if abs(diff[m]) < 1e-4:
-                        mask.append(m)
+                mask = [m for m in range(3) if abs(diff[m]) < 1e-4]
                 dist = 0
             else:
                 coord_G2, dist = search_G2(inv_rot, -tran, tmp, coord_H + translation, self.cell)
@@ -1093,8 +1086,7 @@ class supergroups:
         if path is None:
             if G is None:
                 raise ValueError("G and path cannot be None at the same time")
-            else:
-                paths = struc.group.search_supergroup_paths(G, max_layer=max_layer)
+            paths = struc.group.search_supergroup_paths(G, max_layer=max_layer)
         else:
             paths = [path]
             G = path[-1]
@@ -1116,8 +1108,7 @@ class supergroups:
                     else:
                         self.path = p
                     break
-                else:
-                    failed_paths.append(w_path)
+                failed_paths.append(w_path)
             else:
                 status += "skipped..."
 
@@ -1138,7 +1129,7 @@ class supergroups:
         return str(self)
 
     def print_solutions(self):
-        for i, solution in enumerate(self.solutions):
+        for solution in self.solutions:
             (sp, mapping, trans, wyc_set_id, max_disp) = solution
             print("\nTransition: ", sp.H.number, "->", sp.G.number)
             output = "Cell: {:7.3f}{:7.3f}{:7.3f}".format(*trans)
@@ -1252,7 +1243,6 @@ if __name__ == "__main__":
         "BTO": [123, 221],
         "lt_cristobalite": [98, 210, 227],
         "BTO-Amm2": [65, 123, 221],
-        "NaSb3F10": [186, 194],
         "NaSb3F10": [176, 194],
         "MPWO": [59, 71, 139, 225],
         # "NbO2": 141,

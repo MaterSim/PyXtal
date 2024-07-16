@@ -5,8 +5,6 @@ Module for storing & accessing symmetry group information, including
     - Hall class
 """
 
-# Imports ------------------------------
-# Standard Libraries
 from __future__ import annotations
 
 import functools
@@ -15,20 +13,14 @@ import itertools
 import operator
 import os
 import re
-
-# from pkg_resources import resource_filename as rf
 from copy import deepcopy
 
 import numpy as np
 from monty.serialization import loadfn
 from numpy.random import Generator
-
-# External Libraries
 from pandas import read_csv
 
 from pyxtal.constants import all_sym_directions, hex_cell, letters
-
-# PyXtal imports
 from pyxtal.operations import (
     OperationAnalyzer,
     SymmOp,
@@ -1173,7 +1165,7 @@ class Group:
                 holder = []
                 for x in combo_storage:
                     for k in range(len(block_units)):
-                        trial = np.array(deepcopy(x))  # trial solution
+                        trial = np.array(deepcopy(x), dtype=int)  # trial solution
                         trial[k] += 1
                         if trial.tolist() in holder:
                             continue
@@ -1462,12 +1454,10 @@ class Group:
                         holder = []
                         for path in paths:
                             tail_number = path[-1]
-                            indices = []
-                            for idx, numbers in enumerate(layers[j]["subgroups"]):
-                                if tail_number in numbers:
-                                    indices.append(idx)
-                            for idx in indices:
-                                holder.append([*path, layers[j]["groups"][idx]])
+                            indices = [
+                                idx for idx, numbers in enumerate(layers[j]["subgroups"]) if tail_number in numbers
+                            ]
+                            holder.extend([path + [layers[j]["groups"][idx]] for idx in indices])  # noqa: RUF005
                         paths = deepcopy(holder)
                     final.extend(paths)
                     subgroups.append([])
@@ -1475,9 +1465,7 @@ class Group:
                 # Continue to generate next layer if the path to H has not been found.
                 else:
                     subgroups.append(subgroup_numbers)
-                    for x in subgroup_numbers:
-                        if (x not in groups) and (x not in traversed):
-                            groups.append(x)
+                    groups.extend([x for x in subgroup_numbers if x not in groups and x not in traversed])
 
             traversed.extend(groups)
             layers[l] = {"groups": deepcopy(groups), "subgroups": []}
@@ -1611,15 +1599,19 @@ class Group:
                     for i in range(len_k)
                     if kdict["subgroup"][i] != tail[2]
                 ]
-                for n in next_steps:
-                    _potential.append(deepcopy(p) + n)
-            potential = deepcopy(_potential)
+                _potential.extend([deepcopy(p) + n for n in next_steps])
+            potential = _potential
 
-            for p in deepcopy(potential):
-                # Check there's only one wp.  #Check that the 1 wp is the general position
-                if (len(set(p[-1][3])) == 1) and (p[-1][3][0][-1] == Group(p[-1][2])[0].letter):
-                    solutions.append(deepcopy(p)[1:])
-                    potential.remove(p)
+            solutions.extend(
+                [
+                    deepcopy(p)[1:]
+                    for p in potential
+                    if (len(set(p[-1][3])) == 1 and p[-1][3][0][-1] == Group(p[-1][2])[0].letter)
+                ]
+            )
+            potential = [
+                p for p in potential if not (len(set(p[-1][3])) == 1 and p[-1][3][0][-1] == Group(p[-1][2])[0].letter)
+            ]
 
         return solutions
 
@@ -2289,11 +2281,7 @@ class Wyckoff_position:
                 #    return [0, 1]
                 # else:
                 #    return [0, 1, 2]
-                axs = []
-                for ax in range(3):
-                    if self.ops[0].rotation_matrix[ax, ax] == 0:
-                        axs.append(ax)
-                return axs
+                return [ax for ax in range(3) if self.ops[0].rotation_matrix[ax, ax] == 0]
             else:
                 if self.get_dof() == 1:
                     if self.ops[0].rotation_matrix[2, 2] == 1:
@@ -2920,20 +2908,15 @@ def choose_wyckoff(G, number=None, site=None, dim=3, random_state: int | None | 
                 return False
 
 
-from typing import Union, List, Optional
-from numpy.random import Generator
-from pyxtal.symmetry import Group, Wyckoff_position
-import numpy as np
-
 def choose_wyckoff_mol(
     G: Group,
     number: int,
-    site: Optional[str],
-    orientations: List[List[List]],
+    site: str | None,
+    orientations: list[list[list]],
     gen_site: bool = True,
     dim: int = 3,
-    random_state: Union[int, None, Generator] = None
-) -> Union[Wyckoff_position, bool]:
+    random_state: int | None | Generator = None,
+) -> Wyckoff_position | bool:
     """
     Choose a Wyckoff position to fill based on the current number of molecules
     needed to be placed within a unit cell.
@@ -2961,16 +2944,14 @@ def choose_wyckoff_mol(
         random_state = np.random.default_rng(random_state)
 
     if site is not None:
-        return Wyckoff_position.from_group_and_letter(
-            G.number, site, dim, hn=G.hall_number
-        )
+        return Wyckoff_position.from_group_and_letter(G.number, site, dim, hn=G.hall_number)
 
     wyckoffs = G.wyckoffs_organized
 
     def filter_valid_wyckoffs(wyckoffs, orientations, number):
         for j, wyckoff in enumerate(wyckoffs):
             if len(wyckoff[0]) <= number:
-                yield from ( w for k, w in enumerate(wyckoff) if orientations[j][k])
+                yield from (w for k, w in enumerate(wyckoff) if orientations[j][k])
 
     if gen_site or random_state.random() > 0.5:
         good_wyckoffs = list(filter_valid_wyckoffs(wyckoffs, orientations, number))
