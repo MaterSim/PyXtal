@@ -254,6 +254,15 @@ class molecular_crystal:
             good_lattice = False
             for _cycle in range(10):
                 try:
+                    if self.group.number < 10:
+                        coef = 1.0 * self.numMols[0] / self.group[0].multiplicity
+                    elif 10 <= self.group.number <= 15:
+                        coef = 2.0  # 2/m
+                    elif 16 <= self.group.number <= 74:
+                        coef = 1.5
+                    else:
+                        coef = 1.0
+
                     self.lattice = Lattice(
                         self.group.lattice_type,
                         self.volume,
@@ -261,6 +270,7 @@ class molecular_crystal:
                         unique_axis=unique_axis,
                         thickness=self.thickness,
                         area=self.area,
+                        min_special=coef * max([mol.get_max_length() for mol in self.molecules]),
                     )
                     good_lattice = True
                     break

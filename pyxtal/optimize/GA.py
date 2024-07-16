@@ -4,11 +4,15 @@ Global Optimizer
 
 from __future__ import annotations
 
-from concurrent.futures import ProcessPoolExecutor
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor, TimeoutError
 from time import time
 from typing import TYPE_CHECKING
 
 import numpy as np
+
+# import threading
+import psutil
 from numpy.random import Generator
 
 from pyxtal.optimize.base import GlobalOptimize
@@ -126,7 +130,11 @@ class GA(GlobalOptimize):
             E_max,
         )
 
-        print(self.full_str())
+        # setup timeout for each optimization call
+        self.timeout = 60.0 * self.N_pop / self.ncpu
+        strs = self.full_str()
+        self.logging.info(strs)
+        print(strs)
 
     def full_str(self):
         s = str(self)
@@ -161,6 +169,7 @@ class GA(GlobalOptimize):
 
         for gen in range(self.N_gen):
             print(f"\nGeneration {gen:d} starts")
+            self.logging.info(f"Generation {gen:d} starts")
             self.generation = gen + 1
             t0 = time()
 
@@ -198,7 +207,7 @@ class GA(GlobalOptimize):
                     current_xtals[count] = self._crossover(xtal1, xtal2)
                     count += 1
 
-            # Local optimization
+            # Local optimization (QZ: to move the block to base.py)
             args = [
                 self.randomizer,
                 self.optimizer,
@@ -220,7 +229,7 @@ class GA(GlobalOptimize):
                 self.skip_ani,
             ]
 
-            gen_results = [None] * len(current_xtals)
+            gen_results = [(None, None)] * len(current_xtals)
             if self.ncpu == 1:
                 for pop in range(len(current_xtals)):
                     xtal = current_xtals[pop]
@@ -244,14 +253,55 @@ class GA(GlobalOptimize):
                     my_args = [xtals, ids, mutates, job_tags, *args]
                     args_lists.append(tuple(my_args))
 
-                with ProcessPoolExecutor(max_workers=self.ncpu) as executor:
-                    results = [executor.submit(optimizer_par, *p) for p in args_lists]
-                    # loop each cpu
+                def process_with_timeout(results, timeout):
                     for result in results:
-                        # loop each pop
-                        for res in result.result():
-                            (id, xtal, match) = res
-                            gen_results[id] = (xtal, match)
+                        try:
+                            res_list = result.result(timeout=timeout)
+                            for res in res_list:
+                                (id, xtal, match) = res
+                                gen_results[id] = (xtal, match)
+                        except TimeoutError:
+                            self.logging.info("ERROR: Opt timed out after %d seconds", timeout)
+                        except Exception as e:
+                            self.logging.info("ERROR: An unexpected error occurred: %s", str(e))
+                    return gen_results
+
+                def run_with_global_timeout(ncpu, args_lists, timeout, return_dict):
+                    with ProcessPoolExecutor(max_workers=ncpu) as executor:
+                        results = [executor.submit(optimizer_par, *p) for p in args_lists]
+                        gen_results = process_with_timeout(results, timeout)
+                        return_dict["gen_results"] = gen_results
+
+                # Set your global timeout value here
+                global_timeout = self.timeout
+
+                # Run multiprocess
+                manager = multiprocessing.Manager()
+                return_dict = manager.dict()
+                p = multiprocessing.Process(
+                    target=run_with_global_timeout, args=(self.ncpu, args_lists, global_timeout, return_dict)
+                )
+                p.start()
+                p.join(global_timeout)
+
+                if p.is_alive():
+                    self.logging.info("ERROR: Global execution timed out after %d seconds", global_timeout)
+                    # p.terminate()
+                    # Ensure all child processes are terminated
+                    child_processes = psutil.Process(p.pid).children(recursive=True)
+                    self.logging.info("Checking child process total: %d", len(child_processes))
+                    for proc in child_processes:
+                        # self.logging.info("Checking child process ID: %d", pid)
+                        try:
+                            # proc = psutil.Process(pid)
+                            if proc.status() == "running":  # is_running():
+                                proc.terminate()
+                                self.logging.info("Terminate abnormal child process ID: %d", proc.pid)
+                        except psutil.NoSuchProcess:
+                            self.logging.info("ERROR: PID %d does not exist", proc.pid)
+                    p.join()
+
+                gen_results = return_dict.get("gen_results", {})
 
             # Summary and Ranking
             for id, res in enumerate(gen_results):
@@ -276,7 +326,9 @@ class GA(GlobalOptimize):
                     self.engs.append(xtal.energy / sum(xtal.numMols))
                     # print(output)
 
-            print(f"Generation {gen:d} finishes")  # ; import sys; sys.exit()
+            strs = f"Generation {gen:d} finishes"  # ; import sys; sys.exit()
+            print(strs)
+            self.logging.info(strs)
             t1 = time()
 
             # Apply Gaussian
@@ -331,6 +383,7 @@ class GA(GlobalOptimize):
                 )
                 if match is not None:
                     print("Early termination")
+                    self.logging.info("Early termination")
                     return match
 
         return None

@@ -8,6 +8,7 @@ A base class for global optimization including
 
 from __future__ import annotations
 
+import logging
 import os
 from time import time
 from typing import TYPE_CHECKING
@@ -101,7 +102,7 @@ class GlobalOptimize:
             self.N_torsion += len(find_rotor_from_smile(smi)) * int(max([comp, 1]))
 
         # Crystal information
-        self.sg = [sg] if type(sg) == int or type(sg) == np.int64 else sg
+        self.sg = [sg] if isinstance(sg, (int, np.int64)) else sg
         self.use_hall = use_hall
         self.factor = factor
         self.sites = sites
@@ -112,6 +113,7 @@ class GlobalOptimize:
 
         # Generation and Optimization
         self.workdir = workdir
+        self.log_file = self.workdir + "/loginfo"
         self.ncpu = N_cpu
         self.skip_ani = skip_ani
         self.randomizer = randomizer
@@ -130,7 +132,7 @@ class GlobalOptimize:
             self.parameters = ForceFieldParameters(self.smiles, style=ff_style, f_coef=1.0, s_coef=1.0, ncpu=self.ncpu)
 
             # Preload two set for FF parameters 1 for opt and 2 for refinement
-            if type(self.ff_parameters) == list:
+            if isinstance(self.ff_parameters, list):
                 assert len(self.ff_parameters) == 2
                 for para_file in self.ff_parameters:
                     if not os.path.exists(para_file):
@@ -154,7 +156,7 @@ class GlobalOptimize:
                         ff_style,
                     )
                     params0 = self.parameters.params_init.copy()
-                    self.parameters.export_parameters(self.wdir + "/" + self.ff_parameters, params0)
+                    self.parameters.export_parameters(self.workdir + "/" + self.ff_parameters, params0)
 
                 self.prepare_chm_info(params0)
 
@@ -169,6 +171,11 @@ class GlobalOptimize:
             with open(self.workdir + "/" + cif, "w") as f:
                 f.writelines(str(self))
         # print(self)
+
+        # Setup logger
+        logging.getLogger().handlers.clear()
+        logging.basicConfig(format="%(asctime)s| %(message)s", filename=self.log_file, level=logging.INFO)
+        self.logging = logging
 
     def __str__(self):
         s = "\n-------Global Crystal Structure Prediction------"
@@ -188,7 +195,7 @@ class GlobalOptimize:
 
         if self.parameters is not None:
             s += f"ff_style  : {self.ff_style:s}\n"
-            if type(self.ff_parameters) == list:
+            if isinstance(self.ff_parameters, list):
                 for para in self.ff_parameters:
                     s += f"ff_params : {para:s}\n"
             else:
