@@ -43,6 +43,7 @@ lint.ignore = [
   "E722",  # do not use bare 'except' -- should be fixed but too much tech debt to fix now
   "RET505",  # Unnecessary else after return
   "SIM300",  # Yoda conditions are not allowed
+  "PLW2901", # loop variable is overwritten
 ]
 lint.pydocstyle.convention = "google"
 lint.isort.known-third-party = ["wandb"]

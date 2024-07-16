@@ -814,10 +814,10 @@ class mol_site:
 
             ijk_lists = [get_ijk_range(self.PBC[idx], abc[idx], ignore, self.radius) for idx in range(3)]
 
-            matrix = [[0, 0, 0]] if center else []
-            matrix += [
-                [i, j, k] for i in ijk_lists[0] for j in ijk_lists[1] for k in ijk_lists[2] if [i, j, k] != [0, 0, 0]
-            ]
+        matrix = [[0, 0, 0]] if center else []
+        matrix += [
+            [i, j, k] for i in ijk_lists[0] for j in ijk_lists[1] for k in ijk_lists[2] if [i, j, k] != [0, 0, 0]
+        ]
 
         # In case a,b,c are all greater than 20
         if len(matrix) == 0:
@@ -880,7 +880,7 @@ class mol_site:
         m_length = len(self.symbols)
         coords, _ = self._get_coords_and_species(unitcell=True)
         coord1 = coords[:m_length]  # 1st molecular coords
-        coord2 = coords[m_length:] if idx is None else coords[m_length * (id) : m_length * (id + 1)]
+        coord2 = coords[m_length:] if idx is None else coords[m_length * (idx) : m_length * (idx + 1)]
 
         return self.get_distances(coord1, coord2, ignore=ignore)
 
@@ -1050,7 +1050,7 @@ class mol_site:
         if self.wp.multiplicity > 1:
             for idx in range(1, self.wp.multiplicity):
                 P = 0 if self.wp.is_pure_translation(idx) else 1
-                d, coord2 = self.get_dists_WP(ignore=True, id=idx)
+                d, coord2 = self.get_dists_WP(ignore=True, idx=idx)
                 for i in range(d.shape[0]):
                     if np.min(d[i]) < max_d and (d[i] < tols_matrix).any():
                         if coef_matrix is not None:

@@ -2897,13 +2897,15 @@ def choose_wyckoff(G, number=None, site=None, dim=3, random_state: int | None | 
         if random_state.random() > 0.5:
             for wyckoff in wyckoffs_organized:
                 if len(wyckoff[0]) <= number:
-                    return random_state.choice(wyckoff)
+                    # NOTE wyckoff is a ragged list of lists
+                    return wyckoff[random_state.choice(len(wyckoff))]
             return False
         else:
             good_wyckoff = [w for wyckoff in wyckoffs_organized if len(wyckoff[0]) <= number for w in wyckoff]
 
             if len(good_wyckoff) > 0:
-                return random_state.choice(good_wyckoff)
+                # NOTE good_wyckoff is a ragged list of lists
+                return good_wyckoff[random_state.choice(len(good_wyckoff))]
             else:
                 return False
 
@@ -2948,17 +2950,27 @@ def choose_wyckoff_mol(
 
     wyckoffs = G.wyckoffs_organized
 
-    def filter_valid_wyckoffs(wyckoffs, orientations, number):
+    if gen_site or np.random.random() > 0.5:  # choose from high to low
         for j, wyckoff in enumerate(wyckoffs):
             if len(wyckoff[0]) <= number:
-                yield from (w for k, w in enumerate(wyckoff) if orientations[j][k])
-
-    if gen_site or random_state.random() > 0.5:
-        good_wyckoffs = list(filter_valid_wyckoffs(wyckoffs, orientations, number))
-        return random_state.choice(good_wyckoffs) if good_wyckoffs else False
+                good_wyckoffs = []
+                for k, w in enumerate(wyckoff):
+                    if orientations[j][k] != []:
+                        good_wyckoffs.append(w)
+                if len(good_wyckoffs) > 0:
+                    return good_wyckoffs[random_state.choice(len(good_wyckoffs))]
+        return False
     else:
-        good_wyckoffs = list(filter_valid_wyckoffs(wyckoffs, orientations, number))
-        return random_state.choice(good_wyckoffs) if good_wyckoffs else False
+        good_wyckoffs = []
+        for j, wyckoff in enumerate(wyckoffs):
+            if len(wyckoff[0]) <= number:
+                for k, w in enumerate(wyckoff):
+                    if orientations[j][k] != []:
+                        good_wyckoffs.append(w)
+        if len(good_wyckoffs) > 0:
+            return good_wyckoffs[random_state.choice(len(good_wyckoffs))]
+        else:
+            return False
 
 
 # -------------------- quick utilities for symmetry conversion ----------------

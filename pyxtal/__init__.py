@@ -715,19 +715,19 @@ class pyxtal:
             a list of pyxtal structures with lower symmetries
         """
 
-        idx, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, idx, max_cell, min_cell)
+        ids, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, idx, max_cell, min_cell)
         # randomly choose a subgroup from the available list
-        if N_groups is not None and len(idx) >= N_groups:
-            idx = self.random_state.choice(idx, N_groups)
+        if N_groups is not None and len(ids) >= N_groups:
+            ids = self.random_state.choice(ids, N_groups)
             # print('max_sub_group', len(idx), max_subgroups)
 
         valid_splitters = []
         bad_splitters = []
-        for id in idx:
-            gtype = (t_types + k_types)[id]
+        for idx in ids:
+            gtype = (t_types + k_types)[idx]
             if gtype == "k":
-                id -= len(t_types)
-            splitter = wyckoff_split(G=self.group, wp1=sites, idx=id, group_type=gtype)
+                idx -= len(t_types)
+            splitter = wyckoff_split(G=self.group, wp1=sites, idx=idx, group_type=gtype)
 
             if not splitter.error:
                 if perms is None:
@@ -903,15 +903,19 @@ class pyxtal:
             print(len(splitter.H_orbits), len(splitter.G2_orbits), len(self.atom_sites))
             self._subgroup_by_splitter(splitter)
 
-        site_ids = []
-        for site_id, site in enumerate(new_struc.atom_sites):
-            if site.specie in perms:
-                site_ids.append(site_id)
-        N = self.random_state.choice(range(1, len(site_ids))) if len(site_ids) > 1 else 1
-        sub_ids = self.random_state.choice(site_ids, N)
-        for sub_id in sub_ids:
-            key = new_struc.atom_sites[sub_id].specie
-            new_struc.atom_sites[sub_id].specie = perms[key]
+        # Create a list of tuples (site_id, original_specie) for sites that can be substituted
+        site_info = [
+            (site_id, site.specie) for site_id, site in enumerate(new_struc.atom_sites) if site.specie in perms
+        ]
+
+        # TODO range isn't inclusive of end number is this intended?
+        N = self.random_state.choice(range(1, len(site_info))) if len(site_info) > 1 else 1
+        sub_indices = self.random_state.choice(len(site_info), N, replace=False)
+
+        for index in sub_indices:
+            site_id, original_specie = site_info[index]
+            new_struc.atom_sites[site_id].specie = perms[original_specie]
+
         new_struc._get_formula()
         return new_struc
 
@@ -1148,6 +1152,7 @@ class pyxtal:
         from pyxtal.database.element import Element
 
         formula = ""
+
         if self.molecular:
             numspecies = self.numMols
             species = [str(mol) for mol in self.molecules]
@@ -1166,9 +1171,11 @@ class pyxtal:
                 numIons[i] = specie_list.count(sp)
             self.numIons = numIons
             numspecies = self.numIons
+
         for i, s in zip(numspecies, species):
-            specie = Element(s).short_name if isinstance(s, str) else s
+            specie = Element(s).short_name if isinstance(s, int) else s
             formula += f"{specie:s}{int(i):d}"
+
         self.formula = formula
 
     def get_zprime(self, integer=False):
@@ -2004,7 +2011,8 @@ class pyxtal:
                     if dist < 0.3:
                         match = True
                         break
-                    elif dist < 1.2 * d_tol:
+
+                    if dist < 1.2 * d_tol:
                         ds.append(dist)
                         ids.append(i)
                         _disps.append(disp)
@@ -2347,9 +2355,7 @@ class pyxtal:
         # resort sites_H based on elements0
         seq = [elements1.index(x) for x in elements0]
         sites_H = [sites_H[i] for i in seq]
-        numIons_H = []
-        for site in sites_H:
-            numIons_H.append(sum([int(l[:-1]) for l in site]))
+        numIons_H = [sum(int(l[:-1]) for l in site) for site in sites_H]
 
         # enumerate all possible solutions
         ids = []
@@ -2409,12 +2415,11 @@ class pyxtal:
                     match = False
                     break
                 # composition
-                else:
-                    number = sum([int(l[:-1]) for l in site])
-                    if number != numIons_H[i]:
-                        # print("bad number", site, number, numIons_H[i])
-                        match = False
-                        break
+                number = sum(int(l[:-1]) for l in site)
+                if number != numIons_H[i]:
+                    # print("bad number", site, number, numIons_H[i])
+                    match = False
+                    break
             # if int(mult) == 2: print(path, _sites0, match)
             # make subgroup
             if match:
@@ -2550,10 +2555,7 @@ class pyxtal:
             comps.extend(comp)
             engs.extend(eng)
 
-        if engs[0] is None:  # sort by distance
-            ids = np.argsort(min_ds)
-        else:  # sort by energy
-            ids = np.argsort(engs)  # min_ds)
+        ids = np.argsort(min_ds) if engs[0] is None else np.argsort(engs)
 
         neighs = [neighs[i] for i in ids]
         comps = [comps[i] for i in ids]
@@ -2718,18 +2720,17 @@ class pyxtal:
                 for _xtal in _xtals:
                     if max_wp is not None and len(_xtal.atom_sites) > max_wp:
                         continue
-                    else:
-                        if new_struc_wo_energy(_xtal, xtals):
-                            add = True
+                    if new_struc_wo_energy(_xtal, xtals):
+                        add = True
 
-                            if criteria is not None and not _xtal.check_validity(criteria):
-                                add = False
+                        if criteria is not None and not _xtal.check_validity(criteria):
+                            add = False
 
-                            if add:
-                                xtals.append(_xtal)
-                                print("Add substitution", _xtal.get_xtal_string())
-                                if len(xtals) == N_max:
-                                    break
+                        if add:
+                            xtals.append(_xtal)
+                            print("Add substitution", _xtal.get_xtal_string())
+                            if len(xtals) == N_max:
+                                break
                     # print('Add {:d} substitutions in subgroup {:d}'.format(len(_xtals), sub.group.number))
         else:
             print(f"Good representation ({len(xtals):d})", self.get_xtal_string())
@@ -2761,10 +2762,7 @@ class pyxtal:
 
         A, [B, C] = next(iter(dicts.items()))
 
-        numbers = []
-        for site in self.atom_sites:
-            if site.specie == A:
-                numbers.append(site.wp.multiplicity)
+        numbers = [site.wp.multiplicity for site in self.atom_sites if site.specie == A]
         solutions = split_list_by_ratio(numbers, ratio)
 
         # Output all possible substitutions
@@ -3057,11 +3055,11 @@ class pyxtal:
             smi = entry.molecule.smiles
             if smi is None:
                 raise CSDError("No smile from CSD")
-            elif len(smi) > 350:
+
+            if len(smi) > 350:
                 raise CSDError(f"long smile {smi:s}")
-            else:
-                if Chem.MolFromSmiles(smi) is None:
-                    raise CSDError(f"problematic smiles: {smi:s}")
+            if Chem.MolFromSmiles(smi) is None:
+                raise CSDError(f"problematic smiles: {smi:s}")
 
             cif = entry.to_string(format="cif")
             smiles = [s + ".smi" for s in smi.split(".")]
@@ -3096,19 +3094,7 @@ class pyxtal:
             for ele in pmg.composition.elements:
                 if ele.symbol == "D":
                     pmg.replace_species({ele: Element("H")})
-                elif ele.value not in [
-                    "C",
-                    "Si",
-                    "H",
-                    "O",
-                    "N",
-                    "S",
-                    "F",
-                    "Cl",
-                    "Br",
-                    "I",
-                    "P",
-                ]:
+                elif ele.value not in "C Si H O N S F Cl Br I P".split(" "):
                     organic = False
                     break
 
@@ -3116,21 +3102,18 @@ class pyxtal:
                 msg = "Cannot handle the organometallic entry from CSD: "
                 msg += entry.formula
                 raise CSDError(msg)
-            else:
-                # print(smiles); self.from_seed(pmg, smiles)
+            try:
+                self.from_seed(pmg, smiles)
+            except ReadSeedError:
                 try:
-                    # print(smiles)#; import sys; sys.exit()
-                    self.from_seed(pmg, smiles)
-                except ReadSeedError:
-                    try:
-                        # print("Add_H=============================================")
-                        self.from_seed(pmg, smiles, add_H=True)
-                    except:
-                        msg = f"unknown problems in Reading CSD {csd_code:s} {smi:s}"
-                        raise CSDError(msg)
+                    # print("Add_H=============================================")
+                    self.from_seed(pmg, smiles, add_H=True)
                 except:
                     msg = f"unknown problems in Reading CSD {csd_code:s} {smi:s}"
                     raise CSDError(msg)
+            except:
+                msg = f"unknown problems in Reading CSD {csd_code:s} {smi:s}"
+                raise CSDError(msg)
             self.source = "CSD: " + csd_code
         else:
             msg = csd_code + " does not have 3D structure"
@@ -3522,11 +3505,11 @@ class pyxtal:
             # Similarity, energy, status
             for key in dicts:
                 value = dicts[key]
-                if type(value) in [float, np.float64]:
+                if isinstance(value, (float, np.float64)):
                     strs += f" {value:8.3f} "
-                elif type(value) == str:
+                elif isinstance(value, str):
                     strs += f" {value:24s} "
-                elif type(value) == bool:
+                elif isinstance(value, bool):
                     strs += f" {value!s:5s} "
 
         for s in self.atom_sites:

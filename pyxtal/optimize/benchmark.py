@@ -306,12 +306,10 @@ if __name__ == "__main__":
     xtal = db.get_pyxtal(code)
 
     c_info = row.data["charmm_info"]
-    prm = open(work_dir + "/pyxtal.prm", "w")
-    prm.write(c_info["prm"])
-    prm.close()
-    rtf = open(work_dir + "/pyxtal.rtf", "w")
-    rtf.write(c_info["rtf"])
-    rtf.close()
+    with open(work_dir + "/pyxtal.prm", "w") as prm:
+        prm.write(c_info["prm"])
+    with open(work_dir + "/pyxtal.rtf", "w") as rtf:
+        rtf.write(c_info["rtf"])
     g_info = row.data["gulp_info"]
 
     pmg = xtal.to_pymatgen()

@@ -379,7 +379,7 @@ class supergroup:
             for idx, sols in self.solutions:
                 if len(sols) > max_per_G:
                     print("Warning: ignore some solutions: ", len(sols) - max_per_G)
-                    sols = [sols[i] for i in self.random_state.choice(len(sols), max_per_G)]  # noqa: PLW2901
+                    sols = [sols[i] for i in self.random_state.choice(len(sols), max_per_G)]
                     # sols=[(['8c'], ['4a', '4b'], ['4b', '8c', '8c'])]
 
                 for _i, sol in enumerate(sols):
