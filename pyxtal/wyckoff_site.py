@@ -259,6 +259,7 @@ class atom_site:
         # Ensure the PBC values are valid
         if self.PBC != ws2.PBC:
             raise ValueError("PBC values do not match between Wyckoff sites")
+
         # Get tolerance
         tol = tm.get_tol(self.specie, ws2.specie)
         # Symmetry shortcut method: check only some atoms
@@ -277,7 +278,7 @@ class atom_site:
             return not (dm < tol).any()
         # No symmetry method: check all atomic pairs
         else:
-            dm = distance_matrix(ws1.coords, ws2.coords, lattice, PBC=ws1.PBC)
+            dm = distance_matrix(self.wp.coords, ws2.coords, lattice, PBC=self.PBC)
             # Check if any distances are less than the tolerance
             return not (dm < tol).any()
 
@@ -581,9 +582,7 @@ class mol_site:
             # Add PBC copies of coords
             m = create_matrix(PBC=self.PBC, omit=True)
             # Move [0,0,0] PBC vector to first position in array
-            m2 = [[0, 0, 0]]
-            for v in m:
-                m2.append(v)
+            m2 = [[0, 0, 0], *list(m)]
             new_coords = np.vstack([wp_atomic_coords + v for v in m2])
             wp_atomic_coords = new_coords
 
@@ -738,6 +737,7 @@ class mol_site:
         except:
             import openbabel
             import pybel
+
         if lattice is not None:
             self.lattice = lattice
         if not absolute:
@@ -802,24 +802,23 @@ class mol_site:
         if hasattr(self, "ijk_lists"):
             ijk_lists = self.ijk_lists
         else:
-            ijk_lists = []
-            for id in range(3):
-                if self.PBC[id]:
-                    if not ignore and abc[id] > 50.0 and self.radius < 10:
-                        ijk_lists.append([0])
-                    elif abc[id] < 8.5:
-                        ijk_lists.append([-3, -2, -1, 0, 1, 2, 3])
-                    else:
-                        ijk_lists.append([-1, 0, 1])
-                else:
-                    ijk_lists.append([0])
 
-        matrix = [[0, 0, 0]] if center else []
-        for i in ijk_lists[0]:
-            for j in ijk_lists[1]:
-                for k in ijk_lists[2]:
-                    if [i, j, k] != [0, 0, 0]:
-                        matrix.append([i, j, k])
+            def get_ijk_range(pbc, abc_val, ignore, radius):
+                if not pbc:
+                    return [0]
+                if not ignore and abc_val > 50.0 and radius < 10:
+                    return [0]
+                if abc_val < 8.5:
+                    return list(range(-3, 4))
+                return [-1, 0, 1]
+
+            ijk_lists = [get_ijk_range(self.PBC[idx], abc[idx], ignore, self.radius) for idx in range(3)]
+
+            matrix = [[0, 0, 0]] if center else []
+            matrix += [
+                [i, j, k] for i in ijk_lists[0] for j in ijk_lists[1] for k in ijk_lists[2] if [i, j, k] != [0, 0, 0]
+            ]
+
         # In case a,b,c are all greater than 20
         if len(matrix) == 0:
             matrix = [[1, 0, 0]]
@@ -870,7 +869,7 @@ class mol_site:
 
         return self.get_distances(coord1, coord1, center=False, ignore=ignore)
 
-    def get_dists_WP(self, ignore=False, id=None):
+    def get_dists_WP(self, ignore=False, idx=None):
         """
         Compute the distances within the WP sites
 
@@ -881,10 +880,7 @@ class mol_site:
         m_length = len(self.symbols)
         coords, _ = self._get_coords_and_species(unitcell=True)
         coord1 = coords[:m_length]  # 1st molecular coords
-        if id is None:
-            coord2 = coords[m_length:]  # rest molecular coords
-        else:
-            coord2 = coords[m_length * (id) : m_length * (id + 1)]  # rest molecular coords
+        coord2 = coords[m_length:] if idx is None else coords[m_length * (id) : m_length * (id + 1)]
 
         return self.get_distances(coord1, coord2, ignore=ignore)
 
@@ -1026,9 +1022,7 @@ class mol_site:
                             n1, n2 = numbers[ids[0][id]], numbers[ids[1][id]]
                             if 1 not in [n1, n2]:
                                 pos = coord2[i][ids[1][id]] - mol_center
-                                pairs.append(
-                                    (n2, pos)
-                                )  # ; print('add self', i, n1, n2, pos, d[i][ids[0][id], ids[1][id]], id, np.linalg.norm(pos))
+                                pairs.append((n2, pos))
                                 engs.append(eng[ids[0][id], ids[1][id]])
                                 dists.append(d[i][ids[0][id], ids[1][id]])
                     else:
@@ -1037,15 +1031,12 @@ class mol_site:
                 else:
                     engs.append(None)
                     if detail:
-                        # print('MMMMM', d[i].min())
-                        ids = np.where(d[i] < max_d)  # ; print(ids)
-                        for id in range(len(ids[0])):  # zip(*ids):
+                        ids = np.where(d[i] < max_d)
+                        for id in range(len(ids[0])):
                             n1, n2 = numbers[ids[0][id]], numbers[ids[1][id]]
-                            if 1 not in [n1, n2]:  # != [1, 1]:
+                            if 1 not in [n1, n2]:
                                 pos = coord2[i][ids[1][id]] - mol_center
-                                pairs.append(
-                                    (n2, pos)
-                                )  # ; print('add self', i, n1, n2, pos, d[i][ids[0][id], ids[1][id]], np.linalg.norm(pos))
+                                pairs.append((n2, pos))
                                 dists.append(np.linalg.norm(pos))
 
                 tmp = d[i] / tols_matrix
@@ -1075,9 +1066,7 @@ class mol_site:
                                     n1, n2 = numbers[ids[0][id]], numbers[ids[1][id]]
                                     if 1 not in [n1, n2]:
                                         pos = coord2[i][ids[1][id]] - mol_center
-                                        pairs.append(
-                                            (n2, pos)
-                                        )  # ; print('add other', i, n1, n2, pos, d[i][ids[0][id], ids[1][id]], np.linalg.norm(pos))
+                                        pairs.append((n2, pos))
                                         engs.append(eng[ids[0][id], ids[1][id]])
                                         dists.append(d[i][ids[0][id], ids[1][id]])
 
@@ -1094,9 +1083,7 @@ class mol_site:
                                     n1, n2 = numbers[ids[0][id]], numbers[ids[1][id]]
                                     if 1 not in [n1, n2]:  # != [1, 1]:
                                         pos = coord2[i][ids[1][id]] - mol_center
-                                        pairs.append(
-                                            (n2, pos)
-                                        )  # ; print('add other', i, n1, n2, pos, d[i][ids[0][id], ids[1][id]], np.linalg.norm(pos))
+                                        pairs.append((n2, pos))
                                         dists.append(np.linalg.norm(pos))
 
                         tmp = d[i] / tols_matrix

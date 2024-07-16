@@ -1165,9 +1165,9 @@ def generate_cellpara(
         a 6-length array representing the lattice of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
-    if isinstance(random_state, int):
-        # NOTE if random_state is an integer make a Generator to ensure randomness
-        # downstream that would be lost if integer seed used repeated
+    if isinstance(random_state, Generator):
+        random_state = random_state.spawn(1)[0]
+    else:
         random_state = np.random.default_rng(random_state)
 
     min_special = kwargs.get("min_special", min_special)  # ; print("min_special", min_special)

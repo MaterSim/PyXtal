@@ -2920,61 +2920,64 @@ def choose_wyckoff(G, number=None, site=None, dim=3, random_state: int | None | 
                 return False
 
 
+from typing import Union, List, Optional
+from numpy.random import Generator
+from pyxtal.symmetry import Group, Wyckoff_position
+import numpy as np
+
 def choose_wyckoff_mol(
-    G, number, site, orientations, gen_site=True, dim=3, random_state: int | None | Generator = None
-):
+    G: Group,
+    number: int,
+    site: Optional[str],
+    orientations: List[List[List]],
+    gen_site: bool = True,
+    dim: int = 3,
+    random_state: Union[int, None, Generator] = None
+) -> Union[Wyckoff_position, bool]:
     """
     Choose a Wyckoff position to fill based on the current number of molecules
-    needed to be placed within a unit cell
+    needed to be placed within a unit cell.
 
     Rules:
-
-        1) The new position's multiplicity is equal/less than (number).
-        2) We prefer positions with large multiplicity.
-        3) The site must admit valid orientations for the desired molecule.
+    1) The new position's multiplicity is equal/less than (number).
+    2) We prefer positions with large multiplicity.
+    3) The site must admit valid orientations for the desired molecule.
 
     Args:
-        G: a pyxtal.symmetry.Group object
-        number: the number of molecules still needed in the unit cell
-        orientations: the valid orientations for a given molecule.
-        gen_site: general WP only
+        G: A pyxtal.symmetry.Group object.
+        number: The number of molecules still needed in the unit cell.
+        site: The specific Wyckoff site to use (if any).
+        orientations: The valid orientations for a given molecule.
+        gen_site: If True, consider only general Wyckoff positions.
+        dim: Dimension of the space group.
+        random_state: Seed for random number generation.
 
     Returns:
-        Wyckoff position. If no position is found, returns False
+        Wyckoff position if found, False otherwise.
     """
     if isinstance(random_state, Generator):
         random_state = random_state.spawn(1)[0]
     else:
         random_state = np.random.default_rng(random_state)
 
+    if site is not None:
+        return Wyckoff_position.from_group_and_letter(
+            G.number, site, dim, hn=G.hall_number
+        )
+
     wyckoffs = G.wyckoffs_organized
 
-    if site is not None:
-        number = G.number
-        hn = G.hall_number if G.hall_number is not None else None
-        return Wyckoff_position.from_group_and_letter(number, site, dim, hn=hn)
+    def filter_valid_wyckoffs(wyckoffs, orientations, number):
+        for j, wyckoff in enumerate(wyckoffs):
+            if len(wyckoff[0]) <= number:
+                yield from ( w for k, w in enumerate(wyckoff) if orientations[j][k])
 
-    elif gen_site or random_state.random() > 0.5:  # choose from high to low
-        for j, wyckoff in enumerate(wyckoffs):
-            if len(wyckoff[0]) <= number:
-                good_wyckoff = []
-                for k, w in enumerate(wyckoff):
-                    if orientations[j][k] != []:
-                        good_wyckoff.append(w)
-                if len(good_wyckoff) > 0:
-                    return random_state.choice(good_wyckoff)
-        return False
+    if gen_site or random_state.random() > 0.5:
+        good_wyckoffs = list(filter_valid_wyckoffs(wyckoffs, orientations, number))
+        return random_state.choice(good_wyckoffs) if good_wyckoffs else False
     else:
-        good_wyckoff = []
-        for j, wyckoff in enumerate(wyckoffs):
-            if len(wyckoff[0]) <= number:
-                for k, w in enumerate(wyckoff):
-                    if orientations[j][k] != []:
-                        good_wyckoff.append(w)
-        if len(good_wyckoff) > 0:
-            return random_state.choice(good_wyckoff)
-        else:
-            return False
+        good_wyckoffs = list(filter_valid_wyckoffs(wyckoffs, orientations, number))
+        return random_state.choice(good_wyckoffs) if good_wyckoffs else False
 
 
 # -------------------- quick utilities for symmetry conversion ----------------
