@@ -26,8 +26,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install uv
+        run: pip install uv
+
       - name: Install dependencies
-        run: pip install .[test]
+        run: uv pip install .[test] --system
 
       - name: Run Tests
-        run: pytest pyxtal/test_all.py
+        run: pytest tests/test_all.py

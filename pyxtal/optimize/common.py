@@ -4,7 +4,6 @@ Common utlities for global search
 
 import os
 import warnings
-from random import choice
 from time import time
 
 import numpy as np
@@ -22,23 +21,22 @@ from pyxtal.XRD import Similarity, pxrd_refine
 warnings.filterwarnings("ignore")
 
 
-def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125):
-    """
-    A random mutation
-    """
+def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125, random_state=None):
+    """A random mutation."""
+    rng = np.random.default_rng(random_state)
     # perturb cell
     comp = xtal.get_1D_comp()
     x = xtal.get_1D_representation().x
     if opt_lat:
         if ref_pxrd is None:
             sg = x[0][0]
-            disp_cell = np.random.uniform(-1.0, 1.0, len(x[0]) - 1)
+            disp_cell = rng.uniform(-1.0, 1.0, len(x[0]) - 1)
             if sg <= 2:  # no change in angles to prevent some bad angles
                 disp_cell[3:] = 0
             x[0][1:] *= 1 + dr * disp_cell
 
             # flip the inclination angle
-            if 3 <= sg <= 15 and np.random.random() > 0.7 and abs(90 - x[0][-1]) < 15:
+            if 3 <= sg <= 15 and rng.random() > 0.7 and abs(90 - x[0][-1]) < 15:
                 x[0][-1] = 180 - x[0][-1]
         else:
             thetas = [ref_pxrd[0][0], min([35, ref_pxrd[0][-1]])]
@@ -46,11 +44,11 @@ def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125):
 
     # perturb molecules
     for i in range(1, len(x)):
-        disp_mol = np.random.uniform(-1.0, 1.0, len(x[i]) - 1)
+        disp_mol = rng.uniform(-1.0, 1.0, len(x[i]) - 1)
         x[i][:-1] *= 1 + dr * disp_mol
         # change the orientation and torsions
         for j in range(3, len(x[i]) - 1):
-            rad_num = np.random.random()
+            rad_num = rng.random()
             if rad_num < 0.25:
                 x[i][j] += choice([45.0, 90.0])
             elif rad_num < 0.5:
@@ -82,6 +80,7 @@ def randomizer(
     sites=None,
     use_hall=False,
     factor=1.1,
+    random_state=None,
 ):
     """
     A random structure generation engine
@@ -99,8 +98,6 @@ def randomizer(
     Returns:
         PyXtal object
     """
-
-    np.random.seed()
     mols = [smi + ".smi" for smi in smiles] if molecules is None else [choice(m) for m in molecules]
     sg = choice(sgs)
     wp = Group(sg, use_hall=True)[0] if use_hall else Group(sg)[0]
@@ -496,12 +493,10 @@ def compute(row, pmg, work_dir, skf_dir, info=None):
         gulp_info=g_info,
     )
     file1, file2 = "/pyxtal.prm", "/pyxtal.rtf"
-    prm = open(w_dir + file1, "w")
-    prm.write(c_info["prm"])
-    prm.close()
-    rtf = open(w_dir + file2, "w")
-    rtf.write(c_info["rtf"])
-    rtf.close()
+    with open(w_dir + file1, "w") as prm:
+        prm.write(c_info["prm"])
+    with open(w_dir + file2, "w") as rtf:
+        rtf.write(c_info["rtf"])
 
     # reference
     print("\n", row.csd_code, row.mol_smi, pmg.volume)
@@ -517,7 +512,7 @@ def compute(row, pmg, work_dir, skf_dir, info=None):
             data[key]["diff"] = ben.diff[calc]
             data[key]["cif"] = ben.xtal[calc].to_file()
             data[key]["energy"] = ben.energy[calc] / sum(ben.xtal[calc].numMols)
-        except:
+        except:  # noqa: PERF203
             print("=====Calculation is wrong ", calc, row.csd_code)
             data[key]["energy"] = 100000
 
@@ -540,12 +535,10 @@ if __name__ == "__main__":
 
     # Prepare prm
     c_info = row.data["charmm_info"]
-    prm = open(w_dir + "/pyxtal.prm", "w")
-    prm.write(c_info["prm"])
-    prm.close()
-    rtf = open(w_dir + "/pyxtal.rtf", "w")
-    rtf.write(c_info["rtf"])
-    rtf.close()
+    with open(w_dir + "/pyxtal.prm", "w") as prm:
+        prm.write(c_info["prm"])
+    with open(w_dir + "/pyxtal.rtf", "w") as rtf:
+        rtf.write(c_info["rtf"])
 
     # Relax expt. xtal
     res = optimizer(xtal1, c_info, w_dir)

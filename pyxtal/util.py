@@ -2,6 +2,7 @@
 some utilities
 """
 
+import os
 import re
 
 import numpy as np
@@ -241,11 +242,11 @@ def process_csd_cif(cif, remove_H=False):
             # len(re.findall(r"[0-9]_[0-9]", l))>0 or \
             # print(l) #; import sys; sys.exit()
             continue
-        else:
-            if remove_H and len(re.findall(r" H ", l)) > 0:
-                continue
-            else:
-                tmp.append(l + "\n")
+
+        if remove_H and len(re.findall(r" H ", l)) > 0:
+            continue
+
+        tmp.append(l + "\n")
     return listToString(tmp)
 
 
@@ -261,7 +262,7 @@ def get_similar_cids_from_pubchem(base, MaxRecords):
 
     import pubchempy as pcp
 
-    if type(base) == int:
+    if isinstance(base, int):
         base = str(base)
     cids = pcp.get_compounds(base, searchtype="similarity", MaxRecords=MaxRecords)
     results = []
@@ -296,7 +297,6 @@ def search_csd_code_by_pubchem(cid):
     url0 = "https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/"
     cid = str(cid)
     url = url0 + cid + "/JSON"
-    csd_codes = []
 
     try:
         response = urllib.request.urlopen(url)
@@ -311,12 +311,11 @@ def search_csd_code_by_pubchem(cid):
         contents = response.read()
         if contents.decode().find("CCDC") > 0:
             data = json.loads(contents, cls=MontyDecoder)
-            if "Section" in data["Record"]["Section"][0]:
-                if len(data["Record"]["Section"][0]["Section"]) == 3:
-                    infos = data["Record"]["Section"][0]["Section"][2]["Section"][0]["Information"]
-                    for info in infos:
-                        csd_codes.append(info["Value"]["StringWithMarkup"][0]["String"])
+            if ("Section" in data["Record"]["Section"][0]) & (len(data["Record"]["Section"][0]["Section"]) == 3):
+                infos = data["Record"]["Section"][0]["Section"][2]["Section"][0]["Information"]
+                csd_codes = [info["Value"]["StringWithMarkup"][0]["String"] for info in infos]
     except:
+        csd_codes = []
         print("Failed to parse json", url, "\n")
 
     return csd_codes
@@ -351,10 +350,9 @@ def search_csd_entries_by_code(code):
     hits = query.search()
     unique_crysts = []
     for hit in hits:
-        if hit.entry.has_3d_structure and hit.entry.pressure is None:
-            if new_cryst(hit.crystal, unique_crysts, n_max):
-                unique_crysts.append(hit.crystal)
-                # print(hit.entry.identifier, hit.entry.deposition_date)
+        if (hit.entry.has_3d_structure and hit.entry.pressure is None) & (new_cryst(hit.crystal, unique_crysts, n_max)):
+            unique_crysts.append(hit.crystal)
+            # print(hit.entry.identifier, hit.entry.deposition_date)
 
     return [c.identifier for c in unique_crysts]
 
@@ -390,22 +388,24 @@ def get_struc_from__parser(p):
     for i, d in enumerate(p._cif.data.values()):
         ops = p.get_symops(d)
         coord_to_species = OrderedDict()
+
         d0 = {
             "_atom_site_label": [],
             "_atom_site_fract_x": [],
             "_atom_site_fract_y": [],
             "_atom_site_fract_z": [],
         }
-        for i in range(len(d["_atom_site_label"])):
+
+        for j in range(len(d["_atom_site_label"])):
             try:
-                symbol = p._parse_symbol(d["_atom_site_type_symbol"][i])
+                symbol = p._parse_symbol(d["_atom_site_type_symbol"][j])
             except KeyError:
-                symbol = p._parse_symbol(d["_atom_site_label"][i])
+                symbol = p._parse_symbol(d["_atom_site_label"][j])
 
             el = get_el_sp(symbol)
-            x = str2float(d["_atom_site_fract_x"][i])
-            y = str2float(d["_atom_site_fract_y"][i])
-            z = str2float(d["_atom_site_fract_z"][i])
+            x = str2float(d["_atom_site_fract_x"][j])
+            y = str2float(d["_atom_site_fract_y"][j])
+            z = str2float(d["_atom_site_fract_z"][j])
 
             coord = (x, y, z)
             match = get_matching_coord(coord, ops)
@@ -415,6 +415,7 @@ def get_struc_from__parser(p):
                 d0["_atom_site_fract_y"].append(str(y))
                 d0["_atom_site_fract_z"].append(str(z))
                 coord_to_species[coord] = el
+
         d.data["_atom_site_label"] = d0["_atom_site_label"]
         d.data["_atom_site_fract_x"] = d0["_atom_site_fract_x"]
         d.data["_atom_site_fract_y"] = d0["_atom_site_fract_y"]
@@ -487,8 +488,8 @@ def sort_by_dimer(atoms, N_mols, id=10, tol=4.0):
                 break
         if not good:
             raise RuntimeError("Cannot find match on molecule", i)
-        else:
-            print("get", i, j, dist, shift)
+
+        print("get", i, j, dist, shift)
 
     pos0 = atoms.get_positions()
     pos1 = np.zeros([len(pos), 3])

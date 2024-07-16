@@ -1,11 +1,12 @@
 import os
-from random import randint
 from time import time
 
+import numpy as np
 from pymatgen.io.cif import CifWriter
 
 from pyxtal.molecular_crystal import molecular_crystal
 
+rng = np.random.default_rng(0)
 mols = ["CH4", "H2O", "NH3", "urea", "benzene", "roy", "aspirin", "pentacene", "C60"]
 filename = "out.cif"
 if os.path.isfile(filename):
@@ -15,7 +16,7 @@ for mol in mols:
     for _i in range(10):
         run = True
         while run:
-            sg = randint(4, 191)
+            sg = rng.integers(4, 191)
             start = time()
             rand_crystal = molecular_crystal(sg, [mol], [4], 1.0)
             if rand_crystal.valid:

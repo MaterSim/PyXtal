@@ -1,7 +1,8 @@
 # Standard Libraries
-import random
+from __future__ import annotations
 
 import numpy as np
+from numpy.random import Generator
 
 from pyxtal.constants import deg, ltype_keywords, rad
 
@@ -48,10 +49,13 @@ class Lattice:
                 should be reset during each crystal generation attempt
     """
 
-    def __init__(self, ltype, volume=None, matrix=None, PBC=None, **kwargs):
+    def __init__(
+        self, ltype, volume=None, matrix=None, PBC=None, random_state: int | None | Generator = None, **kwargs
+    ):
         # Set required parameters
         if PBC is None:
             PBC = [1, 1, 1]
+
         if ltype in ltype_keywords:
             self.ltype = ltype.lower()
         elif ltype is None:
@@ -65,6 +69,12 @@ class Lattice:
         self.dim = sum(PBC)
         self.kwargs = {}
         self.random = True
+
+        if isinstance(random_state, Generator):
+            self.random_state = random_state.spawn(1)[0]
+        else:
+            self.random_state = np.random.default_rng(random_state)
+
         # Set optional values
         self.allow_volume_reset = True
         for key, value in kwargs.items():
@@ -76,7 +86,7 @@ class Lattice:
                 "min_l",
                 "mid_l",
                 "max_l",
-                "min_special", #min special for mole
+                "min_special",  # min special for mole
             ]:
                 setattr(self, key, value)
                 self.kwargs[key] = value
@@ -448,13 +458,17 @@ class Lattice:
             para = (self.a, self.b, self.c, self.alpha, self.beta, self.gamma)
             self.matrix = para2matrix(para)
 
-    def transform(self, trans_mat=np.eye(3), reset=False):
+    def transform(self, trans_mat=None, reset=False):
         """
         Optimize the lattice's inclination angles
         If reset is False, may return negative lattice
         """
-        if type(trans_mat) == list:
+        if trans_mat is None:
+            trans_mat = np.eye(3)
+
+        if not isinstance(trans_mat, np.ndarray):
             trans_mat = np.array(trans_mat)
+
         cell = np.dot(trans_mat, self.matrix)
         return Lattice.from_matrix(cell, ltype=self.ltype, reset=reset)
 
@@ -504,7 +518,7 @@ class Lattice:
         """
         Mutate the lattice object
         """
-        rand = 1 + degree * (np.random.sample(6) - 0.5)
+        rand = 1 + degree * (self.random_state.random(6) - 0.5)
         a0, b0, c0, alpha0, beta0, gamma0 = self.get_para()
         a = a0 * rand[0]
         b = b0 * rand[1]
@@ -595,6 +609,7 @@ class Lattice:
                 raise ValueError(msg)
         else:
             self.reset_matrix()
+
         para = matrix2para(self.matrix)
         self.a, self.b, self.c, self.alpha, self.beta, self.gamma = para
         self.volume = np.linalg.det(self.matrix)
@@ -670,9 +685,7 @@ class Lattice:
             allowed_ids = [[0, 1, 2]]
 
         if random:
-            from random import choice
-
-            ids = choice(allowed_ids)
+            ids = self.random_state.choice(allowed_ids)
         else:
             if ids not in allowed_ids:
                 print(ids)
@@ -709,9 +722,7 @@ class Lattice:
             allowed_ids = ["No"]
 
         if random:
-            from random import choice
-
-            ids = choice(allowed_ids)
+            ids = self.random_state.choice(allowed_ids)
         else:
             if ids not in allowed_ids:
                 print(ids)
@@ -758,22 +769,17 @@ class Lattice:
         return matrix, coor
 
     def generate_point(self):
-        # point = np.random.RandomState().rand(3)
-        # QZ: it was here because of multiprocess issue
-        # https://github.com/numpy/numpy/issues/9650
-        # now just fix it
-
-        point = np.random.rand(3)
         if self.ltype in ["spherical", "ellipsoidal"]:
-            # Choose a point within an octant of the unit sphere
-            while point.dot(point) > 1:  # squared
-                point = np.random.random(3)
-            # Randomly flip some coordinates
-            for index in range(len(point)):
-                # Scale the point by the max radius
-                if random.uniform(0, 1) < 0.5:
-                    point[index] *= -1
+            # Choose a point within an octant of the unit sphere using Marsaglia's method
+            # Generate 3D vector from normal distribution
+            vec = self.random_state.normal(0, 1, 3)
+            # Generate random radius
+            r = self.random_state.random() ** (1 / 3)
+            # Normalize and scale
+            point = r * vec / np.linalg.norm(vec)
         else:
+            point = self.random_state.random(3)
+
             for i, a in enumerate(self.PBC):
                 if not a:
                     if self.ltype in ["hexagonal", "trigonal"]:
@@ -848,9 +854,9 @@ class Lattice:
         try:
             cell_matrix = para2matrix((a, b, c, alpha, beta, gamma), radians=radians)
             cell_matrix *= factor
-        except:
+        except Exception as err:
             msg = "Error: invalid cell parameters for lattice."
-            raise ValueError(msg)
+            raise ValueError(msg) from err
 
         if force_symmetry:
             return Lattice.from_matrix(cell_matrix, ltype=ltype)
@@ -909,6 +915,7 @@ class Lattice:
         """
         if PBC is None:
             PBC = [1, 1, 1]
+
         m = np.array(matrix)
         if np.shape(m) != (3, 3):
             print(matrix)
@@ -963,36 +970,33 @@ class Lattice:
             return False
 
     def is_valid_lattice(self, tol=1e-3):
-        if self.ltype in ["cubic", "Cubic"] and (
-            (self.a - self.b) > tol
-            or (self.a - self.c) > tol
-            or (self.alpha - np.pi / 2) > tol
-            or (self.beta - np.pi / 2) > tol
-            or (self.gamma - np.pi / 2) > tol
-        ):
-            return False
-        if self.ltype in ["hexagonal", "trigonal", "Hexagonal", "Trigonal"]:
-            if (
-                (self.a - self.b) > tol
-                or (self.alpha - np.pi / 2) > tol
-                or (self.beta - np.pi / 2) > tol
-                or (self.gamma - 2 / 3 * np.pi) > tol
-            ):
-                return False
-        elif self.ltype in ["tetragonal", "Tetragonal"]:
-            if (
-                (self.a - self.b) > tol
-                or (self.alpha - np.pi / 2) > tol
-                or (self.beta - np.pi / 2) > tol
-                or (self.gamma - np.pi / 2) > tol
-            ):
-                return False
-        elif self.ltype in ["orthorhombic", "Orthorhombic"]:
-            if (self.alpha - np.pi / 2) > tol or (self.beta - np.pi / 2) > tol or (self.gamma - np.pi / 2) > tol:
-                return False
-        elif self.ltype in ["monoclinic", "Monoclinic"]:
-            if (self.alpha - np.pi / 2) > tol or (self.gamma - np.pi / 2) > tol:
-                return False
+        ltype = self.ltype.lower()
+
+        def check_angles(angles):
+            return all(abs(angle - np.pi / 2) <= tol for angle in angles)
+
+        if ltype == "cubic":
+            return (
+                abs(self.a - self.b) <= tol
+                and abs(self.a - self.c) <= tol
+                and check_angles([self.alpha, self.beta, self.gamma])
+            )
+
+        elif ltype in ["hexagonal", "trigonal"]:
+            return (
+                abs(self.a - self.b) <= tol
+                and check_angles([self.alpha, self.beta])
+                and abs(self.gamma - 2 / 3 * np.pi) <= tol
+            )
+
+        elif ltype == "tetragonal":
+            return abs(self.a - self.b) <= tol and check_angles([self.alpha, self.beta, self.gamma])
+
+        elif ltype == "orthorhombic":
+            return check_angles([self.alpha, self.beta, self.gamma])
+
+        elif ltype == "monoclinic":
+            return check_angles([self.alpha, self.gamma])
 
         return True
 
@@ -1042,7 +1046,10 @@ class Lattice:
                 return abc_diff, abc_f_diff, ang_diff2, False
 
     def __str__(self):
-        return f"{self.a:8.4f}, {self.b:8.4f}, {self.c:8.4f}, {self.alpha * deg:8.4f}, {self.beta * deg:8.4f}, {self.gamma * deg:8.4f}, {self.ltype!s:s}"
+        return (
+            f"{self.a:8.4f}, {self.b:8.4f}, {self.c:8.4f}, {self.alpha * deg:8.4f}, "
+            f"{self.beta * deg:8.4f}, {self.gamma * deg:8.4f}, {self.ltype!s:s}"
+        )
 
     def __repr__(self):
         return str(self)
@@ -1065,9 +1072,12 @@ class Lattice:
                 for k in range(-m, m + 1):
                     for l in range(-m, m + 1):
                         hkl = np.array([h, k, l])
-                        if [h, k, l] != [0, 0, 0] and not has_reduction(hkl):
-                            if abs(np.dot(hkl, direction)) < tol:
-                                a_hkls.append(hkl)
+                        if (
+                            ([h, k, l] != [0, 0, 0])
+                            and (not has_reduction(hkl))
+                            and (abs(np.dot(hkl, direction)) < tol)
+                        ):
+                            a_hkls.append(hkl)
             a_hkls = np.array(a_hkls)  # ; print(a_hkls)
             a_hkl = a_hkls[np.argmin(np.abs(a_hkls).sum(axis=1))]
         a_vector = np.dot(a_hkl, self.matrix)
@@ -1080,14 +1090,13 @@ class Lattice:
             for k in range(-m, m + 1):
                 for l in range(-m, m + 1):
                     hkl = np.array([h, k, l])
-                    if [h, k, l] != [0, 0, 0] and not has_reduction(hkl):
-                        if abs(np.dot(hkl, direction)) < tol:
-                            vector = np.dot(hkl, self.matrix)
-                            angle1 = angle(vector, a_vector, radians=False)
-                            if abs(90 - angle1) < min_angle_ab:
-                                min_angle_ab = abs(90 - angle1)
-                                b_hkl = hkl
-                                b_vector = vector
+                    if ([h, k, l] != [0, 0, 0]) and (not has_reduction(hkl)) and (abs(np.dot(hkl, direction)) < tol):
+                        vector = np.dot(hkl, self.matrix)
+                        angle1 = angle(vector, a_vector, radians=False)
+                        if abs(90 - angle1) < min_angle_ab:
+                            min_angle_ab = abs(90 - angle1)
+                            b_hkl = hkl
+                            b_vector = vector
 
         # print('b_hkl', b_hkl, min_angle_ab)
         # change the sign
@@ -1130,6 +1139,7 @@ def generate_cellpara(
     max_ratio=10.0,
     min_special=None,
     maxattempts=100,
+    random_state: None | int | Generator = None,
     **kwargs,
 ):
     """
@@ -1155,14 +1165,19 @@ def generate_cellpara(
         a 6-length array representing the lattice of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
-    min_special = kwargs.get("min_special", min_special) #; print("min_special", min_special)
+    if isinstance(random_state, Generator):
+        random_state = random_state.spawn(1)[0]
+    else:
+        random_state = np.random.default_rng(random_state)
+
+    min_special = kwargs.get("min_special", min_special)  # ; print("min_special", min_special)
     maxangle = np.pi - minangle
     for _n in range(maxattempts):
         # Triclinic
         # if sg <= 2:
         if ltype == "triclinic":
             # Derive lattice constants from a random matrix
-            mat = random_shear_matrix(width=0.2)
+            mat = random_shear_matrix(width=0.2, random_state=random_state)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
             x = np.sqrt(
                 1
@@ -1171,15 +1186,16 @@ def generate_cellpara(
                 - np.cos(gamma) ** 2
                 + 2 * (np.cos(alpha) * np.cos(beta) * np.cos(gamma))
             )
-            vec = random_vector()
+            vec = random_vector(random_state=random_state)
             abc = volume / x
             xyz = vec[0] * vec[1] * vec[2]
         # Monoclinic
         elif ltype in ["monoclinic"]:
             alpha, gamma = np.pi / 2, np.pi / 2
-            beta = gaussian(minangle, maxangle)
+            beta = gaussian_random_variable(minangle, maxangle, random_state=random_state)
             x = np.sin(beta)
-            vec = random_vector()
+            vec = random_vector(random_state=random_state)
+            xyz = vec[0] * vec[1] * vec[2]
             abc = volume / x
             xyz = vec[0] * vec[1] * vec[2]
         # Orthorhombic
@@ -1187,7 +1203,7 @@ def generate_cellpara(
         elif ltype in ["orthorhombic"]:
             alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
             x = 1
-            vec = random_vector()
+            vec = random_vector(random_state=random_state)
             xyz = vec[0] * vec[1] * vec[2]
             abc = volume / x
         # Tetragonal
@@ -1195,7 +1211,7 @@ def generate_cellpara(
         elif ltype in ["tetragonal"]:
             alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
             x = 1
-            vec = random_vector()
+            vec = random_vector(random_state=random_state)
             c = vec[2] / (vec[0] * vec[1]) * np.cbrt(volume / x)
             a = b = np.sqrt((volume / x) / c)
         # Trigonal/Rhombohedral/Hexagonal
@@ -1203,7 +1219,7 @@ def generate_cellpara(
         elif ltype in ["hexagonal", "trigonal"]:
             alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 3 * 2
             x = np.sqrt(3.0) / 2.0
-            vec = random_vector()
+            vec = random_vector(random_state=random_state)
             c = vec[2] / (vec[0] * vec[1]) * np.cbrt(volume / x)
             a = b = np.sqrt((volume / x) / c)
         # Cubic
@@ -1217,9 +1233,9 @@ def generate_cellpara(
         if ltype in ["triclinic", "monoclinic", "orthorhombic"]:
             vec *= np.cbrt(abc) / np.cbrt(xyz)
             if min_special is not None:
-                ax = random.choice([0, 1, 2])
+                ax = random_state.choice([0, 1, 2])
                 if vec[ax] < min_special:
-                    coef = random.uniform(0.8, 1.2) * min_special / vec[ax]
+                    coef = random_state.uniform(0.8, 1.2) * min_special / vec[ax]
                     for i in range(3):
                         if i == ax:
                             vec[i] *= coef
@@ -1287,6 +1303,7 @@ def generate_cellpara_2D(
     minangle=np.pi / 6,
     max_ratio=10.0,
     maxattempts=100,
+    random_state: None | int | Generator = None,
     **kwargs,
 ):
     """
@@ -1319,6 +1336,11 @@ def generate_cellpara_2D(
         a 6-length representing the lattice vectors of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
+    if isinstance(random_state, int):
+        # NOTE if random_state is an integer make a Generator to ensure randomness
+        # downstream that would be lost if integer seed used repeated
+        random_state = np.random.default_rng(random_state)
+
     unique_axis = kwargs.get("unique_axis", "c")
     # Store the non-periodic axis
     NPA = 3
@@ -1329,7 +1351,7 @@ def generate_cellpara_2D(
     for _n in range(maxattempts):
         abc = np.ones([3])
         if thickness is None:
-            v = random_vector()
+            v = random_vector(random_state=random_state)
             thickness1 = np.cbrt(volume) * (v[0] / (v[0] * v[1] * v[2]))
         else:
             thickness1 = max([3.0, thickness])
@@ -1338,7 +1360,7 @@ def generate_cellpara_2D(
         # Triclinic
         # if num <= 2:
         if ltype == "triclinic":
-            mat = random_shear_matrix(width=0.2)
+            mat = random_shear_matrix(width=0.2, random_state=random_state)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
             x = np.sqrt(
                 1
@@ -1363,15 +1385,15 @@ def generate_cellpara_2D(
         # Monoclinic
         # elif num <= 18:
         elif ltype == "monoclinic":
-            a, b, c = random_vector()
+            a, b, c = random_vector(random_state=random_state)
             if unique_axis == "a":
-                alpha = gaussian(minangle, maxangle)
+                alpha = gaussian_random_variable(minangle, maxangle, random_state=random_state)
                 x = np.sin(alpha)
             elif unique_axis == "b":
-                beta = gaussian(minangle, maxangle)
+                beta = gaussian_random_variable(minangle, maxangle, random_state=random_state)
                 x = np.sin(beta)
             elif unique_axis == "c":
-                gamma = gaussian(minangle, maxangle)
+                gamma = gaussian_random_variable(minangle, maxangle, random_state=random_state)
                 x = np.sin(gamma)
             ab = volume / (abc[NPA - 1] * x)
             ratio = a / b
@@ -1388,7 +1410,7 @@ def generate_cellpara_2D(
         # Orthorhombic
         # elif num <= 48:
         elif ltype == "orthorhombic":
-            vec = random_vector()
+            vec = random_vector(random_state=random_state)
             if NPA == 3:
                 ratio = abs(vec[0] / vec[1])  # ratio a/b
                 abc[1] = np.sqrt(volume / (thickness1 * ratio))
@@ -1487,6 +1509,7 @@ def generate_cellpara_1D(
     minangle=np.pi / 6,
     max_ratio=10.0,
     maxattempts=100,
+    random_state: None | int | Generator = None,
     **kwargs,
 ):
     """
@@ -1519,6 +1542,11 @@ def generate_cellpara_1D(
         a 6-length array representing the lattice of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
+    if isinstance(random_state, int):
+        # NOTE if random_state is an integer make a Generator to ensure randomness
+        # downstream that would be lost if integer seed used repeated
+        random_state = np.random.default_rng(random_state)
+
     try:
         unique_axis = kwargs["unique_axis"]
     except:
@@ -1532,7 +1560,7 @@ def generate_cellpara_1D(
     for _n in range(maxattempts):
         abc = np.ones([3])
         if area is None:
-            v = random_vector()
+            v = random_vector(random_state=random_state)
             thickness1 = np.cbrt(volume) * (v[0] / (v[0] * v[1] * v[2]))
         else:
             thickness1 = volume / area
@@ -1541,7 +1569,7 @@ def generate_cellpara_1D(
         # Triclinic
         # if num <= 2:
         if ltype == "triclinic":
-            mat = random_shear_matrix(width=0.2)
+            mat = random_shear_matrix(width=0.2, random_state=random_state)
             a, b, c, alpha, beta, gamma = matrix2para(mat)
             x = np.sqrt(
                 1
@@ -1566,15 +1594,15 @@ def generate_cellpara_1D(
         # Monoclinic
         # elif num <= 12:
         elif ltype == "monoclinic":
-            a, b, c = random_vector()
+            a, b, c = random_vector(random_state=random_state)
             if unique_axis == "a":
-                gaussian(minangle, maxangle)
+                alpha = gaussian_random_variable(minangle, maxangle, random_state=random_state)
                 x = np.sin(alpha)
             elif unique_axis == "b":
-                beta = gaussian(minangle, maxangle)
+                beta = gaussian_random_variable(minangle, maxangle, random_state=random_state)
                 x = np.sin(beta)
             elif unique_axis == "c":
-                gamma = gaussian(minangle, maxangle)
+                gamma = gaussian_random_variable(minangle, maxangle, random_state=random_state)
                 x = np.sin(gamma)
             ab = volume / (abc[PA - 1] * x)
             ratio = a / b
@@ -1591,7 +1619,7 @@ def generate_cellpara_1D(
         # Orthorhombic
         # lif num <= 22:
         elif ltype == "orthorhombic":
-            vec = random_vector()
+            vec = random_vector(random_state=random_state)
             if PA == 3:
                 ratio = abs(vec[0] / vec[1])  # ratio a/b
                 abc[1] = np.sqrt(volume / (thickness1 * ratio))
@@ -1682,7 +1710,16 @@ def generate_cellpara_1D(
     raise VolumeError(msg)
 
 
-def generate_cellpara_0D(ltype, volume, area=None, minvec=1.2, max_ratio=10.0, maxattempts=100, **kwargs):
+def generate_cellpara_0D(
+    ltype,
+    volume,
+    area=None,
+    minvec=1.2,
+    max_ratio=10.0,
+    maxattempts=100,
+    random_state: None | int | Generator = None,
+    **kwargs,
+):
     """
     Generates a cell parameter (a, b, c, alpha, beta, gamma) according to the
     point group symmetry and number of atoms. If the generated lattice does
@@ -1708,6 +1745,11 @@ def generate_cellpara_0D(ltype, volume, area=None, minvec=1.2, max_ratio=10.0, m
         a 3x3 matrix representing the lattice vectors of the unit cell. If
         generation fails, outputs a warning message and returns empty
     """
+    if isinstance(random_state, int):
+        # NOTE if random_state is an integer make a Generator to ensure randomness
+        # downstream that would be lost if integer seed used repeated
+        random_state = np.random.default_rng(random_state)
+
     if ltype == "spherical":
         # Use a cubic lattice with altered volume
         a = b = c = np.cbrt((3 * volume) / (4 * np.pi))
@@ -1718,7 +1760,7 @@ def generate_cellpara_0D(ltype, volume, area=None, minvec=1.2, max_ratio=10.0, m
         alpha, beta, gamma = np.pi / 2, np.pi / 2, np.pi / 2
         x = (4.0 / 3.0) * np.pi
         for _numattempts in range(maxattempts):
-            vec = random_vector()
+            vec = random_vector(random_state=random_state)
             c = vec[2] / (vec[0] * vec[1]) * np.cbrt(volume / x)
             a = b = np.sqrt((volume / x) / c)
             if (a / c < 10.0) and (c / a < 10.0):
@@ -1805,6 +1847,7 @@ def para2matrix(cell_para, radians=True, format="upper"):
     sin_gamma = np.sin(gamma)
     sin_alpha = np.sin(alpha)
     matrix = np.zeros([3, 3])
+
     if format == "lower":
         # Generate a lower-diagonal matrix
         c1 = c * cos_beta
@@ -1840,7 +1883,7 @@ def para2matrix(cell_para, radians=True, format="upper"):
     return matrix
 
 
-def gaussian(min, max, sigma=3.0):
+def gaussian_random_variable(min, max, sigma=3.0, random_state: None | int | Generator = None):
     """
     Choose a random number from a Gaussian probability distribution centered
     between min and max. sigma is the number of standard deviations that min
@@ -1857,16 +1900,21 @@ def gaussian(min, max, sigma=3.0):
     Returns:
         a value chosen randomly between min and max
     """
+    if isinstance(random_state, Generator):
+        random_state = random_state.spawn(1)[0]
+    else:
+        random_state = np.random.default_rng(random_state)
+
     center = (max + min) * 0.5
     delta = np.fabs(max - min) * 0.5
     ratio = delta / sigma
     while True:
-        x = np.random.normal(scale=ratio, loc=center)
+        x = random_state.normal(scale=ratio, loc=center)
         if x > min and x < max:
             return x
 
 
-def random_vector(minvec=None, maxvec=None, width=0.35, unit=False):
+def random_vector(minvec=None, maxvec=None, width=0.35, unit=False, random_state: None | int | Generator = None):
     """
     Generate a random vector for lattice constant generation. The ratios between
     x, y, and z of the returned vector correspond to the ratios between a, b,
@@ -1882,24 +1930,26 @@ def random_vector(minvec=None, maxvec=None, width=0.35, unit=False):
     Returns:
         a 1x3 numpy array of floats
     """
+    if isinstance(random_state, Generator):
+        random_state = random_state.spawn(1)[0]
+    else:
+        random_state = np.random.default_rng(random_state)
+
+    # TODO these were not used in the original code, moved out of the defaults
+    # and declared if None to avoid having lists as default arguments.
     if maxvec is None:
         maxvec = [1.0, 1.0, 1.0]
     if minvec is None:
         minvec = [0.0, 0.0, 0.0]
-    vec = np.array(
-        [
-            np.exp(np.random.normal(scale=width)),
-            np.exp(np.random.normal(scale=width)),
-            np.exp(np.random.normal(scale=width)),
-        ]
-    )
+
+    vec = np.exp(random_state.normal(scale=width, size=3))
     if unit:
         return vec / np.linalg.norm(vec)
     else:
         return vec
 
 
-def random_shear_matrix(width=1.0, unitary=False):
+def random_shear_matrix(width=1.0, unitary=False, random_state: None | int | Generator = None):
     """
     Generate a random symmetric shear matrix with Gaussian elements. If unitary
     is True, normalize to determinant 1
@@ -1912,14 +1962,15 @@ def random_shear_matrix(width=1.0, unitary=False):
     Returns:
         a 3x3 numpy array of floats
     """
+    if isinstance(random_state, Generator):
+        random_state = random_state.spawn(1)[0]
+    else:
+        random_state = np.random.default_rng(random_state)
+
     mat = np.zeros([3, 3])
     determinant = 0
     while determinant == 0:
-        a, b, c = (
-            np.random.normal(scale=width),
-            np.random.normal(scale=width),
-            np.random.normal(scale=width),
-        )
+        a, b, c = random_state.normal(scale=width, size=3)
         mat = np.array([[1, a, b], [a, 1, c], [b, c, 1]])
         determinant = np.linalg.det(mat)
     if unitary:

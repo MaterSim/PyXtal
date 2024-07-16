@@ -1,8 +1,8 @@
 import os
 import time
 import warnings
-from random import randint
 
+import numpy as np
 from ase import Atoms
 from ase.calculators.vasp import Vasp
 from ase.io import read
@@ -25,7 +25,7 @@ maxvec = 25.0
 minvec = 2.5
 maxangle = 150
 minangle = 30
-
+random_state = np.random.default_rng()
 setup = None
 
 
@@ -209,14 +209,12 @@ t0 = time.time()
 
 for i in range(1000):
     os.chdir(dir0)
-    numIons[0] = randint(1, 5)
+    numIons[0] = random_state.integers(1, 5)
     numIons[1] = 6 - numIons[0]
     numIons[2] = numIons[0] + 2 * numIons[1]
     run = True
     while run:
-        # numIons[0] = randint(8,16)
-        sg = randint(3, 230)
-        # print(sg, species, numIons, factor)
+        sg = random_state.integers(3, 230)
         rand_crystal = random_crystal(sg, species, numIons, factor)
         if rand_crystal.valid:
             run = False
