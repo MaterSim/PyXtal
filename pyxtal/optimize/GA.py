@@ -4,8 +4,6 @@ Global Optimizer
 
 from __future__ import annotations
 
-import multiprocessing
-from concurrent.futures import ProcessPoolExecutor, TimeoutError
 from time import time
 from typing import TYPE_CHECKING
 
@@ -16,7 +14,6 @@ import psutil
 from numpy.random import Generator
 
 from pyxtal.optimize.base import GlobalOptimize
-from pyxtal.optimize.common import optimizer_par, optimizer_single
 from pyxtal.representation import representation
 
 if TYPE_CHECKING:
@@ -207,101 +204,8 @@ class GA(GlobalOptimize):
                     current_xtals[count] = self._crossover(xtal1, xtal2)
                     count += 1
 
-            # Local optimization (QZ: to move the block to base.py)
-            args = [
-                self.randomizer,
-                self.optimizer,
-                self.smiles,
-                self.block,
-                self.num_block,
-                self.atom_info,
-                self.workdir + "/" + "calc",
-                self.sg,
-                self.composition,
-                self.lattice,
-                self.torsions,
-                self.molecules,
-                self.sites,
-                ref_pmg,
-                self.matcher,
-                ref_pxrd,
-                self.use_hall,
-                self.skip_ani,
-            ]
-
-            gen_results = [(None, None)] * len(current_xtals)
-            if self.ncpu == 1:
-                for pop in range(len(current_xtals)):
-                    xtal = current_xtals[pop]
-                    job_tag = self.tag + "-g" + str(gen) + "-p" + str(pop)
-                    mutated = xtal is not None
-                    my_args = [xtal, pop, mutated, job_tag, *args]
-                    gen_results[pop] = optimizer_single(*tuple(my_args))
-
-            else:
-                # parallel process
-                N_cycle = int(np.ceil(self.N_pop / self.ncpu))
-                args_lists = []
-                for i in range(self.ncpu):
-                    id1 = i * N_cycle
-                    id2 = min([id1 + N_cycle, len(current_xtals)])
-                    # os.makedirs(folder, exist_ok=True)
-                    ids = range(id1, id2)
-                    job_tags = [self.tag + "-g" + str(gen) + "-p" + str(id) for id in ids]
-                    xtals = current_xtals[id1:id2]
-                    mutates = [xtal is not None for xtal in xtals]
-                    my_args = [xtals, ids, mutates, job_tags, *args]
-                    args_lists.append(tuple(my_args))
-
-                def process_with_timeout(results, timeout):
-                    for result in results:
-                        try:
-                            res_list = result.result(timeout=timeout)
-                            for res in res_list:
-                                (id, xtal, match) = res
-                                gen_results[id] = (xtal, match)
-                        except TimeoutError:
-                            self.logging.info("ERROR: Opt timed out after %d seconds", timeout)
-                        except Exception as e:
-                            self.logging.info("ERROR: An unexpected error occurred: %s", str(e))
-                    return gen_results
-
-                def run_with_global_timeout(ncpu, args_lists, timeout, return_dict):
-                    with ProcessPoolExecutor(max_workers=ncpu) as executor:
-                        results = [executor.submit(optimizer_par, *p) for p in args_lists]
-                        gen_results = process_with_timeout(results, timeout)
-                        return_dict["gen_results"] = gen_results
-
-                # Set your global timeout value here
-                global_timeout = self.timeout
-
-                # Run multiprocess
-                manager = multiprocessing.Manager()
-                return_dict = manager.dict()
-                p = multiprocessing.Process(
-                    target=run_with_global_timeout, args=(self.ncpu, args_lists, global_timeout, return_dict)
-                )
-                p.start()
-                p.join(global_timeout)
-
-                if p.is_alive():
-                    self.logging.info("ERROR: Global execution timed out after %d seconds", global_timeout)
-                    # p.terminate()
-                    # Ensure all child processes are terminated
-                    child_processes = psutil.Process(p.pid).children(recursive=True)
-                    self.logging.info("Checking child process total: %d", len(child_processes))
-                    for proc in child_processes:
-                        # self.logging.info("Checking child process ID: %d", pid)
-                        try:
-                            # proc = psutil.Process(pid)
-                            if proc.status() == "running":  # is_running():
-                                proc.terminate()
-                                self.logging.info("Terminate abnormal child process ID: %d", proc.pid)
-                        except psutil.NoSuchProcess:
-                            self.logging.info("ERROR: PID %d does not exist", proc.pid)
-                    p.join()
-
-                gen_results = return_dict.get("gen_results", {})
+            # Local optimization
+            gen_results = self.local_optimization(gen, current_xtals, ref_pmg, ref_pxrd)
 
             # Summary and Ranking
             for id, res in enumerate(gen_results):
@@ -365,6 +269,7 @@ class GA(GlobalOptimize):
             print(gen_out)
 
             # Save the reps for next move
+            prev_xtals = current_xtals  # ; print(self.engs)
             self.min_energy = np.min(np.array(self.engs))
             self.N_struc = len(self.engs)
 
@@ -394,7 +299,7 @@ class GA(GlobalOptimize):
         individuals, *k* times. The list returned contains
         references to the input *individuals*.
         """
-        IDs = self.random_state.choice(set(range(len(fitness))), int(len(fitness) * factor))
+        IDs = self.random_state.choice(len(fitness), size=int(len(fitness) * factor), replace=False)
         min_fit = np.argmin(fitness[IDs])
         return IDs[min_fit]
 

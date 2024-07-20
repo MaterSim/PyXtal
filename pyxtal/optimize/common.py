@@ -50,7 +50,7 @@ def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125, random_state=None):
         for j in range(3, len(x[i]) - 1):
             rad_num = rng.random()
             if rad_num < 0.25:
-                x[i][j] += choice([45.0, 90.0])
+                x[i][j] += rng.choice([45.0, 90.0])
             elif rad_num < 0.5:
                 x[i][j] *= -1
     try:
@@ -98,8 +98,9 @@ def randomizer(
     Returns:
         PyXtal object
     """
+    rng = np.random.default_rng(random_state)
     mols = [smi + ".smi" for smi in smiles] if molecules is None else [choice(m) for m in molecules]
-    sg = choice(sgs)
+    sg = rng.choice(sgs)
     wp = Group(sg, use_hall=True)[0] if use_hall else Group(sg)[0]
     mult = len(wp)
     numIons = [int(c * mult) for c in comp]
@@ -118,7 +119,7 @@ def randomizer(
         else:
             perm = sg > 15
             # For specical setting, we only do standard_setting
-            hn = Hall(sg).hall_default if min(comp) < 1 else choice(Hall(sg, permutation=perm).hall_numbers)
+            hn = Hall(sg).hall_default if min(comp) < 1 else rng.choice(Hall(sg, permutation=perm).hall_numbers)
         xtal.from_random(
             3,
             hn,
@@ -132,6 +133,7 @@ def randomizer(
             torsions=torsions,
             sites=sites,
             use_hall=True,
+            #random_state=random_state,
         )
         if xtal.valid:
             break

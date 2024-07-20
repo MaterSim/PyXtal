@@ -828,7 +828,7 @@ class pyxtal_molecule:
                     pruneRmsThresh=0.5,
                 )
                 N_confs = mol.GetNumConformers()
-                conf_id = self.random_state.choice(range(N_confs))
+                conf_id = int(self.random_state.choice(range(N_confs)))
                 conf = mol.GetConformer(conf_id)
                 # xyz = conf.GetPositions()
                 # res = AllChem.MMFFOptimizeMoleculeConfs(mol)
