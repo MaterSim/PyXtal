@@ -1,7 +1,7 @@
 import os
 
 
-class Config(object):
+class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY")
 
     MAIL_SERVER = os.environ.get("MAIL_SERVER")

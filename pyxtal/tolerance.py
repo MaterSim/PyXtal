@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 from pyxtal.database.element import Element
@@ -45,26 +47,14 @@ class Tol_matrix:
         self.f = f
         H = Element("H")
         m = [[0.0] * (len(H.elements_list) + 1)]
-        for i, tup1 in enumerate(H.elements_list):
+        for tup1 in H.elements_list:
             m.append([0.0])
-            for _j, tup2 in enumerate(H.elements_list):
+            for tup2 in H.elements_list:
                 # Get the appropriate atomic radii
-                if tup1[attrindex] is None:
-                    if tup1[5] is None:
-                        val1 = None
-                    else:
-                        # Use the covalent radius
-                        val1 = tup1[5]
-                else:
-                    val1 = tup1[attrindex]
-                if tup2[attrindex] is None:
-                    if tup2[5] is None:
-                        val2 = None
-                    else:
-                        # Use the covalent radius
-                        val2 = tup1[5]
-                else:
-                    val2 = tup2[attrindex]
+                val1 = tup1[5] if tup1[attrindex] is None else tup1[attrindex]
+                # FIXME this is suspicious but matches exactly the original code
+                val2 = (tup1[5] if tup2[5] is not None else None) if tup2[attrindex] is None else tup2[attrindex]
+
                 if val1 is not None and val2 is not None:
                     m[-1].append(f * (val1 + val2))
                 else:
@@ -76,11 +66,11 @@ class Tol_matrix:
         try:
             for tup in tuples:
                 self.set_tol(*tup)
-        except:
+        except Exception as err:
             msg = "Error: Cannot not set custom tolerance value(s).\n"
             msg += "All entries should be entered using the following form:\n"
             msg += "(specie1, specie2, value), where the value is in Angstrom."
-            raise RuntimeError(msg)
+            raise RuntimeError(msg) from err
 
         self.radius_list = []
         for i in range(len(self.matrix)):
@@ -162,7 +152,7 @@ class Tol_matrix:
                 if j > i:
                     continue
                 tups.append((i + 1 - begin_with, j + 1 - begin_with, matrix[i][j]))
-        return Tol_matrix(prototype=prototype, factor=factor, *tups)
+        return Tol_matrix(*tups, prototype=prototype, factor=factor)
 
     @classmethod
     def from_radii(self, radius_list, prototype="atomic", factor=1.0, begin_with=0):
@@ -190,7 +180,7 @@ class Tol_matrix:
                 if j > i:
                     continue
                 tups.append((i + 1 - begin_with, j + 1 - begin_with, f * (r1 + r2)))
-        return Tol_matrix(prototype=prototype, factor=factor, *tups)
+        return Tol_matrix(*tups, prototype=prototype, factor=factor)
 
     @classmethod
     def from_single_value(self, value):
@@ -272,8 +262,8 @@ class Tol_matrix:
                 return tm
             else:
                 raise RuntimeError("invalid file for Tol_matrix: ", filename)
-        except:
-            raise RuntimeError("Could not load Tol_matrix from file: ", filename)
+        except Exception as err:
+            raise RuntimeError("Could not load Tol_matrix from file: ", filename) from err
 
 
 if __name__ == "__main__":

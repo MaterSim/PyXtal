@@ -3,9 +3,9 @@ Module to handle the split of Wyckoff positions
 """
 
 from copy import deepcopy
-from random import choice
 
 import numpy as np
+from numpy.random import Generator
 from pymatgen.core.operations import SymmOp
 
 import pyxtal.symmetry as sym
@@ -26,7 +26,12 @@ class wyckoff_split:
         elements: corresponding chemical species for each wp
     """
 
-    def __init__(self, G=197, idx=None, wp1=None, group_type="t", elements=None):
+    def __init__(self, G=197, idx=None, wp1=None, group_type="t", elements=None, random_state=None):
+        if isinstance(random_state, Generator):
+            self.random_state = random_state.spawn(1)[0]
+        else:
+            self.random_state = np.random.default_rng(random_state)
+
         if wp1 is None:
             wp1 = [0, 1]
         self.error = False
@@ -42,7 +47,7 @@ class wyckoff_split:
             self.wyc = self.G.get_max_k_subgroup()
         id_lists = []
         for wp in wp1:
-            if type(wp) == int:
+            if isinstance(wp, int):
                 id_lists.append(wp)
             else:
                 id_lists.append(sym.index_from_letter(wp[-1], self.G))
@@ -52,7 +57,7 @@ class wyckoff_split:
         # choose a random spliting option if idx is not specified
         if idx is None:
             ids = list(range(len(self.wyc["subgroup"])))
-            idx = choice(ids)
+            idx = self.random_state.choice(ids)
         # print(G, idx, len(self.wyc['subgroup']))
         H = self.wyc["subgroup"][idx]
         self.H = sym.Group(H)  # Group object

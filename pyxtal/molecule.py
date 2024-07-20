@@ -7,15 +7,14 @@ import os
 import re
 from copy import deepcopy
 from operator import itemgetter
-from random import choice
 
 import networkx as nx
 import numpy as np
 from monty.serialization import loadfn
-
-# External Libraries
+from numpy.random import Generator
 from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import PointGroupAnalyzer, generate_full_symmops
+from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation
 
 from pyxtal.constants import single_smiles
@@ -23,12 +22,9 @@ from pyxtal.database.collection import Collection
 from pyxtal.database.element import Element
 from pyxtal.msg import AtomTypeError, ConformerError
 from pyxtal.operations import OperationAnalyzer, SymmOp, angle, rotate_vector
-
-# PyXtal imports
 from pyxtal.symmetry import Group
 from pyxtal.tolerance import Tol_matrix
 
-# Define functions
 with importlib.resources.as_file(importlib.resources.files("pyxtal") / "database" / "bonds.json") as path:
     bonds = loadfn(path)
 
@@ -169,11 +165,10 @@ def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5):
 
     m0 = pyxtal_molecule(smile + ".smi", fix=True)
     _, valid = m0.get_orientations_in_wps(wps)
+    mols = []
     if valid:
         # print('torsion', m0.get_torsion_angles())
-        mols = [m0]
-    else:
-        mols = []
+        mols.append(m0)
 
     for i in range(N_iter):
         mol = get_conformers(smile, seed=i)
@@ -239,6 +234,7 @@ class pyxtal_molecule:
         fix=False,
         torsions=None,
         seed=None,
+        random_state=None,
         tm=Tol_matrix(prototype="molecular"),
         symtol=0.3,
     ):
@@ -250,8 +246,13 @@ class pyxtal_molecule:
             seed = 0xF00D
         self.seed = seed
 
+        if isinstance(random_state, Generator):
+            self.random_state = random_state.spawn(1)[0]
+        else:
+            self.random_state = np.random.default_rng(random_state)
+
         # Parse molecules: either file or molecule name
-        if type(mol) == str:
+        if isinstance(mol, str):
             tmp = mol.split(".")
             self.name = tmp[0]
             if len(tmp) > 1:
@@ -367,6 +368,15 @@ class pyxtal_molecule:
                 r += Element(mol[ids[-1]].species_string).vdw_radius
                 dims[i] = max([dims[i] + r, 3.4])  # for planar molecules
         return Box(dims)
+
+    def get_lengths(self):
+        if not hasattr(self, "box"):
+            self.box = self.get_box()
+        return self.box.width, self.box.height, self.box.length
+
+    def get_max_length(self):
+        w, h, l = self.get_lengths()
+        return max([w, h, l])
 
     def get_box_coordinates(self, xyz, padding=0, resolution=1.0):
         """
@@ -754,6 +764,7 @@ class pyxtal_molecule:
         """
         show the molecule
         """
+        from pyxtal.viz import display_molecules
 
         return display_molecules(self.mol)
 
@@ -817,7 +828,7 @@ class pyxtal_molecule:
                     pruneRmsThresh=0.5,
                 )
                 N_confs = mol.GetNumConformers()
-                conf_id = choice(range(N_confs))
+                conf_id = self.random_state.choice(range(N_confs))
                 conf = mol.GetConformer(conf_id)
                 # xyz = conf.GetPositions()
                 # res = AllChem.MMFFOptimizeMoleculeConfs(mol)
@@ -1528,14 +1539,20 @@ class Orientation:
             if degrees is equal to 1
     """
 
-    def __init__(self, matrix=None, degrees=2, axis=None):
+    def __init__(self, matrix=None, degrees=2, axis=None, random_state=None):
         self.matrix = np.array(matrix)
         self.degrees = degrees
+
+        if isinstance(random_state, Generator):
+            self.random_state = random_state.spawn(1)[0]
+        else:
+            self.random_state = np.random.default_rng(random_state)
+
         if degrees == 1:
             if axis is None:
                 raise ValueError("axis is required for orientation")
-            else:
-                axis /= np.linalg.norm(axis)
+
+            axis /= np.linalg.norm(axis)
         self.axis = axis
 
         self.r = Rotation.from_matrix(self.matrix)
@@ -1601,8 +1618,8 @@ class Orientation:
             r1 = Rotation.from_rotvec(self.angle * self.axis)
 
             if self.degrees == 2 and flip and np.random.random() > 0.5:
-                ax = choice(["x", "y", "z"])
-                angle0 = choice([90, 180, 270])
+                ax = self.random_state.choice(["x", "y", "z"])
+                angle0 = self.random_state.choice([90, 180, 270])
                 r2 = Rotation.from_euler(ax, angle0, degrees=True)
                 r1 = r2 * r1
             self.r = r1 * self.r
@@ -1619,7 +1636,8 @@ class Orientation:
         if not ignore_constraint:
             if self.degrees == 0:
                 raise ValueError("cannot rotate")
-            elif self.degrees == 1:
+
+            if self.degrees == 1:
                 axis = self.axis
                 vec = Rotation.from_matrix(matrix).as_rotvec()
                 if angle(vec, self.axis) > 1e-2 and angle(vec, -self.axis) > 1e-2:
@@ -1772,7 +1790,7 @@ def make_graph(mol, tol=0.2):
     for i, site in enumerate(mol._sites):
         names[i] = site.specie.value
         if names[i] not in ["C", "H", "O", "N", "S", "P", "Si", "F", "Cl", "Br", "I"]:
-            raise ValueError(name[i] + " is not supported")
+            raise ValueError(f"{names[i]} is not supported")
 
     for i in range(len(mol) - 1):
         site1 = mol.sites[i]

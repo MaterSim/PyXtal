@@ -3,7 +3,6 @@ Module for generating molecular crystals
 """
 
 # Standard Libraries
-import random
 from copy import deepcopy
 
 import numpy as np
@@ -63,6 +62,7 @@ class molecular_crystal:
         sites=None,
         conventional=True,
         seed=None,
+        random_state=None,
         use_hall=False,
     ):
         # Initialize
@@ -70,6 +70,7 @@ class molecular_crystal:
         self.valid = False
         self.factor = factor
         self.seed = seed
+        self.random_state = np.random.default_rng(random_state)
 
         # Dimesion
         self.dim = dim
@@ -113,38 +114,34 @@ class molecular_crystal:
         self.set_sites(sites)
         valid_orientation = self.set_orientations()
 
-        if valid_orientation:
-            # Check the minimum dof within the Wyckoff positions
-            if no_check_compability:
-                compat, self.degrees = True, True
-            else:
-                compat, self.degrees = self.group.check_compatible(self.numMols, self.valid_orientations)
-            if not compat:
-                msg = "Compoisition " + str(self.numMols)
-                msg += " not compatible with symmetry "
-                msg += str(self.group.number)
-                raise Comp_CompatibilityError(msg)
-            else:
-                self.set_volume()
-                self.set_lattice(lattice)
-                self.set_crystal()
-        else:
+        if not valid_orientation:
             msg = "Molecular symmetry is compatible with WP site\n"
-            for mol in self.molecules:
-                msg += str(mol) + ": "
-                msg += mol.pga.sch_symbol
+            msg += "".join(f"{mol}: {mol.pga.sch_symbol}, " for mol in self.molecules)
             raise Symm_CompatibilityError(msg)
+
+        # Check the minimum dof within the Wyckoff positions
+        if no_check_compability:
+            compat, self.degrees = True, True
+        else:
+            compat, self.degrees = self.group.check_compatible(self.numMols, self.valid_orientations)
+
+        if not compat:
+            msg = f"Compoisition {self.numMols} not compatible with symmetry {self.group.number}"
+            raise Comp_CompatibilityError(msg)
+
+        self.set_volume()
+        self.set_lattice(lattice)
+        self.set_crystal()
 
     def __str__(self):
         s = "------Random Molecular Crystal------"
-        s += "\nDimension: " + str(self.dim)
-        # s += "\nGroup: " + self.symbol
-        s += "\nVolume factor: " + str(self.factor)
-        s += "\n" + str(self.lattice)
+        s += f"\nDimension: {self.dim}"
+        # s += f"\nGroup: {self.symbol}"
+        s += f"\nVolume factor: {self.factor}"
+        s += f"\n{self.lattice}"
         if self.valid:
             s += "\nWyckoff sites:"
-            for wyc in self.mol_sites:
-                s += f"\n\t{wyc}"
+            s += "".join(f"\n\t{wyc}" for wyc in self.mol_sites)
         else:
             s += "\nStructure not generated."
         return s
@@ -164,7 +161,7 @@ class molecular_crystal:
         for i, _mol in enumerate(self.molecules):
             if sites is not None and sites[i] is not None and len(sites[i]) > 0:
                 self._check_consistency(sites[i], self.numMols[i])
-                if type(sites[i]) is dict:
+                if isinstance(sites[i], dict):
                     self.sites[i] = []
                     for item in sites[i].items():
                         self.sites[i].append({item[0]: item[1]})
@@ -257,6 +254,15 @@ class molecular_crystal:
             good_lattice = False
             for _cycle in range(10):
                 try:
+                    if self.group.number < 10:
+                        coef = 1.0 * self.numMols[0] / self.group[0].multiplicity
+                    elif 10 <= self.group.number <= 15:
+                        coef = 2.0  # 2/m
+                    elif 16 <= self.group.number <= 74:
+                        coef = 1.5
+                    else:
+                        coef = 1.0
+
                     self.lattice = Lattice(
                         self.group.lattice_type,
                         self.volume,
@@ -264,6 +270,7 @@ class molecular_crystal:
                         unique_axis=unique_axis,
                         thickness=self.thickness,
                         area=self.area,
+                        min_special=coef * max([mol.get_max_length() for mol in self.molecules]),
                     )
                     good_lattice = True
                     break
@@ -423,7 +430,8 @@ class molecular_crystal:
         """
         # Use a Wyckoff_site object for the current site
         self.numattempts += 1
-        ori = random.choice(oris).copy()
+        # NOTE removing this copy causes tests to fail -> state not managed well
+        ori = self.random_state.choice(oris).copy()
         ori.change_orientation(flip=True)
         ms0 = mol_site(pyxtal_mol, pt, ori, wp, self.lattice)
         # Check distances within the WP

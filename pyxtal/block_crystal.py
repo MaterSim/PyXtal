@@ -32,6 +32,7 @@ def block_crystal(
     conventional,
     tm,
     seed,
+    random_state,
     use_hall,
 ):
     # If block is None, directly generate mol. xtal.
@@ -51,6 +52,7 @@ def block_crystal(
             conventional=conventional,
             tm=tm,
             seed=seed,
+            random_state=random_state,
             use_hall=use_hall,
         )
 
@@ -105,6 +107,7 @@ def block_crystal(
                 sites=sites,
                 conventional=conventional,
                 tm=tm,
+                random_state=random_state,
                 use_hall=use_hall,
             )
 

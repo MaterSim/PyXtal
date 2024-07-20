@@ -51,12 +51,11 @@ setup(
         "numpy>=1.26,<2",  # prevent the use of numpy2
         "importlib_metadata>=1.4",
         "typing-extensions>=4.12",
-        #'pyshtools>=4.10.3',
-        # "openbabel>=3.0.0",
     ],
-    extra_require={
+    extras_require={
         "visualization": ["py3Dmol>=0.8.0"],
         "descriptor": ["pyshtools>=4.10.3"],
+        "molecules": ["openbabel", "pybel"],
         "test": ["wheel", "pytest", "coverage", "pytest-cov", "monty>=2024.2.26"],
     },
     python_requires=">=3.9",
