@@ -222,7 +222,7 @@ def optimizer(
             struc.energy < 9999
             and struc.lattice.is_valid_matrix()
             and struc.check_distance()
-            and 0.5 < struc.get_density() < 3.0
+            and 0.25 < struc.get_density() < 3.0
         ):
             s = struc.to_ase()
             s = ANI_relax(s, step=50, fmax=0.1, logfile="ase.log")

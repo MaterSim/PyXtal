@@ -125,7 +125,10 @@ class PSO(GlobalOptimize):
         )
 
         # setup timeout for each optimization call
-        self.timeout = 60.0 * self.N_pop / self.ncpu
+        if skip_ani:
+            self.timeout = 60.0 * self.N_pop / self.ncpu
+        else:
+            self.timeout = 180.0 * self.N_pop / self.ncpu
         self.N_survival = N_survival
         strs = self.full_str()
         self.logging.info(strs)

@@ -1,5 +1,5 @@
 """
-Global Optimizer
+global optimizer
 """
 
 from __future__ import annotations
@@ -9,8 +9,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-# import threading
-import psutil
 from numpy.random import Generator
 
 from pyxtal.optimize.base import GlobalOptimize
@@ -128,7 +126,10 @@ class GA(GlobalOptimize):
         )
 
         # setup timeout for each optimization call
-        self.timeout = 60.0 * self.N_pop / self.ncpu
+        if skip_ani:
+            self.timeout = 60.0 * self.N_pop / self.ncpu
+        else:
+            self.timeout = 180.0 * self.N_pop / self.ncpu
         strs = self.full_str()
         self.logging.info(strs)
         print(strs)

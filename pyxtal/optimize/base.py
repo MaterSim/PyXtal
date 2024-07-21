@@ -9,6 +9,7 @@ A base class for global optimization including
 from __future__ import annotations
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, TimeoutError
+import psutil
 
 import logging
 import os
