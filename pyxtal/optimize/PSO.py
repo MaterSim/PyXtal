@@ -12,6 +12,7 @@ import numpy as np
 # import threading
 import psutil
 from numpy.random import Generator
+from pymatgen.analysis.structure_matcher import StructureMatcher
 
 from pyxtal.optimize.base import GlobalOptimize
 from pyxtal.representation import representation
@@ -84,6 +85,8 @@ class PSO(GlobalOptimize):
         N_survival: int = 20,
         verbose: bool = False,
         random_state: int | None = None,
+        max_time: float | None = None,
+        matcher: StructureMatcher | None = None,
     ):
         if isinstance(random_state, Generator):
             self.random_state = random_state.spawn(1)[0]
@@ -122,13 +125,10 @@ class PSO(GlobalOptimize):
             factor,
             eng_cutoff,
             E_max,
+            max_time,
+            matcher,
         )
 
-        # setup timeout for each optimization call
-        if skip_ani:
-            self.timeout = 60.0 * self.N_pop / self.ncpu
-        else:
-            self.timeout = 180.0 * self.N_pop / self.ncpu
         self.N_survival = N_survival
         strs = self.full_str()
         self.logging.info(strs)

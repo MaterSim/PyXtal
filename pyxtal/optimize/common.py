@@ -118,8 +118,8 @@ def randomizer(
             hn = sg
         else:
             perm = sg > 15
-            # For specical setting, we only do standard_setting
-            hn = Hall(sg).hall_default if min(comp) < 1 else rng.choice(Hall(sg, permutation=perm).hall_numbers)
+            # For specical site or high symmetry, we only do standard_setting
+            hn = Hall(sg).hall_default if min(comp) < 1 or sg > 142 else rng.choice(Hall(sg, permutation=perm).hall_numbers)
         xtal.from_random(
             3,
             hn,

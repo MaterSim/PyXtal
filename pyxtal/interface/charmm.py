@@ -129,6 +129,8 @@ class CHARMM:
 
         a, b, c, alpha, beta, gamma = lat.get_para(degree=True)
         ltype = lat.ltype
+        if ltype in ['trigonal', 'Trigonal']: ltype = 'hexagonal'
+
         fft = self.FFTGrid(np.array([a, b, c]))
 
         with open(self.input, "w") as f:

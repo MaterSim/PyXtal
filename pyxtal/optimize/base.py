@@ -17,7 +17,7 @@ from time import time
 from typing import TYPE_CHECKING
 
 import numpy as np
-import pymatgen.analysis.structure_matcher as sm
+from pymatgen.analysis.structure_matcher import StructureMatcher
 from numpy.random import Generator
 from ost.parameters import ForceFieldParameters, compute_r2, get_lmp_efs
 
@@ -57,6 +57,7 @@ class GlobalOptimize:
         skip_ani (bool): whether or not use ani or not (default: True)
         eng_cutoff (float): the cutoff energy for FF training
         E_max (float): maximum energy defined as an invalid structure
+        matcher : structurematcher
     """
 
     def __init__(
@@ -85,13 +86,17 @@ class GlobalOptimize:
         factor: float = 1.1,
         eng_cutoff: float = 5.0,
         E_max: float = 1e10,
-        random_state=None,
+        random_state = None,
+        max_time: float | None = None,
+        matcher: StructureMatcher | None = None,
     ):
         # General information
         if isinstance(random_state, Generator):
             self.random_state = random_state.spawn(1)[0]
         else:
             self.random_state = np.random.default_rng(random_state)
+
+
 
         # Molecular information
         self.smile = smiles
@@ -122,6 +127,13 @@ class GlobalOptimize:
         self.skip_ani = skip_ani
         self.randomizer = randomizer
         self.optimizer = optimizer
+        # setup timeout for each optimization call
+        if max_time is None:
+            if self.skip_ani:
+                max_time = 60.0
+            else:
+                max_time = 300.0
+        self.timeout = max_time * self.N_pop / self.ncpu
 
         self.ff_opt = ff_opt
 
@@ -165,7 +177,10 @@ class GlobalOptimize:
                 self.prepare_chm_info(params0)
 
         # Structure matcher
-        self.matcher = sm.StructureMatcher(ltol=0.3, stol=0.3, angle_tol=10)
+        if matcher is None:
+            self.matcher = StructureMatcher(ltol=0.3, stol=0.3, angle_tol=10)
+        else:
+            self.matcher = matcher
 
         # I/O stuff
         self.E_max = E_max
