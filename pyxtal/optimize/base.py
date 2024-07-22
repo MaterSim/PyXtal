@@ -57,7 +57,8 @@ class GlobalOptimize:
         skip_ani (bool): whether or not use ani or not (default: True)
         eng_cutoff (float): the cutoff energy for FF training
         E_max (float): maximum energy defined as an invalid structure
-        matcher : structurematcher
+        matcher : structurematcher from pymatgen
+        early_quit: whether quit the program early when the target is found
     """
 
     def __init__(
@@ -89,6 +90,7 @@ class GlobalOptimize:
         random_state = None,
         max_time: float | None = None,
         matcher: StructureMatcher | None = None,
+        early_quit: bool = False,
     ):
         # General information
         if isinstance(random_state, Generator):
@@ -195,6 +197,7 @@ class GlobalOptimize:
         logging.getLogger().handlers.clear()
         logging.basicConfig(format="%(asctime)s| %(message)s", filename=self.log_file, level=logging.INFO)
         self.logging = logging
+        self.early_quit = early_quit
 
     def __str__(self):
         s = "\n-------Global Crystal Structure Prediction------"
@@ -500,6 +503,8 @@ class GlobalOptimize:
 
         e, d1, d2 = 10000, 0, 0
         match_id = None
+
+        # Gather all matched results
         if ref_pmg is not None:
             for id, match in enumerate(matches):
                 if match and engs[id] < e:

@@ -50,6 +50,8 @@ class GA(GlobalOptimize):
         eng_cutoff (float): the cutoff energy for FF training
         E_max (float): maximum energy defined as an invalid structure
         verbose (bool): show more details
+        matcher : structurematcher from pymatgen
+        early_quit: whether quit the program early when the target is found
     """
 
     def __init__(
@@ -85,6 +87,7 @@ class GA(GlobalOptimize):
         random_state: int | None = None,
         max_time: float | None = None,
         matcher: StructureMatcher | None = None,
+        early_quit: bool = False,
     ):
         if isinstance(random_state, Generator):
             self.random_state = random_state.spawn(1)[0]
@@ -128,6 +131,7 @@ class GA(GlobalOptimize):
             E_max,
             max_time,
             matcher,
+            early_quit,
         )
 
         strs = self.full_str()
@@ -136,7 +140,7 @@ class GA(GlobalOptimize):
 
     def full_str(self):
         s = str(self)
-        s += "\nMethod    : Genetic Algorithm"
+        s += "\nMethod    : Width First Population Algorithm"
         s += f"\nGeneration: {self.N_gen:4d}"
         s += f"\nPopulation: {self.N_pop:4d}"
         s += "\nFraction  : {:4.2f} {:4.2f} {:4.2f}".format(*self.fracs)
@@ -284,14 +288,29 @@ class GA(GlobalOptimize):
                 N_added = self.ff_optimization(xtals, N_added)
 
             else:
-                match = self.early_termination(
-                    current_xtals, current_matches, current_engs, current_tags, ref_pmg, ref_eng
-                )
-                if match is not None:
-                    print("Early termination")
-                    self.logging.info("Early termination")
-                    return match
+                if self.early_quit:
+                    match = self.early_termination(current_xtals, current_matches,
+                                    current_engs, current_tags, ref_pmg, ref_eng)
 
+                    if match is not None:
+                        print("Early termination")
+                        self.logging.info("Early termination")
+                        return match
+                else:
+                    for m in current_matches:
+                        if m:
+                            self.matches += 1
+                    success_rate = self.matches / self.N_struc * 100
+                    gen_out = f"Success rate at Gen {gen:3d}: "
+                    gen_out += f"{success_rate:5.2f}%"
+                    self.logging.info(gen_out)
+                    print(gen_out)
+
+                    if success_rate > 5.0: # to check later
+                        msg = f"Early termination with a high success rate")
+                        print(msg)
+                        self.logging.info(msg
+                        return None
         return None
 
     def _selTournament(self, fitness, factor=0.35):
