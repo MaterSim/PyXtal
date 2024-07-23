@@ -87,7 +87,7 @@ class PSO(GlobalOptimize):
         random_state: int | None = None,
         max_time: float | None = None,
         matcher: StructureMatcher | None = None,
-        early_quit: bool = False,
+        early_quit: bool = True,
     ):
         if isinstance(random_state, Generator):
             self.random_state = random_state.spawn(1)[0]
@@ -98,7 +98,6 @@ class PSO(GlobalOptimize):
         self.N_gen = N_gen
         self.N_pop = N_pop
         self.verbose = verbose
-
         # initialize other base parameters
         GlobalOptimize.__init__(
             self,
@@ -126,6 +125,7 @@ class PSO(GlobalOptimize):
             factor,
             eng_cutoff,
             E_max,
+            random_state,
             max_time,
             matcher,
             early_quit,
@@ -162,6 +162,7 @@ class PSO(GlobalOptimize):
         self.best_reps = []
         self.reps = []
         self.engs = []
+        self.matches = 0
 
         # Related to the FF optimization
         N_added = 0
@@ -289,30 +290,34 @@ class PSO(GlobalOptimize):
                 N_added = self.ff_optimization(xtals, N_added)
 
             else:
-                if self.early_quit:
-                    match = self.early_termination(current_xtals, current_matches,
+                match = self.early_termination(current_xtals, current_matches,
                                 current_engs, current_tags, ref_pmg, ref_eng)
+                if self.early_quit:
                     if match is not None:
                         print("Early termination")
                         self.logging.info("Early termination")
                         return match
                 else:
+                    #print('debug', gen, current_matches)
                     for m in current_matches:
                         if m:
                             self.matches += 1
                     success_rate = self.matches / self.N_struc * 100
                     gen_out = f"Success rate at Gen {gen:3d}: "
-                    gen_out += f"{success_rate:5.2f}%"
+                    gen_out += f"{success_rate:7.4f}%"
                     self.logging.info(gen_out)
                     print(gen_out)
 
-                    if success_rate > 5.0: # to check later
-                        msg = f"Early termination with a high success rate")
+                    if success_rate > 2.5 or self.matches > 10: # to check later
+                        msg = f"Early termination with a high success rate"
                         print(msg)
-                        self.logging.info(msg
-                        return None
+                        self.logging.info(msg)
+                        return success_rate
 
-        return None
+        if not self.ff_opt and not self.early_quit:
+            return success_rate
+        else:
+            return None
 
 
 if __name__ == "__main__":

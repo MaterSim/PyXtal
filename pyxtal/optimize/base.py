@@ -90,7 +90,7 @@ class GlobalOptimize:
         random_state = None,
         max_time: float | None = None,
         matcher: StructureMatcher | None = None,
-        early_quit: bool = False,
+        early_quit: bool = True,
     ):
         # General information
         if isinstance(random_state, Generator):
@@ -185,6 +185,7 @@ class GlobalOptimize:
             self.matcher = matcher
 
         # I/O stuff
+        self.early_quit = early_quit
         self.E_max = E_max
         self.tag = tag
         self.cif = cif
@@ -197,7 +198,6 @@ class GlobalOptimize:
         logging.getLogger().handlers.clear()
         logging.basicConfig(format="%(asctime)s| %(message)s", filename=self.log_file, level=logging.INFO)
         self.logging = logging
-        self.early_quit = early_quit
 
     def __str__(self):
         s = "\n-------Global Crystal Structure Prediction------"
@@ -208,6 +208,10 @@ class GlobalOptimize:
         s += f"\nncpu      : {self.ncpu:d}"
         s += f"\ndiretory  : {self.workdir:s}"
         s += f"\nopt_lat   : {self.opt_lat!s:s}\n"
+        if self.early_quit:
+            s += f"Mode      : Production\n"
+        else:
+            s += f"Mode      : Sampling\n"
         if self.cif is not None:
             s += f"cif       : {self.cif:s}\n"
         if self.ff_opt:
