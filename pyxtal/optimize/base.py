@@ -98,8 +98,6 @@ class GlobalOptimize:
         else:
             self.random_state = np.random.default_rng(random_state)
 
-
-
         # Molecular information
         self.smile = smiles
         self.smiles = self.smile.split(".")  # list
@@ -186,9 +184,11 @@ class GlobalOptimize:
 
         # I/O stuff
         self.early_quit = early_quit
+        self.N_min_matches = 10 # The min_num_matches for early termination
         self.E_max = E_max
         self.tag = tag
         self.cif = cif
+        self.matched_cif = self.workdir + "/" + "matched.cif"
         if cif is not None:
             with open(self.workdir + "/" + cif, "w") as f:
                 f.writelines(str(self))
@@ -198,6 +198,13 @@ class GlobalOptimize:
         logging.getLogger().handlers.clear()
         logging.basicConfig(format="%(asctime)s| %(message)s", filename=self.log_file, level=logging.INFO)
         self.logging = logging
+
+        # Some neccessary trackers
+        self.matches = []
+        self.best_reps = []
+        self.reps = []
+        self.engs = []
+
 
     def __str__(self):
         s = "\n-------Global Crystal Structure Prediction------"
@@ -250,6 +257,54 @@ class GlobalOptimize:
                 break
         # xtals = [xtal.to_ase(resort=False) for xtal in xtals]
         return xtals
+
+
+    def success_count(self, gen, xtals, matches, tags, engs, ref_pmg):
+        """
+        To wrap up the matched results and count success rate.
+
+        Args:
+            gen (int): current generation index
+            xtals (list): list of xtals
+            matches (list): list of matches [True, False, ..]
+            tags (list): 'random' or 'mutation'
+            engs (list): list of engs
+            ref_pmg: reference pymatgen structure
+
+        Return:
+            success_rate
+        """
+        for i, match in enumerate(matches):
+            if match:
+                xtal, tag = xtals[i], tags[i]
+                with open(self.matched_cif, "a+") as f:
+                    res = self._print_match(xtal, ref_pmg)
+                    e, d1, d2 = engs[i], res[0], res[1]
+                    label = self.tag + "-g" + str(gen) + "-p" + str(i)
+                    label += f"-e{e:8.3f}-t{tag:s}-{d1:4.2f}-{d2:4.2f}"
+                    f.writelines(xtal.to_file(header=label))
+                    self.matches.append((i, xtal, e, d1, d2, tag))
+
+        success_rate = len(self.matches) / self.N_struc * 100
+        return success_rate
+
+    def early_termination(self, success_rate):
+        """
+        Check if the calculation can be terminated early
+        """
+        if success_rate > 0:
+            if self.early_quit:
+                msg = f"Early termination since a match is found"
+                print(msg)
+                self.logging.info(msg)
+                return True
+
+            elif success_rate > 2.5 or len(self.matches) > self.N_min_matches:
+                msg = f"Early termination with a high success rate"
+                print(msg)
+                self.logging.info(msg)
+                return True
+        return False
 
     def ff_optimization(self, xtals, N_added, N_min=50, dE=2.5, FMSE=2.5):
         """
@@ -500,50 +555,6 @@ class GlobalOptimize:
         # Info
         self.atom_info = ase_with_ff.get_atom_info()
 
-    def early_termination(self, xtals, matches, engs, tags, ref_pmg, ref_eng):
-        """
-        Exit if a match is found
-        """
-
-        e, d1, d2 = 10000, 0, 0
-        match_id = None
-
-        # Gather all matched results
-        if ref_pmg is not None:
-            for id, match in enumerate(matches):
-                if match and engs[id] < e:
-                    xtal = xtals[id]
-                    res = self._print_match(xtal, ref_pmg)
-                    if res[0] is not None:
-                        e, match_id, d1, d2 = engs[id], id, res[0], res[1]
-
-            if match_id is not None:
-                all_engs = np.sort(np.array(self.engs))
-                rank = len(all_engs[all_engs < (e - 0.001)]) + 1
-                tag = tags[match_id][0]
-                done = False
-                if rank / self.N_struc < 0.5:
-                    done = True
-                else:
-                    if ref_eng is not None:
-                        if e < ref_eng + 0.2:
-                            done = True
-                    else:
-                        done = True
-                if done:
-                    return {
-                        "energy": e,
-                        "tag": tag,
-                        "l_rms": d1,
-                        "a_rms": d2,
-                        "rank": rank,
-                    }
-                return None
-            return None
-
-        else:
-            return None
-
     def get_label(self, i):
         if i < 10:
             folder = f"cpu00{i}"
@@ -552,6 +563,27 @@ class GlobalOptimize:
         else:
             folder = f"cpu0{i}"
         return folder
+
+    def print_matches(self, header=None):
+        """
+        Formatted output for the matched structures including xtal rep and eng ranking
+        """
+        all_engs = np.sort(np.array(self.engs))
+        ranks = []
+        for match_data in self.matches:
+            (id, xtal, e, d1, d2, tag) = match_data
+            rep0 = xtal.get_1D_representation()
+            if header is not None:
+                strs = header
+            else:
+                strs = ""
+            strs = rep0.to_string(eng=xtal.energy / sum(xtal.numMols))
+            strs += f"{d1:6.3f}{d2:6.3f} Match "
+            rank = len(all_engs[all_engs < (e - 1e-3)]) + 1
+            strs += f"{rank:d}/{self.N_struc:d} {tag:s}"
+            print(strs)
+            ranks.append(rank)
+        return min(ranks)
 
     def _print_match(self, xtal, ref_pmg):
         """

@@ -158,15 +158,10 @@ class GA(GlobalOptimize):
             ref_pxrd: reference pxrd profile in 2D array
 
         Returns:
-            (generation, np.min(engs), None, None, None, 0, len(engs))
+            success_rate or None
         """
         if ref_pmg is not None:
             ref_pmg.remove_species("H")
-
-        self.best_reps = []
-        self.reps = []
-        self.engs = []
-        self.matches = 0
 
         # Related to the FF optimization
         N_added = 0
@@ -281,43 +276,23 @@ class GA(GlobalOptimize):
             self.N_struc = len(self.engs)
 
             # Update the FF parameters if necessary
-            # import sys; sys.exit()
             if self.ff_opt:
                 N_max = min([int(self.N_pop * 0.6), 50])
                 ids = np.argsort(engs)
                 xtals = self.select_xtals(current_xtals, ids, N_max)
                 print("Select Good structures for FF optimization", len(xtals))
                 N_added = self.ff_optimization(xtals, N_added)
-
             else:
-                if self.early_quit:
-                    match = self.early_termination(current_xtals, current_matches,
-                                    current_engs, current_tags, ref_pmg, ref_eng)
+                success_rate = self.success_count(gen, current_xtals, current_matches, current_tags, engs, ref_pmg)
+                gen_out = f"Success rate at Gen {gen:3d}: "
+                gen_out += f"{success_rate:7.4f}%"
+                self.logging.info(gen_out)
+                print(gen_out)
 
-                    if match is not None:
-                        print("Early termination")
-                        self.logging.info("Early termination")
-                        return match
-                else:
-                    for m in current_matches:
-                        if m:
-                            self.matches += 1
-                    success_rate = self.matches / self.N_struc * 100
-                    gen_out = f"Success rate at Gen {gen:3d}: "
-                    gen_out += f"{success_rate:7.4f}%"
-                    self.logging.info(gen_out)
-                    print(gen_out)
+                if self.early_termination(success_rate):
+                    return success_rate
 
-                    if success_rate > 2.5 or self.matches > 10: # to check later
-                        msg = f"Early termination with a high success rate"
-                        print(msg)
-                        self.logging.info(msg)
-                        return success_rate
-
-        if not self.ff_opt and not self.early_quit:
-            return success_rate
-        else:
-            return None
+        return None
 
     def _selTournament(self, fitness, factor=0.35):
         """
