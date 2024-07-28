@@ -88,6 +88,15 @@ class atom_site:
 
         self.dof = self.wp.get_dof()
 
+    def get_bounds(self):
+        """
+        get the number of dof for the given structures:
+        """
+        self.bounds = []
+        for i in range(self.dof):
+            self.bounds.append([0.0, 1.0])
+        return self.bounds
+
     @classmethod
     def load_dict(cls, dicts):
         """
@@ -363,6 +372,7 @@ class mol_site:
         self.wp = wp
         self.position = position  # fractional coordinate of molecular center
         self.orientation = orientation  # pyxtal.molecule.orientation object
+        self._get_dof()
         if isinstance(lattice, Lattice):
             self.lattice = lattice
         else:
@@ -410,10 +420,28 @@ class mol_site:
 
     def _get_dof(self):
         """
+        get the number of dof for the given wyckoff site:
+        """
+        dof = np.linalg.matrix_rank(self.wp.ops[0].rotation_matrix)
+        self.dof = dof + 3
+        if self.molecule.torsionlist is not None:
+            self.dof += len(self.molecule.torsionlist)
+
+    def get_bounds(self):
+        """
         get the number of dof for the given structures:
         """
-        freedom = np.trace(self.wp.ops[0].rotation_matrix) > 0
-        self.dof = len(freedom[freedom is True])
+        self.bounds = []
+        dof = np.linalg.matrix_rank(self.wp.ops[0].rotation_matrix)
+        for i in range(dof):
+            self.bounds.append([0.0, 1.0])
+        self.bounds.append([-180.0, 180.0])
+        self.bounds.append([-90.0, 90.0])
+        self.bounds.append([-180.0, 180.0])
+        if self.molecule.torsionlist is not None:
+            for i in range(len(self.molecule.torsionlist)):
+                self.bounds.append([0, 180.0])
+        return self.bounds
 
     def save_dict(self):
         dict0 = {

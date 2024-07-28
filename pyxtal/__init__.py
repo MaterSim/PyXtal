@@ -234,6 +234,16 @@ class pyxtal:
 
         return self.lattice.dof + dof
 
+    def get_bounds(self, vec=(2.0, 50.0), ang=(30, 150)):
+        """
+        Get the number of dof for the given structures:
+        """
+        bounds = self.lattice.get_bounds(vec[0], vec[1], ang[0], ang[1])
+        sites = self.mol_sites if self.molecular else self.atom_sites
+        for site in sites:
+            bounds.extend(site.get_bounds())
+        return bounds
+
     def get_site_labels(self):
         """
         Get the site_labels as a dictionary
