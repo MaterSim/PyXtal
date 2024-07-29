@@ -20,9 +20,9 @@ if TYPE_CHECKING:
     from pyxtal.molecule import pyxtal_molecule
 
 
-class GA(GlobalOptimize):
+class WFS(GlobalOptimize):
     """
-    Standard Genetic algorithm
+    Standard Population algorithm
 
     Args:
         smiles (str): smiles string
@@ -94,7 +94,7 @@ class GA(GlobalOptimize):
         else:
             self.random_state = np.random.default_rng(random_state)
 
-        # GA parameters:
+        # POPULATION parameters:
         if fracs is None:
             fracs = [0.6, 0.4, 0.0]
         self.N_gen = N_gen
@@ -141,7 +141,7 @@ class GA(GlobalOptimize):
 
     def full_str(self):
         s = str(self)
-        s += "\nMethod    : Width First Population Algorithm"
+        s += "\nMethod    : Stochastic Width First Sampling"
         s += f"\nGeneration: {self.N_gen:4d}"
         s += f"\nPopulation: {self.N_pop:4d}"
         s += "\nFraction  : {:4.2f} {:4.2f} {:4.2f}".format(*self.fracs)
@@ -150,7 +150,7 @@ class GA(GlobalOptimize):
 
     def run(self, ref_pmg=None, ref_eng=None, ref_pxrd=None):
         """
-        The main code to run GA prediction
+        The main code to run WFS prediction
 
         Args:
             ref_pmg: reference pmg structure
@@ -369,9 +369,9 @@ if __name__ == "__main__":
     if xtal.has_special_site():
         xtal = xtal.to_subgroup()
 
-    # GA run
+    # GO run
     t0 = time()
-    ga = GA(
+    go = WFS(
         smile,
         wdir,
         xtal.group.number,
@@ -385,19 +385,18 @@ if __name__ == "__main__":
         cif="pyxtal.cif",
     )
 
-    match = ga.run(pmg0)
-    if match is not None:
-        eng = match["energy"]
-        tmp = "{:}/{:}".format(match["rank"], ga.N_struc)
-        mytag = "True[{:}] {:10s}".format(match["tag"], tmp)
-        mytag += "{:5.2f}{:5.2f}".format(match["l_rms"], match["a_rms"])
-    else:
-        eng = ga.min_energy
-        tmp = f"0/{ga.N_struc}"
-        mytag = f"False   {tmp:10s}"
+    suc_rate = go.run(pmg0)
+    print(strs + " in Gen {:d}\n".format(go.generation))
 
-    t1 = int((time() - t0) / 60)
-    strs = f"Final {name:8s} {spg:8s} {t1:3d}m"
-    strs += f" {ga.generation:3d}[{ga.N_torsion:2d}] {wt:6.1f}"
-    strs += f"{eng:12.3f} {mytag:30s} {smile:s}"
+    if len(go.matches) > 0:
+        best_rank = go.print_matches()
+        mytag = f"True {best_rank:d}/{go.N_struc:d} Succ_rate: {suc_rate:7.4f}%"
+    else:
+        mytag = f"False 0/{go.N_struc:d}"
+
+    eng = go.min_energy
+    t1 = int((time() - t0)/60)
+    strs = "Final {:8s} [{:2d}]{:10s} ".format(code, sum(xtal.numMols), spg)
+    strs += "{:3d}m {:2d} {:6.1f}".format(t1, N_torsion, wt)
+    strs += "{:12.3f} {:20s} {:s}".format(eng, mytag, smile)
     print(strs)

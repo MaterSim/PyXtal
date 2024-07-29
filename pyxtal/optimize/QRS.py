@@ -8,6 +8,7 @@ from time import time
 from typing import TYPE_CHECKING
 
 import numpy as np
+from scipy.stats import qmc
 
 # import threading
 import psutil
@@ -16,15 +17,60 @@ from pymatgen.analysis.structure_matcher import StructureMatcher
 
 from pyxtal.optimize.base import GlobalOptimize
 from pyxtal.representation import representation
+from pyxtal.lattice import Lattice
 
 if TYPE_CHECKING:
-    from pyxtal.lattice import Lattice
     from pyxtal.molecule import pyxtal_molecule
 
-
-class PSO(GlobalOptimize):
+def generate_qrs_cell(sampler, cell_bounds, ref_volume, ltype):
     """
-    Standard Genetic algorithm
+    A routine to generate quasi random samples for lattice and wp
+    """
+    # Sample cell parameters
+    min_vol, max_vol = 0.75*ref_volume, 2.5*ref_volume
+    lb = [b[0] for b in cell_bounds]
+    ub = [b[1] for b in cell_bounds]
+    count = 0
+    while True:
+        count += 1
+        sample = qmc.scale(sampler.random(), lb, ub)[0].tolist()
+        lat = Lattice.from_1d_representation(sample, ltype)
+        if min_vol < lat.volume < max_vol:
+            #print(sample, ltype)
+            return sample
+        if count == 1000:
+            raise ValueError("Cannot generate valid cell with 1000 attempts")
+
+def generate_qrs_xtals(cell, wp_bounds, N_pop, smiles):
+    """
+    Get the qrs xtal samples
+    """
+    #cell = [81, 11.38,  6.48, 11.24,  96.9]
+    m = max([int(np.log2(N_pop))+3, 9])
+    xtals = []
+    lb = [b[0] for b in wp_bounds]
+    ub = [b[1] for b in wp_bounds]
+    sampler_wp = qmc.Sobol(d=len(wp_bounds), scramble=False)
+    sample_wp = sampler_wp.random_base2(m=m)
+    sample_wp = qmc.scale(sample_wp, lb, ub)
+    for wp0 in sample_wp:
+        x = [cell, [0] + wp0.tolist() + [False]] #print(x)
+        rep = representation(x, smiles)
+        xtal = rep.to_pyxtal()
+        if not xtal.has_special_site() and len(xtal.check_short_distances(r=0.8)) == 0:
+            #print(rep, len(xtal.check_short_distances(r=0.8)))
+            xtals.append(xtal)
+            if len(xtals) == N_pop:
+                return xtals
+        #else:
+        #    print(rep, len(xtal.check_short_distances(r=0.6)))
+    print("DDDDDD", len(xtals), m)
+    return xtals
+
+
+class QRS(GlobalOptimize):
+    """
+    Quasi Monte Carlo
 
     Args:
         smiles (str): smiles string
@@ -89,14 +135,9 @@ class PSO(GlobalOptimize):
         matcher: StructureMatcher | None = None,
         early_quit: bool = True,
     ):
-        if isinstance(random_state, Generator):
-            self.random_state = random_state.spawn(1)[0]
-        else:
-            self.random_state = np.random.default_rng(random_state)
 
-        # GA parameters:
-        self.N_gen = N_gen
-        self.N_pop = N_pop
+        self.N_gen = N_gen # Number of lattice points
+        self.N_pop = N_pop # Number of wp varieties
         self.verbose = verbose
         # initialize other base parameters
         GlobalOptimize.__init__(
@@ -125,20 +166,19 @@ class PSO(GlobalOptimize):
             factor,
             eng_cutoff,
             E_max,
-            random_state,
+            None, #random_state,
             max_time,
             matcher,
             early_quit,
         )
 
-        self.N_survival = N_survival
         strs = self.full_str()
         self.logging.info(strs)
         print(strs)
 
     def full_str(self):
         s = str(self)
-        s += "\nMethod    : Depth First Population Algorithm"
+        s += "\nMethod    : Deterministic Quasi-Random Sampling"
         s += f"\nGeneration: {self.N_gen:4d}"
         s += f"\nPopulation: {self.N_pop:4d}"
         # The rest base information from now on
@@ -156,6 +196,7 @@ class PSO(GlobalOptimize):
         Returns:
             (generation, np.min(engs), None, None, None, 0, len(engs))
         """
+        self.ref_volumes = []
         if ref_pmg is not None:
             ref_pmg.remove_species("H")
 
@@ -167,41 +208,30 @@ class PSO(GlobalOptimize):
         hist_best_xtals = [None] * self.N_pop
         hist_best_engs = [self.E_max] * self.N_pop
 
+        # lists for structure information
+        current_reps = [None] * self.N_pop
+        current_matches = [False] * self.N_pop if ref_pxrd is None else [0.0] * self.N_pop
+        current_engs = [self.E_max] * self.N_pop
+        current_tags = ["Random"] * self.N_pop
+
         for gen in range(self.N_gen):
             print(f"\nGeneration {gen:d} starts")
             self.logging.info(f"Generation {gen:d} starts")
             self.generation = gen + 1
             t0 = time()
 
-            # lists for structure information
-            current_reps = [None] * self.N_pop
-            current_matches = [False] * self.N_pop if ref_pxrd is None else [0.0] * self.N_pop
-            current_engs = [self.E_max] * self.N_pop
-            current_xtals = [None] * self.N_pop
-            current_tags = ["Random"] * self.N_pop
-
-            # Set up the origin for new structures
             if gen > 0:
-                count = 0
-                for id in range(self.N_pop):
-                    # select the structures for further mutation
-                    # Current_best or hist_best
-                    if min([engs[id], hist_best_engs[id]]) < np.median(engs) and current_survivals[id] < self.N_survival:
-                        source = prev_xtals[id] if self.random_state.random() < 0.7 else hist_best_xtals[id]
-                        if source is not None:
-                            current_tags[id] = "Mutation"
-                            current_xtals[id] = source
-                            current_survivals[id] += 1
-                            # Forget about the local best
-                            if current_survivals[id] == self.N_survival:
-                                hist_best_engs[id] = engs[id]
-                                hist_best_xtals[id] = prev_xtals[id]
-                            count += 1
-
-                    # Reset it to 0
-                    if current_tags[id] == "Random":
-                        current_survivals[id] = 0
-
+                cell = generate_qrs_cell(self.sampler,
+                                         self.cell_bounds,
+                                         self.ref_volumes[-1],
+                                         self.ltype)
+                cell = [self.hall_number] + cell
+                current_xtals = generate_qrs_xtals(cell, self.wp_bounds, self.N_pop, self.smiles)
+                strs = f"Cell parameters in Gen{gen:d}: "
+                print(strs, cell, len(current_xtals))
+            else:
+                # 1st generation from random
+                current_xtals = [None] * self.N_pop
 
             # Local optimization
             gen_results = self.local_optimization(gen, current_xtals, ref_pmg, ref_pxrd)
@@ -237,15 +267,11 @@ class PSO(GlobalOptimize):
             self.logging.info(strs)
             t1 = time()
 
-            # Apply Gaussian
-            if ref_pxrd is None:
-                engs = self._apply_gaussian(current_reps, current_engs)
-            else:
-                engs = self._apply_gaussian(current_reps, -1 * np.array(current_matches))
-
             # Store the best structures
+            engs = current_engs
             count = 0
             xtals = []
+            vols = []
             ids = np.argsort(engs)
             for id in ids:
                 xtal = current_xtals[id]
@@ -262,8 +288,19 @@ class PSO(GlobalOptimize):
                         out += f" {current_matches[id]:6.3f}"
                     print(out)
                     count += 1
+                    vols.append(xtal.lattice.volume)
                 if count == 3:
                     break
+
+            # update best volume
+            self.ref_volumes.append(np.array(vols).mean())
+            if gen == 0:
+                best_xtal = xtals[0]
+                self.cell_bounds = best_xtal.lattice.get_bounds(2.5, 25)
+                self.ltype = best_xtal.lattice.ltype
+                self.wp_bounds = best_xtal.mol_sites[0].get_bounds()
+                self.hall_number = best_xtal.group.hall_number
+                self.sampler = qmc.Sobol(d=len(self.cell_bounds), scramble=False)
 
             t2 = time()
             gen_out = f"Gen{gen:3d} time usage: "
@@ -348,14 +385,15 @@ if __name__ == "__main__":
             # Make sure we generate the initial guess from ambertools
             if os.path.exists("parameters.xml"):
                 os.remove("parameters.xml")
+
     # load reference xtal
     pmg0 = xtal.to_pymatgen()
     if xtal.has_special_site():
         xtal = xtal.to_subgroup()
 
-    # GA run
+    # GO run
     t0 = time()
-    ga = GA(
+    go = QRS(
         smile,
         wdir,
         xtal.group.number,
@@ -369,19 +407,18 @@ if __name__ == "__main__":
         cif="pyxtal.cif",
     )
 
-    match = ga.run(pmg0)
-    if match is not None:
-        eng = match["energy"]
-        tmp = "{:}/{:}".format(match["rank"], ga.N_struc)
-        mytag = "True[{:}] {:10s}".format(match["tag"], tmp)
-        mytag += "{:5.2f}{:5.2f}".format(match["l_rms"], match["a_rms"])
-    else:
-        eng = ga.min_energy
-        tmp = f"0/{ga.N_struc}"
-        mytag = f"False   {tmp:10s}"
+    suc_rate = go.run(pmg0)
+    print(strs + " in Gen {:d}\n".format(go.generation))
 
-    t1 = int((time() - t0) / 60)
-    strs = f"Final {name:8s} {spg:8s} {t1:3d}m"
-    strs += f" {ga.generation:3d}[{ga.N_torsion:2d}] {wt:6.1f}"
-    strs += f"{eng:12.3f} {mytag:30s} {smile:s}"
+    if len(go.matches) > 0:
+        best_rank = go.print_matches()
+        mytag = f"True {best_rank:d}/{go.N_struc:d} Succ_rate: {suc_rate:7.4f}%"
+    else:
+        mytag = f"False 0/{go.N_struc:d}"
+
+    eng = go.min_energy
+    t1 = int((time() - t0)/60)
+    strs = "Final {:8s} [{:2d}]{:10s} ".format(code, sum(xtal.numMols), spg)
+    strs += "{:3d}m {:2d} {:6.1f}".format(t1, N_torsion, wt)
+    strs += "{:12.3f} {:20s} {:s}".format(eng, mytag, smile)
     print(strs)

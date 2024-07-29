@@ -20,10 +20,11 @@ from pyxtal.XRD import Similarity, pxrd_refine
 
 warnings.filterwarnings("ignore")
 
-def check_stable(xtal, c_info, w_dir, skip_ani, optimizer, verbose=False):
+def check_stable(xtal, c_info, w_dir, skip_ani, optimizer, disps=[0.5, 5.0], verbose=False):
     """
     Check the stability of input xtal based on lattice mutation
     """
+    disp_cell, disp_ang = disps[0], disps[1]
     res = optimizer(xtal, c_info, w_dir, skip_ani=skip_ani)
     smiles = [m.smile for m in xtal.molecules]#; print(smiles)
     if res is not None:
@@ -35,9 +36,9 @@ def check_stable(xtal, c_info, w_dir, skip_ani, optimizer, verbose=False):
 
         for i, c in enumerate(cell0):
             if i <= 2:
-                disps = [-0.5, 0.5]
+                disps = [-disp_cell, disp_cell]
             else:
-                disps = [-5.0, 5.0]
+                disps = [-disp_ang, disp_ang]
             for disp in disps:
                 cell = cell0.copy()
                 cell[i] += disp

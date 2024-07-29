@@ -477,7 +477,7 @@ class mol_site:
     def encode(self):
         """
         transform dict to 1D vector
-        [x, y, z, or1, or2, or3, rotor1, rotor2, .etc]
+        [wp_id, x, y, z, or1, or2, or3, rotor1, rotor2, .etc]
         """
         if len(self.molecule.mol) > 1:
             xyz, _ = self._get_coords_and_species(absolute=True, first=True)

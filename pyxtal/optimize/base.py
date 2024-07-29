@@ -1,9 +1,9 @@
 """
 A base class for global optimization including
-- GA
-- PSO
-- BasinHopping
+- WFS
+- DFS
 - QRS
+- BasinHopping
 """
 
 from __future__ import annotations
