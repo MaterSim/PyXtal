@@ -240,11 +240,12 @@ class DFS(GlobalOptimize):
             self.logging.info(strs)
             t1 = time()
 
-            # Apply Gaussian
-            if ref_pxrd is None:
-                engs = self._apply_gaussian(current_reps, current_engs)
-            else:
-                engs = self._apply_gaussian(current_reps, -1 * np.array(current_matches))
+            # Apply Gaussian (sometimes time consuming)
+            #if ref_pxrd is None:
+            #    engs = self._apply_gaussian(current_reps, current_engs)
+            #else:
+            #    engs = self._apply_gaussian(current_reps, -1 * np.array(current_matches))
+            engs = current_engs
 
             # Store the best structures
             count = 0
