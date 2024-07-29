@@ -163,6 +163,24 @@ class Lattice:
         else:
             self.dof = 1
 
+    def get_bounds(self, min_vec=2.0, max_vec=50.0, min_ang=30, max_ang=150):
+        """
+        get the number of degree of freedom
+        """
+        if self.ltype in ["triclinic"]:
+            self.bounds = [(min_vec, max_vec), (min_vec, max_vec), (min_vec, max_vec),
+                           (min_ang, max_ang), (min_ang, max_ang), (min_ang, max_ang)]
+        elif self.ltype in ["monoclinic"]:
+            self.bounds = [(min_vec, max_vec), (min_vec, max_vec), (min_vec, max_vec),
+                           (min_ang, max_ang)]
+        elif self.ltype in ["orthorhombic"]:
+            self.bounds = [(min_vec, max_vec), (min_vec, max_vec), (min_vec, max_vec)]
+        elif self.ltype in ["tetragonal", "hexagonal", "trigonal"]:
+            self.bounds = [(min_vec, max_vec), (min_vec, max_vec)]
+        else:
+            self.bounds = [(min_vec, max_vec)]
+        return self.bounds
+
     @classmethod
     def get_dofs(self, ltype):
         """
@@ -196,6 +214,7 @@ class Lattice:
         return mat, np.linalg.norm(mat, axis=1)
 
     def scale(self, factor=1.1):
+
         matrix = self.matrix
         return Lattice.from_matrix(matrix * factor, ltype=self.ltype)
 

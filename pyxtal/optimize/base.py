@@ -1,9 +1,9 @@
 """
 A base class for global optimization including
-- GA
-- PSO
-- BasinHopping
+- WFS
+- DFS
 - QRS
+- BasinHopping
 """
 
 from __future__ import annotations
@@ -91,6 +91,7 @@ class GlobalOptimize:
         max_time: float | None = None,
         matcher: StructureMatcher | None = None,
         early_quit: bool = True,
+        check_stable: bool = False,
     ):
         # General information
         if isinstance(random_state, Generator):
@@ -200,6 +201,7 @@ class GlobalOptimize:
         self.logging = logging
 
         # Some neccessary trackers
+        self.check_stable = check_stable
         self.matches = []
         self.best_reps = []
         self.reps = []
@@ -715,7 +717,7 @@ class GlobalOptimize:
                         print(strs)
         return False
 
-    def local_optimization(self, gen, current_xtals, ref_pmg, ref_pxrd):
+    def local_optimization(self, gen, current_xtals, ref_pmg, ref_pxrd, qrs=False):
         """
         perform optimization for each structure in the current generation
         """
@@ -738,6 +740,7 @@ class GlobalOptimize:
             ref_pxrd,
             self.use_hall,
             self.skip_ani,
+            self.check_stable,
         ]
 
         gen_results = [(None, None)] * len(current_xtals)
@@ -745,7 +748,10 @@ class GlobalOptimize:
             for pop in range(len(current_xtals)):
                 xtal = current_xtals[pop]
                 job_tag = self.tag + "-g" + str(gen) + "-p" + str(pop)
-                mutated = xtal is not None
+                if qrs:
+                    mutated = False
+                else:
+                    mutated = xtal is not None
                 my_args = [xtal, pop, mutated, job_tag, *args]
                 gen_results[pop] = optimizer_single(*tuple(my_args))
 
@@ -760,7 +766,10 @@ class GlobalOptimize:
                 ids = range(id1, id2)
                 job_tags = [self.tag + "-g" + str(gen) + "-p" + str(id) for id in ids]
                 xtals = current_xtals[id1:id2]
-                mutates = [xtal is not None for xtal in xtals]
+                if qrs:
+                    mutates = [False for xtal in xtals]
+                else:
+                    mutates = [xtal is not None for xtal in xtals]
                 my_args = [xtals, ids, mutates, job_tags, *args]
                 args_lists.append(tuple(my_args))
 
