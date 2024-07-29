@@ -165,6 +165,7 @@ class GA(GlobalOptimize):
 
         # Related to the FF optimization
         N_added = 0
+        success_rate = 0
 
         for gen in range(self.N_gen):
             print(f"\nGeneration {gen:d} starts")
@@ -256,11 +257,14 @@ class GA(GlobalOptimize):
                     xtals.append(xtal)
                     self.best_reps.append(rep)
                     d_rep = representation(rep, self.smiles)
-                    strs = d_rep.to_string(None, eng, tag)
-                    out = f"{gen:3d} {strs:s} Top"
-                    if ref_pxrd is not None:
-                        out += f" {current_matches[id]:6.3f}"
-                    print(out)
+                    try:
+                        strs = d_rep.to_string(None, eng, tag)
+                        out = f"{gen:3d} {strs:s} Top"
+                        if ref_pxrd is not None:
+                            out += f" {current_matches[id]:6.3f}"
+                        print(out)
+                    except:
+                        print('Error', xtal)
                     count += 1
                 if count == 3:
                     break
@@ -292,7 +296,7 @@ class GA(GlobalOptimize):
                 if self.early_termination(success_rate):
                     return success_rate
 
-        return None
+        return success_rate
 
     def _selTournament(self, fitness, factor=0.35):
         """

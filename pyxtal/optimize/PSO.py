@@ -161,6 +161,7 @@ class PSO(GlobalOptimize):
 
         # Related to the FF optimization
         N_added = 0
+        success_rate = 0
 
         # To save for comparison
         current_survivals = [0] * self.N_pop # track the survivals
@@ -293,7 +294,7 @@ class PSO(GlobalOptimize):
                 if self.early_termination(success_rate):
                     return success_rate
 
-        return None
+        return success_rate
 
 if __name__ == "__main__":
     import argparse

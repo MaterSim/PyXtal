@@ -281,7 +281,10 @@ class GlobalOptimize:
                     res = self._print_match(xtal, ref_pmg)
                     e, d1, d2 = engs[i], res[0], res[1]
                     label = self.tag + "-g" + str(gen) + "-p" + str(i)
-                    label += f"-e{e:8.3f}-t{tag:s}-{d1:4.2f}-{d2:4.2f}"
+                    try:
+                        label += f"-e{e:8.3f}-{tag:s}-{d1:4.2f}-{d2:4.2f}"
+                    except:
+                        print("Error in e, tag, d1, d2", e, tag, d1, d2)
                     f.writelines(xtal.to_file(header=label))
                     self.matches.append((i, xtal, e, d1, d2, tag))
 
@@ -578,11 +581,14 @@ class GlobalOptimize:
             else:
                 strs = ""
             strs = rep0.to_string(eng=xtal.energy / sum(xtal.numMols))
-            strs += f"{d1:6.3f}{d2:6.3f} Match "
-            rank = len(all_engs[all_engs < (e - 1e-3)]) + 1
-            strs += f"{rank:d}/{self.N_struc:d} {tag:s}"
+            if d1 is not None:
+                strs += f"{d1:6.3f}{d2:6.3f} Match "
+            if e is not None:
+                rank = len(all_engs[all_engs < (e - 1e-3)]) + 1
+                strs += f"{rank:d}/{self.N_struc:d} {tag:s}"
+                ranks.append(rank)
             print(strs)
-            ranks.append(rank)
+        if len(ranks) == 0: ranks = [0]
         return min(ranks)
 
     def _print_match(self, xtal, ref_pmg):
