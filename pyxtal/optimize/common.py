@@ -20,15 +20,15 @@ from pyxtal.XRD import Similarity, pxrd_refine
 
 warnings.filterwarnings("ignore")
 
-def check_stable(xtal, c_info, w_dir, skip_ani, optimizer, disps=[0.5, 5.0], verbose=False):
+def check_stable_structure(xtal, c_info, w_dir, job_tag, skip_ani, optimizer, disps=[0.5, 5.0], verbose=False):
     """
     Check the stability of input xtal based on lattice mutation
     """
     disp_cell, disp_ang = disps[0], disps[1]
-    res = optimizer(xtal, c_info, w_dir, skip_ani=skip_ani)
+    res = optimizer(xtal, c_info, w_dir, job_tag, skip_ani=skip_ani)
     smiles = [m.smile for m in xtal.molecules]#; print(smiles)
     if res is not None:
-        xtal0, eng0 = res["xtal"], res["energy"]/sum(xtal.numMols)
+        xtal0, eng0 = res["xtal"], res["energy"] #/sum(xtal.numMols)
         rep0 = xtal0.get_1D_representation()
         if verbose: print("Optimize", rep0.to_string(eng0))
         cell0 = np.array(xtal.lattice.encode())
@@ -47,7 +47,7 @@ def check_stable(xtal, c_info, w_dir, skip_ani, optimizer, disps=[0.5, 5.0], ver
                 xtal1 = rep1.to_pyxtal()#; print(i, j, xtal1.lattice)
                 res = optimizer(xtal1, c_info, w_dir, skip_ani=skip_ani)
                 if res is not None:
-                    xtal2, eng = res["xtal"], res["energy"]/sum(xtal1.numMols)
+                    xtal2, eng = res["xtal"], res["energy"] #/sum(xtal1.numMols)
                     if eng < eng0:
                         rep2 = xtal2.get_1D_representation()
                         eng0 = eng
@@ -324,6 +324,7 @@ def optimizer_par(
     ref_pxrd,
     use_hall,
     skip_ani,
+    check_stable,
 ):
     """
     A routine used for parallel structure optimization
@@ -361,6 +362,7 @@ def optimizer_par(
             ref_pxrd,
             use_hall,
             skip_ani,
+            check_stable,
         )
         results.append((id, xtal, match))
     return results
@@ -389,6 +391,7 @@ def optimizer_single(
     ref_pxrd,
     use_hall,
     skip_ani,
+    check_stable,
 ):
     """
     A routine used for individual structure optimization
@@ -417,9 +420,11 @@ def optimizer_single(
         )
         tag = "Random"
     else:
-        tag = "Mutation"
         if mutate:
+            tag = "Mutation"
             xtal = mutator(xtal, smiles, opt_lat, ref_pxrd)
+        else:
+            tag = "QRandom"
 
     # 2. Optimization
     res = optimizer(xtal, atom_info, workdir, job_tag, opt_lat, skip_ani=skip_ani)
@@ -428,6 +433,8 @@ def optimizer_single(
     match = False
     if res is not None:
         xtal, eng = res["xtal"], res["energy"]
+        if check_stable and eng < 9999.:
+            xtal, eng = check_stable_structure(xtal, atom_info, workdir, job_tag, skip_ani, optimizer)
         rep = xtal.get_1D_representation()
         N = sum(xtal.numMols)
         strs = rep.to_string(None, eng / N, tag)  # print(strs)

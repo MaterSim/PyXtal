@@ -57,14 +57,13 @@ def generate_qrs_xtals(cell, wp_bounds, N_pop, smiles):
         x = [cell, [0] + wp0.tolist() + [False]] #print(x)
         rep = representation(x, smiles)
         xtal = rep.to_pyxtal()
-        if not xtal.has_special_site() and len(xtal.check_short_distances(r=0.8)) == 0:
+        if not xtal.has_special_site() and len(xtal.check_short_distances(r=0.85)) == 0:
             #print(rep, len(xtal.check_short_distances(r=0.8)))
             xtals.append(xtal)
             if len(xtals) == N_pop:
                 return xtals
         #else:
         #    print(rep, len(xtal.check_short_distances(r=0.6)))
-    print("DDDDDD", len(xtals), m)
     return xtals
 
 
@@ -134,6 +133,7 @@ class QRS(GlobalOptimize):
         max_time: float | None = None,
         matcher: StructureMatcher | None = None,
         early_quit: bool = True,
+        check_stable: bool = False,
     ):
 
         self.N_gen = N_gen # Number of lattice points
@@ -170,6 +170,7 @@ class QRS(GlobalOptimize):
             max_time,
             matcher,
             early_quit,
+            check_stable,
         )
 
         strs = self.full_str()
@@ -227,14 +228,14 @@ class QRS(GlobalOptimize):
                                          self.ltype)
                 cell = [self.hall_number] + cell
                 current_xtals = generate_qrs_xtals(cell, self.wp_bounds, self.N_pop, self.smiles)
-                strs = f"Cell parameters in Gen{gen:d}: "
-                print(strs, cell, len(current_xtals))
+                strs = f"Cell parameters in Gen-{gen:d}: "
+                print(strs, cell, self.ref_volumes[-1], len(current_xtals))
             else:
                 # 1st generation from random
                 current_xtals = [None] * self.N_pop
 
             # Local optimization
-            gen_results = self.local_optimization(gen, current_xtals, ref_pmg, ref_pxrd)
+            gen_results = self.local_optimization(gen, current_xtals, ref_pmg, ref_pxrd, True)
 
             # Summary and Ranking
             for id, res in enumerate(gen_results):
@@ -388,8 +389,8 @@ if __name__ == "__main__":
 
     # load reference xtal
     pmg0 = xtal.to_pymatgen()
-    if xtal.has_special_site():
-        xtal = xtal.to_subgroup()
+    if xtal.has_special_site(): xtal = xtal.to_subgroup()
+    N_torsion = xtal.get_num_torsions()
 
     # GO run
     t0 = time()
@@ -405,10 +406,11 @@ if __name__ == "__main__":
         N_pop=pop,
         N_cpu=ncpu,
         cif="pyxtal.cif",
+        check_stable=True,
     )
 
     suc_rate = go.run(pmg0)
-    print(strs + " in Gen {:d}\n".format(go.generation))
+    print(f"CSD {name:s} in Gen {go.generation:d}")
 
     if len(go.matches) > 0:
         best_rank = go.print_matches()
@@ -418,7 +420,7 @@ if __name__ == "__main__":
 
     eng = go.min_energy
     t1 = int((time() - t0)/60)
-    strs = "Final {:8s} [{:2d}]{:10s} ".format(code, sum(xtal.numMols), spg)
+    strs = "Final {:8s} [{:2d}]{:10s} ".format(name, sum(xtal.numMols), spg)
     strs += "{:3d}m {:2d} {:6.1f}".format(t1, N_torsion, wt)
     strs += "{:12.3f} {:20s} {:s}".format(eng, mytag, smile)
     print(strs)

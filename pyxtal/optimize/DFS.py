@@ -88,6 +88,7 @@ class DFS(GlobalOptimize):
         max_time: float | None = None,
         matcher: StructureMatcher | None = None,
         early_quit: bool = True,
+        check_stable: bool = False,
     ):
         if isinstance(random_state, Generator):
             self.random_state = random_state.spawn(1)[0]
@@ -129,6 +130,7 @@ class DFS(GlobalOptimize):
             max_time,
             matcher,
             early_quit,
+            check_stable,
         )
 
         self.N_survival = N_survival
@@ -350,8 +352,8 @@ if __name__ == "__main__":
                 os.remove("parameters.xml")
     # load reference xtal
     pmg0 = xtal.to_pymatgen()
-    if xtal.has_special_site():
-        xtal = xtal.to_subgroup()
+    if xtal.has_special_site(): xtal = xtal.to_subgroup()
+    N_torsion = xtal.get_num_torsions()
 
     # GO run
     t0 = time()
@@ -370,7 +372,7 @@ if __name__ == "__main__":
     )
 
     suc_rate = go.run(pmg0)
-    print(strs + " in Gen {:d}\n".format(go.generation))
+    print(f"CSD {name:s} in Gen {go.generation:d}")
 
     if len(go.matches) > 0:
         best_rank = go.print_matches()
@@ -380,7 +382,7 @@ if __name__ == "__main__":
 
     eng = go.min_energy
     t1 = int((time() - t0)/60)
-    strs = "Final {:8s} [{:2d}]{:10s} ".format(code, sum(xtal.numMols), spg)
+    strs = "Final {:8s} [{:2d}]{:10s} ".format(name, sum(xtal.numMols), spg)
     strs += "{:3d}m {:2d} {:6.1f}".format(t1, N_torsion, wt)
     strs += "{:12.3f} {:20s} {:s}".format(eng, mytag, smile)
     print(strs)
