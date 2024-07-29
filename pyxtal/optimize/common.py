@@ -20,6 +20,42 @@ from pyxtal.XRD import Similarity, pxrd_refine
 
 warnings.filterwarnings("ignore")
 
+def check_stable(xtal, c_info, w_dir, skip_ani, optimizer, verbose=False):
+    """
+    Check the stability of input xtal based on lattice mutation
+    """
+    res = optimizer(xtal, c_info, w_dir, skip_ani=skip_ani)
+    smiles = [m.smile for m in xtal.molecules]#; print(smiles)
+    if res is not None:
+        xtal0, eng0 = res["xtal"], res["energy"]/sum(xtal.numMols)
+        rep0 = xtal0.get_1D_representation()
+        if verbose: print("Optimize", rep0.to_string(eng0))
+        cell0 = np.array(xtal.lattice.encode())
+        wp0 = xtal.mol_sites[0].encode()
+
+        for i, c in enumerate(cell0):
+            if i <= 2:
+                disps = [-0.5, 0.5]
+            else:
+                disps = [-5.0, 5.0]
+            for disp in disps:
+                cell = cell0.copy()
+                cell[i] += disp
+                x = [[xtal.group.hall_number] + cell.tolist(), wp0]#; print(x)
+                rep1 = representation(x, smiles)
+                xtal1 = rep1.to_pyxtal()#; print(i, j, xtal1.lattice)
+                res = optimizer(xtal1, c_info, w_dir, skip_ani=skip_ani)
+                if res is not None:
+                    xtal2, eng = res["xtal"], res["energy"]/sum(xtal1.numMols)
+                    if eng < eng0:
+                        rep2 = xtal2.get_1D_representation()
+                        eng0 = eng
+                        xtal0 = xtal2
+                        if verbose: print("Update  ", rep2.to_string(eng0))
+        return xtal0, eng0
+    else:
+        raise RuntimeError("Error in optimization")
+
 
 def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125, random_state=None):
     """A random mutation."""
@@ -562,6 +598,15 @@ if __name__ == "__main__":
     pmg2.remove_species("H")
     print(sm.StructureMatcher().fit(pmg1, pmg2))
 
+    reps = [
+        "81  9.71  6.19 14.25  84.7 1 0 0.21 0.44 0.12  169.6  -16.9  176.2   77.6    9.6   24.9 0",
+        "81  8.38 10.06 11.10 107.8 1 0 0.26 0.42 0.31  118.8  -22.6 -111.9 -117.3    0.4   11.9 0",
+        "82  9.37  7.92 12.13 111.0 1 0 0.29 0.34 0.10  155.5  -27.6 -161.1   74.6   10.7 -149.8 0",
+    ]
+    for rep in reps:
+        rep = representation.from_string(rep, [smile])
+        xtal1 = rep.to_pyxtal()
+        check_stable(xtal1, c_info, w_dir, skip_ani=True, optimizer=optimizer)
 """
  81 11.38  6.48 11.24  96.9 1 0 0.23 0.43 0.03  -44.6   25.0   34.4  -76.6   -5.2  171.5 0 -70594.48
  81 11.38  6.48 11.24  96.9 1 0 0.23 0.43 0.03  -44.6   25.0   34.4  -76.6   -5.2  171.5 0 -70594.48
