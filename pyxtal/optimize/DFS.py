@@ -235,17 +235,17 @@ class DFS(GlobalOptimize):
                     self.engs.append(xtal.energy / sum(xtal.numMols))
                     # print(output)
 
-            strs = f"Generation {gen:d} finishes"  # ; import sys; sys.exit()
+            strs = f"Generation {gen:d} finishes: {len(self.engs):d} strucs"  # ; import sys; sys.exit()
             print(strs)
             self.logging.info(strs)
             t1 = time()
 
             # Apply Gaussian (sometimes time consuming)
-            #if ref_pxrd is None:
-            #    engs = self._apply_gaussian(current_reps, current_engs)
-            #else:
-            #    engs = self._apply_gaussian(current_reps, -1 * np.array(current_matches))
-            engs = current_engs
+            if ref_pxrd is None:
+                engs = self._apply_gaussian(current_reps, current_engs)
+            else:
+                engs = self._apply_gaussian(current_reps, -1 * np.array(current_matches))
+            #engs = current_engs
 
             # Store the best structures
             count = 0

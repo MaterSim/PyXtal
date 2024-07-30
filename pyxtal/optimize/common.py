@@ -24,6 +24,7 @@ def check_stable_structure(xtal, c_info, w_dir, job_tag, skip_ani, optimizer, di
     """
     Check the stability of input xtal based on lattice mutation
     """
+    comp = xtal.get_1D_comp()
     disp_cell, disp_ang = disps[0], disps[1]
     res = optimizer(xtal, c_info, w_dir, job_tag, skip_ani=skip_ani)
     smiles = [m.smile for m in xtal.molecules]#; print(smiles)
@@ -32,7 +33,7 @@ def check_stable_structure(xtal, c_info, w_dir, job_tag, skip_ani, optimizer, di
         rep0 = xtal0.get_1D_representation()
         if verbose: print("Optimize", rep0.to_string(eng0))
         cell0 = np.array(xtal.lattice.encode())
-        wp0 = xtal.mol_sites[0].encode()
+        wps = [site.encode() for site in xtal.mol_sites]
 
         for i, c in enumerate(cell0):
             if i <= 2:
@@ -42,18 +43,19 @@ def check_stable_structure(xtal, c_info, w_dir, job_tag, skip_ani, optimizer, di
             for disp in disps:
                 cell = cell0.copy()
                 cell[i] += disp
-                x = [[xtal.group.hall_number] + cell.tolist(), wp0]#; print(x)
+                x = [[xtal.group.hall_number] + cell.tolist()]
+                x.extend(wps)#; print(x)
                 rep1 = representation(x, smiles)
-                xtal1 = rep1.to_pyxtal()#; print(i, j, xtal1.lattice)
-                res = optimizer(xtal1, c_info, w_dir, skip_ani=skip_ani)
+                xtal1 = rep1.to_pyxtal(composition=comp)#; print(i, j, xtal1.lattice)
+                res = optimizer(xtal1, c_info, w_dir, job_tag, skip_ani=skip_ani)
                 if res is not None:
                     xtal2, eng = res["xtal"], res["energy"] #/sum(xtal1.numMols)
-                    if eng < eng0:
-                        rep2 = xtal2.get_1D_representation()
-                        eng0 = eng
-                        xtal0 = xtal2
+                    if eng < eng0 + 1e-4:
+                        #rep2 = xtal2.get_1D_representation()
+                        xtal0, eng0 = xtal2, eng
                         if verbose: print("Update  ", rep2.to_string(eng0))
-        return xtal0, eng0
+                        return xtal0, eng0, True
+        return xtal0, eng0, False
     else:
         raise RuntimeError("Error in optimization")
 
@@ -434,7 +436,10 @@ def optimizer_single(
     if res is not None:
         xtal, eng = res["xtal"], res["energy"]
         if check_stable and eng < 9999.:
-            xtal, eng = check_stable_structure(xtal, atom_info, workdir, job_tag, skip_ani, optimizer)
+            xtal, eng, status = check_stable_structure(xtal, atom_info, workdir, job_tag, skip_ani, optimizer)
+            if status:
+                xtal, eng, status = check_stable_structure(xtal, atom_info, workdir, job_tag, skip_ani, optimizer)
+
         rep = xtal.get_1D_representation()
         N = sum(xtal.numMols)
         strs = rep.to_string(None, eng / N, tag)  # print(strs)

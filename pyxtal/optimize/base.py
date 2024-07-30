@@ -128,12 +128,15 @@ class GlobalOptimize:
         self.skip_ani = skip_ani
         self.randomizer = randomizer
         self.optimizer = optimizer
+        self.check_stable = check_stable
         # setup timeout for each optimization call
         if max_time is None:
-            if self.skip_ani:
-                max_time = 60.0
-            else:
+            if not self.skip_ani:
                 max_time = 300.0
+            elif self.check_stable:
+                max_time = 300.0
+            else:
+                max_time = 60.0
         self.timeout = max_time * self.N_pop / self.ncpu
 
         self.ff_opt = ff_opt
@@ -201,7 +204,6 @@ class GlobalOptimize:
         self.logging = logging
 
         # Some neccessary trackers
-        self.check_stable = check_stable
         self.matches = []
         self.best_reps = []
         self.reps = []
