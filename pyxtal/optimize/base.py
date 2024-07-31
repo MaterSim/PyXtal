@@ -263,7 +263,7 @@ class GlobalOptimize:
         return xtals
 
 
-    def success_count(self, gen, xtals, matches, tags, engs, ref_pmg):
+    def success_count(self, gen, xtals, matches, tags, ref_pmg):
         """
         To wrap up the matched results and count success rate.
 
@@ -272,7 +272,6 @@ class GlobalOptimize:
             xtals (list): list of xtals
             matches (list): list of matches [True, False, ..]
             tags (list): 'random' or 'mutation'
-            engs (list): list of engs
             ref_pmg: reference pymatgen structure
 
         Return:
@@ -283,9 +282,9 @@ class GlobalOptimize:
                 xtal, tag = xtals[i], tags[i]
                 with open(self.matched_cif, "a+") as f:
                     res = self._print_match(xtal, ref_pmg)
-                    e, d1, d2 = engs[i], res[0], res[1]
-                    label = self.tag + "-g" + str(gen) + "-p" + str(i)
+                    e, d1, d2 = xtal.energy/sum(xtal.numMols), res[0], res[1]
                     try:
+                        label = self.tag + "-g" + str(gen) + "-p" + str(i)
                         label += f"-e{e:8.3f}-{tag:s}-{d1:4.2f}-{d2:4.2f}"
                     except:
                         print("Error in e, tag, d1, d2", e, tag, d1, d2)
@@ -306,7 +305,7 @@ class GlobalOptimize:
                 self.logging.info(msg)
                 return True
 
-            elif success_rate > 2.5 or len(self.matches) > self.N_min_matches:
+            elif success_rate > 2.5 or len(self.matches) >= self.N_min_matches:
                 msg = f"Early termination with a high success rate"
                 print(msg)
                 self.logging.info(msg)

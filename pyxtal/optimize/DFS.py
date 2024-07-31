@@ -288,9 +288,8 @@ class DFS(GlobalOptimize):
                 N_added = self.ff_optimization(xtals, N_added)
 
             else:
-                success_rate = self.success_count(gen, current_xtals, current_matches, current_tags, engs, ref_pmg)
-                gen_out = f"Success rate at Gen {gen:3d}: "
-                gen_out += f"{success_rate:7.4f}%"
+                success_rate = self.success_count(gen, current_xtals, current_matches, current_tags, ref_pmg)
+                gen_out = f"Success rate at Gen {gen:3d}: {success_rate:7.4f}%"
                 self.logging.info(gen_out)
                 print(gen_out)
 
