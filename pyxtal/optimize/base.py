@@ -26,9 +26,8 @@ from pyxtal.representation import representation
 from pyxtal.util import new_struc
 from pyxtal.optimize.common import optimizer, randomizer
 from pyxtal.optimize.common import optimizer_par, optimizer_single
-
-if TYPE_CHECKING:
-    from pyxtal.lattice import Lattice
+from pyxtal.lattice import Lattice
+from pyxtal.symmetry import Group
 
 
 class GlobalOptimize:
@@ -116,8 +115,17 @@ class GlobalOptimize:
         self.use_hall = use_hall
         self.factor = factor
         self.sites = sites
-        self.lattice = lattice
-        self.opt_lat = lattice is None
+        if lattice is None:
+            self.lattice = lattice
+        elif isinstance(lattice, Lattice):
+            self.lattice = lattice
+        else:
+            ltype = Group(self.sg[0]).lattice_type
+            if len(lattice) == 6:
+                self.lattice = Lattice.from_para(lattice, ltype=ltype)
+            else:
+                raise ValueError("input lattice is invalid", lattice)
+        self.opt_lat = self.lattice is None
         self.ref_criteria = ref_criteria
         self.eng_cutoff = eng_cutoff
 
@@ -129,6 +137,7 @@ class GlobalOptimize:
         self.randomizer = randomizer
         self.optimizer = optimizer
         self.check_stable = check_stable
+        if not self.opt_lat: self.check_stable = False
         # setup timeout for each optimization call
         if max_time is None:
             if not self.skip_ani:
@@ -753,8 +762,11 @@ class GlobalOptimize:
                     mutated = False
                 else:
                     mutated = xtal is not None
+                #print("BBBBBBBBBBBBBBBBBBBBBB", xtal)
                 my_args = [xtal, pop, mutated, job_tag, *args]
                 gen_results[pop] = optimizer_single(*tuple(my_args))
+                #print("DDDDDDDDDDDDDDDDDDDDDd", gen_results[pop])
+            #if gen == 1: import sys; sys.exit()
 
         else:
             # parallel process

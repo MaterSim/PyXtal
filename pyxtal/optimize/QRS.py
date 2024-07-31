@@ -41,24 +41,46 @@ def generate_qrs_cell(sampler, cell_bounds, ref_volume, ltype):
         if count == 1000:
             raise ValueError("Cannot generate valid cell with 1000 attempts")
 
-def generate_qrs_xtals(cell, wp_bounds, N_pop, smiles):
+def generate_qrs_xtals(cell, wp_bounds, N_pop, smiles, comp, sampler_wp=None, d_tol=0.85):
     """
     Get the qrs xtal samples
+
+    Args:
+        cell (list): [hall, a, b, c]
+        wp_bounds (list): [[wp0], [wp1], ...]
+        N_pop (int): number of valid candidates
+        smiles (list): []
+        comp (list): [1]
+        sampler_wp: sampler
+        d_tol (float): short distance tolerance value
     """
     #cell = [81, 11.38,  6.48, 11.24,  96.9]
-    m = max([int(np.log2(N_pop))+3, 9])
     xtals = []
-    lb = [b[0] for b in wp_bounds]
-    ub = [b[1] for b in wp_bounds]
-    sampler_wp = qmc.Sobol(d=len(wp_bounds), scramble=False)
-    sample_wp = sampler_wp.random_base2(m=m)
-    sample_wp = qmc.scale(sample_wp, lb, ub)
-    for wp0 in sample_wp:
-        x = [cell, [0] + wp0.tolist() + [False]] #print(x)
+    lb, ub = [], []
+    seqs = []
+    for wp_bound in wp_bounds:
+        lb += [b[0] for b in wp_bound]
+        ub += [b[1] for b in wp_bound]
+        seqs.append(len(wp_bound))
+
+    if sampler_wp is None:
+        sampler_wp = qmc.Sobol(d=len(lb), scramble=False)
+
+    m = max([int(np.log2(N_pop))+3, 9])
+
+    for i in range(2**m):
+        sample_wp = sampler_wp.random()#; print(sample_wp)
+        sample_wp = qmc.scale(sample_wp, lb, ub)[0].tolist()
+        x = [cell]
+        prev = 0
+        for seq in seqs:
+            wp = [0] + sample_wp[prev:prev+seq] + [0]#; print('DDDD', prev, prev+seq, sample_wp[prev:prev+seq], wp)
+            x.append(wp) #, [0] + wp0.tolist() + [False]] #print(x)
+            prev = seq
         rep = representation(x, smiles)
-        xtal = rep.to_pyxtal()
-        if not xtal.has_special_site() and len(xtal.check_short_distances(r=0.85)) == 0:
-            #print(rep, len(xtal.check_short_distances(r=0.8)))
+        xtal = rep.to_pyxtal(composition=comp)
+        if not xtal.has_special_site() and len(xtal.check_short_distances(r=d_tol)) == 0:
+            #print("debug", rep)
             xtals.append(xtal)
             if len(xtals) == N_pop:
                 return xtals
@@ -69,7 +91,7 @@ def generate_qrs_xtals(cell, wp_bounds, N_pop, smiles):
 
 class QRS(GlobalOptimize):
     """
-    Quasi Monte Carlo
+    Quasi-Random Sampling
 
     Args:
         smiles (str): smiles string
@@ -204,11 +226,6 @@ class QRS(GlobalOptimize):
         # Related to the FF optimization
         N_added = 0
 
-        # To save for comparison
-        current_survivals = [0] * self.N_pop # track the survivals
-        hist_best_xtals = [None] * self.N_pop
-        hist_best_engs = [self.E_max] * self.N_pop
-
         # lists for structure information
         current_reps = [None] * self.N_pop
         current_matches = [False] * self.N_pop if ref_pxrd is None else [0.0] * self.N_pop
@@ -220,19 +237,31 @@ class QRS(GlobalOptimize):
             self.logging.info(f"Generation {gen:d} starts")
             self.generation = gen + 1
             t0 = time()
-
             if gen > 0:
-                cell = generate_qrs_cell(self.sampler,
-                                         self.cell_bounds,
-                                         self.ref_volumes[-1],
-                                         self.ltype)
-                cell = [self.hall_number] + cell
-                current_xtals = generate_qrs_xtals(cell, self.wp_bounds, self.N_pop, self.smiles)
+                if self.lattice is not None:
+                    cell = [self.hall_number] + self.lattice.encode()
+                    current_xtals = generate_qrs_xtals(cell,
+                                                       self.wp_bounds,
+                                                       self.N_pop,
+                                                       self.smiles,
+                                                       self.composition,
+                                                       self.sampler)
+                else:
+                    cell = generate_qrs_cell(self.sampler,
+                                             self.cell_bounds,
+                                             self.ref_volumes[-1],
+                                             self.ltype)
+                    cell = [self.hall_number] + cell
+                    current_xtals = generate_qrs_xtals(cell,
+                                                       self.wp_bounds,
+                                                       self.N_pop,
+                                                       self.smiles,
+                                                       self.composition)
                 strs = f"Cell parameters in Gen-{gen:d}: "
                 print(strs, cell, self.ref_volumes[-1], len(current_xtals))
             else:
-                # 1st generation from random
-                current_xtals = [None] * self.N_pop
+                 # 1st generation from random
+                 current_xtals = [None] * self.N_pop
 
             # Local optimization
             gen_results = self.local_optimization(gen, current_xtals, ref_pmg, ref_pxrd, True)
@@ -247,9 +276,6 @@ class QRS(GlobalOptimize):
                     current_reps[id] = rep.x
                     current_engs[id] = xtal.energy / sum(xtal.numMols)
                     current_matches[id] = match
-                    if current_engs[id] < hist_best_engs[id]:
-                        hist_best_engs[id] = current_engs[id]
-                        hist_best_xtals[id] = xtal
 
                     # Don't write bad structure
                     if self.cif is not None and xtal.energy < self.E_max:
@@ -299,9 +325,13 @@ class QRS(GlobalOptimize):
                 best_xtal = xtals[0]
                 self.cell_bounds = best_xtal.lattice.get_bounds(2.5, 25)
                 self.ltype = best_xtal.lattice.ltype
-                self.wp_bounds = best_xtal.mol_sites[0].get_bounds()
+                self.wp_bounds = [site.get_bounds() for site in best_xtal.mol_sites]
                 self.hall_number = best_xtal.group.hall_number
-                self.sampler = qmc.Sobol(d=len(self.cell_bounds), scramble=False)
+                if self.lattice is not None:
+                    len_reps = sum(len(bound) for bound in self.wp_bounds)
+                else:
+                    len_reps = len(self.cell_bounds)
+                self.sampler = qmc.Sobol(d=len_reps, scramble=False)
 
             t2 = time()
             gen_out = f"Gen{gen:3d} time usage: "
