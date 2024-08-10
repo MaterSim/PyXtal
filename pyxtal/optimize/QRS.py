@@ -352,13 +352,18 @@ class QRS(GlobalOptimize):
                 N_added = self.ff_optimization(xtals, N_added)
 
             else:
-                success_rate = self.success_count(gen, current_xtals, current_matches, current_tags, ref_pmg)
-                gen_out = f"Success rate at Gen {gen:3d}: {success_rate:7.4f}%"
-                self.logging.info(gen_out)
-                print(gen_out)
+                if ref_pmg is not None:
+                    success_rate = self.success_count(gen,
+                                                      current_xtals,
+                                                      current_matches,
+                                                      current_tags,
+                                                      ref_pmg)
+                    gen_out = f"Success rate at Gen {gen:3d}: {success_rate:7.4f}%"
+                    self.logging.info(gen_out)
+                    print(gen_out)
 
-                if self.early_termination(success_rate):
-                    return success_rate
+                    if self.early_termination(success_rate):
+                        return success_rate
 
         return None
 

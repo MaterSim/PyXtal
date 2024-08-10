@@ -187,11 +187,11 @@ class GlobalOptimize:
                     params0 = self.parameters.params_init.copy()
                     self.parameters.export_parameters(self.workdir + "/" + self.ff_parameters, params0)
 
-                self.prepare_chm_info(params0)
+                self.prepare_chm_info(params0, suffix='pyxtal')
 
         # Structure matcher
         if matcher is None:
-            self.matcher = StructureMatcher(ltol=0.3, stol=0.3, angle_tol=10)
+            self.matcher = StructureMatcher(ltol=0.3, stol=0.3, angle_tol=5)
         else:
             self.matcher = matcher
 
@@ -538,9 +538,8 @@ class GlobalOptimize:
 
         return N_added
 
-    def prepare_chm_info(self, params0, params1=None, suffix="calc/pyxtal0"):
+    def prepare_chm_info(self, params0, params1=None, folder="calc", suffix="pyxtal0"):
         """
-        TODO: A base classs for optimization
         prepar_chm_info with the updated params.
 
         Args:
@@ -553,6 +552,9 @@ class GlobalOptimize:
         """
         pwd = os.getcwd()
         os.chdir(self.workdir)
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+        suffix = folder + '/' + suffix
 
         # To remove the old pyxtal1 files
         if os.path.exists(suffix + ".rtf"):
