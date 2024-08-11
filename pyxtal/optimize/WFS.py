@@ -1,5 +1,5 @@
 """
-global optimizer
+Global Optimizer
 """
 
 from __future__ import annotations
@@ -8,12 +8,10 @@ from time import time
 from typing import TYPE_CHECKING
 
 import numpy as np
-
 from numpy.random import Generator
 from pymatgen.analysis.structure_matcher import StructureMatcher
 
 from pyxtal.optimize.base import GlobalOptimize
-from pyxtal.representation import representation
 
 if TYPE_CHECKING:
     from pyxtal.lattice import Lattice
@@ -59,7 +57,7 @@ class WFS(GlobalOptimize):
         smiles: str,
         workdir: str,
         sg: int | list,
-        tag: str,
+        tag: str = 'test',
         info: dict[any, any] | None = None,
         ff_opt: bool = False,
         ff_style: str = "openff",
@@ -137,6 +135,10 @@ class WFS(GlobalOptimize):
             check_stable,
         )
 
+        # Setup the stats [N_gen, Npop, (E, matches)]
+        self.stats = np.zeros([self.N_gen, self.N_pop, 2])
+        self.stats[:, :, 0] = self.E_max
+
         strs = self.full_str()
         self.logging.info(strs)
         print(strs)
@@ -176,9 +178,6 @@ class WFS(GlobalOptimize):
             t0 = time()
 
             # lists for structure information
-            current_reps = [None] * self.N_pop
-            current_matches = [False] * self.N_pop if ref_pxrd is None else [0.0] * self.N_pop
-            current_engs = [self.E_max] * self.N_pop
             current_xtals = [None] * self.N_pop
             current_tags = ["Random"] * self.N_pop
 
@@ -210,71 +209,12 @@ class WFS(GlobalOptimize):
                     count += 1
 
             # Local optimization
-            gen_results = self.local_optimization(gen, current_xtals, ref_pmg, ref_pxrd)
+            gen_results = self.local_optimization(gen, current_xtals,
+                    ref_pmg, ref_pxrd)
 
-            # Summary and Ranking
-            for id, res in enumerate(gen_results):
-                (xtal, match) = res
-
-                if xtal is not None:
-                    current_xtals[id] = xtal
-                    rep = xtal.get_1D_representation()
-                    current_reps[id] = rep.x
-                    current_engs[id] = xtal.energy / sum(xtal.numMols)
-                    current_matches[id] = match
-
-                    # Don't write bad structure
-                    if self.cif is not None and xtal.energy < 9999:
-                        if self.verbose:
-                            print("Add qualified structure", id, xtal.energy)
-                        with open(self.workdir + "/" + self.cif, "a+") as f:
-                            label = self.tag + "-g" + str(gen) + "-p" + str(id)
-                            f.writelines(xtal.to_file(header=label))
-                        # else:
-                        #    print("Neglect bad structure", id, xtal.energy)
-                    self.engs.append(xtal.energy / sum(xtal.numMols))
-                    # print(output)
-
-            strs = f"Generation {gen:d} finishes"  # ; import sys; sys.exit()
-            print(strs)
-            self.logging.info(strs)
-            t1 = time()
-
-            # Apply Gaussian
-            if ref_pxrd is None:
-                engs = self._apply_gaussian(current_reps, current_engs)
-            else:
-                engs = self._apply_gaussian(current_reps, -1 * np.array(current_matches))
-
-            # Store the best structures
-            count = 0
-            xtals = []
-            ids = np.argsort(engs)
-            for id in ids:
-                xtal = current_xtals[id]
-                rep = current_reps[id]
-                eng = current_engs[id]
-                tag = current_tags[id]
-                if self.new_struc(xtal, xtals):
-                    xtals.append(xtal)
-                    self.best_reps.append(rep)
-                    d_rep = representation(rep, self.smiles)
-                    try:
-                        strs = d_rep.to_string(None, eng, tag)
-                        out = f"{gen:3d} {strs:s} Top"
-                        if ref_pxrd is not None:
-                            out += f" {current_matches[id]:6.3f}"
-                        print(out)
-                    except:
-                        print('Error', xtal)
-                    count += 1
-                if count == 3:
-                    break
-
-            t2 = time()
-            gen_out = f"Gen{gen:3d} time usage: "
-            gen_out += f"{t1 - t0:5.1f}[Calc] {t2 - t1:5.1f}[Proc]"
-            print(gen_out)
+            # summary_and_ranking
+            current_xtals, current_matches, engs = self.gen_summary(gen,
+                    t0, gen_results, current_xtals, current_tags, ref_pxrd)
 
             # Save the reps for next move
             prev_xtals = current_xtals  # ; print(self.engs)
@@ -301,6 +241,12 @@ class WFS(GlobalOptimize):
 
                     if self.early_termination(success_rate):
                         return success_rate
+                elif ref_pxrd is not None:
+                        self.count_pxrd_match(gen,
+                                              current_xtals,
+                                              current_matches,
+                                              current_tags)
+
 
         return success_rate
 

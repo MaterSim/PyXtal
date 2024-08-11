@@ -191,11 +191,11 @@ def optimizer(
     struc,
     atom_info,
     workdir,
-    tag="job_0",
-    opt_lat=True,
-    calculators=None,
-    max_time=180,
-    skip_ani=False,
+    tag = "job_0",
+    opt_lat = True,
+    calculators = None,
+    max_time = 180,
+    skip_ani = False,
 ):
     """
     Structural relaxation for each individual pyxtal structure.
@@ -221,7 +221,7 @@ def optimizer(
         if calculator == "CHARMM":
             if i == 0:
                 calc = CHARMM(struc, tag, steps=[1000], atom_info=atom_info)
-                calc.run()  # clean=False); import sys; sys.exit()
+                calc.run()#clean=False); import sys; sys.exit()
                 # in case CHARMM over-relax the structure
                 # print("CCCCCC", calc.optimized); import sys; sys.exit()
                 if not calc.optimized:  #
@@ -235,11 +235,11 @@ def optimizer(
             # only count good struc
             if calc.structure.energy < 9999:
                 calc = CHARMM(calc.structure, tag, steps=steps, atom_info=atom_info)
-                calc.run()
+                calc.run()#clean=False)
 
                 if calc.optlat:  # lattice with bad inclination angles
                     calc = CHARMM(calc.structure, tag, steps=steps, atom_info=atom_info)
-                    calc.run()
+                    calc.run()#clean=False)
 
                 # Check if there exists a 2nd FF model for better energy ranking
                 if os.path.exists("pyxtal1.prm"):
@@ -420,13 +420,13 @@ def optimizer_single(
             sites,
             use_hall,
         )
-        tag = "Random"
+        tag = "Random  "
     else:
         if mutate:
             tag = "Mutation"
-            xtal = mutator(xtal, smiles, opt_lat, ref_pxrd)
+            xtal = mutator(xtal, smiles, opt_lat, None)#ref_pxrd)
         else:
-            tag = "QRandom"
+            tag = "QRandom "
 
     # 2. Optimization
     res = optimizer(xtal, atom_info, workdir, job_tag, opt_lat, skip_ani=skip_ani)
@@ -470,7 +470,7 @@ def optimizer_single(
             strs += f" {match:.3f}"
 
         xtal.energy = eng
-        print(f"{id:3d} " + strs)
+        print(f"{id:3d} " + strs)#; print(xtal, eng); import sys; sys.exit()
         return xtal, match
     else:
         return None, match

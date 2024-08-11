@@ -10,8 +10,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.stats import qmc
 
-# import threading
-import psutil
 from numpy.random import Generator
 from pymatgen.analysis.structure_matcher import StructureMatcher
 
@@ -126,7 +124,7 @@ class QRS(GlobalOptimize):
         smiles: str,
         workdir: str,
         sg: int | list,
-        tag: str,
+        tag: str = 'test',
         info: dict[any, any] | None = None,
         ff_opt: bool = False,
         ff_style: str = "openff",
@@ -267,57 +265,14 @@ class QRS(GlobalOptimize):
             gen_results = self.local_optimization(gen, current_xtals, ref_pmg, ref_pxrd, True)
 
             # Summary and Ranking
-            for id, res in enumerate(gen_results):
-                (xtal, match) = res
+            current_xtals, current_matches, engs = self.gen_summary(gen,
+                    t0, gen_results, current_xtals, current_tags, ref_pxrd)
 
-                if xtal is not None:
-                    current_xtals[id] = xtal
-                    rep = xtal.get_1D_representation()
-                    current_reps[id] = rep.x
-                    current_engs[id] = xtal.energy / sum(xtal.numMols)
-                    current_matches[id] = match
-
-                    # Don't write bad structure
-                    if self.cif is not None and xtal.energy < self.E_max:
-                        if self.verbose:
-                            print("Add qualified structure", id, xtal.energy)
-                        with open(self.workdir + "/" + self.cif, "a+") as f:
-                            label = self.tag + "-g" + str(gen) + "-p" + str(id)
-                            f.writelines(xtal.to_file(header=label))
-                        # else:
-                        #    print("Neglect bad structure", id, xtal.energy)
-                    self.engs.append(xtal.energy / sum(xtal.numMols))
-                    # print(output)
-
-            strs = f"Generation {gen:d} finishes"  # ; import sys; sys.exit()
-            print(strs)
-            self.logging.info(strs)
-            t1 = time()
-
-            # Store the best structures
-            engs = current_engs
-            count = 0
-            xtals = []
+            # update hist_best
             vols = []
-            ids = np.argsort(engs)
-            for id in ids:
-                xtal = current_xtals[id]
-                rep = current_reps[id]
-                eng = current_engs[id]
-                tag = current_tags[id]
-                if self.new_struc(xtal, xtals):
-                    xtals.append(xtal)
-                    self.best_reps.append(rep)
-                    d_rep = representation(rep, self.smiles)
-                    strs = d_rep.to_string(None, eng, tag)
-                    out = f"{gen:3d} {strs:s} Top"
-                    if ref_pxrd is not None:
-                        out += f" {current_matches[id]:6.3f}"
-                    print(out)
-                    count += 1
+            for id, xtal in enumerate(current_xtals):
+                if xtal is not None:
                     vols.append(xtal.lattice.volume)
-                if count == 3:
-                    break
 
             # update best volume
             self.ref_volumes.append(np.array(vols).mean())

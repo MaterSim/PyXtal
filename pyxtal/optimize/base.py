@@ -130,6 +130,7 @@ class GlobalOptimize:
         self.eng_cutoff = eng_cutoff
 
         # Generation and Optimization
+        os.makedirs(workdir, exist_ok=True)
         self.workdir = workdir
         self.log_file = self.workdir + "/loginfo"
         self.ncpu = N_cpu
@@ -271,6 +272,30 @@ class GlobalOptimize:
         # xtals = [xtal.to_ase(resort=False) for xtal in xtals]
         return xtals
 
+    def count_pxrd_match(self, gen, xtals, matches, tags):
+        """
+        To wrap up the matched PXRD results
+
+        Args:
+            gen (int): current generation index
+            xtals (list): list of xtals
+            matches (list): list of XRD matches
+            tags (list): 'random' or 'mutation'
+
+        """
+        for i, match in enumerate(matches):
+            if match > 0.85:
+                xtal, tag = xtals[i], tags[i]
+                with open(self.matched_cif, "a+") as f:
+                    e = xtal.energy / sum(xtal.numMols)
+                    try:
+                        label = self.tag + "-g" + str(gen) + "-p" + str(i)
+                        label += f"-e{e:.3f}-{tag:s}-{match:4.2f}"
+                    except:
+                        print("Error in e, tag, match", e, tag, match)
+                    f.writelines(xtal.to_file(header=label))
+                    self.matches.append((gen, i, xtal, e, match, tag))
+
 
     def success_count(self, gen, xtals, matches, tags, ref_pmg):
         """
@@ -294,11 +319,11 @@ class GlobalOptimize:
                     e, d1, d2 = xtal.energy/sum(xtal.numMols), res[0], res[1]
                     try:
                         label = self.tag + "-g" + str(gen) + "-p" + str(i)
-                        label += f"-e{e:8.3f}-{tag:s}-{d1:4.2f}-{d2:4.2f}"
+                        label += f"-e{e:.3f}-{tag:s}-{d1:4.2f}-{d2:4.2f}"
                     except:
                         print("Error in e, tag, d1, d2", e, tag, d1, d2)
                     f.writelines(xtal.to_file(header=label))
-                    self.matches.append((i, xtal, e, d1, d2, tag))
+                    self.matches.append((gen, i, xtal, e, d1, d2, tag))
 
         success_rate = len(self.matches) / self.N_struc * 100
         return success_rate
@@ -581,27 +606,47 @@ class GlobalOptimize:
             folder = f"cpu0{i}"
         return folder
 
-    def print_matches(self, header=None):
+    def print_matches(self, header=None, pxrd=False):
         """
-        Formatted output for the matched structures including xtal rep and eng ranking
+        Formatted output for the matched structures with xtal rep and eng rank
         """
         all_engs = np.sort(np.array(self.engs))
         ranks = []
-        for match_data in self.matches:
-            (id, xtal, e, d1, d2, tag) = match_data
-            rep0 = xtal.get_1D_representation()
-            if header is not None:
-                strs = header
+        xtals = []
+        if pxrd:
+            matches = sorted(self.matches, key=lambda x: -x[4]) # similarity
+        else:
+            matches = sorted(self.matches, key=lambda x: x[4]) # rmsd
+
+        for match_data in matches:
+            d1, match = None, None
+            if pxrd:
+                (_, id, xtal, e, match, tag) = match_data
+                add = self.new_struc(xtal, xtals)
+                if add:
+                    xtals.append(xtal)
             else:
-                strs = ""
-            strs = rep0.to_string(eng=xtal.energy / sum(xtal.numMols))
-            if d1 is not None:
-                strs += f"{d1:6.3f}{d2:6.3f} Match "
-            if e is not None:
-                rank = len(all_engs[all_engs < (e - 1e-3)]) + 1
-                strs += f"{rank:d}/{self.N_struc:d} {tag:s}"
-                ranks.append(rank)
-            print(strs)
+                (_, id, xtal, e, d1, d2, tag) = match_data
+                add = True
+
+            if add:
+                rep0 = xtal.get_1D_representation()
+                if header is not None:
+                    strs = header
+                else:
+                    strs = ""
+                strs += rep0.to_string(eng=xtal.energy / sum(xtal.numMols))
+                if d1 is not None:
+                    strs += f"{d1:6.3f}{d2:6.3f} Match "
+                if match is not None:
+                    strs += f" {match:4.2f} "
+
+                if e is not None:
+                    rank = len(all_engs[all_engs < (e - 1e-3)]) + 1
+                    strs += f"{rank:d}/{self.N_struc:d} {tag:s}"
+                    ranks.append(rank)
+
+                print(strs)
         if len(ranks) == 0: ranks = [0]
         return min(ranks)
 
@@ -839,6 +884,139 @@ class GlobalOptimize:
             gen_results = return_dict.get("gen_results", {})
         return gen_results
 
+    def gen_summary(self, gen, t0, gen_results, xtals, tags, ref_pxrd=None):
+
+        matches = [False] * self.N_pop if ref_pxrd is None else [0.0] * self.N_pop
+        eng0s = [self.E_max] * self.N_pop
+        reps = [None] * self.N_pop
+
+
+        for id, res in enumerate(gen_results):
+            (xtal, match) = res
+
+            if xtal is not None:
+                xtals[id] = xtal
+                eng0s[id] = xtal.energy / sum(xtal.numMols)
+                reps[id] = xtal.get_1D_representation()
+                matches[id] = match
+
+                # Don't write bad structure
+                if self.cif is not None and xtal.energy < 9999:
+                    if self.verbose:
+                        print("Add qualified structure", id, xtal.energy)
+                    with open(self.workdir + "/" + self.cif, "a+") as f:
+                        label = self.tag + "-g" + str(gen) + "-p" + str(id)
+                        f.writelines(xtal.to_file(header=label))
+                self.engs.append(xtal.energy / sum(xtal.numMols))
+                self.stats[gen][id][0] = xtal.energy / sum(xtal.numMols)
+                self.stats[gen][id][1] = match
+
+        strs = f"Generation {gen:d} finishes: {len(self.engs):d} strucs"
+        print(strs)
+        self.logging.info(strs)
+
+        t1 = time()
+
+        # Apply Gaussian
+        reps_x = [rep.x if rep is not None else None for rep in reps]
+        if ref_pxrd is None:
+            engs = self._apply_gaussian(reps_x, eng0s)
+        else:
+            engs = self._apply_gaussian(reps_x, -1 * np.array(matches))
+
+        # Store the best structures
+        count = 0
+        ref_xtals = []
+        ids = np.argsort(engs)
+        for id in ids:
+            xtal, rep, eng, tag = xtals[id], reps[id], eng0s[id], tags[id]
+            if self.new_struc(xtal, ref_xtals):
+                ref_xtals.append(xtal)
+                self.best_reps.append(rep.x)
+                #d_rep = representation(rep, self.smiles)
+                tag = f"{tag:8s}"
+                try:
+                    strs = rep.to_string(None, eng, tag)
+                    out = f"{gen:3d} {strs:s} Top"
+                    if ref_pxrd is not None:
+                        out += f" {matches[id]:6.3f}"
+                    print(out)
+                except:
+                    print('Error', xtal)
+                count += 1
+            if count == 3:
+                break
+
+        t2 = time()
+        gen_out = f"Gen{gen:3d} time usage: "
+        gen_out += f"{t1 - t0:5.1f}[Calc] {t2 - t1:5.1f}[Proc]"
+        print(gen_out)
+
+        return xtals, matches, engs
+
+
+    def plot_results(self, pxrd=False, figsize=(8.0, 5.0), figname='results.png', ylim=None):
+        """
+        Plot the results
+
+        Args:
+            figsize:
+            figname:
+            ylim:
+        """
+        import matplotlib.pyplot as plt
+        x1, y1, z1 = [], [], []
+        x2, y2, z2 = [], [], []
+        # Extract (pop_id, eng, gen_id) when pxrd is False
+        # Extract (pop_id, eng, sim) when pxrd is True
+        for i in range(self.N_gen):
+            for j in range(self.N_pop):
+                x1.append(j)
+                if pxrd:
+                    y1.append(self.stats[i, j, 0])
+                    z1.append(self.stats[i, j, 1])
+                else:
+                    y1.append(self.stats[i, j, 0])
+                    z1.append(i)
+
+        # self.matches.append((gen, i, xtal, e, match, tag))
+        for match in self.matches:
+            x2.append(match[1])
+            if pxrd:
+                y2.append(match[3])
+                z2.append(match[4])
+            else:
+                y2.append(match[3])
+                z2.append(match[0])
+
+
+        fig = plt.figure(figsize=figsize)
+        plt.xlabel("Population ID", weight='bold')
+        plt.ylabel("Lattice Energy", weight='bold')
+
+        if ylim is None:
+            y1 = np.array(y1)
+            ymin = y1.min() - 0.25
+            ymax = min([ymin+5, y1.max()])
+            ylim = (ymin, ymax)
+
+        # Plot of all samples (PopID, Engs/Similarity)
+        scatter = plt.scatter(x1, y1, s=10, c=z1, cmap='winter', alpha=0.5, label='Samples')
+        #scatter = plt.scatter(x1, y1, c=z1, cmap='winter', alpha=0.5, label='Samples')
+        cbar = plt.colorbar(scatter)
+        if pxrd:
+            cbar.set_label('PXRD Similarity')
+        else:
+            cbar.set_label('Generation ID')
+
+        if len(x2) > 0:
+            plt.scatter(x2, y2, s=15, c='red', marker='x', label='Matches')
+            #plt.scatter(x2, y2, c='red', marker='x', label='Matches')
+
+        plt.legend(loc=1, prop={'weight': 'bold'})
+        plt.ylim(ylim)
+        plt.tight_layout()
+        plt.savefig(figname)
 
 if __name__ == "__main__":
     print("test")

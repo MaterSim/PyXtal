@@ -251,6 +251,9 @@ class CHARMM:
                     if line.find("REMARK ENERGY") != -1:
                         tmp = line.split(":")
                         self.structure.energy = float(tmp[-1])
+                    elif line.find("REMARK Z") != -1:
+                        tmp = line.split(":")[-1].split()
+                        Z = int(tmp[-1])
                     elif line.find("REMARK CELL") != -1:
                         tmp = line.split(":")[-1].split()
                         tmp = [float(x) for x in tmp]
@@ -263,6 +266,7 @@ class CHARMM:
                         except:
                             pass  # print("Warning: BAD charmm output: " + line)
                 positions = np.array(positions)
+                self.structure.energy *= Z
 
             count = 0
             # for i, site in enumerate(self.structure.mol_sites):
