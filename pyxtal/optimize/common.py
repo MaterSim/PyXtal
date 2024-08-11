@@ -20,7 +20,7 @@ from pyxtal.XRD import Similarity, pxrd_refine
 
 warnings.filterwarnings("ignore")
 
-def check_stable_structure(xtal, c_info, w_dir, job_tag, skip_ani, optimizer, disps=[0.5, 5.0], verbose=False):
+def check_stable_structure(xtal, c_info, w_dir, job_tag, skip_ani, optimizer, disps=[0.5, 5.0], random=False, verbose=False):
     """
     Check the stability of input xtal based on lattice mutation
     """
@@ -31,10 +31,10 @@ def check_stable_structure(xtal, c_info, w_dir, job_tag, skip_ani, optimizer, di
     if res is not None:
         xtal0, eng0 = res["xtal"], res["energy"] #/sum(xtal.numMols)
         rep0 = xtal0.get_1D_representation()
-        if verbose: print("Optimize", rep0.to_string(eng0))
+        if verbose: print("Optim ", rep0.to_string(eng0/sum(xtal.numMols)))
         cell0 = np.array(xtal.lattice.encode())
-        wps = [site.encode() for site in xtal.mol_sites]
 
+        update = False
         for i, c in enumerate(cell0):
             if i <= 2:
                 disps = [-disp_cell, disp_cell]
@@ -43,19 +43,27 @@ def check_stable_structure(xtal, c_info, w_dir, job_tag, skip_ani, optimizer, di
             for disp in disps:
                 cell = cell0.copy()
                 cell[i] += disp
-                x = [[xtal.group.hall_number] + cell.tolist()]
+                x = [[xtal0.group.hall_number] + cell.tolist()]
+                wps = [site.encode() for site in xtal0.mol_sites]
+                # Add random perturbation
+                if random:
+                    for wp in wps:
+                        for id in range(4, len(wp)-1):
+                            wp[id] += 10.0*(np.random.random()-0.5)
                 x.extend(wps)#; print(x)
-                rep1 = representation(x, smiles)
-                xtal1 = rep1.to_pyxtal(composition=comp)#; print(i, j, xtal1.lattice)
+                rep1 = representation(x, smiles); print("Init  ", rep1.to_string())
+                xtal1 = rep1.to_pyxtal(composition=comp)#; print(xtal1.lattice)
                 res = optimizer(xtal1, c_info, w_dir, job_tag, skip_ani=skip_ani)
                 if res is not None:
                     xtal2, eng = res["xtal"], res["energy"] #/sum(xtal1.numMols)
                     if eng < eng0 + 1e-4:
-                        #rep2 = xtal2.get_1D_representation()
                         xtal0, eng0 = xtal2, eng
-                        if verbose: print("Update  ", rep2.to_string(eng0))
-                        return xtal0, eng0, True
-        return xtal0, eng0, False
+                        if verbose:
+                            rep2 = xtal0.get_1D_representation()
+                            print("Update", rep2.to_string(eng0/sum(xtal0.numMols)))
+                        update = True
+                        #return xtal0, eng0, True
+        return xtal0, eng0, update
     else:
         raise RuntimeError("Error in optimization")
 

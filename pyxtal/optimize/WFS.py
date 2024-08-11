@@ -85,7 +85,7 @@ class WFS(GlobalOptimize):
         random_state: int | None = None,
         max_time: float | None = None,
         matcher: StructureMatcher | None = None,
-        early_quit: bool = True,
+        early_quit: bool = False,
         check_stable: bool = False,
     ):
         if isinstance(random_state, Generator):
@@ -100,6 +100,7 @@ class WFS(GlobalOptimize):
         self.N_pop = N_pop
         self.fracs = np.array(fracs)
         self.verbose = verbose
+        self.name = 'WFS'
 
         # initialize other base parameters
         GlobalOptimize.__init__(

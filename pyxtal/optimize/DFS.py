@@ -83,7 +83,7 @@ class DFS(GlobalOptimize):
         random_state: int | None = None,
         max_time: float | None = None,
         matcher: StructureMatcher | None = None,
-        early_quit: bool = True,
+        early_quit: bool = False,
         check_stable: bool = False,
     ):
         if isinstance(random_state, Generator):
@@ -91,10 +91,11 @@ class DFS(GlobalOptimize):
         else:
             self.random_state = np.random.default_rng(random_state)
 
-        # GA parameters:
+        # POPULATION parameters:
         self.N_gen = N_gen
         self.N_pop = N_pop
         self.verbose = verbose
+        self.name = 'DFS'
 
         # initialize other base parameters
         GlobalOptimize.__init__(

@@ -201,11 +201,13 @@ class GlobalOptimize:
         self.N_min_matches = 10 # The min_num_matches for early termination
         self.E_max = E_max
         self.tag = tag
-        self.cif = cif
-        self.matched_cif = self.workdir + "/" + "matched.cif"
-        if cif is not None:
-            with open(self.workdir + "/" + cif, "w") as f:
-                f.writelines(str(self))
+        self.suffix = f"{self.workdir:s}/{self.name:s}-{self.ff_style:s}"
+        if cif is None:
+            self.cif = self.suffix + '.cif'
+        else:
+            self.cif = self.suffix + cif
+        with open(self.cif, "w") as f: f.writelines(str(self))
+        self.matched_cif = self.suffix + "-matched.cif"
         # print(self)
 
         # Setup logger
@@ -233,8 +235,7 @@ class GlobalOptimize:
             s += f"Mode      : Production\n"
         else:
             s += f"Mode      : Sampling\n"
-        if self.cif is not None:
-            s += f"cif       : {self.cif:s}\n"
+        s += f"cif       : {self.cif:s}\n"
         if self.ff_opt:
             s += "forcefield: On-the-fly\n"
         else:
@@ -904,7 +905,7 @@ class GlobalOptimize:
                 if self.cif is not None and xtal.energy < 9999:
                     if self.verbose:
                         print("Add qualified structure", id, xtal.energy)
-                    with open(self.workdir + "/" + self.cif, "a+") as f:
+                    with open(self.cif, "a+") as f:
                         label = self.tag + "-g" + str(gen) + "-p" + str(id)
                         f.writelines(xtal.to_file(header=label))
                 self.engs.append(xtal.energy / sum(xtal.numMols))
@@ -955,68 +956,90 @@ class GlobalOptimize:
         return xtals, matches, engs
 
 
-    def plot_results(self, pxrd=False, figsize=(8.0, 5.0), figname='results.png', ylim=None):
+    def plot_results(self, pxrd=False, save=True, figsize=(8.0, 5.0), figname=None, ylim=None):
         """
         Plot the results
 
         Args:
+            pxrd (bool): whether or not in pxrd mode
+            save (bool): whether or not save the data
             figsize:
             figname:
             ylim:
         """
         import matplotlib.pyplot as plt
-        x1, y1, z1 = [], [], []
-        x2, y2, z2 = [], [], []
+        import seaborn as sns
+        sns.set_theme()
+        sns.set_context("talk", font_scale=0.9)
+
+        if figname is None:
+            figname = self.suffix + "-results.pdf"
+
+        data1 = []
+        data2 = []
         # Extract (pop_id, eng, gen_id) when pxrd is False
         # Extract (pop_id, eng, sim) when pxrd is True
         for i in range(self.N_gen):
             for j in range(self.N_pop):
-                x1.append(j)
                 if pxrd:
-                    y1.append(self.stats[i, j, 0])
-                    z1.append(self.stats[i, j, 1])
+                    data1.append([i, j, self.stats[i, j, 0], self.stats[i, j, 1]])
                 else:
-                    y1.append(self.stats[i, j, 0])
-                    z1.append(i)
+                    data1.append([i, j, self.stats[i, j, 0]])
 
         # self.matches.append((gen, i, xtal, e, match, tag))
         for match in self.matches:
-            x2.append(match[1])
             if pxrd:
-                y2.append(match[3])
-                z2.append(match[4])
+                data2.append([match[0], match[1], match[3], match[4]])
             else:
-                y2.append(match[3])
-                z2.append(match[0])
-
+                data2.append([match[0], match[1], match[3]])
 
         fig = plt.figure(figsize=figsize)
-        plt.xlabel("Population ID", weight='bold')
-        plt.ylabel("Lattice Energy", weight='bold')
-
+        plt.ylabel("Lattice Energy (kcal)")#, weight='bold')
+        data1 = np.array(data1)
+        if pxrd:
+            # (similarity, eng, gen_id)
+            x1, y1, z1 = data1[:, 3], data1[:, 2], data1[:, 0]
+            plt.xlabel("XRD Similarity")#, weight='bold')
+        else:
+            x1, y1, z1 = data1[:, 1], data1[:, 2], data1[:, 0]
+            plt.xlabel("Population ID")#, weight='bold')
+        # Plot of all samples (PopID, Engs/Similarity)
+        scatter = plt.scatter(x1, y1, s=10, c=z1, cmap='winter', alpha=0.5, label='Samples')
+        cbar = plt.colorbar(scatter)
+        cbar.set_label('Generation ID')#, weight='bold')
         if ylim is None:
             y1 = np.array(y1)
             ymin = y1.min() - 0.25
-            ymax = min([ymin+5, y1.max()])
+            ymax = min([ymin + 10.0, y1.max()])
             ylim = (ymin, ymax)
 
-        # Plot of all samples (PopID, Engs/Similarity)
-        scatter = plt.scatter(x1, y1, s=10, c=z1, cmap='winter', alpha=0.5, label='Samples')
-        #scatter = plt.scatter(x1, y1, c=z1, cmap='winter', alpha=0.5, label='Samples')
-        cbar = plt.colorbar(scatter)
-        if pxrd:
-            cbar.set_label('PXRD Similarity')
-        else:
-            cbar.set_label('Generation ID')
+        if len(data2) > 0:
+            data2 = np.array(data2)
+            if len(data2.shape) == 1:
+                data2 = data2.reshape(-1, 1)
+            if pxrd:
+                x2, y2, z2 = data2[:, 3], data2[:, 2], data2[:, 0]
+            else:
+                x2, y2, z2 = data2[:, 1], data2[:, 2], data2[:, 0]
+            plt.scatter(x2, y2, s=10, c='red', marker='x', label='Matches')
 
-        if len(x2) > 0:
-            plt.scatter(x2, y2, s=15, c='red', marker='x', label='Matches')
-            #plt.scatter(x2, y2, c='red', marker='x', label='Matches')
-
-        plt.legend(loc=1, prop={'weight': 'bold'})
+        plt.legend(loc=1)#, prop={'weight': 'bold'})
         plt.ylim(ylim)
+        plt.title(f"{self.name:s}-{self.ff_style:s}")#, weight='bold')
         plt.tight_layout()
         plt.savefig(figname)
+
+        if save:
+            if pxrd:
+                header = "#Generation, Population, Energy, Similarity"
+            else:
+                header = "#Generation, Population, Energy"
+            data_txt = self.suffix + "-data.txt"
+            np.savetxt(data_txt, data1, header=header)
+
+            if len(data2) > 0:
+                match_txt = self.suffix + "-match.txt"
+                np.savetxt(match_txt, data2, header=header)
 
 if __name__ == "__main__":
     print("test")

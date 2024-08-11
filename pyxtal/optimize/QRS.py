@@ -152,13 +152,16 @@ class QRS(GlobalOptimize):
         random_state: int | None = None,
         max_time: float | None = None,
         matcher: StructureMatcher | None = None,
-        early_quit: bool = True,
+        early_quit: bool = False,
         check_stable: bool = False,
     ):
 
+        # POPULATION parameters:
         self.N_gen = N_gen # Number of lattice points
         self.N_pop = N_pop # Number of wp varieties
         self.verbose = verbose
+        self.name = 'QRS'
+
         # initialize other base parameters
         GlobalOptimize.__init__(
             self,
@@ -192,7 +195,6 @@ class QRS(GlobalOptimize):
             early_quit,
             check_stable,
         )
-
         strs = self.full_str()
         self.logging.info(strs)
         print(strs)
