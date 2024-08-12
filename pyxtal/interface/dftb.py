@@ -7,10 +7,9 @@ from ase.calculators.calculator import (
     kpts2ndarray,
     kpts2sizeandoffsets,
 )
-from ase.constraints import ExpCellFilter
+from ase.constraints import UnitCellFilter, FixSymmetry
 from ase.io import read
 from ase.optimize.fire import FIRE
-from ase.spacegroup.symmetrize import FixSymmetry
 from ase.units import Bohr, Hartree
 
 from pyxtal.util import Kgrid
@@ -220,7 +219,7 @@ def DFTB_relax(
 
     # impose cell constraints
     if opt_cell:
-        ecf = ExpCellFilter(struc, mask=mask)
+        ecf = UnitCellFilter(struc, mask=mask)
         dyn = FIRE(ecf, logfile=logfile)
     else:
         dyn = FIRE(struc, logfile=logfile)

@@ -46,7 +46,7 @@ setup(
         "pymatgen>=2024.3.1",
         "pandas>=2.0.2",
         "networkx>=2.3",
-        "ase>=3.18.0",  # covered by pymatgen
+        "ase>=3.23.0",
         "scipy>=1.7.3",
         "numpy>=1.26,<2",  # prevent the use of numpy2
         "importlib_metadata>=1.4",

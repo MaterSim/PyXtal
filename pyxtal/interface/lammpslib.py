@@ -6,10 +6,9 @@ import os
 import ase.units
 import numpy as np
 from ase.calculators.calculator import Calculator
-from ase.constraints import ExpCellFilter
+from ase.constraints import UnitCellFilter, FixSymmetry
 from ase.optimize import LBFGS
 from ase.optimize.fire import FIRE
-from ase.spacegroup.symmetrize import FixSymmetry
 from lammps import lammps
 
 
@@ -65,7 +64,7 @@ def opt_lammpslib(
     struc.set_calculator(lammps)
     struc.set_constraint(FixSymmetry(struc))
     if opt_cell:
-        ecf = ExpCellFilter(struc, mask)
+        ecf = UnitCellFilter(struc, mask)
         dyn = FIRE(ecf, logfile=logfile, a=a) if method == "FIRE" else LBFGS(ecf, logfile=logfile)
     else:
         dyn = FIRE(struc, logfile=logfile) if method == "FIRE" else LBFGS(struc, logfile=logfile)
