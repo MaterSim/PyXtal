@@ -964,9 +964,6 @@ class pyxtal_molecule:
         """
         get the torsion angles
         """
-        from rdkit.Chem import rdMolTransforms as rdmt
-        from rdkit.Geometry import Point3D
-
         if xyz is None:
             xyz = self.mol.cart_coords
         if torsionlist is None:
@@ -974,6 +971,10 @@ class pyxtal_molecule:
 
         angs = []
         if len(torsionlist) > 0:
+
+            from rdkit.Chem import rdMolTransforms as rdmt
+            from rdkit.Geometry import Point3D
+
             conf = self.rdkit_mol().GetConformer(0)
             for i in range(len(xyz)):
                 x, y, z = xyz[i]
