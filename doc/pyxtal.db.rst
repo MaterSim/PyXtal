@@ -1,7 +1,7 @@
-pyxtal.io module
+pyxtal.db module
 ================
 
-.. automodule:: pyxtal.io
+.. automodule:: pyxtal.db
    :members:
    :undoc-members:
    :show-inheritance:

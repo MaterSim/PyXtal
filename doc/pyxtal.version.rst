@@ -1,7 +1,7 @@
-pyxtal.lattice module
+pyxtal.version module
 =====================
 
-.. automodule:: pyxtal.lattice
+.. automodule:: pyxtal.version
    :members:
    :undoc-members:
    :show-inheritance:

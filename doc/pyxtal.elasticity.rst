@@ -1,7 +1,7 @@
-pyxtal.supergroup module
+pyxtal.elasticity module
 ========================
 
-.. automodule:: pyxtal.supergroup
+.. automodule:: pyxtal.elasticity
    :members:
    :undoc-members:
    :show-inheritance:

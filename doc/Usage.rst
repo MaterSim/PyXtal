@@ -378,24 +378,42 @@ with a list of numbers. For example,
 .. code-block:: Python
 
     >>> my_crystal = pyxtal()
-    >>> my_crystal.from_random(3, 99, ['Ba','Ti','O'], [1,1,3])
+    >>> my_crystal.from_random(3, 99, ['Ba','Ti','O'], [1,1,3], random_state=10)
     >>> my_crystal
-    ------Random Crystal------
-    Composition: Ba1 Ti1 O3
+    
+    ------Crystal from random------
     Dimension: 3
-    Group: P4mm (99)
-    Volume factor: 1.0
-    tetragonal lattice:   5.1029   5.1029   4.3018  90.0000  90.0000  90.0000
+    Composition: Ba1Ti1O3
+    Group: P 4 m m (99)
+      4.0080,   4.0080,   9.3650,  90.0000,  90.0000,  90.0000, tetragonal
     Wyckoff sites:
-    	Ba @ [0.5000 0.5000 0.3612], Wyckoff letter:  1b, Site symmetry: 4 m m
-    	Ti @ [0.5000 0.5000 0.8701], Wyckoff letter:  1b, Site symmetry: 4 m m
-    	 O @ [0.5000 0.0000 0.0823], Wyckoff letter:  2c, Site symmetry: 2 mm .
-    	 O @ [0.5000 0.5000 0.8177], Wyckoff letter:  1b, Site symmetry: 4 m m
+    	Ba @ [ 0.5000  0.5000  0.7043], WP [1b] Site [4mm]
+    	Ti @ [ 0.0000  0.0000  0.2199], WP [1a] Site [4mm]
+    	 O @ [ 0.5000  0.0000  0.3652], WP [2c] Site [2mm.]
+    	 O @ [ 0.0000  0.0000  0.6833], WP [1a] Site [4mm]
 
 would create a random :math:`BaTiO_3` crystal. If the generation is successful, the value
 of ``my_crystal.valid`` will be set to ``True``;
 otherwise, it will be ``False``.
 
+Keep in mind that the you can pass an integer value to `random_state` to ensure the reproducibility.
+This feature would be useful for many different purposes. 
+
+If you want to generate many random structures with a fixed random number generator, we recommend the following scripts by setting up a random number generator via `np.random.default_rng`:
+
+.. code-block:: Python
+
+from pyxtal import pyxtal
+import numpy as np
+rng = np.random.default_rng(0)
+
+xtals = []
+for i in range(10):
+    xtal = pyxtal()
+    xtal.from_random(3, 99, ['Ba','Ti','O'], [1,1,3], random_state=rng)
+    xtals.append(xtal)
+
+Similar setup can be applied to other modules as well.
 
 Random 3D molecular crystals
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

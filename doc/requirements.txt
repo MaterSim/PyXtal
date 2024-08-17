@@ -1,3 +1,4 @@
+pyxtal>=1.0.0
 spglib>=1.10.4
 pymatgen>=2023.2.28
 pandas>=2.0.2

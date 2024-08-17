@@ -1,7 +1,7 @@
-pyxtal.molecular\_crystal module
+pyxtal.optimize.benchmark module
 ================================
 
-.. automodule:: pyxtal.molecular_crystal
+.. automodule:: pyxtal.optimize.benchmark
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,7 +1,7 @@
-pyxtal.tolerance module
+pyxtal.constants module
 =======================
 
-.. automodule:: pyxtal.tolerance
+.. automodule:: pyxtal.constants
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,7 +1,7 @@
-pyxtal.wyckoff\_site module
+pyxtal.interface.ani module
 ===========================
 
-.. automodule:: pyxtal.wyckoff_site
+.. automodule:: pyxtal.interface.ani
    :members:
    :undoc-members:
    :show-inheritance:

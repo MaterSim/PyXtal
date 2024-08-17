@@ -1,7 +1,7 @@
-pyxtal.database.element module
+pyxtal.interface.charmm module
 ==============================
 
-.. automodule:: pyxtal.database.element
+.. automodule:: pyxtal.interface.charmm
    :members:
    :undoc-members:
    :show-inheritance:

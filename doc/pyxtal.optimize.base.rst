@@ -1,7 +1,7 @@
-pyxtal.wyckoff\_site module
+pyxtal.optimize.base module
 ===========================
 
-.. automodule:: pyxtal.wyckoff_site
+.. automodule:: pyxtal.optimize.base
    :members:
    :undoc-members:
    :show-inheritance:

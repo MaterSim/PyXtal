@@ -1,7 +1,7 @@
-pyxtal.interface.gulp module
+pyxtal.database.cifs package
 ============================
 
-.. automodule:: pyxtal.interface.gulp
+.. automodule:: pyxtal.database.cifs
    :members:
    :undoc-members:
    :show-inheritance:

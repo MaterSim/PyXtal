@@ -1,7 +1,7 @@
-pyxtal.viz module
+pyxtal.msg module
 =================
 
-.. automodule:: pyxtal.viz
+.. automodule:: pyxtal.msg
    :members:
    :undoc-members:
    :show-inheritance:
