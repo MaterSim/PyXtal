@@ -1121,7 +1121,7 @@ class database_topology:
         try:
             import juliacall
         except:
-            print("Cannot load JuliaCall, no support on topology parser")
+            raise RuntimeError("Cannot load JuliaCall, Plz enable it before running")
 
         def parse_topology(topology_info):
             """

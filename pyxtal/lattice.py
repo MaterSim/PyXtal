@@ -574,13 +574,13 @@ class Lattice:
 
     def generate_para(self):
         if self.dim == 3:
-            return generate_cellpara(self.ltype, self.volume, **self.kwargs)
+            return generate_cellpara(self.ltype, self.volume, random_state=self.random_state, **self.kwargs)
         elif self.dim == 2:
-            return generate_cellpara_2D(self.ltype, self.volume, **self.kwargs)
+            return generate_cellpara_2D(self.ltype, self.volume, random_state=self.random_state, **self.kwargs)
         elif self.dim == 1:
-            return generate_cellpara_1D(self.ltype, self.volume, **self.kwargs)
+            return generate_cellpara_1D(self.ltype, self.volume, random_state=self.random_state, **self.kwargs)
         elif self.dim == 0:
-            return generate_cellpara_0D(self.ltype, self.volume, **self.kwargs)
+            return generate_cellpara_0D(self.ltype, self.volume, random_state=self.random_state, **self.kwargs)
         return None
 
     def generate_matrix(self):
