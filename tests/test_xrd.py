@@ -38,3 +38,6 @@ class TestPXRD(unittest.TestCase):
         xrd3.get_profile()
         s = Similarity(p1, p2, x_range=[15, 90])
         assert 0.95 < s.value < 1.001
+
+if __name__ == "__main__":
+    unittest.main()

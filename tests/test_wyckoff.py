@@ -182,3 +182,6 @@ class Test_wyckoff_site(unittest.TestCase):
         ]:
             site = atom_site(wp, xyz, search=True)
             assert np.allclose(site.position, arr, rtol=0.001)
+
+if __name__ == "__main__":
+    unittest.main()

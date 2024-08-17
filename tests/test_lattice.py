@@ -262,3 +262,6 @@ class TestOptimizeLattice(unittest.TestCase):
                 d1 = sm.StructureMatcher().get_rms_dist(pmg0, pmg1)
                 d2 = sm.StructureMatcher().get_rms_dist(pmg0, pmg2)
                 assert sum(d1) + sum(d2) < 0.001
+
+if __name__ == "__main__":
+    unittest.main()

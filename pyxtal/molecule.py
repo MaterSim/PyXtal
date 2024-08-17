@@ -240,7 +240,7 @@ class pyxtal_molecule:
     ):
         mo = None
         self.smile = None
-        self.torsionlist = None
+        self.torsionlist = [] #None
         self.reflect = False
         if seed is None:
             seed = 0xF00D
@@ -820,12 +820,14 @@ class pyxtal_molecule:
             if fix or torsions is not None or len(torsionlist) == 0:
                 conf = ref_conf
             else:
+                randomSeed = -1 if self.random_state is None else 1
                 AllChem.EmbedMultipleConfs(
                     mol,
                     numConfs=max([1, 4 * len(torsionlist)]),
                     maxAttempts=200,
                     useRandomCoords=True,
                     pruneRmsThresh=0.5,
+                    randomSeed=randomSeed,
                 )
                 N_confs = mol.GetNumConformers()
                 conf_id = int(self.random_state.choice(range(N_confs)))
@@ -857,7 +859,7 @@ class pyxtal_molecule:
         slightly perturb the torsion
         """
         angs = self.get_torsion_angles(xyz, self.torsionlist)
-        angs *= 1 + 0.1 * np.random.uniform(-1.0, 1.0, len(angs))
+        angs *= 1 + 0.1 * self.random_state.uniform(-1.0, 1.0, len(angs))
         xyz = self.set_torsion_angles(conf, angs, torsionlist=self.torsionlist)
         xyz -= self.get_center(xyz)
         return xyz
@@ -1113,7 +1115,7 @@ class pyxtal_molecule:
 
         xyz -= self.get_center(xyz)
 
-        if len(self.smile) > 1:  # not in ["O", "o"]:
+        if self.smile is not None and len(self.smile) > 1:  # not in ["O", "o"]:
             rmsd, trans, reflect = self.get_rmsd(xyz)
             tol = rtol * len(xyz)
 
@@ -1159,7 +1161,7 @@ class pyxtal_molecule:
             for i, lib in enumerate(libs):
                 matrix0 = matrix * np.repeat(lib, 3, axis=0)
                 res = np.dot(ref, np.linalg.inv(matrix0))
-                dists[i] = np.sum((res - xyz) ** 2)
+                dists[i] = np.sum((res - xyz[:len(ref)]) ** 2)
                 # print(i, res)
             id = np.argmin(dists)
             matrix = matrix * np.repeat(libs[id], 3, axis=0)
@@ -1297,7 +1299,7 @@ class pyxtal_molecule:
         """
         # For single atoms, there are no constraints
         if len(self.mol) == 1 or wp.index == 0:
-            return [Orientation([[1, 0, 0], [0, 1, 0], [0, 0, 1]], degrees=2)]
+            return [Orientation([[1, 0, 0], [0, 1, 0], [0, 0, 1]], degrees=2, random_state=self.random_state)]
         # C1 molecule cannot take specical position
         elif wp.index > 1 and self.pga.sch_symbol == "C1":
             return []
@@ -1425,7 +1427,7 @@ class pyxtal_molecule:
             T = rotate_vector(v1, v2)
             # If there is only one constraint
             if c1[1] == []:
-                o = Orientation(T, degrees=1, axis=constraint1.axis)
+                o = Orientation(T, degrees=1, axis=constraint1.axis, random_state=self.random_state)
                 orientations.append(o)
             else:
                 # Loop over second molecular constraints
@@ -1442,12 +1444,12 @@ class pyxtal_molecule:
                         a = angle(np.dot(T2, opa.axis), constraint2.axis)
                         if not np.isclose(a, 0, rtol=rtol):
                             T2 = np.dot(np.linalg.inv(R), T)
-                        o = Orientation(T2, degrees=0)
+                        o = Orientation(T2, degrees=0, random_state=self.random_state)
                         orientations.append(o)
 
         # Ensure the identity orientation is checked if no constraints are found
         if constraints_m == []:
-            o = Orientation(np.identity(3), degrees=2)
+            o = Orientation(np.identity(3), degrees=2, random_state=self.random_state)
             orientations.append(o)
         # Remove redundancy from orientations
         list_i = list(range(len(orientations)))
@@ -1606,18 +1608,18 @@ class Orientation:
         if self.degrees >= 1:
             # choose the axis
             if self.axis is None:
-                axis = np.random.rand(3) - 0.5
+                axis = self.random_state.random(3) - 0.5
                 self.axis = axis / np.linalg.norm(axis)
 
             # parse the angle
             if angle == "random":
-                angle = np.random.rand() * np.pi * 2
+                angle = self.random_state.random() * np.pi * 2
             self.angle = angle
 
             # update the matrix
             r1 = Rotation.from_rotvec(self.angle * self.axis)
 
-            if self.degrees == 2 and flip and np.random.random() > 0.5:
+            if self.degrees == 2 and flip and self.random_state.random() > 0.5:
                 ax = self.random_state.choice(["x", "y", "z"])
                 angle0 = self.random_state.choice([90, 180, 270])
                 r2 = Rotation.from_euler(ax, angle0, degrees=True)
@@ -1646,7 +1648,7 @@ class Orientation:
             axis = None
 
         matrix = matrix.dot(self.matrix)
-        return Orientation(matrix, self.degrees, axis)
+        return Orientation(matrix, self.degrees, axis, self.random_state)
 
     def get_matrix(self, angle="random"):
         """
@@ -1665,15 +1667,15 @@ class Orientation:
         """
         if self.degrees == 2:
             if angle == "random":
-                axis = np.random.sample(3)
+                axis = self.random_state.sample(3)
                 axis = axis / np.linalg.norm(axis)
-                angle = np.random.random() * np.pi * 2
+                angle = self.random_state.random() * np.pi * 2
             else:
                 axis = self.axis
             return Rotation.from_rotvec(angle * axis).as_matrix()
 
         elif self.degrees == 1:
-            angle = np.random.random() * np.pi * 2 if angle == "random" else self.angle
+            angle = self.random_state.random() * np.pi * 2 if angle == "random" else self.angle
             return Rotation.from_rotvec(angle * self.axis).as_matrix()
 
         elif self.degrees == 0:

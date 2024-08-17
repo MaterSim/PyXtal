@@ -141,3 +141,6 @@ class TestCluster(unittest.TestCase):
         struc = pyxtal()
         struc.from_random(0, 4, ["Mo", "S"], [2, 4], 1.0)
         assert struc.valid
+
+if __name__ == "__main__":
+    unittest.main()

@@ -3351,8 +3351,8 @@ class pyxtal:
         cell, xyzs = rep.x[0][1:], rep.x[1:]
         x = cell
         for xyz in xyzs:
-            x = np.hstack((x, xyz[2:]))
-
+            if len(xyz) > 2:
+                x = np.hstack((x, xyz[2:]))
         return x
 
     def from_spg_wps_rep(self, spg, wps, x, elements=None):
