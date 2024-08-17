@@ -3471,7 +3471,7 @@ class pyxtal:
                     # print(ele, cn1, option)
                     if cn1 not in cn2:
                         if verbose:
-                            strs = f"=====Invalid CN {ele:s} [{cn1:d}=>{cn2:d}]"
+                            strs = f"=====Invalid CN {ele:s} [{cn1:d}=>{cn2[0]:d}]"
                             strs += ", exclude ii: " + str(option)
                             print(strs)
                         return False
