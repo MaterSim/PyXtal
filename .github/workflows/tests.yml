@@ -56,6 +56,9 @@ jobs:
       - name: Test_group
         run: pytest tests/test_group.py
 
+      - name: Test_lego
+        run: pytest tests/test_lego.py 
+
       #- name: Test_xrd
       #  run: pytest tests/test_xrd.py
 
