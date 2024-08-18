@@ -93,6 +93,15 @@ class TestAtomic3D(unittest.TestCase):
                 pmg_struc = struc.to_pymatgen()
                 assert sm.StructureMatcher().fit(pmg_struc, pmg1)
 
+    def test_from_tabular(self):
+        xtal = pyxtal()
+        rep = [116,10.5754,10.7203,4.47208,1.5705,2.6561,2.0943,1,0.4447,0.3762,0.7526]
+        xtal.from_tabular_representation(rep, normalize=False)
+        assert xtal.valid == False
+        rep = [116,10.5754,10.7203,4.47208,1.5705,1.5705,1.5705,0,0.4447,0.3762,0.7526]
+        xtal.from_tabular_representation(rep, normalize=False)
+        assert xtal.valid == True
+
 
 class TestAtomic2D(unittest.TestCase):
     def test_single_specie(self):

@@ -3649,16 +3649,22 @@ class pyxtal:
                     np.degrees(beta),
                     np.degrees(gamma),
                 )
-            lattice = Lattice.from_para(
-                a,
-                b,
-                c,
-                alpha,
-                beta,
-                gamma,
-                ltype=group.lattice_type,
-                force_symmetry=True,
-            )
+            try:
+                lattice = Lattice.from_para(
+                    a,
+                    b,
+                    c,
+                    alpha,
+                    beta,
+                    gamma,
+                    ltype=group.lattice_type,
+                    force_symmetry=True,
+                )
+            except ValueError:
+                print('Input lattice from rep is incorrect', number, a, b, c, alpha, beta, gamma)
+                self.valid = False
+                return
+
             sites_info = np.reshape(rep[7:], (int((len(rep) - 7) / 4), 4))
             sites = []
             numIons = 0
