@@ -56,6 +56,20 @@ or
 pip install --upgrade git+https://github.com/MaterSim/PyXtal.git@master
 ```
 
+If you want to add the Julia package install (required by the use of `pyxtal.lego` module), please use
+
+```sh
+INSTALL_JULIA=1 pip install pyxtal 
+```
+
+To check if the installation is successful, run the following script,
+```python
+
+from juliacall import Main as jl
+jl.seval("using CrystalNets")
+print("Success")
+```
+
 ## Citation
 
 ### General PyXtal
