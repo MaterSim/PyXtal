@@ -150,13 +150,13 @@ class GlobalOptimize:
         self.timeout = max_time * self.N_pop / self.ncpu
 
         self.ff_opt = ff_opt
+        self.ff_style = ff_style
 
         if info is not None:
             self.atom_info = info
             self.parameters = None
             self.ff_opt = False
         else:
-            self.ff_style = ff_style
             self.ff_parameters = ff_parameters
             self.reference_file = reference_file
             self.parameters = ForceFieldParameters(self.smiles, style=ff_style, f_coef=1.0, s_coef=1.0, ncpu=self.ncpu)
