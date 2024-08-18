@@ -11,7 +11,7 @@ with open("README.md") as fh:
 
 setup(
     name="pyxtal",
-    version="1.0.1",
+    version="1.0.2",
     author="Scott Fredericks, Kevin Parrish, Qiang Zhu",
     author_email="alecfans@gmail.com",
     description="Python code for generation of crystal structures based on symmetry constraints.",
@@ -22,6 +22,7 @@ setup(
         "pyxtal",
         "pyxtal.database",
         "pyxtal.interface",
+        "pyxtal.lego",
         "pyxtal.optimize",
         "pyxtal.potentials",
         "pyxtal.database.cifs",
@@ -41,6 +42,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
+        "juliacall",
         "spglib>=1.10.4",
         "pymatgen>=2024.3.1",
         "pandas>=2.0.2",
@@ -48,6 +50,7 @@ setup(
         "ase>=3.23.0",
         "scipy>=1.7.3",
         "numpy>=1.26,<2",  # prevent the use of numpy2
+        "vasprun-xml>=1.0.4",  # prevent the use of numpy2
         "importlib_metadata>=1.4",
         "typing-extensions>=4.12",
     ],

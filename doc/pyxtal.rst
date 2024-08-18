@@ -14,6 +14,7 @@ Subpackages
 
    pyxtal.database
    pyxtal.interface
+   pyxtal.lego
    pyxtal.optimize
    pyxtal.potentials
 

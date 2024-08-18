@@ -18,6 +18,10 @@ importlib-metadata==8.0.0
     # via pyxtal (setup.py)
 joblib==1.4.2
     # via pymatgen
+juliacall==0.9.22
+    # via pyxtal (setup.py)
+juliapkg==0.1.13
+    # via juliacall
 kiwisolver==1.4.5
     # via matplotlib
 latexcodec==3.0.0
@@ -83,6 +87,8 @@ scipy==1.14.0
     #   pyxtal (setup.py)
     #   ase
     #   pymatgen
+semver==3.0.2
+    # via juliapkg
 six==1.16.0
     # via
     #   pybtex

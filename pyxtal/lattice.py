@@ -28,13 +28,13 @@ class Lattice:
         kwargs: various values which may be defined. If none are defined,
             random ones will be generated. Values will be passed to
             generate_lattice. Options include:
-            area: The cross-sectional area (in Ang^2). Only for 1D crystals
-            thickness: The cell's thickness (in Angstroms) for 2D crystals
-            unique_axis: The unique axis for certain symmetry (and especially
+            'area': The cross-sectional area (in Ang^2). Only for 1D crystals
+            'thickness': The cell's thickness (in Angstroms) for 2D crystals
+            'unique_axis': The unique axis for certain symmetry (and especially
                 layer) groups. Because the symmetry operations are not also
                 transformed, you should use the default values for random
                 crystal generation
-            random: If False, keeps the stored values for the lattice geometry
+            'random': If False, keeps the stored values for the lattice geometry
                 even upon applying reset_matrix. To alter the matrix, use
                 set_matrix() or set_para
             'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically

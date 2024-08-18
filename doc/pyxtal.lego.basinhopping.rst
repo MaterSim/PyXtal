@@ -1,7 +1,7 @@
-pyxtal.interface.vasprun module
+pyxtal.lego.basinhopping module
 ===============================
 
-.. automodule:: pyxtal.interface.vasprun
+.. automodule:: pyxtal.lego.basinhopping
    :members:
    :undoc-members:
    :show-inheritance:

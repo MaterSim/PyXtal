@@ -131,7 +131,7 @@ class VASP:
         self.energy = energy  # this is actually enthalpy
 
     def read_bandgap(self, path="vasprun.xml"):
-        from pyxtal.interface.vasprun import vasprun
+        from vasprun import vasprun
 
         myrun = vasprun(path)
         self.gap = myrun.values["gap"]

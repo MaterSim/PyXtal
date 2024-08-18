@@ -630,6 +630,7 @@ Executing this above scripts will lead to the following output:
 This way, you can easily find derivative crystals in the suboptimal representations. Conversely, it is also possible to identify the likely supergroup xtal. The following snippet codes can be used to design illustrate pyxtal functionalities.
 
 .. code-block:: Python
+
     from pyxtal import pyxtal
 
     # load a graphite crystal and make the subgroup representation
@@ -957,6 +958,7 @@ between Pyxtal and its 1D representation. With this module, one can represent th
     c1.from_seed('pyxtal/database/cifs/aspirin.cif', ['CC(=O)OC1=CC=CC=C1C(=O)O.smi'])
     rep = c1.get_1D_representation()
     print(rep.to_string())
+
 ::
 
     81 11.23  6.54 11.23  95.9 1 0.23 0.59 0.03   44.1  -25.2   32.5   82.9    2.8 -178.3 1
@@ -1003,6 +1005,7 @@ To create a new database file (e.g., `test.db`),
     print("Initial list of codes", db.codes)
     db.add_from_code('NAPHTA')
     print("Updated list of codes", db.codes)
+
 ::
 
     0 ACSALA
@@ -1017,6 +1020,7 @@ To view the database file,
 .. code-block:: Python
     
     $ ase db test.db
+
 ::
 
     csd_code|space_group|mol_smi              

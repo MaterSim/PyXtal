@@ -19,4 +19,3 @@ Submodules
    pyxtal.interface.gulp
    pyxtal.interface.lammpslib
    pyxtal.interface.vasp
-   pyxtal.interface.vasprun

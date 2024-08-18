@@ -700,9 +700,9 @@ class database_topology:
         """
         Clean up the db by removing the duplicate structures
         Here we check the follow criteria
-            - same number of atoms
-            - same density
-            - same energy
+        - same number of atoms
+        - same density
+        - same energy
 
         Args:
             dtol (float): tolerance of density

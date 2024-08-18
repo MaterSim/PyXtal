@@ -16,6 +16,5 @@ Submodules
    pyxtal.optimize.QRS
    pyxtal.optimize.WFS
    pyxtal.optimize.base
-   pyxtal.optimize.basin_hopping
    pyxtal.optimize.benchmark
    pyxtal.optimize.common
