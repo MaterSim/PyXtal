@@ -26,7 +26,7 @@ accessed by invoking the ``-h`` command:
     ----------------------(version 0.1.4 )----------------------
 
     A Python package for random crystal generation
-    The source code is available at https://github.com/qzhu2017/pyxtal
+    The source code is available at https://github.com/MaterSim/pyxtal
     Developed by Zhu's group at University of Nevada Las Vegas
 
 
