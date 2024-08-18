@@ -3239,10 +3239,10 @@ class pyxtal:
         Returns:
             An ase_atoms_objects with force field information
         """
-        from ost.charmm import CHARMMStructure
-        from ost.forcefield import forcefield
-        from ost.interfaces.parmed import ParmEdStructure
-        from ost.lmp import LAMMPSStructure
+        from pyocse.charmm import CHARMMStructure
+        from pyocse.forcefield import forcefield
+        from pyocse.interfaces.parmed import ParmEdStructure
+        from pyocse.lmp import LAMMPSStructure
 
         if self.molecular:
             smiles = [mol.smile for mol in self.molecules]
@@ -3273,7 +3273,7 @@ class pyxtal:
                 atoms = Atoms(symbols=species, positions=coords)
 
             # print(len(atoms), n_mols)
-            # Initialize the forcefield instance from ost
+            # Initialize the forcefield instance from pyocse
             ff = forcefield(smiles, style=ff_style, chargemethod=chargemethod)
 
             # update the parameters from the user
