@@ -392,26 +392,21 @@ with a list of numbers. For example,
     	 O @ [ 0.5000  0.0000  0.3652], WP [2c] Site [2mm.]
     	 O @ [ 0.0000  0.0000  0.6833], WP [1a] Site [4mm]
 
-would create a random :math:`BaTiO_3` crystal. If the generation is successful, the value
-of ``my_crystal.valid`` will be set to ``True``;
-otherwise, it will be ``False``.
+would create a random :math:`BaTiO_3` crystal. If the generation is successful, the value of ``my_crystal.valid`` will be set to ``True``; otherwise, it will be ``False``. Keep in mind that the you can pass an integer value to ``random_state`` to ensure the reproducibility. This feature would be useful for many different purposes. 
 
-Keep in mind that the you can pass an integer value to `random_state` to ensure the reproducibility.
-This feature would be useful for many different purposes. 
-
-If you want to generate many random structures with a fixed random number generator, we recommend the following scripts by setting up a random number generator via `np.random.default_rng`:
+If you want to generate many random structures with a fixed random number generator, we recommend the following scripts by setting up a random number generator via ``np.random.default_rng``:
 
 .. code-block:: Python
 
-from pyxtal import pyxtal
-import numpy as np
-rng = np.random.default_rng(0)
-
-xtals = []
-for i in range(10):
-    xtal = pyxtal()
-    xtal.from_random(3, 99, ['Ba','Ti','O'], [1,1,3], random_state=rng)
-    xtals.append(xtal)
+    from pyxtal import pyxtal
+    import numpy as np
+    rng = np.random.default_rng(0)
+    
+    xtals = []
+    for i in range(10):
+        xtal = pyxtal()
+        xtal.from_random(3, 99, ['Ba','Ti','O'], [1,1,3], random_state=rng)
+        xtals.append(xtal)
 
 Similar setup can be applied to other modules as well.
 
