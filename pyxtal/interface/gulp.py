@@ -153,8 +153,8 @@ class GULP:
         self.folder = path
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
-        self.input = self.folder + "/" + self.label + input
-        self.output = self.folder + "/" + self.label + output
+        self.input  = self.label + input
+        self.output = self.label + output
         self.dump = dump
         self.iter = 0
         self.energy = None
