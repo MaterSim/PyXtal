@@ -1010,13 +1010,8 @@ class database_topology:
                     ncpu = len(ids)
                 N_cycle = int(np.ceil(len(ids) / ncpu))
                 print("\n# Parallel GULP optimizations", ncpu, N_cycle, len(ids))
+
                 args_list = []
-
-                #for i in range(ncpu):
-                #    id1 = i * N_cycle
-                #    id2 = min([id1 + N_cycle, len(ids)])
-                #    args_list.append((ids[id1:id2], xtals[id1:id2], ff, calc_folder, criteria))
-
                 # Partition to ensure that each proc get the a similar load for the sorted structures
                 for i in range(ncpu):
                     par_ids = []
@@ -1032,6 +1027,7 @@ class database_topology:
                     results = [executor.submit(gulp_opt_par, *p) for p in args_list]
                     for result in results:
                         gulp_results.extend(result.result())
+                print("Finish Parallel GULP optimizations", len(gulp_results))
             self._update_db_gulp(gulp_results, ff)
         else:
             print("All structures have the ff_energy already")
@@ -1039,16 +1035,21 @@ class database_topology:
     def _update_db_gulp(self, gulp_results, ff):
         """
         Update db with the gulp_results
+        This may take some time to complete if there are many rows
+        https://wiki.fysik.dtu.dk/ase/ase/db/db.html#writing-and-updating-many-rows-efficiently
+        Better do it in a single transaction
 
         Args:
             gulp_results: list of (id, xtal, eng) tuples
             ff (str): forcefield type (e.g., 'reaxff')
         """
         print("Wrap up the final results and update db", len(gulp_results))
-        for gulp_result in gulp_results:
-            (id, xtal, eng) = gulp_result
-            if xtal is not None:
-                self.db.update(id, ff_energy=eng, ff_lib=ff, ff_relaxed=xtal.to_file())
+        with self.db:
+            for gulp_result in gulp_results:
+                (id, xtal, eng) = gulp_result
+                if xtal is not None:
+                    self.db.update(id, ff_energy=eng, ff_lib=ff, ff_relaxed=xtal.to_file())
+                    print('update_db_gulp', id)
 
     def update_row_dftb_energy(
         self,
