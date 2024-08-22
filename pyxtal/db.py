@@ -1383,43 +1383,42 @@ class database_topology:
             folder = f"cpu0{i}"
         return folder
 
-    def get_db_unique(self, db_name=None, etol=2e-3):
+    def get_db_unique(self, db_name=None, prec=3):
         """
         Get a db file with only unique structures
         with the following identical attributes:
         (topology, ff_energy)
+
+        Args:
+            db_name (str): filename for the new db
+            prec (int): ff_energy precision for the round number
         """
+
         print(f"The {self.db_name:s} has {self.db.count():d} strucs")
         if db_name is None:
             db_name = self.db_name[:-3] + "_unique.db"
         if os.path.exists(db_name):
             os.remove(db_name)
 
-        unique_props = []
+        unique_props = {}  # Using a dictionary to store unique properties
         for row in self.db.select():
             if hasattr(row, "topology") and hasattr(row, "ff_energy"):
-                # spg = row.space_group_number
                 top, top_detail = row.topology, row.topology_detail
-                dof, ff_energy = row.dof, row.ff_energy
-                prop = (row.id, dof, top, top_detail, ff_energy)
-                unique = True
-                for unique_prop in unique_props:
-                    # (_id, _spg, _top, _top_detail, _ff_energy) = unique_prop
-                    (_id, _dof, _top, _top_detail, _ff_energy) = unique_prop
-                    if top == _top and top_detail == _top_detail and abs(ff_energy - _ff_energy) < etol:
-                        if dof < _dof:
-                            print("updating", row.id, top, ff_energy)
-                            unique_prop = prop
-                        else:
-                            print("Duplicate", row.id, top, ff_energy)
-                        unique = False
-                        break
-
-                if unique:
+                dof, ff_energy = row.dof, round(row.ff_energy, prec)
+                prop_key = (top, top_detail, ff_energy)
+                # A dictionary lookup
+                if prop_key in unique_props:
+                    _id, _dof = unique_props[prop_key]
+                    if dof < _dof:
+                        print("Updating", row.id, top, ff_energy)
+                        unique_props[prop_key] = (row.id, dof)
+                    else:
+                        print("Duplicate", row.id, top, ff_energy)
+                else:
                     print("Adding", row.id, top, ff_energy)
-                    unique_props.append(prop)
+                    unique_props[prop_key] = (row.id, dof)
 
-        ids = [prop[0] for prop in unique_props]
+        ids = [unique_props[key][0] for key in unique_props.keys()]
         with connect(db_name) as db:
             for id in ids:
                 row = self.db.get(id)
