@@ -96,10 +96,9 @@ at_types = {
 }
 
 
-class GULP_OC:
+class GULP:
     """
-    A calculator to perform structure optimization in GULP
-    At the moment, only inorganic crystal is considered
+    A calculator to perform atomic structure optimization in GULP
 
     Args:
 

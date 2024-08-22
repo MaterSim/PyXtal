@@ -1107,8 +1107,13 @@ class mof_builder(object):
                'similarity': sim[1],
               }
         if xs is not None:
-            kvp['x_init'] = np.array2string(xs[0])
-            kvp['x_opt'] = np.array2string(xs[1])
+            try:
+                kvp['x_init'] = np.array2string(xs[0])
+                kvp['x_opt'] = np.array2string(xs[1])
+            except:
+                print("Error in xs", xs)
+                kvp['x_init'] = 'N/A'
+                kvp['x_opt'] = 'N/A'
         if energy is not None: kvp['ff_energy'] = energy
         if topology is not None: kvp['topology'] = topology
         if status: db.add_xtal(xtal, kvp)
