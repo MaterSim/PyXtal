@@ -175,11 +175,17 @@ class GULP:
         """
 
     def run(self, clean=True):
+        """
+        Always go to the directory to run one gulp at once
+        """
+        cwd = os.getcwd()
+        os.chdir(self.folder)
         self.write()
         self.execute()
         self.read()
         if clean:
             self.clean()
+        os.chdir(cwd)
 
     def execute(self):
         cmd = self.exe + "<" + self.input + ">" + self.output

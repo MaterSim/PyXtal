@@ -133,10 +133,15 @@ def gulp_opt_par(ids, xtals, ff, path, criteria):
     """
     results = []
     for id, xtal in zip(ids, xtals):
-        res = gulp_opt_single(id, xtal, ff, path, criteria)
+        folder = path + '/g' + str(id)
+        res = gulp_opt_single(id, xtal, ff, folder, criteria)
         (xtal, eng, status) = res
         if status:
             results.append((id, xtal, eng))
+            try:
+                os.rmdir(folder)
+            except:
+                print("Folder is not empty", folder)
     return results
 
 
@@ -985,6 +990,7 @@ class database_topology:
 
         os.makedirs(calc_folder, exist_ok=True)
         ids, xtals = self.select_xtals(ids, overwrite, "ff_energy")
+        assert len(ids) == len(set(ids))
 
         if len(ids) > 0:
             gulp_results = []
@@ -1006,10 +1012,21 @@ class database_topology:
                 print("\n# Parallel GULP optimizations", ncpu, N_cycle, len(ids))
                 args_list = []
 
+                #for i in range(ncpu):
+                #    id1 = i * N_cycle
+                #    id2 = min([id1 + N_cycle, len(ids)])
+                #    args_list.append((ids[id1:id2], xtals[id1:id2], ff, calc_folder, criteria))
+
+                # Partition to ensure that each proc get the a similar load for the sorted structures
                 for i in range(ncpu):
-                    id1 = i * N_cycle
-                    id2 = min([id1 + N_cycle, len(ids)])
-                    args_list.append((ids[id1:id2], xtals[id1:id2], ff, calc_folder, criteria))
+                    par_ids = []
+                    par_xtals = []
+                    for j in range(N_cycle):
+                        _id = j * ncpu + i
+                        if _id < len(ids):
+                            par_ids.append(ids[_id])
+                            par_xtals.append(xtals[_id])
+                    args_list.append((par_ids, par_xtals, ff, calc_folder, criteria))
 
                 with ProcessPoolExecutor(max_workers=ncpu) as executor:
                     results = [executor.submit(gulp_opt_par, *p) for p in args_list]
