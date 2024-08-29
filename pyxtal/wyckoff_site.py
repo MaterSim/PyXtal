@@ -750,13 +750,18 @@ class mol_site:
         cell, vertices, center = self.molecule.get_box_coordinates(mol.cart_coords)
         return display_molecule(mol, center, cell)
 
-    def update(self, coords, lattice=None, absolute=False, update_mol=True):
+    def update(self, coords=None, lattice=None, absolute=False, update_mol=True):
         """
         After the geometry relaxation, the returned atomic coordinates
         maybe rescaled to [0, 1] bound. In this case, we need to refind
         the molecular coordinates according to the original neighbor list.
         If the list does not change, we return the new coordinates
         otherwise, terminate the calculation.
+
+        Args:
+            coords (float): input xyz coordinates for the given molecule
+            absolute (bool): whether the input is absolute coordinates
+            update_mol (bool): whether update the molecule (used for substitution)
         """
         from pyxtal.molecule import Orientation, compare_mol_connectivity
 
@@ -768,13 +773,20 @@ class mol_site:
 
         if lattice is not None:
             self.lattice = lattice
+
+        if coords is None:
+            coords, _ = self._get_coords_and_species(absolute=False, first=True, unitcell=True)
+            absolute = False
+
         if not absolute:
             coords = coords.dot(self.lattice.matrix)
+
         # mol = Molecule(self.symbols, coords-np.mean(coords, axis=0))
         center = self.molecule.get_center(coords)
         mol = Molecule(self.symbols, coords - center)
 
         # match, _ = compare_mol_connectivity(mol, self.mol, True)
+        # Update the orientation matrix
         match, _ = compare_mol_connectivity(mol, self.molecule.mol)
         if match:
             # position = np.mean(coords, axis=0).dot(self.lattice.inv_matrix)

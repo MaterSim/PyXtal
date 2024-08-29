@@ -179,6 +179,12 @@ class CHARMM:
                             j + 1 + count, i + 1, res_name, label, *coord
                         )
                     )
+                    # quickly check if 
+                    if abs(coord).max() > 500.0:
+                        print("Unexpectedly large input coordinates, stop and debug")
+                        print(self.structure)
+                        self.structure.to_file('bug.cif')
+                        import sys; sys.exit()
 
             f.write(f"write psf card name {self.psf:s}\n")
             f.write(f"write coor crd card name {self.crd:s}\n")
@@ -282,6 +288,7 @@ class CHARMM:
                     count += len(site.molecule.mol)
                 # print("after relaxation  : ", self.structure.lattice, "iter: ", self.structure.iter)
                 self.structure.optimize_lattice()
+                self.structure.update_wyckoffs()
                 # print("after latticeopt  : ", self.structure.lattice, self.structure.check_distance()); import sys; sys.exit()
             except:
                 # molecular connectivity or lattice optimization

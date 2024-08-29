@@ -1386,11 +1386,22 @@ class pyxtal:
                 msg = "Cannot find the standard setting"
                 raise RuntimeError(msg)
 
+    def update_wyckoffs(self):
+        """
+        rescale the coordinates in the wyckoff site
+        """
+
+        sites = self.mol_sites if self.molecular else self.atom_sites
+
+        for site in sites:
+            site.update()
+
     def get_std_representation(self, trans):
         """
         Perform cell transformation so that the symmetry operations
         follow standard space group notation
         """
+        pass
 
     def get_1D_representation(self, standard=False):
         """
