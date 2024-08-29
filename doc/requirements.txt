@@ -8,3 +8,4 @@ importlib_metadata>=1.4
 ase>=3.18.0
 sphinx_rtd_theme
 pyocse>=0.1.1
+toml
