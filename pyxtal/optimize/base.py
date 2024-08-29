@@ -19,7 +19,6 @@ import numpy as np
 from pymatgen.analysis.structure_matcher import StructureMatcher
 from numpy.random import Generator
 
-from pyocse.parameters import ForceFieldParameters, compute_r2, get_lmp_efs
 from pyxtal.molecule import find_rotor_from_smile, pyxtal_molecule
 from pyxtal.representation import representation
 from pyxtal.util import new_struc
@@ -159,6 +158,8 @@ class GlobalOptimize:
             self.parameters = None
             self.ff_opt = False
         else:
+            from pyocse.parameters import ForceFieldParameters
+
             self.ff_parameters = ff_parameters
             self.reference_file = reference_file
             self.parameters = ForceFieldParameters(
@@ -367,6 +368,7 @@ class GlobalOptimize:
             FMSE (float): the cutoff Force MSE value
         """
         from pyocse.utils import reset_lammps_cell
+        from pyocse.parameters import compute_r2, get_lmp_efs
 
         numMols = [xtal.numMols for xtal in xtals]
         xtals = [xtal.to_ase(resort=False) for xtal in xtals]
