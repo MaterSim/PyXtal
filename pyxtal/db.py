@@ -824,12 +824,9 @@ class database_topology:
 
     def clean_structures_pmg(self, ids=(None, None), min_id=None, dtol=5e-2, criteria=None):
         """
-        Clean up the db by removing the duplicate structures
-        Here we check the follow criteria
-            - same density
-            - pymatgen check
-
-        criteria should look like the following,
+        Clean up the db by removing the duplicate structures.
+        Here we check the follow criteria same density and pymatgen matcher.
+        The criteria should look like the following,
         {'CN': {'C': 3},
          'cutoff': 1.8,
          'MAX_energy': -8.00,
