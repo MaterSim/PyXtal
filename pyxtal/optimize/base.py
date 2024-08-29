@@ -9,7 +9,6 @@ A base class for global optimization including
 from __future__ import annotations
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, TimeoutError
-import psutil
 
 import logging
 import os
@@ -86,7 +85,7 @@ class GlobalOptimize:
         factor: float = 1.1,
         eng_cutoff: float = 5.0,
         E_max: float = 1e10,
-        random_state = None,
+        random_state=None,
         max_time: float | None = None,
         matcher: StructureMatcher | None = None,
         early_quit: bool = True,
@@ -105,10 +104,12 @@ class GlobalOptimize:
         self.molecules = molecules
         self.block = block
         self.num_block = num_block
-        self.composition = [1] * len(self.smiles) if composition is None else composition
+        self.composition = [
+            1] * len(self.smiles) if composition is None else composition
         self.N_torsion = 0
         for smi, comp in zip(self.smiles, self.composition):
-            self.N_torsion += len(find_rotor_from_smile(smi)) * int(max([comp, 1]))
+            self.N_torsion += len(find_rotor_from_smile(smi)
+                                  ) * int(max([comp, 1]))
 
         # Crystal information
         self.sg = [sg] if isinstance(sg, (int, np.int64)) else sg
@@ -138,7 +139,8 @@ class GlobalOptimize:
         self.randomizer = randomizer
         self.optimizer = optimizer
         self.check_stable = check_stable
-        if not self.opt_lat: self.check_stable = False
+        if not self.opt_lat:
+            self.check_stable = False
         # setup timeout for each optimization call
         if max_time is None:
             if not self.skip_ani:
@@ -159,7 +161,8 @@ class GlobalOptimize:
         else:
             self.ff_parameters = ff_parameters
             self.reference_file = reference_file
-            self.parameters = ForceFieldParameters(self.smiles, style=ff_style, f_coef=1.0, s_coef=1.0, ncpu=self.ncpu)
+            self.parameters = ForceFieldParameters(
+                self.smiles, style=ff_style, f_coef=1.0, s_coef=1.0, ncpu=self.ncpu)
 
             # Preload two set for FF parameters 1 for opt and 2 for refinement
             if isinstance(self.ff_parameters, list):
@@ -167,26 +170,31 @@ class GlobalOptimize:
                 for para_file in self.ff_parameters:
                     if not os.path.exists(para_file):
                         raise RuntimeError("File not found", para_file)
-                params0, dic = self.parameters.load_parameters(self.ff_parameters[0])
+                params0, dic = self.parameters.load_parameters(
+                    self.ff_parameters[0])
                 if "ff_style" in dic:
                     assert dic["ff_style"] == self.ff_style
                 # print(params0)
-                params1, dic = self.parameters.load_parameters(self.ff_parameters[1])
+                params1, dic = self.parameters.load_parameters(
+                    self.ff_parameters[1])
                 if "ff_style" in dic:
                     assert dic["ff_style"] == self.ff_style
                 # print(params1)
                 self.prepare_chm_info(params0, params1)
             else:
                 if os.path.exists(self.ff_parameters):
-                    print("Preload the existing FF parameters from", self.ff_parameters)
-                    params0, _ = self.parameters.load_parameters(self.ff_parameters)
+                    print("Preload the existing FF parameters from",
+                          self.ff_parameters)
+                    params0, _ = self.parameters.load_parameters(
+                        self.ff_parameters)
                 else:
                     print(
                         "No FF parameter file exists, using the default setting",
                         ff_style,
                     )
                     params0 = self.parameters.params_init.copy()
-                    self.parameters.export_parameters(self.workdir + "/" + self.ff_parameters, params0)
+                    self.parameters.export_parameters(
+                        self.workdir + "/" + self.ff_parameters, params0)
 
                 self.prepare_chm_info(params0, suffix='pyxtal')
 
@@ -198,7 +206,7 @@ class GlobalOptimize:
 
         # I/O stuff
         self.early_quit = early_quit
-        self.N_min_matches = 10 # The min_num_matches for early termination
+        self.N_min_matches = 10  # The min_num_matches for early termination
         self.E_max = E_max
         self.tag = tag
         self.suffix = f"{self.workdir:s}/{self.name:s}-{self.ff_style:s}"
@@ -206,13 +214,15 @@ class GlobalOptimize:
             self.cif = self.suffix + '.cif'
         else:
             self.cif = self.suffix + cif
-        with open(self.cif, "w") as f: f.writelines(str(self))
+        with open(self.cif, "w") as f:
+            f.writelines(str(self))
         self.matched_cif = self.suffix + "-matched.cif"
         # print(self)
 
         # Setup logger
         logging.getLogger().handlers.clear()
-        logging.basicConfig(format="%(asctime)s| %(message)s", filename=self.log_file, level=logging.INFO)
+        logging.basicConfig(format="%(asctime)s| %(message)s",
+                            filename=self.log_file, level=logging.INFO)
         self.logging = logging
 
         # Some neccessary trackers
@@ -220,7 +230,6 @@ class GlobalOptimize:
         self.best_reps = []
         self.reps = []
         self.engs = []
-
 
     def __str__(self):
         s = "\n-------Global Crystal Structure Prediction------"
@@ -297,7 +306,6 @@ class GlobalOptimize:
                     f.writelines(xtal.to_file(header=label))
                     self.matches.append((gen, i, xtal, e, match, tag))
 
-
     def success_count(self, gen, xtals, matches, tags, ref_pmg):
         """
         To wrap up the matched results and count success rate.
@@ -365,12 +373,15 @@ class GlobalOptimize:
 
         gen = self.generation
         # Initialize ff parameters and references
-        params_opt, err_dict = self.parameters.load_parameters(self.ff_parameters)
+        params_opt, err_dict = self.parameters.load_parameters(
+            self.ff_parameters)
         if os.path.exists(self.reference_file):
             ref_dics = self.parameters.load_references(self.reference_file)
             if self.ref_criteria is not None:
-                ref_dics = self.parameters.clean_ref_dics(ref_dics, self.ref_criteria)
-                ref_dics = self.parameters.cut_references_by_error(ref_dics, params_opt, dE=dE, FMSE=FMSE)
+                ref_dics = self.parameters.clean_ref_dics(
+                    ref_dics, self.ref_criteria)
+                ref_dics = self.parameters.cut_references_by_error(
+                    ref_dics, params_opt, dE=dE, FMSE=FMSE)
             # self.parameters.generate_report(ref_dics, params_opt)
         else:
             ref_dics = []
@@ -380,14 +391,17 @@ class GlobalOptimize:
         t0 = time()
         if len(ref_dics) > 100:  # no fit if ref_dics is large
             # Here we find the lowest engs and select only low-E struc
-            ref_engs = [ref_dic["energy"] / ref_dic["replicate"] for ref_dic in ref_dics]
+            ref_engs = [ref_dic["energy"] / ref_dic["replicate"]
+                        for ref_dic in ref_dics]
             ref_e2 = np.array(ref_engs).min()
             print("Min Reference Energy", ref_e2)
 
             if len(err_dict) == 0:
                 # update the offset if necessary
-                _, params_opt = self.parameters.optimize_offset(ref_dics, params_opt)
-                results = self.parameters.evaluate_multi_references(ref_dics, params_opt, 1000, 1000)
+                _, params_opt = self.parameters.optimize_offset(
+                    ref_dics, params_opt)
+                results = self.parameters.evaluate_multi_references(
+                    ref_dics, params_opt, 1000, 1000)
                 (ff_values, ref_values, rmse_values, r2_values) = results
                 err_dict = {"rmse_values": rmse_values}
 
@@ -400,11 +414,14 @@ class GlobalOptimize:
             rf_engs, rf_fors, rf_strs = [], [], []
             for numMol, xtal in zip(numMols, xtals):
                 struc = reset_lammps_cell(xtal)
-                lmp_struc, lmp_dat = self.parameters.get_lmp_input_from_structure(struc, numMol, set_template=False)
-                replicate = len(lmp_struc.atoms) / self.parameters.natoms_per_unit
+                lmp_struc, lmp_dat = self.parameters.get_lmp_input_from_structure(
+                    struc, numMol, set_template=False)
+                replicate = len(lmp_struc.atoms) / \
+                    self.parameters.natoms_per_unit
 
                 try:
-                    e1, f1, s1 = get_lmp_efs(lmp_struc, lmp_in, lmp_dat)  # ; print('Debug KONTIQ', struc, e1)
+                    # ; print('Debug KONTIQ', struc, e1)
+                    e1, f1, s1 = get_lmp_efs(lmp_struc, lmp_in, lmp_dat)
                 except:
                     e1 = self.E_max
 
@@ -420,7 +437,8 @@ class GlobalOptimize:
                         s2 = struc.get_stress()
                         struc.set_calculator()
                         e_err = abs(e1 - e2 + params_opt[-1])
-                        f_err = np.sqrt(((f1.flatten() - f2.flatten()) ** 2).mean())
+                        f_err = np.sqrt(
+                            ((f1.flatten() - f2.flatten()) ** 2).mean())
                         s_err = np.sqrt(((s1 - s2) ** 2).mean())
                         e_check = e_err < 0.5 * rmse_values[0]
                         f_check = f_err < 1.0 * rmse_values[1]
@@ -460,7 +478,8 @@ class GlobalOptimize:
                 raise ValueError("The program needs to stop here")
 
             if self.ref_criteria is not None:
-                _ref_dics = self.parameters.clean_ref_dics(_ref_dics, self.ref_criteria)
+                _ref_dics = self.parameters.clean_ref_dics(
+                    _ref_dics, self.ref_criteria)
 
             # print("Added {:d} new reference structures into training".format(len(_ref_dics)))
             print("FF performances")
@@ -486,7 +505,8 @@ class GlobalOptimize:
             N_selected = min([N_min, self.ncpu])
             print("Create the reference data by augmentation", N_selected)
             if len(xtals) >= N_selected:
-                ids = self.random_state.choice(list(range(len(xtals))), N_selected)
+                ids = self.random_state.choice(
+                    list(range(len(xtals))), N_selected)
                 xtals = [xtals[id] for id in ids]
                 numMols = [numMols[id] for id in ids]
 
@@ -499,12 +519,14 @@ class GlobalOptimize:
                 logfile="ase.log",
             )
             if len(ref_dics) == 0:
-                _, params_opt = self.parameters.optimize_offset(_ref_dics, params_opt)
+                _, params_opt = self.parameters.optimize_offset(
+                    _ref_dics, params_opt)
                 self.parameters.generate_report(ref_dics, params_opt)
                 # import sys; sys.exit()
 
         ref_dics.extend(_ref_dics)
-        print(f"Add {len(_ref_dics):d} references in {(time() - t0) / 60:.2f} min")
+        print(
+            f"Add {len(_ref_dics):d} references in {(time() - t0) / 60:.2f} min")
         self.parameters.export_references(ref_dics, self.reference_file)
 
         # Optimize ff parameters if we get enough number of configurations
@@ -513,7 +535,8 @@ class GlobalOptimize:
             print("Do not update ff, the current number of configurations is", N_added)
         else:
             t0 = time()
-            _, params_opt = self.parameters.optimize_offset(ref_dics, params_opt)
+            _, params_opt = self.parameters.optimize_offset(
+                ref_dics, params_opt)
 
             for data in [
                 (["bond", "angle", "proper"], 50),
@@ -523,19 +546,24 @@ class GlobalOptimize:
                 (terms, steps) = data
 
                 # Actual optimization
-                opt_dict = self.parameters.get_opt_dict(terms, None, params_opt)
+                opt_dict = self.parameters.get_opt_dict(
+                    terms, None, params_opt)
                 x, fun, values, it = self.parameters.optimize_global(
                     ref_dics, opt_dict, params_opt, obj="R2", t0=0.1, steps=25
                 )
 
-                params_opt = self.parameters.set_sub_parameters(values, terms, params_opt)
-                opt_dict = self.parameters.get_opt_dict(terms, None, params_opt)
+                params_opt = self.parameters.set_sub_parameters(
+                    values, terms, params_opt)
+                opt_dict = self.parameters.get_opt_dict(
+                    terms, None, params_opt)
                 x, fun, values, it = self.parameters.optimize_local(
                     ref_dics, opt_dict, params_opt, obj="R2", steps=steps
                 )
 
-                params_opt = self.parameters.set_sub_parameters(values, terms, params_opt)
-                _, params_opt = self.parameters.optimize_offset(ref_dics, params_opt)
+                params_opt = self.parameters.set_sub_parameters(
+                    values, terms, params_opt)
+                _, params_opt = self.parameters.optimize_offset(
+                    ref_dics, params_opt)
 
                 # To add Early termination
             t = (time() - t0) / 60
@@ -552,13 +580,15 @@ class GlobalOptimize:
             gen_prefix = "gen_" + str(gen)
 
         performance_fig = f"FF_performance_{gen_prefix:s}.png"
-        errs = self.parameters.plot_ff_results(performance_fig, ref_dics, [params_opt], labels=gen_prefix)
+        errs = self.parameters.plot_ff_results(performance_fig, ref_dics, [
+                                               params_opt], labels=gen_prefix)
 
         param_fig = f"parameters_{gen_prefix:s}.png"
         self.parameters.plot_ff_parameters(param_fig, [params_opt])
 
         # Save parameters
-        self.parameters.export_parameters(self.ff_parameters, params_opt, errs[0])
+        self.parameters.export_parameters(
+            self.ff_parameters, params_opt, errs[0])
         self.prepare_chm_info(params_opt)
         # self.parameters.generate_report(ref_dics, params_opt)
 
@@ -615,9 +645,9 @@ class GlobalOptimize:
         ranks = []
         xtals = []
         if pxrd:
-            matches = sorted(self.matches, key=lambda x: -x[4]) # similarity
+            matches = sorted(self.matches, key=lambda x: -x[4])  # similarity
         else:
-            matches = sorted(self.matches, key=lambda x: x[4]) # rmsd
+            matches = sorted(self.matches, key=lambda x: x[4])  # rmsd
 
         for match_data in matches:
             d1, match = None, None
@@ -648,7 +678,8 @@ class GlobalOptimize:
                     ranks.append(rank)
 
                 print(strs)
-        if len(ranks) == 0: ranks = [0]
+        if len(ranks) == 0:
+            ranks = [0]
         return min(ranks)
 
     def _print_match(self, xtal, ref_pmg):
@@ -691,7 +722,8 @@ class GlobalOptimize:
                 count = 0
                 for j in range(1, len(rep)):
                     if len(rep[j]) > N_id:  # for Cl-
-                        tor1[count : count + len(rep[j]) - N_id - 1] = rep[j][N_id:-1]
+                        tor1[count: count +
+                             len(rep[j]) - N_id - 1] = rep[j][N_id:-1]
                         count += len(rep[j]) - N_id
 
                 for ref in self.best_reps:
@@ -708,7 +740,8 @@ class GlobalOptimize:
                         count = 0
                         for j in range(1, len(rep)):
                             if len(rep[j]) > N_id:  # for Cl-
-                                tor2[count : count + len(ref[j]) - N_id - 1] = ref[j][N_id:-1]
+                                tor2[count: count +
+                                     len(ref[j]) - N_id - 1] = ref[j][N_id:-1]
                                 count += len(ref[j]) - N_id
 
                         diff2 = np.sum((tor1 - tor2) ** 2) / w2**2
@@ -756,7 +789,8 @@ class GlobalOptimize:
                 new = True
                 for ref in new_reps:
                     eng2 = ref[-1]
-                    pmg_s2 = representation(rep[:-1], self.smiles).to_pyxtal().to_pymatgen()
+                    pmg_s2 = representation(
+                        rep[:-1], self.smiles).to_pyxtal().to_pymatgen()
                     pmg_s2.remove_species("H")
                     if abs(eng1 - eng2) < 1e-2 and sm.StructureMatcher().fit(pmg_s1, pmg_s2):
                         new = False
@@ -810,13 +844,14 @@ class GlobalOptimize:
                     mutated = False
                 else:
                     mutated = xtal is not None
-                #print("BBBBBBBBBBBBBBBBBBBBBB", xtal)
+                # print("BBBBBBBBBBBBBBBBBBBBBB", xtal)
                 my_args = [xtal, pop, mutated, job_tag, *args]
                 gen_results[pop] = optimizer_single(*tuple(my_args))
-                #print("DDDDDDDDDDDDDDDDDDDDDd", gen_results[pop])
-            #if gen == 1: import sys; sys.exit()
+                # print("DDDDDDDDDDDDDDDDDDDDDd", gen_results[pop])
+            # if gen == 1: import sys; sys.exit()
 
         else:
+            import psutil
             # parallel process
             N_cycle = int(np.ceil(self.N_pop / self.ncpu))
             args_lists = []
@@ -825,7 +860,8 @@ class GlobalOptimize:
                 id2 = min([id1 + N_cycle, len(current_xtals)])
                 # os.makedirs(folder, exist_ok=True)
                 ids = range(id1, id2)
-                job_tags = [self.tag + "-g" + str(gen) + "-p" + str(id) for id in ids]
+                job_tags = [self.tag + "-g" +
+                            str(gen) + "-p" + str(id) for id in ids]
                 xtals = current_xtals[id1:id2]
                 if qrs:
                     mutates = [False for xtal in xtals]
@@ -842,14 +878,17 @@ class GlobalOptimize:
                             (id, xtal, match) = res
                             gen_results[id] = (xtal, match)
                     except TimeoutError:
-                        self.logging.info("ERROR: Opt timed out after %d seconds", timeout)
+                        self.logging.info(
+                            "ERROR: Opt timed out after %d seconds", timeout)
                     except Exception as e:
-                        self.logging.info("ERROR: An unexpected error occurred: %s", str(e))
+                        self.logging.info(
+                            "ERROR: An unexpected error occurred: %s", str(e))
                 return gen_results
 
             def run_with_global_timeout(ncpu, args_lists, timeout, return_dict):
                 with ProcessPoolExecutor(max_workers=ncpu) as executor:
-                    results = [executor.submit(optimizer_par, *p) for p in args_lists]
+                    results = [executor.submit(optimizer_par, *p)
+                               for p in args_lists]
                     gen_results = process_with_timeout(results, timeout)
                     return_dict["gen_results"] = gen_results
 
@@ -860,26 +899,32 @@ class GlobalOptimize:
             manager = multiprocessing.Manager()
             return_dict = manager.dict()
             p = multiprocessing.Process(
-                target=run_with_global_timeout, args=(self.ncpu, args_lists, global_timeout, return_dict)
+                target=run_with_global_timeout, args=(
+                    self.ncpu, args_lists, global_timeout, return_dict)
             )
             p.start()
             p.join(global_timeout)
 
             if p.is_alive():
-                self.logging.info("ERROR: Global execution timed out after %d seconds", global_timeout)
+                self.logging.info(
+                    "ERROR: Global execution timed out after %d seconds", global_timeout)
                 # p.terminate()
                 # Ensure all child processes are terminated
-                child_processes = psutil.Process(p.pid).children(recursive=True)
-                self.logging.info("Checking child process total: %d", len(child_processes))
+                child_processes = psutil.Process(
+                    p.pid).children(recursive=True)
+                self.logging.info(
+                    "Checking child process total: %d", len(child_processes))
                 for proc in child_processes:
                     # self.logging.info("Checking child process ID: %d", pid)
                     try:
                         # proc = psutil.Process(pid)
                         if proc.status() == "running":  # is_running():
                             proc.terminate()
-                            self.logging.info("Terminate abnormal child process ID: %d", proc.pid)
+                            self.logging.info(
+                                "Terminate abnormal child process ID: %d", proc.pid)
                     except psutil.NoSuchProcess:
-                        self.logging.info("ERROR: PID %d does not exist", proc.pid)
+                        self.logging.info(
+                            "ERROR: PID %d does not exist", proc.pid)
                 p.join()
 
             gen_results = return_dict.get("gen_results", {})
@@ -887,10 +932,10 @@ class GlobalOptimize:
 
     def gen_summary(self, gen, t0, gen_results, xtals, tags, ref_pxrd=None):
 
-        matches = [False] * self.N_pop if ref_pxrd is None else [0.0] * self.N_pop
+        matches = [False] * \
+            self.N_pop if ref_pxrd is None else [0.0] * self.N_pop
         eng0s = [self.E_max] * self.N_pop
         reps = [None] * self.N_pop
-
 
         for id, res in enumerate(gen_results):
             (xtal, match) = res
@@ -934,7 +979,7 @@ class GlobalOptimize:
             if self.new_struc(xtal, ref_xtals):
                 ref_xtals.append(xtal)
                 self.best_reps.append(rep.x)
-                #d_rep = representation(rep, self.smiles)
+                # d_rep = representation(rep, self.smiles)
                 tag = f"{tag:8s}"
                 try:
                     strs = rep.to_string(None, eng, tag)
@@ -954,7 +999,6 @@ class GlobalOptimize:
         print(gen_out)
 
         return xtals, matches, engs
-
 
     def plot_results(self, pxrd=False, save=True, figsize=(8.0, 5.0), figname=None, ylim=None):
         """
@@ -982,7 +1026,8 @@ class GlobalOptimize:
         for i in range(self.N_gen):
             for j in range(self.N_pop):
                 if pxrd:
-                    data1.append([i, j, self.stats[i, j, 0], self.stats[i, j, 1]])
+                    data1.append(
+                        [i, j, self.stats[i, j, 0], self.stats[i, j, 1]])
                 else:
                     data1.append([i, j, self.stats[i, j, 0]])
 
@@ -994,19 +1039,20 @@ class GlobalOptimize:
                 data2.append([match[0], match[1], match[3]])
 
         fig = plt.figure(figsize=figsize)
-        plt.ylabel("Lattice Energy (kcal)")#, weight='bold')
+        plt.ylabel("Lattice Energy (kcal)")  # , weight='bold')
         data1 = np.array(data1)
         if pxrd:
             # (similarity, eng, gen_id)
             x1, y1, z1 = data1[:, 3], data1[:, 2], data1[:, 0]
-            plt.xlabel("XRD Similarity")#, weight='bold')
+            plt.xlabel("XRD Similarity")  # , weight='bold')
         else:
             x1, y1, z1 = data1[:, 1], data1[:, 2], data1[:, 0]
-            plt.xlabel("Population ID")#, weight='bold')
+            plt.xlabel("Population ID")  # , weight='bold')
         # Plot of all samples (PopID, Engs/Similarity)
-        scatter = plt.scatter(x1, y1, s=10, c=z1, cmap='winter', alpha=0.5, label='Samples')
+        scatter = plt.scatter(x1, y1, s=10, c=z1,
+                              cmap='winter', alpha=0.5, label='Samples')
         cbar = plt.colorbar(scatter)
-        cbar.set_label('Generation ID')#, weight='bold')
+        cbar.set_label('Generation ID')  # , weight='bold')
         if ylim is None:
             y1 = np.array(y1)
             ymin = y1.min() - 0.25
@@ -1023,9 +1069,9 @@ class GlobalOptimize:
                 x2, y2, z2 = data2[:, 1], data2[:, 2], data2[:, 0]
             plt.scatter(x2, y2, s=10, c='red', marker='x', label='Matches')
 
-        plt.legend(loc=1)#, prop={'weight': 'bold'})
+        plt.legend(loc=1)  # , prop={'weight': 'bold'})
         plt.ylim(ylim)
-        plt.title(f"{self.name:s}-{self.ff_style:s}")#, weight='bold')
+        plt.title(f"{self.name:s}-{self.ff_style:s}")  # , weight='bold')
         plt.tight_layout()
         plt.savefig(figname)
 
@@ -1040,6 +1086,7 @@ class GlobalOptimize:
             if len(data2) > 0:
                 match_txt = self.suffix + "-match.txt"
                 np.savetxt(match_txt, data2, header=header)
+
 
 if __name__ == "__main__":
     print("test")
