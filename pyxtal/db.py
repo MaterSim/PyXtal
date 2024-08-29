@@ -1343,6 +1343,7 @@ class database_topology:
                 status = xtal.check_validity(criteria, True) if criteria is not None else True
             except:
                 status = False
+                label = "Error"
 
             if status:
                 try:
@@ -1352,10 +1353,9 @@ class database_topology:
                         _l, _sp, _cn = s.wp.get_label(), s.specie, s.coordination
                         label += f"-{_l:s}-{_sp:s}{_cn:d}"
                     label += f"-S{sim:.3f}"
+                    if len(label) > 40: label = label[:40]
                 except:
                     print("Problem in setting site coordination")
-                if len(label) > 40:
-                    label = label[:40]
 
                 if den is not None:
                     label += f"-D{abs(den):.2f}"

@@ -70,6 +70,7 @@ setup(
         "vasprun-xml>=1.0.4",  # prevent the use of numpy2
         "importlib_metadata>=1.4",
         "typing-extensions>=4.12",
+        "pyocse>=0.1.1",
     ],
     extras_require={
         "visualization": ["py3Dmol>=0.8.0"],
