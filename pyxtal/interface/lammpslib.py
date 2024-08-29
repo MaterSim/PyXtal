@@ -9,10 +9,7 @@ from ase.calculators.calculator import Calculator
 from ase.constraints import UnitCellFilter, FixSymmetry
 from ase.optimize import LBFGS
 from ase.optimize.fire import FIRE
-try:
-    from lammps import lammps
-except:
-    raise NotImplementedError('PLZ INSTALL lammps first')
+from lammps import lammps
 
 
 #
