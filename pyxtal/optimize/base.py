@@ -1,11 +1,10 @@
 """
-A base class for global optimization including
+A base class for global optimization including:
+
 - WFS
 - DFS
 - QRS
-- BasinHopping
 """
-
 from __future__ import annotations
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, TimeoutError
@@ -26,6 +25,16 @@ from pyxtal.optimize.common import optimizer, randomizer
 from pyxtal.optimize.common import optimizer_par, optimizer_single
 from pyxtal.lattice import Lattice
 from pyxtal.symmetry import Group
+
+def run_optimizer_single_with_timeout(args, timeout=30.0):
+    """Run optimizer_single with a timeout."""
+    with multiprocessing.Pool(processes=1) as pool:
+        result = pool.apply_async(optimizer_single, args)
+        try:
+            return result.get(timeout=timeout)
+        except multiprocessing.TimeoutError:
+            print(f"Timeout: Optimization took longer than {timeout} seconds.")
+            return None, False  # Return a default value indicating a timeout
 
 
 class GlobalOptimize:
@@ -89,7 +98,20 @@ class GlobalOptimize:
         matcher: StructureMatcher | None = None,
         early_quit: bool = True,
         check_stable: bool = False,
+        use_mpi: bool = False,
     ):
+
+        self.ncpu = N_cpu
+        self.use_mpi = use_mpi
+        if self.use_mpi:
+            from mpi4py import MPI
+            self.comm = MPI.COMM_WORLD
+            self.rank = self.comm.Get_rank()
+            self.size = self.comm.Get_size()
+        else:
+            self.rank = 0
+            self.size = self.ncpu
+
         # General information
         if isinstance(random_state, Generator):
             self.random_state = random_state.spawn(1)[0]
@@ -130,13 +152,11 @@ class GlobalOptimize:
         self.eng_cutoff = eng_cutoff
 
         # Generation and Optimization
-        os.makedirs(workdir, exist_ok=True)
         self.workdir = workdir
         self.log_file = self.workdir + "/loginfo"
-        self.ncpu = N_cpu
         self.skip_ani = skip_ani
-        self.randomizer = randomizer
-        self.optimizer = optimizer
+        #self.randomizer = randomizer
+        #self.optimizer = optimizer
         self.check_stable = check_stable
         if not self.opt_lat:
             self.check_stable = False
@@ -158,47 +178,58 @@ class GlobalOptimize:
             self.parameters = None
             self.ff_opt = False
         else:
-            from pyocse.parameters import ForceFieldParameters
-
-            self.ff_parameters = ff_parameters
-            self.reference_file = reference_file
-            self.parameters = ForceFieldParameters(
+            # Only call ForceFieldParameters once
+            # No need to broadcast self.parameters?
+            # Just broadcast atom_info should be fine
+            #parameters = None
+            atom_info = None
+            if self.rank == 0:
+                self.ff_parameters = ff_parameters
+                self.reference_file = reference_file
+                os.makedirs(self.workdir, exist_ok=True)
+                from pyocse.parameters import ForceFieldParameters
+                self.parameters = ForceFieldParameters(
                 self.smiles, style=ff_style, f_coef=1.0, s_coef=1.0, ncpu=self.ncpu)
 
-            # Preload two set for FF parameters 1 for opt and 2 for refinement
-            if isinstance(self.ff_parameters, list):
-                assert len(self.ff_parameters) == 2
-                for para_file in self.ff_parameters:
-                    if not os.path.exists(para_file):
-                        raise RuntimeError("File not found", para_file)
-                params0, dic = self.parameters.load_parameters(
-                    self.ff_parameters[0])
-                if "ff_style" in dic:
-                    assert dic["ff_style"] == self.ff_style
-                # print(params0)
-                params1, dic = self.parameters.load_parameters(
-                    self.ff_parameters[1])
-                if "ff_style" in dic:
-                    assert dic["ff_style"] == self.ff_style
-                # print(params1)
-                self.prepare_chm_info(params0, params1)
-            else:
-                if os.path.exists(self.ff_parameters):
-                    print("Preload the existing FF parameters from",
-                          self.ff_parameters)
-                    params0, _ = self.parameters.load_parameters(
-                        self.ff_parameters)
+                # Preload two set for FF parameters 1 for opt and 2 for refinement
+                if isinstance(self.ff_parameters, list):
+                    assert len(self.ff_parameters) == 2
+                    for para_file in self.ff_parameters:
+                        if not os.path.exists(para_file):
+                            raise RuntimeError("File not found", para_file)
+                    params0, dic = self.parameters.load_parameters(
+                        self.ff_parameters[0])
+                    if "ff_style" in dic:
+                        assert dic["ff_style"] == self.ff_style
+                    # print(params0)
+                    params1, dic = self.parameters.load_parameters(
+                        self.ff_parameters[1])
+                    if "ff_style" in dic:
+                        assert dic["ff_style"] == self.ff_style
+                    # print(params1)
+                    atom_info = self._prepare_chm_info(params0, params1)
                 else:
-                    print(
-                        "No FF parameter file exists, using the default setting",
-                        ff_style,
-                    )
-                    params0 = self.parameters.params_init.copy()
-                    self.parameters.export_parameters(
-                        self.workdir + "/" + self.ff_parameters, params0)
+                    if os.path.exists(self.ff_parameters):
+                        self.print("Preload the existing FF parameters from",
+                                   self.ff_parameters)
+                        params0, _ = self.parameters.load_parameters(
+                            self.ff_parameters)
+                    else:
+                        self.print(
+                            "No FF parameter file exists, using the default setting",
+                            ff_style,
+                        )
+                        params0 = self.parameters.params_init.copy()
+                        self.parameters.export_parameters(
+                            self.workdir + "/" + self.ff_parameters, params0)
+                    atom_info = self._prepare_chm_info(params0, suffix='pyxtal')
 
-                self.prepare_chm_info(params0, suffix='pyxtal')
-
+            if self.use_mpi:
+                #self.parameters = self.comm.bcast(parameters, root=0)
+                self.atom_info = self.comm.bcast(atom_info, root=0)
+            else:
+                self.atom_info = atom_info
+                
         # Structure matcher
         if matcher is None:
             self.matcher = StructureMatcher(ltol=0.3, stol=0.3, angle_tol=5)
@@ -211,26 +242,33 @@ class GlobalOptimize:
         self.E_max = E_max
         self.tag = tag
         self.suffix = f"{self.workdir:s}/{self.name:s}-{self.ff_style:s}"
-        if cif is None:
-            self.cif = self.suffix + '.cif'
-        else:
-            self.cif = self.suffix + cif
-        with open(self.cif, "w") as f:
-            f.writelines(str(self))
-        self.matched_cif = self.suffix + "-matched.cif"
-        # print(self)
+        if self.rank == 0:
+            if cif is None:
+                self.cif = self.suffix + '.cif'
+            else:
+                self.cif = self.suffix + cif
 
-        # Setup logger
-        logging.getLogger().handlers.clear()
-        logging.basicConfig(format="%(asctime)s| %(message)s",
-                            filename=self.log_file, level=logging.INFO)
-        self.logging = logging
+            with open(self.cif, "w") as f:
+                f.writelines(str(self))
+            self.matched_cif = self.suffix + "-matched.cif"
+            # print(self)
 
-        # Some neccessary trackers
-        self.matches = []
-        self.best_reps = []
-        self.reps = []
-        self.engs = []
+            # Setup logger
+            logging.getLogger().handlers.clear()
+            logging.basicConfig(format="%(asctime)s| %(message)s",
+                                filename=self.log_file, level=logging.INFO)
+            self.logging = logging
+
+            # Some neccessary trackers
+            self.matches = []
+            self.best_reps = []
+            self.reps = []
+            self.engs = []
+
+    def print(self, *args, **kwargs):
+        """Utility method to print only from rank 0."""
+        if self.rank == 0:
+            print(*args, **kwargs)
 
     def __str__(self):
         s = "\n-------Global Crystal Structure Prediction------"
@@ -238,9 +276,10 @@ class GlobalOptimize:
         s += f"\nZprime    : {self.composition!s:s}"
         s += f"\nN_torsion : {self.N_torsion:d}"
         s += f"\nsg        : {self.sg!s:s}"
-        s += f"\nncpu      : {self.ncpu:d}"
+        s += f"\nncpu      : {self.size:d}"
         s += f"\ndiretory  : {self.workdir:s}"
-        s += f"\nopt_lat   : {self.opt_lat!s:s}\n"
+        s += f"\nopt_lat   : {self.opt_lat!s:s}"
+        s += f"\nusp_mpi   : {self.use_mpi!s:s}\n"
         if self.early_quit:
             s += f"Mode      : Production\n"
         else:
@@ -269,6 +308,34 @@ class GlobalOptimize:
     def new_struc(self, xtal, xtals):
         return new_struc(xtal, xtals)
 
+    def run(self, ref_pmg=None, ref_pxrd=None):
+        """
+        The main code to run Sampling
+
+        Args:
+            ref_pmg: reference pmg structure
+            ref_pxrd: reference pxrd profile in 2D array
+
+        Returns:
+            success_rate or None
+        """
+        t0 = time()
+
+        if ref_pmg is not None:
+            ref_pmg.remove_species("H")
+        self.ref_pmg = ref_pmg
+        self.ref_pxrd = ref_pxrd
+
+        if self.use_mpi:
+            results = self.run_mpi()
+        else:
+            results = self.run_serial()
+
+        t = (time() - t0)/60
+        self.print(f"{self.name:s} COMPLETED in {t:.1f} mins {self.N_struc:d} strucs.")
+
+        return results
+
     def select_xtals(self, ref_xtals, ids, N_max):
         """
         Select only unique structures
@@ -283,20 +350,19 @@ class GlobalOptimize:
         # xtals = [xtal.to_ase(resort=False) for xtal in xtals]
         return xtals
 
-    def count_pxrd_match(self, gen, xtals, matches, tags):
+    def count_pxrd_match(self, gen, xtals, matches):
         """
-        To wrap up the matched PXRD results
+        Wrap up the matched PXRD results
 
         Args:
             gen (int): current generation index
-            xtals (list): list of xtals
+            xtals: list of (xtal, tag) tuples
             matches (list): list of XRD matches
-            tags (list): 'random' or 'mutation'
 
         """
         for i, match in enumerate(matches):
             if match > 0.85:
-                xtal, tag = xtals[i], tags[i]
+                (xtal, tag) = xtals[i]
                 with open(self.matched_cif, "a+") as f:
                     e = xtal.energy / sum(xtal.numMols)
                     try:
@@ -307,25 +373,23 @@ class GlobalOptimize:
                     f.writelines(xtal.to_file(header=label))
                     self.matches.append((gen, i, xtal, e, match, tag))
 
-    def success_count(self, gen, xtals, matches, tags, ref_pmg):
+    def success_count(self, gen, xtals, matches):
         """
-        To wrap up the matched results and count success rate.
+        Wrap up the matched results and count success rate.
 
         Args:
             gen (int): current generation index
-            xtals (list): list of xtals
+            xtals: list of (xtal, tag) tuples
             matches (list): list of matches [True, False, ..]
-            tags (list): 'random' or 'mutation'
-            ref_pmg: reference pymatgen structure
 
         Return:
             success_rate
         """
         for i, match in enumerate(matches):
             if match:
-                xtal, tag = xtals[i], tags[i]
+                (xtal, tag) = xtals[i]
                 with open(self.matched_cif, "a+") as f:
-                    res = self._print_match(xtal, ref_pmg)
+                    res = self._print_match(xtal, self.ref_pmg)
                     e, d1, d2 = xtal.energy/sum(xtal.numMols), res[0], res[1]
                     try:
                         label = self.tag + "-g" + str(gen) + "-p" + str(i)
@@ -336,11 +400,15 @@ class GlobalOptimize:
                     self.matches.append((gen, i, xtal, e, d1, d2, tag))
 
         success_rate = len(self.matches) / self.N_struc * 100
+        gen_out = f"Success rate @ Gen {gen:3d}: {success_rate:7.4f}%"
+        self.logging.info(gen_out)
+        print(gen_out)
+
         return success_rate
 
     def early_termination(self, success_rate):
         """
-        Check if the calculation can be terminated early
+        Check if the calculation can be terminated early.
         """
         if success_rate > 0:
             if self.early_quit:
@@ -355,6 +423,23 @@ class GlobalOptimize:
                 self.logging.info(msg)
                 return True
         return False
+
+    def update_ff_paramters(self, xtals, engs, N_added):
+        """
+        Update the ff parameters
+
+        Args:
+            xtals: a list of pyxtals
+            engs: a list of energies
+            N_added (int): the number of structures that have been added
+        """
+
+        N_max = min([int(self.N_pop * 0.6), 50])
+        ids = np.argsort(engs)
+        _xtals = self.select_xtals(xtals, ids, N_max)
+        print("Select structures for FF optimization", len(_xtals))
+
+        return self.ff_optimization(_xtals, N_added)
 
     def ff_optimization(self, xtals, N_added, N_min=50, dE=2.5, FMSE=2.5):
         """
@@ -383,7 +468,7 @@ class GlobalOptimize:
                 ref_dics = self.parameters.clean_ref_dics(
                     ref_dics, self.ref_criteria)
                 ref_dics = self.parameters.cut_references_by_error(
-                    ref_dics, params_opt, dE=dE, FMSE=FMSE)
+                    ref_dics, params_opt, dE = dE, FMSE = FMSE)
             # self.parameters.generate_report(ref_dics, params_opt)
         else:
             ref_dics = []
@@ -417,9 +502,8 @@ class GlobalOptimize:
             for numMol, xtal in zip(numMols, xtals):
                 struc = reset_lammps_cell(xtal)
                 lmp_struc, lmp_dat = self.parameters.get_lmp_input_from_structure(
-                    struc, numMol, set_template=False)
-                replicate = len(lmp_struc.atoms) / \
-                    self.parameters.natoms_per_unit
+                    struc, numMol, set_template = False)
+                replicate= len(lmp_struc.atoms) / self.parameters.natoms_per_unit
 
                 try:
                     # ; print('Debug KONTIQ', struc, e1)
@@ -591,22 +675,23 @@ class GlobalOptimize:
         # Save parameters
         self.parameters.export_parameters(
             self.ff_parameters, params_opt, errs[0])
-        self.prepare_chm_info(params_opt)
+        self._prepare_chm_info(params_opt)
         # self.parameters.generate_report(ref_dics, params_opt)
 
         return N_added
 
-    def prepare_chm_info(self, params0, params1=None, folder="calc", suffix="pyxtal0"):
+    def _prepare_chm_info(self, params0, params1=None, folder="calc", suffix="pyxtal0"):
         """
-        prepar_chm_info with the updated params.
+        Prepar_chm_info with from the given params.
 
         Args:
             params0 (array or list): FF parameters array
             params1 (array or list): FF parameters array
+            folder (str): folder path
             suffix (str): suffix of the temporary file
 
         Returns:
-            update the self.atom_info for next calculations
+            atom_info
         """
         pwd = os.getcwd()
         os.chdir(self.workdir)
@@ -628,7 +713,7 @@ class GlobalOptimize:
         os.chdir(pwd)
 
         # Info
-        self.atom_info = ase_with_ff.get_atom_info()
+        return ase_with_ff.get_atom_info()
 
     def get_label(self, i):
         if i < 10:
@@ -638,55 +723,56 @@ class GlobalOptimize:
         else:
             folder = f"cpu0{i}"
         return folder
-
+	
     def print_matches(self, header=None, pxrd=False):
         """
         Formatted output for the matched structures with xtal rep and eng rank
         """
-        all_engs = np.sort(np.array(self.engs))
-        ranks = []
-        xtals = []
-        if pxrd:
-            matches = sorted(self.matches, key=lambda x: -x[4])  # similarity
-        else:
-            matches = sorted(self.matches, key=lambda x: x[4])  # rmsd
-
-        for match_data in matches:
-            d1, match = None, None
+        if self.rank == 0:
+            all_engs = np.sort(np.array(self.engs))
+            ranks = []
+            xtals = []
             if pxrd:
-                (_, id, xtal, e, match, tag) = match_data
-                add = self.new_struc(xtal, xtals)
-                if add:
-                    xtals.append(xtal)
+                matches = sorted(self.matches, key=lambda x: -x[4])  # similarity
             else:
-                (_, id, xtal, e, d1, d2, tag) = match_data
-                add = True
+                matches = sorted(self.matches, key=lambda x: x[4])  # rmsd
 
-            if add:
-                rep0 = xtal.get_1D_representation()
-                if header is not None:
-                    strs = header
+            for match_data in matches:
+                d1, match = None, None
+                if pxrd:
+                    (_, id, xtal, e, match, tag) = match_data
+                    add = self.new_struc(xtal, xtals)
+                    if add:
+                        xtals.append(xtal)
                 else:
-                    strs = ""
-                strs += rep0.to_string(eng=xtal.energy / sum(xtal.numMols))
-                if d1 is not None:
-                    strs += f"{d1:6.3f}{d2:6.3f} Match "
-                if match is not None:
-                    strs += f" {match:4.2f} "
+                    (_, id, xtal, e, d1, d2, tag) = match_data
+                    add = True
 
-                if e is not None:
-                    rank = len(all_engs[all_engs < (e - 1e-3)]) + 1
-                    strs += f"{rank:d}/{self.N_struc:d} {tag:s}"
-                    ranks.append(rank)
+                if add:
+                    rep0 = xtal.get_1D_representation()
+                    if header is not None:
+                        strs = header
+                    else:
+                        strs = ""
+                    strs += rep0.to_string(eng=xtal.energy / sum(xtal.numMols))
+                    if d1 is not None:
+                        strs += f"{d1:6.3f}{d2:6.3f} Match "
+                    if match is not None:
+                        strs += f" {match:4.2f} "
 
-                print(strs)
-        if len(ranks) == 0:
-            ranks = [0]
-        return min(ranks)
+                    if e is not None:
+                        rank = len(all_engs[all_engs < (e - 1e-3)]) + 1
+                        strs += f"{rank:d}/{self.N_struc:d} {tag:s}"
+                        ranks.append(rank)
+
+                    print(strs)
+            if len(ranks) == 0:
+                ranks = [0]
+            return min(ranks)
 
     def _print_match(self, xtal, ref_pmg):
         """
-        print the matched structure
+        Print the matched structure
 
         Args:
             rep: 1d rep
@@ -757,7 +843,7 @@ class GlobalOptimize:
 
     def check_ref(self, reps=None, reference=None, filename="pyxtal.cif"):
         """
-        check if ground state structure is found
+        Check if ground state structure is found.
 
         Args:
             reps: list of representations
@@ -811,13 +897,10 @@ class GlobalOptimize:
                         print(strs)
         return False
 
-    def local_optimization(self, gen, current_xtals, ref_pmg, ref_pxrd, qrs=False):
-        """
-        perform optimization for each structure in the current generation
-        """
+    def _get_local_optimization_args(self):
         args = [
-            self.randomizer,
-            self.optimizer,
+            randomizer,
+            optimizer,
             self.smiles,
             self.block,
             self.num_block,
@@ -829,47 +912,121 @@ class GlobalOptimize:
             self.torsions,
             self.molecules,
             self.sites,
-            ref_pmg,
+            self.ref_pmg,
             self.matcher,
-            ref_pxrd,
+            self.ref_pxrd,
             self.use_hall,
             self.skip_ani,
             self.check_stable,
         ]
+        return args
 
-        gen_results = [(None, None)] * len(current_xtals)
+    def local_optimization(self, gen, xtals, qrs=False):
+        """
+        Perform MPI optimization for each structure in each generation.
+
+        Args:
+            gen (int):
+            xtals : list of (xtal, tag) tuples
+            qrs (bool): Force mutation or not (related to QRS)
+        """
+        if self.use_mpi:
+            return self.local_optimization_mpi(gen, xtals, qrs)
+        else:
+            return self.local_optimization_serial(gen, xtals, qrs)
+
+    def local_optimization_mpi(self, gen, xtals, qrs=False):
+        """
+        Perform MPI optimization for each structure in each generation.
+
+        Args:
+            gen (int):
+            xtals : list of (xtal, tag) tuples
+            qrs (bool): Force mutation or not (related to QRS)
+        """
+        self.print("Local optimization enabled by MPI", self.size)
+        args = self._get_local_optimization_args()
+        args_lists = []
+        for i in range(self.N_pop):
+            job_tag = self.tag + "-g" + str(gen) + "-p" + str(i)
+            xtal = xtals[i][0]
+            if qrs:
+                mutate = False
+            else:
+                mutate = xtal is not None
+            my_args = [xtal, i, mutate, job_tag, *args]
+            args_lists.append(tuple(my_args))
+
+        # Distribute args_lists across available ranks (processes)
+        local_args = args_lists[self.rank::self.size]
+
+        # Run the optimizer in parallel using MPI
+        local_results = []
+        for args in local_args:
+            # print('rank', self.rank, 'id', args[1])
+            xtal, match = run_optimizer_single_with_timeout(args, timeout=60)
+            # (xtal, match) = optimizer_single(*args)
+            local_results.append((args[1], xtal, match))
+
+        # Gather all results at the root process
+        all_results = self.comm.gather(local_results, root=0)
+
+        # If root process, process the results
+        gen_results = None
+        if self.rank == 0:
+            gen_results = [(None, None)] * len(xtals)
+            for result_set in all_results:
+                for res in result_set:
+                    (id, xtal, match) = res
+                    gen_results[id] = (xtal, match)
+
+        # Broadcast
+        gen_results = self.comm.bcast(gen_results, root=0)
+
+        return gen_results
+
+    def local_optimization_serial(self, gen, xtals, qrs=False):
+        """
+        Perform optimization for each structure in each generation.
+
+        Args:
+            gen (int):
+            xtals : list of (xtal, tag) tuples
+            qrs (bool): Force mutation or not (related to QRS)
+        """
+        args = self._get_local_optimization_args()
+
+        gen_results = [(None, None)] * len(xtals)
         if self.ncpu == 1:
-            for pop in range(len(current_xtals)):
-                xtal = current_xtals[pop]
+            for pop in range(len(xtals)):
+                xtal = xtals[pop][0]
                 job_tag = self.tag + "-g" + str(gen) + "-p" + str(pop)
                 if qrs:
                     mutated = False
                 else:
                     mutated = xtal is not None
-                # print("BBBBBBBBBBBBBBBBBBBBBB", xtal)
                 my_args = [xtal, pop, mutated, job_tag, *args]
                 gen_results[pop] = optimizer_single(*tuple(my_args))
-                # print("DDDDDDDDDDDDDDDDDDDDDd", gen_results[pop])
             # if gen == 1: import sys; sys.exit()
 
         else:
             import psutil
-            # parallel process
+            print("Local optimization enabled by multi-threads", self.ncpu)
             N_cycle = int(np.ceil(self.N_pop / self.ncpu))
             args_lists = []
             for i in range(self.ncpu):
                 id1 = i * N_cycle
-                id2 = min([id1 + N_cycle, len(current_xtals)])
+                id2 = min([id1 + N_cycle, len(xtals)])
                 # os.makedirs(folder, exist_ok=True)
                 ids = range(id1, id2)
                 job_tags = [self.tag + "-g" +
                             str(gen) + "-p" + str(id) for id in ids]
-                xtals = current_xtals[id1:id2]
+                _xtals = [xtals[id][0] for id in range(id1, id2)]
                 if qrs:
-                    mutates = [False for xtal in xtals]
+                    mutates = [False for xtal in _xtals]
                 else:
-                    mutates = [xtal is not None for xtal in xtals]
-                my_args = [xtals, ids, mutates, job_tags, *args]
+                    mutates = [xtal is not None for xtal in _xtals]
+                my_args = [_xtals, ids, mutates, job_tags, *args]
                 args_lists.append(tuple(my_args))
 
             def process_with_timeout(results, timeout):
@@ -932,18 +1089,27 @@ class GlobalOptimize:
             gen_results = return_dict.get("gen_results", {})
         return gen_results
 
-    def gen_summary(self, gen, t0, gen_results, xtals, tags, ref_pxrd=None):
+    def gen_summary(self, gen, t0, gen_results, xtals):
+        """
+        Write the generic summary for each generation.
 
+        Args:
+            gen (int): current generation number
+            t0 (float): time stamp
+            gen_results: list of results
+            xtals: list of (xtal, tag) tuples
+        """
         matches = [False] * \
-            self.N_pop if ref_pxrd is None else [0.0] * self.N_pop
+            self.N_pop if self.ref_pxrd is None else [0.0] * self.N_pop
         eng0s = [self.E_max] * self.N_pop
         reps = [None] * self.N_pop
+        new_xtals = [(None, None)] * len(xtals)
 
         for id, res in enumerate(gen_results):
             (xtal, match) = res
 
             if xtal is not None:
-                xtals[id] = xtal
+                new_xtals[id] = (xtal, xtals[id][1])
                 eng0s[id] = xtal.energy / sum(xtal.numMols)
                 reps[id] = xtal.get_1D_representation()
                 matches[id] = match
@@ -959,6 +1125,8 @@ class GlobalOptimize:
                 self.stats[gen][id][0] = xtal.energy / sum(xtal.numMols)
                 self.stats[gen][id][1] = match
 
+        self.min_energy = np.min(np.array(self.engs))
+        self.N_struc = len(self.engs)
         strs = f"Generation {gen:d} finishes: {len(self.engs):d} strucs"
         print(strs)
         self.logging.info(strs)
@@ -967,7 +1135,7 @@ class GlobalOptimize:
 
         # Apply Gaussian
         reps_x = [rep.x if rep is not None else None for rep in reps]
-        if ref_pxrd is None:
+        if self.ref_pxrd is None:
             engs = self._apply_gaussian(reps_x, eng0s)
         else:
             engs = self._apply_gaussian(reps_x, -1 * np.array(matches))
@@ -977,7 +1145,8 @@ class GlobalOptimize:
         ref_xtals = []
         ids = np.argsort(engs)
         for id in ids:
-            xtal, rep, eng, tag = xtals[id], reps[id], eng0s[id], tags[id]
+            (xtal, tag) = new_xtals[id]
+            rep, eng = reps[id], eng0s[id]
             if self.new_struc(xtal, ref_xtals):
                 ref_xtals.append(xtal)
                 self.best_reps.append(rep.x)
@@ -986,7 +1155,7 @@ class GlobalOptimize:
                 try:
                     strs = rep.to_string(None, eng, tag)
                     out = f"{gen:3d} {strs:s} Top"
-                    if ref_pxrd is not None:
+                    if self.ref_pxrd is not None:
                         out += f" {matches[id]:6.3f}"
                     print(out)
                 except:
@@ -1000,7 +1169,7 @@ class GlobalOptimize:
         gen_out += f"{t1 - t0:5.1f}[Calc] {t2 - t1:5.1f}[Proc]"
         print(gen_out)
 
-        return xtals, matches, engs
+        return new_xtals, matches, engs
 
     def plot_results(self, pxrd=False, save=True, figsize=(8.0, 5.0), figname=None, ylim=None):
         """
@@ -1009,85 +1178,86 @@ class GlobalOptimize:
         Args:
             pxrd (bool): whether or not in pxrd mode
             save (bool): whether or not save the data
-            figsize:
-            figname:
-            ylim:
+            figsize: e.g. (8.5, 5.0)
+            figname (str):
+            ylim: e.g. (0, 1.0)
         """
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-        sns.set_theme()
-        sns.set_context("talk", font_scale=0.9)
+        if self.rank == 0:
+            import matplotlib.pyplot as plt
+            import seaborn as sns
+            sns.set_theme()
+            sns.set_context("talk", font_scale=0.9)
 
-        if figname is None:
-            figname = self.suffix + "-results.pdf"
+            if figname is None:
+                figname = self.suffix + "-results.pdf"
 
-        data1 = []
-        data2 = []
-        # Extract (pop_id, eng, gen_id) when pxrd is False
-        # Extract (pop_id, eng, sim) when pxrd is True
-        for i in range(self.N_gen):
-            for j in range(self.N_pop):
+            data1 = []
+            data2 = []
+            # Extract (pop_id, eng, gen_id) when pxrd is False
+            # Extract (pop_id, eng, sim) when pxrd is True
+            for i in range(self.N_gen):
+                for j in range(self.N_pop):
+                    if pxrd:
+                        data1.append(
+                            [i, j, self.stats[i, j, 0], self.stats[i, j, 1]])
+                    else:
+                        data1.append([i, j, self.stats[i, j, 0]])
+
+            # self.matches.append((gen, i, xtal, e, match, tag))
+            for match in self.matches:
                 if pxrd:
-                    data1.append(
-                        [i, j, self.stats[i, j, 0], self.stats[i, j, 1]])
+                    data2.append([match[0], match[1], match[3], match[4]])
                 else:
-                    data1.append([i, j, self.stats[i, j, 0]])
+                    data2.append([match[0], match[1], match[3]])
 
-        # self.matches.append((gen, i, xtal, e, match, tag))
-        for match in self.matches:
+            fig = plt.figure(figsize=figsize)
+            plt.ylabel("Lattice Energy (kcal)")  # , weight='bold')
+            data1 = np.array(data1)
             if pxrd:
-                data2.append([match[0], match[1], match[3], match[4]])
+                # (similarity, eng, gen_id)
+                x1, y1, z1 = data1[:, 3], data1[:, 2], data1[:, 0]
+                plt.xlabel("XRD Similarity")  # , weight='bold')
             else:
-                data2.append([match[0], match[1], match[3]])
-
-        fig = plt.figure(figsize=figsize)
-        plt.ylabel("Lattice Energy (kcal)")  # , weight='bold')
-        data1 = np.array(data1)
-        if pxrd:
-            # (similarity, eng, gen_id)
-            x1, y1, z1 = data1[:, 3], data1[:, 2], data1[:, 0]
-            plt.xlabel("XRD Similarity")  # , weight='bold')
-        else:
-            x1, y1, z1 = data1[:, 1], data1[:, 2], data1[:, 0]
-            plt.xlabel("Population ID")  # , weight='bold')
-        # Plot of all samples (PopID, Engs/Similarity)
-        scatter = plt.scatter(x1, y1, s=10, c=z1,
-                              cmap='winter', alpha=0.5, label='Samples')
-        cbar = plt.colorbar(scatter)
-        cbar.set_label('Generation ID')  # , weight='bold')
-        if ylim is None:
-            y1 = np.array(y1)
-            ymin = y1.min() - 0.25
-            ymax = min([ymin + 10.0, y1.max()])
-            ylim = (ymin, ymax)
-
-        if len(data2) > 0:
-            data2 = np.array(data2)
-            if len(data2.shape) == 1:
-                data2 = data2.reshape(-1, 1)
-            if pxrd:
-                x2, y2, z2 = data2[:, 3], data2[:, 2], data2[:, 0]
-            else:
-                x2, y2, z2 = data2[:, 1], data2[:, 2], data2[:, 0]
-            plt.scatter(x2, y2, s=10, c='red', marker='x', label='Matches')
-
-        plt.legend(loc=1)  # , prop={'weight': 'bold'})
-        plt.ylim(ylim)
-        plt.title(f"{self.name:s}-{self.ff_style:s}")  # , weight='bold')
-        plt.tight_layout()
-        plt.savefig(figname)
-
-        if save:
-            if pxrd:
-                header = "#Generation, Population, Energy, Similarity"
-            else:
-                header = "#Generation, Population, Energy"
-            data_txt = self.suffix + "-data.txt"
-            np.savetxt(data_txt, data1, header=header)
+                x1, y1, z1 = data1[:, 1], data1[:, 2], data1[:, 0]
+                plt.xlabel("Population ID")  # , weight='bold')
+            # Plot of all samples (PopID, Engs/Similarity)
+            scatter = plt.scatter(x1, y1, s=10, c=z1,
+                                  cmap='winter', alpha=0.5, label='Samples')
+            cbar = plt.colorbar(scatter)
+            cbar.set_label('Generation ID')  # , weight='bold')
+            if ylim is None:
+                y1 = np.array(y1)
+                ymin = y1.min() - 0.25
+                ymax = min([ymin + 10.0, y1.max()])
+                ylim = (ymin, ymax)
 
             if len(data2) > 0:
-                match_txt = self.suffix + "-match.txt"
-                np.savetxt(match_txt, data2, header=header)
+                data2 = np.array(data2)
+                if len(data2.shape) == 1:
+                    data2 = data2.reshape(-1, 1)
+                if pxrd:
+                    x2, y2, z2 = data2[:, 3], data2[:, 2], data2[:, 0]
+                else:
+                    x2, y2, z2 = data2[:, 1], data2[:, 2], data2[:, 0]
+                plt.scatter(x2, y2, s=10, c='red', marker='x', label='Matches')
+
+            plt.legend(loc=1)  # , prop={'weight': 'bold'})
+            plt.ylim(ylim)
+            plt.title(f"{self.name:s}-{self.ff_style:s}")  # , weight='bold')
+            plt.tight_layout()
+            plt.savefig(figname)
+
+            if save:
+                if pxrd:
+                    header = "#Generation, Population, Energy, Similarity"
+                else:
+                    header = "#Generation, Population, Energy"
+                data_txt = self.suffix + "-data.txt"
+                np.savetxt(data_txt, data1, header=header)
+
+                if len(data2) > 0:
+                    match_txt = self.suffix + "-match.txt"
+                    np.savetxt(match_txt, data2, header=header)
 
 
 if __name__ == "__main__":

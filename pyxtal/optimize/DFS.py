@@ -1,5 +1,5 @@
 """
-Global Optimizer
+DFS sampler
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ class DFS(GlobalOptimize):
         reference_file (str): path of reference xml data for FF training
         N_gen (int): number of generation (default: `10`)
         N_pop (int): number of populations (default: `10`)
-        fracs (list): fractions for each variation (default: `[0.5, 0.5, 0.0]`)
+        N_survival (int): number of survivals (default: `20`)
         N_cpu (int): number of cpus for parallel calculation (default: `1`)
         cif (str): cif file name to store all structure information
         block: block mode
@@ -48,6 +48,7 @@ class DFS(GlobalOptimize):
         eng_cutoff (float): the cutoff energy for FF training
         E_max (float): maximum energy defined as an invalid structure
         verbose (bool): show more details
+        use_mpi (bool): if use mpi
     """
 
     def __init__(
@@ -65,6 +66,7 @@ class DFS(GlobalOptimize):
         N_gen: int = 10,
         N_pop: int = 10,
         N_cpu: int = 1,
+        N_survival: int = 20,
         cif: str | None = None,
         block: list[any] | None = None,
         num_block: list[any] | None = None,
@@ -78,13 +80,13 @@ class DFS(GlobalOptimize):
         factor: float = 1.1,
         eng_cutoff: float = 5.0,
         E_max: float = 1e10,
-        N_survival: int = 20,
         verbose: bool = False,
         random_state: int | None = None,
         max_time: float | None = None,
         matcher: StructureMatcher | None = None,
         early_quit: bool = False,
         check_stable: bool = False,
+        use_mpi: bool = False,
     ):
         if isinstance(random_state, Generator):
             self.random_state = random_state.spawn(1)[0]
@@ -94,6 +96,7 @@ class DFS(GlobalOptimize):
         # POPULATION parameters:
         self.N_gen = N_gen
         self.N_pop = N_pop
+        self.N_survival = N_survival
         self.verbose = verbose
         self.name = 'DFS'
 
@@ -129,16 +132,17 @@ class DFS(GlobalOptimize):
             matcher,
             early_quit,
             check_stable,
+            use_mpi,
         )
 
         # Setup the stats [N_gen, Npop, (E, matches)]
         self.stats = np.zeros([self.N_gen, self.N_pop, 2])
         self.stats[:, :, 0] = self.E_max
-
-        self.N_survival = N_survival
-        strs = self.full_str()
-        self.logging.info(strs)
-        print(strs)
+        
+        if self.rank == 0:
+            strs = self.full_str()
+            self.logging.info(strs)
+            print(strs)
 
     def full_str(self):
         s = str(self)
@@ -148,72 +152,162 @@ class DFS(GlobalOptimize):
         # The rest base information from now on
         return s
 
-    def run(self, ref_pmg=None, ref_eng=None, ref_pxrd=None):
+    def run_mpi(self):
         """
-        The main code to run GA prediction
-
-        Args:
-            ref_pmg: reference pmg structure
-            ref_eng: reference energy
-            ref_pxrd: reference pxrd profile in 2D array
+        The mpi code to run DFS prediction
 
         Returns:
-            (generation, np.min(engs), None, None, None, 0, len(engs))
+            success_rate or None
         """
-        if ref_pmg is not None:
-            ref_pmg.remove_species("H")
-
         # Related to the FF optimization
         N_added = 0
         success_rate = 0
 
         # To save for comparison
-        current_survivals = [0] * self.N_pop # track the survivals
+        current_survivals = [0] * self.N_pop  # track the survivals
         hist_best_xtals = [None] * self.N_pop
         hist_best_engs = [self.E_max] * self.N_pop
 
         for gen in range(self.N_gen):
+
+            current_xtals = None
+
+            if self.rank == 0:
+                print(f"\nGeneration {gen:d} starts")
+                self.logging.info(f"Generation {gen:d} starts")
+                self.generation = gen + 1
+                t0 = time()
+
+                # Initialize structure and tags
+                current_xtals = [(None, "Random")] * self.N_pop
+
+                # DFS update
+                if gen > 0:
+                    count = 0
+                    for id in range(self.N_pop):
+                        # select the structures for further mutation
+                        # Current_best or hist_best
+                        if min([engs[id], hist_best_engs[id]]) < np.median(engs) and current_survivals[id] < self.N_survival:
+                            source = prev_xtals[id][0] if self.random_state.random(
+                            ) < 0.7 else hist_best_xtals[id]
+                            if source is not None:
+                                current_xtals[id] = (source, "Mutation")
+                                current_survivals[id] += 1
+                                # Forget about the local best
+                                if current_survivals[id] == self.N_survival:
+                                    hist_best_engs[id] = engs[id]
+                                    hist_best_xtals[id] = prev_xtals[id][0]
+                                count += 1
+
+                        # Reset it to 0
+                        if current_xtals[id][1] == "Random":
+                            current_survivals[id] = 0
+
+            # broadcast
+            current_xtals = self.comm.bcast(current_xtals, root=0)
+
+            # Local optimization
+            gen_results = self.local_optimization(gen, current_xtals)
+
+            prev_xtals = None
+            if self.rank == 0:
+                # pass results, summary_and_ranking
+                current_xtals, matches, engs = self.gen_summary(gen,
+                                                                t0, gen_results, current_xtals)
+
+                # update hist_best
+                for id, (xtal, _) in enumerate(current_xtals):
+                    if xtal is not None:
+                        eng = xtal.energy / sum(xtal.numMols)
+                        if eng < hist_best_engs[id]:
+                            hist_best_engs[id] = eng
+                            hist_best_xtals[id] = xtal
+
+                # Save the reps for next move
+                prev_xtals = current_xtals  # ; print(self.engs)
+
+            # broadcast
+            prev_xtals = self.comm.bcast(prev_xtals, root=0)
+
+            # Update the FF parameters if necessary
+            if self.ff_opt:
+                N_added = self.update_ff_paramters(
+                    current_xtals, engs, N_added)
+            else:
+                if self.rank == 0:
+                    if self.ref_pmg is not None:
+                        success_rate = self.success_count(gen,
+                                                          current_xtals,
+                                                          matches)
+                        if self.early_termination(success_rate):
+                            return success_rate
+
+                    elif self.ref_pxrd is not None:
+                        self.count_pxrd_match(gen,
+                                              current_xtals,
+                                              matches)
+
+        return success_rate
+
+    def run_serial(self):
+        """
+        The mpi code to run DFS prediction
+
+        Returns:
+            success_rate or None
+        """
+        # Related to the FF optimization
+        N_added = 0
+        success_rate = 0
+
+        # To save for comparison
+        current_survivals = [0] * self.N_pop  # track the survivals
+        hist_best_xtals = [None] * self.N_pop
+        hist_best_engs = [self.E_max] * self.N_pop
+
+        for gen in range(self.N_gen):
+
+            current_xtals = None
+
             print(f"\nGeneration {gen:d} starts")
             self.logging.info(f"Generation {gen:d} starts")
             self.generation = gen + 1
             t0 = time()
 
-            # lists for structure information
-            current_xtals = [None] * self.N_pop
-            current_tags = ["Random"] * self.N_pop
+            # Initialize structure and tags
+            current_xtals = [(None, "Random")] * self.N_pop
 
-            # Set up the origin for new structures
+            # DFS update
             if gen > 0:
                 count = 0
                 for id in range(self.N_pop):
                     # select the structures for further mutation
                     # Current_best or hist_best
                     if min([engs[id], hist_best_engs[id]]) < np.median(engs) and current_survivals[id] < self.N_survival:
-                        source = prev_xtals[id] if self.random_state.random() < 0.7 else hist_best_xtals[id]
+                        source = prev_xtals[id][0] if self.random_state.random(
+                        ) < 0.7 else hist_best_xtals[id]
                         if source is not None:
-                            current_tags[id] = "Mutation"
-                            current_xtals[id] = source
+                            current_xtals[id] = (source, "Mutation")
                             current_survivals[id] += 1
                             # Forget about the local best
                             if current_survivals[id] == self.N_survival:
                                 hist_best_engs[id] = engs[id]
-                                hist_best_xtals[id] = prev_xtals[id]
+                                hist_best_xtals[id] = prev_xtals[id][0]
                             count += 1
 
                     # Reset it to 0
-                    if current_tags[id] == "Random":
+                    if current_xtals[id][1] == "Random":
                         current_survivals[id] = 0
 
-
             # Local optimization
-            gen_results = self.local_optimization(gen, current_xtals, ref_pmg, ref_pxrd)
+            gen_results = self.local_optimization(gen, current_xtals)
 
-            # Summary and Ranking
-            current_xtals, current_matches, engs = self.gen_summary(gen,
-                    t0, gen_results, current_xtals, current_tags, ref_pxrd)
+            # pass results, summary_and_ranking
+            current_xtals, matches, engs = self.gen_summary(gen,
+                                                            t0, gen_results, current_xtals)
 
             # update hist_best
-            for id, xtal in enumerate(current_xtals):
+            for id, (xtal, _) in enumerate(current_xtals):
                 if xtal is not None:
                     eng = xtal.energy / sum(xtal.numMols)
                     if eng < hist_best_engs[id]:
@@ -222,37 +316,26 @@ class DFS(GlobalOptimize):
 
             # Save the reps for next move
             prev_xtals = current_xtals  # ; print(self.engs)
-            self.min_energy = np.min(np.array(self.engs))
-            self.N_struc = len(self.engs)
 
             # Update the FF parameters if necessary
             if self.ff_opt:
-                N_max = min([int(self.N_pop * 0.6), 50])
-                ids = np.argsort(engs)
-                xtals = self.select_xtals(current_xtals, ids, N_max)
-                print("Select Good structures for FF optimization", len(xtals))
-                N_added = self.ff_optimization(xtals, N_added)
-
+                N_added = self.update_ff_paramters(
+                    current_xtals, engs, N_added)
             else:
-                if ref_pmg is not None:
+                if self.ref_pmg is not None:
                     success_rate = self.success_count(gen,
                                                       current_xtals,
-                                                      current_matches,
-                                                      current_tags,
-                                                      ref_pmg)
-                    gen_out = f"Success rate @ Gen {gen:3d}: {success_rate:7.4f}%"
-                    self.logging.info(gen_out)
-                    print(gen_out)
-
+                                                      matches)
                     if self.early_termination(success_rate):
                         return success_rate
-                elif ref_pxrd is not None:
-                        self.count_pxrd_match(gen,
-                                              current_xtals,
-                                              current_matches,
-                                              current_tags)
+
+                elif self.ref_pxrd is not None:
+                    self.count_pxrd_match(gen,
+                                          current_xtals,
+                                          matches)
 
         return success_rate
+
 
 if __name__ == "__main__":
     import argparse
@@ -277,8 +360,10 @@ if __name__ == "__main__":
         default=10,
         help="Population size, optional",
     )
-    parser.add_argument("-n", "--ncpu", dest="ncpu", type=int, default=1, help="cpu number, optional")
-    parser.add_argument("--ffopt", action="store_true", help="enable ff optimization")
+    parser.add_argument("-n", "--ncpu", dest="ncpu", type=int,
+                        default=1, help="cpu number, optional")
+    parser.add_argument("--ffopt", action="store_true",
+                        help="enable ff optimization")
 
     options = parser.parse_args()
     gen = options.gen
@@ -293,7 +378,8 @@ if __name__ == "__main__":
     db = database(db_name)
     row = db.get_row(name)
     xtal = db.get_pyxtal(name)
-    smile, wt, spg = row.mol_smi, row.mol_weight, row.space_group.replace(" ", "")
+    smile, wt, spg = row.mol_smi, row.mol_weight, row.space_group.replace(
+        " ", "")
     chm_info = None
     if not ffopt:
         if "charmm_info" in row.data:
@@ -309,7 +395,8 @@ if __name__ == "__main__":
                 os.remove("parameters.xml")
     # load reference xtal
     pmg0 = xtal.to_pymatgen()
-    if xtal.has_special_site(): xtal = xtal.to_subgroup()
+    if xtal.has_special_site():
+        xtal = xtal.to_subgroup()
     N_torsion = xtal.get_num_torsions()
 
     # GO run
@@ -320,7 +407,7 @@ if __name__ == "__main__":
         xtal.group.number,
         name.lower(),
         info=chm_info,
-        ff_style="openff",  #'gaff',
+        ff_style="openff",  # 'gaff',
         ff_opt=ffopt,
         N_gen=gen,
         N_pop=pop,
