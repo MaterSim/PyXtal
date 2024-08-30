@@ -211,6 +211,7 @@ class representation:
             vector.append(site.encode())
             smiles.append(site.molecule.smile)
         x = vector
+        if smiles[0] is None: smiles = None
         return cls(x, smiles)
 
     @classmethod

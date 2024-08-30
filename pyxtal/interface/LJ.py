@@ -311,38 +311,39 @@ class FIRE:
         return m2
 
 
-from spglib import get_symmetry_dataset
+if __name__ == "__main__":
+    from spglib import get_symmetry_dataset
+    from pyxtal import pyxtal
 
-from pyxtal.crystal import random_crystal
+    for _i in range(10):
+        crystal = pyxtal()
+        crystal.from_random(3, 11, ["C"], [4])
+        if crystal.valid:
+            crystal1 = deepcopy(crystal)
+            test = LJ(epsilon=0.01, sigma=3.40, rcut=8.0)
+            struc = (crystal1.lattice_matrix, crystal1.frac_coords, [6] * 4)
+            eng, enth, force, stress = test.calc(crystal1)
+            sg = get_symmetry_dataset(struc)["number"]
+            print(f"\nBefore relaxation Space group:            {sg:4d}   Energy: {eng:12.4}  Enthalpy: {enth:12.4}")
 
-for _i in range(10):
-    crystal = random_crystal(11, ["C"], [4], 1.0)
-    if crystal.valid:
-        crystal1 = deepcopy(crystal)
-        test = LJ(epsilon=0.01, sigma=3.40, rcut=8.0)
-        struc = (crystal1.lattice_matrix, crystal1.frac_coords, [6] * 4)
-        eng, enth, force, stress = test.calc(crystal1)
-        sg = get_symmetry_dataset(struc)["number"]
-        print(f"\nBefore relaxation Space group:            {sg:4d}   Energy: {eng:12.4}  Enthalpy: {enth:12.4}")
+            dyn1 = FIRE(crystal1, test, f_tol=1e-5, dt=0.2, maxmove=0.2)  # , symmetrize=True)
+            dyn1.run(500)
+            eng, enth, force, stress = test.calc(crystal1)
+            struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6] * 4)
+            sg = get_symmetry_dataset(struc, symprec=0.1)["number"]
+            print(f"After relaxation without symm Space group: {sg:4d}  Energy: {eng:12.4}  Enthalpy: {enth:12.4}")
 
-        dyn1 = FIRE(crystal1, test, f_tol=1e-5, dt=0.2, maxmove=0.2)  # , symmetrize=True)
-        dyn1.run(500)
-        eng, enth, force, stress = test.calc(crystal1)
-        struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6] * 4)
-        sg = get_symmetry_dataset(struc, symprec=0.1)["number"]
-        print(f"After relaxation without symm Space group: {sg:4d}  Energy: {eng:12.4}  Enthalpy: {enth:12.4}")
-
-        dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2, symmetrize=True)
-        dyn1.run(500)
-        eng, enth, force, stress = test.calc(crystal)
-        struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6] * 4)
-        sg = get_symmetry_dataset(struc, symprec=0.02)["number"]
-        if sg is None:
-            sg = 0
-        print(f"After relaxation with symm Space group:    {sg:4d}  Energy: {eng:12.4}  Enthalpy: {enth:12.4}")
-        # dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2)
-        # struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6]*4)
-        # sg =  get_symmetry_dataset(struc, symprec=0.02)['number']
-        # print('After relaxation without symm Space group: {:4d}  Energy: {:12.4}  Enthalpy: {:12.4}'.format(sg, eng, enth))
-        # right now, it seems structures goes to either HCP of FCC after relaxation, which is expected for 3D LJ system
-        # need to compare with other code to see if the energy is correct
+            dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2, symmetrize=True)
+            dyn1.run(500)
+            eng, enth, force, stress = test.calc(crystal)
+            struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6] * 4)
+            sg = get_symmetry_dataset(struc, symprec=0.02)["number"]
+            if sg is None:
+                sg = 0
+            print(f"After relaxation with symm Space group:    {sg:4d}  Energy: {eng:12.4}  Enthalpy: {enth:12.4}")
+            # dyn1 = FIRE(crystal, test, f_tol=1e-5, dt=0.2, maxmove=0.2)
+            # struc = (dyn1.struc.lattice_matrix, dyn1.struc.frac_coords, [6]*4)
+            # sg =  get_symmetry_dataset(struc, symprec=0.02)['number']
+            # print('After relaxation without symm Space group: {:4d}  Energy: {:12.4}  Enthalpy: {:12.4}'.format(sg, eng, enth))
+            # right now, it seems structures goes to either HCP of FCC after relaxation, which is expected for 3D LJ system
+            # need to compare with other code to see if the energy is correct

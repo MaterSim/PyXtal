@@ -362,7 +362,7 @@ class random_crystal:
                     # print('good', pt, tol, len(wp.short_distances(pt, cell, tol)))
                 else:
                     # generate wp
-                    wp = choose_wyckoff(self.group, numIon - numIon_added, site, self.dim)
+                    wp = choose_wyckoff(self.group, numIon - numIon_added, site, self.dim, self.rng)
                     if wp is not False:
                         # print(wp.letter)
                         # Generate a list of coords from ops

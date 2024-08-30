@@ -1,13 +1,13 @@
-<img src="https://raw.githubusercontent.com/qzhu2017/PyXtal/master/images/512px_type1.png" alt="PyXtal" width="300"/>
+<img src="https://raw.githubusercontent.com/MaterSim/PyXtal/master/images/512px_type1.png" alt="PyXtal" width="300"/>
 
 [![Documentation Status](https://readthedocs.org/projects/pyxtal/badge/?version=latest)](https://pyxtal.readthedocs.io/en/latest/?badge=latest)
-[![Test Status](https://github.com/qzhu2017/PyXtal/workflows/tests/badge.svg)](https://github.com/qzhu2017/PyXtal/actions)
+[![Test Status](https://github.com/MaterSim/PyXtal/workflows/tests/badge.svg)](https://github.com/MaterSim/PyXtal/actions)
 [![Download Status](https://img.shields.io/pypi/pyversions/pyxtal)](https://pypi.org/project/pyxtal/)
 [![Download Status](https://img.shields.io/pypi/v/pyxtal)](https://pypi.org/project/pyxtal/)
 [![Downloads](https://pepy.tech/badge/pyxtal)](https://pepy.tech/project/pyxtal)
 [![DOI](https://zenodo.org/badge/128165891.svg)](https://zenodo.org/badge/latestdoi/128165891)
 [![Gitter](https://badges.gitter.im/PyXtal/community.svg)](https://gitter.im/PyXtal/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-<img align="right" width="450" src="https://raw.githubusercontent.com/qzhu2017/PyXtal/master/images/water.gif">
+<img align="right" width="450" src="https://raw.githubusercontent.com/MaterSim/PyXtal/master/images/water.gif">
 
 
 ## Table of content
@@ -27,10 +27,10 @@ To contribute to this project, please check [How to contribute?](#how-to-contrib
 
 ## Quick Start
 
-- [Atomic crystal](https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/01_atomic_crystals.ipynb)
-- [Molecular crystal](https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/02_molecular_crystals.ipynb)
-- [XRD](https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/03_pxrd.ipynb)
-- [Molecular Packing](https://nbviewer.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/05-crystal-packing.ipynb)
+- [Atomic crystal](https://nbviewer.jupyter.org/github/MaterSim/PyXtal/blob/master/examples/tutorials_notebook/01_atomic_crystals.ipynb)
+- [Molecular crystal](https://nbviewer.jupyter.org/github/MaterSim/PyXtal/blob/master/examples/tutorials_notebook/02_molecular_crystals.ipynb)
+- [XRD](https://nbviewer.jupyter.org/github/MaterSim/PyXtal/blob/master/examples/tutorials_notebook/03_pxrd.ipynb)
+- [Molecular Packing](https://nbviewer.org/github/MaterSim/PyXtal/blob/master/examples/tutorials_notebook/05-crystal-packing.ipynb)
 
 ## Current Features
 
@@ -53,7 +53,21 @@ pip install pyxtal
 or
 
 ```sh
-pip install --upgrade git+https://github.com/qzhu2017/PyXtal.git@master
+pip install --upgrade git+https://github.com/MaterSim/PyXtal.git@master
+```
+
+If you want to add the Julia package install (required by the use of `pyxtal.lego` module), please use
+
+```sh
+INSTALL_JULIA=1 pip install pyxtal 
+```
+
+To check if the installation is successful, run the following script,
+```python
+
+from juliacall import Main as jl
+jl.seval("using CrystalNets")
+print("Success")
 ```
 
 ## Citation
@@ -115,7 +129,7 @@ Zhu Q, Tang W-L, Hattori S. (2022).
 
 This is an open-source project. Its growth depends on the community. To contribute to PyXtal, you don't necessarily have to write the code. Any contributions from the following list will be helpful.
 
-- [![Star on GitHub](https://img.shields.io/github/stars/qzhu2017/pyxtal.svg?style=social)](https://github.com/qzhu2017/pyxtal/stargazers)
+- [![Star on GitHub](https://img.shields.io/github/stars/qzhu2017/pyxtal.svg?style=social)](https://github.com/MaterSim/pyxtal/stargazers)
  the PyXtal project and recommend it to your colleagues/friends
-- Open an [![GitHub issues](https://img.shields.io/github/issues/qzhu2017/pyxtal.svg)](https://GitHub.com/qzhu2017/pyxtal/issues/) to report the bug or address your wishlist or improve our documentation
-- [![GitHub forks](https://img.shields.io/github/forks/qzhu2017/pyxtal?style=social)](https://github.com/qzhu2017/PyXtal/network/members) the repository and send us the pull request
+- Open an [![GitHub issues](https://img.shields.io/github/issues/qzhu2017/pyxtal.svg)](https://GitHub.com/MaterSim/pyxtal/issues/) to report the bug or address your wishlist or improve our documentation
+- [![GitHub forks](https://img.shields.io/github/forks/qzhu2017/pyxtal?style=social)](https://github.com/MaterSim/PyXtal/network/members) the repository and send us the pull request

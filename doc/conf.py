@@ -13,8 +13,19 @@
 #
 import os
 import sys
+from unittest.mock import MagicMock
 
 sys.path.insert(0, os.path.abspath("../"))
+# List of modules to mock
+MOCK_MODULES = ['torchani', 'lammps', 'pyshtools']
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return MagicMock()
+
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+
 
 # -- Project information -----------------------------------------------------
 
@@ -23,9 +34,9 @@ copyright = "Since 2018, Qiang Zhu, Scott Fredericks, Kevin Parrish"
 author = "Qiang Zhu, Scott Fredericks, Kevin Parrish"
 
 # The short X.Y version
-version = "0.6.8"
+version = "1.0.2"
 # The full version, including alpha/beta/rc tags
-release = "0.6.8"
+release = "1.0.2"
 
 # -- General configuration ---------------------------------------------------
 

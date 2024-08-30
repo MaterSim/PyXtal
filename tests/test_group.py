@@ -133,3 +133,6 @@ class TestGroup(unittest.TestCase):
                 assert wp0 is None
             else:
                 assert wp.get_label() == wp0
+
+if __name__ == "__main__":
+    unittest.main()

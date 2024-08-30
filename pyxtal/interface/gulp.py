@@ -96,10 +96,9 @@ at_types = {
 }
 
 
-class GULP_OC:
+class GULP:
     """
-    A calculator to perform structure optimization in GULP
-    At the moment, only inorganic crystal is considered
+    A calculator to perform atomic structure optimization in GULP
 
     Args:
 
@@ -154,8 +153,8 @@ class GULP_OC:
         self.folder = path
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
-        self.input = self.folder + "/" + self.label + input
-        self.output = self.folder + "/" + self.label + output
+        self.input  = self.label + input
+        self.output = self.label + output
         self.dump = dump
         self.iter = 0
         self.energy = None
@@ -176,11 +175,17 @@ class GULP_OC:
         """
 
     def run(self, clean=True):
+        """
+        Always go to the directory to run one gulp at once
+        """
+        cwd = os.getcwd()
+        os.chdir(self.folder)
         self.write()
         self.execute()
         self.read()
         if clean:
             self.clean()
+        os.chdir(cwd)
 
     def execute(self):
         cmd = self.exe + "<" + self.input + ">" + self.output

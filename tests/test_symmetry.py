@@ -57,3 +57,6 @@ class TestSymmetry(unittest.TestCase):
             wp = Wyckoff_position.from_symops(strs, G)
             assert wp.number == spg
             assert wp.hall_number == hall
+
+if __name__ == "__main__":
+    unittest.main()

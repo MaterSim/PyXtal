@@ -79,7 +79,7 @@ def generate_qrs_xtals(cell, wp_bounds, N_pop, smiles, comp, sampler_wp=None, d_
         xtal = rep.to_pyxtal(composition=comp)
         if not xtal.has_special_site() and len(xtal.check_short_distances(r=d_tol)) == 0:
             #print("debug", rep)
-            xtals.append(xtal)
+            xtals.append((xtal, "QRandom"))
             if len(xtals) == N_pop:
                 return xtals
         #else:
@@ -102,7 +102,6 @@ class QRS(GlobalOptimize):
         reference_file (str): path of reference xml data for FF training
         N_gen (int): number of generation (default: `10`)
         N_pop (int): number of populations (default: `10`)
-        fracs (list): fractions for each variation (default: `[0.5, 0.5, 0.0]`)
         N_cpu (int): number of cpus for parallel calculation (default: `1`)
         cif (str): cif file name to store all structure information
         block: block mode
@@ -117,6 +116,7 @@ class QRS(GlobalOptimize):
         eng_cutoff (float): the cutoff energy for FF training
         E_max (float): maximum energy defined as an invalid structure
         verbose (bool): show more details
+        use_mpi: bool = False,
     """
 
     def __init__(
@@ -154,6 +154,7 @@ class QRS(GlobalOptimize):
         matcher: StructureMatcher | None = None,
         early_quit: bool = False,
         check_stable: bool = False,
+        use_mpi: bool = False,
     ):
 
         # POPULATION parameters:
@@ -194,10 +195,15 @@ class QRS(GlobalOptimize):
             matcher,
             early_quit,
             check_stable,
+            use_mpi,
         )
         strs = self.full_str()
         self.logging.info(strs)
         print(strs)
+
+        # Setup the stats [N_gen, Npop, (E, matches)]
+        self.stats = np.zeros([self.N_gen, self.N_pop, 2])
+        self.stats[:, :, 0] = self.E_max
 
     def full_str(self):
         s = str(self)
@@ -207,30 +213,21 @@ class QRS(GlobalOptimize):
         # The rest base information from now on
         return s
 
-    def run(self, ref_pmg=None, ref_eng=None, ref_pxrd=None):
+    def run_serial(self):
         """
-        The main code to run GA prediction
-
-        Args:
-            ref_pmg: reference pmg structure
-            ref_eng: reference energy
-            ref_pxrd: reference pxrd profile in 2D array
+        The serial code to run QRS prediction
 
         Returns:
-            (generation, np.min(engs), None, None, None, 0, len(engs))
+            success_rate or None
         """
         self.ref_volumes = []
-        if ref_pmg is not None:
-            ref_pmg.remove_species("H")
-
         # Related to the FF optimization
         N_added = 0
 
         # lists for structure information
         current_reps = [None] * self.N_pop
-        current_matches = [False] * self.N_pop if ref_pxrd is None else [0.0] * self.N_pop
+        current_matches = [False] * self.N_pop if self.ref_pxrd is None else [0.0] * self.N_pop
         current_engs = [self.E_max] * self.N_pop
-        current_tags = ["Random"] * self.N_pop
 
         for gen in range(self.N_gen):
             print(f"\nGeneration {gen:d} starts")
@@ -240,46 +237,43 @@ class QRS(GlobalOptimize):
             if gen > 0:
                 if self.lattice is not None:
                     cell = [self.hall_number] + self.lattice.encode()
-                    current_xtals = generate_qrs_xtals(cell,
-                                                       self.wp_bounds,
-                                                       self.N_pop,
-                                                       self.smiles,
-                                                       self.composition,
-                                                       self.sampler)
+                    sampler = self.sampler
                 else:
                     cell = generate_qrs_cell(self.sampler,
                                              self.cell_bounds,
                                              self.ref_volumes[-1],
                                              self.ltype)
                     cell = [self.hall_number] + cell
-                    current_xtals = generate_qrs_xtals(cell,
-                                                       self.wp_bounds,
-                                                       self.N_pop,
-                                                       self.smiles,
-                                                       self.composition)
+                    sampler = None
+                current_xtals = generate_qrs_xtals(cell,
+                                                   self.wp_bounds,
+                                                   self.N_pop,
+                                                   self.smiles,
+                                                   self.composition,
+                                                   sampler)
                 strs = f"Cell parameters in Gen-{gen:d}: "
                 print(strs, cell, self.ref_volumes[-1], len(current_xtals))
             else:
                  # 1st generation from random
-                 current_xtals = [None] * self.N_pop
+                 current_xtals = [(None, "Random")] * self.N_pop
 
             # Local optimization
-            gen_results = self.local_optimization(gen, current_xtals, ref_pmg, ref_pxrd, True)
+            gen_results = self.local_optimization(gen, current_xtals, True)
 
             # Summary and Ranking
-            current_xtals, current_matches, engs = self.gen_summary(gen,
-                    t0, gen_results, current_xtals, current_tags, ref_pxrd)
+            current_xtals, matches, engs = self.gen_summary(gen,
+                    t0, gen_results, current_xtals)
 
             # update hist_best
             vols = []
-            for id, xtal in enumerate(current_xtals):
+            for id, (xtal, _) in enumerate(current_xtals):
                 if xtal is not None:
                     vols.append(xtal.lattice.volume)
 
             # update best volume
             self.ref_volumes.append(np.array(vols).mean())
             if gen == 0:
-                best_xtal = xtals[0]
+                best_xtal = current_xtals[0][0]
                 self.cell_bounds = best_xtal.lattice.get_bounds(2.5, 25)
                 self.ltype = best_xtal.lattice.ltype
                 self.wp_bounds = [site.get_bounds() for site in best_xtal.mol_sites]
@@ -290,39 +284,20 @@ class QRS(GlobalOptimize):
                     len_reps = len(self.cell_bounds)
                 self.sampler = qmc.Sobol(d=len_reps, scramble=False)
 
-            t2 = time()
-            gen_out = f"Gen{gen:3d} time usage: "
-            gen_out += f"{t1 - t0:5.1f}[Calc] {t2 - t1:5.1f}[Proc]"
-            print(gen_out)
+            if self.ref_pmg is not None:
+                success_rate = self.success_count(gen,
+                                                  current_xtals,
+                                                  matches)
 
-            # Save the reps for next move
-            prev_xtals = current_xtals  # ; print(self.engs)
-            self.min_energy = np.min(np.array(self.engs))
-            self.N_struc = len(self.engs)
+                if self.early_termination(success_rate):
+                    return success_rate
 
-            # Update the FF parameters if necessary
-            if self.ff_opt:
-                N_max = min([int(self.N_pop * 0.6), 50])
-                ids = np.argsort(engs)
-                xtals = self.select_xtals(current_xtals, ids, N_max)
-                print("Select Good structures for FF optimization", len(xtals))
-                N_added = self.ff_optimization(xtals, N_added)
+            elif ref_pxrd is not None:
+                self.count_pxrd_match(gen,
+                                      current_xtals,
+                                      matches)
 
-            else:
-                if ref_pmg is not None:
-                    success_rate = self.success_count(gen,
-                                                      current_xtals,
-                                                      current_matches,
-                                                      current_tags,
-                                                      ref_pmg)
-                    gen_out = f"Success rate at Gen {gen:3d}: {success_rate:7.4f}%"
-                    self.logging.info(gen_out)
-                    print(gen_out)
-
-                    if self.early_termination(success_rate):
-                        return success_rate
-
-        return None
+        return success_rate
 
 if __name__ == "__main__":
     import argparse

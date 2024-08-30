@@ -56,7 +56,8 @@ class atom_site:
     def __str__(self):
         if not hasattr(self.wp, "site_symm"):
             self.wp.get_site_symmetry()
-        s = "{:>2s} @ [{:7.4f} {:7.4f} {:7.4f}], ".format(self.specie, *self.position)
+        s = "{:>2s} @ [{:7.4f} {:7.4f} {:7.4f}], ".format(
+            self.specie, *self.position)
         s += f"WP [{self.wp.get_label()}] "
         if self.coordination is not None:
             s += f" CN [{self.coordination:2d}] "
@@ -109,7 +110,8 @@ class atom_site:
             wp = Wyckoff_position.load_dict(dicts["wp"])
         else:
             hn, index = dicts["hn"], dicts["index"]
-            wp = Wyckoff_position.from_group_and_index(hn, index, use_hall=True)
+            wp = Wyckoff_position.from_group_and_index(
+                hn, index, use_hall=True)
 
         return cls(wp, position, specie)
 
@@ -171,7 +173,8 @@ class atom_site:
         self.position = self.position[swap_id]
         self.position -= np.floor(self.position)
         self.wp, _ = self.wp.swap_axis(swap_id)
-        self.site_symm = site_symm(self.wp.symmetry[0], self.wp.number, dim=self.wp.dim)
+        self.site_symm = site_symm(
+            self.wp.symmetry[0], self.wp.number, dim=self.wp.dim)
         self.update()
 
     def shift_by_swap(self, swap_id):
@@ -196,8 +199,10 @@ class atom_site:
         """
         self.position = SymmOp(tran).operate(self.position)
         self.position -= np.floor(self.position)
-        self.wp = self.wp.equivalent_set(indices[self.wp.index])  # update the wp index
-        self.site_symm = site_symm(self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
+        self.wp = self.wp.equivalent_set(
+            indices[self.wp.index])  # update the wp index
+        self.site_symm = site_symm(
+            self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
         self.update()
 
     def update(self, pos=None, reset_wp=False):
@@ -287,7 +292,8 @@ class atom_site:
             return not (dm < tol).any()
         # No symmetry method: check all atomic pairs
         else:
-            dm = distance_matrix(self.wp.coords, ws2.coords, lattice, PBC=self.PBC)
+            dm = distance_matrix(
+                self.wp.coords, ws2.coords, lattice, PBC=self.PBC)
             # Check if any distances are less than the tolerance
             return not (dm < tol).any()
 
@@ -379,7 +385,8 @@ class mol_site:
             self.lattice = Lattice.from_matrix(lattice)
         self.PBC = self.wp.PBC
         # self.mol = mol.mol # A Pymatgen molecule object
-        self.symbols = mol.symbols  # [site.specie.value for site in self.mol.sites]
+        # [site.specie.value for site in self.mol.sites]
+        self.symbols = mol.symbols
         self.numbers = self.molecule.mol.atomic_numbers
         self.tols_matrix = mol.tols_matrix
         self.radius = mol.radius
@@ -407,7 +414,8 @@ class mol_site:
 
         self.angles = self.orientation.r.as_euler("zxy", degrees=True)
         formula = self.molecule.mol.formula.replace(" ", "")
-        s = "{:12s} @ [{:7.4f} {:7.4f} {:7.4f}]  ".format(formula, *self.position)
+        s = "{:12s} @ [{:7.4f} {:7.4f} {:7.4f}]  ".format(
+            formula, *self.position)
         s += f"WP [{self.wp.get_label():s}] "
         s += "Site [{:}]".format(self.wp.site_symm.replace(" ", ""))
         if len(self.molecule.mol) > 1:
@@ -470,7 +478,8 @@ class mol_site:
         position = dicts["position"]
         orientation = Orientation.load_dict(dicts["orientation"])
         wp = Wyckoff_position.load_dict(dicts["wp"])
-        lattice = Lattice.from_matrix(dicts["lattice"], ltype=dicts["lattice_type"])
+        lattice = Lattice.from_matrix(
+            dicts["lattice"], ltype=dicts["lattice_type"])
         stype = dicts["stype"]
         return cls(mol, position, orientation, wp, lattice, stype)
 
@@ -495,7 +504,8 @@ class mol_site:
         xyz, _ = self._get_coords_and_species(absolute=True, first=True)
         dict0 = {"smile": self.molecule.smile}
         dict0["rotor"] = self.molecule.get_torsion_angles(xyz)
-        dict0["orientation"], dict0["rmsd"], dict0["reflect"] = self.molecule.get_orientation(xyz)
+        dict0["orientation"], dict0["rmsd"], dict0["reflect"] = self.molecule.get_orientation(
+            xyz)
         dict0["rotor"]
         # rdkit_mol = self.molecule.rdkit_mol(self.molecule.smile)
         # conf0 = rdkit_mol.GetConformer(0)
@@ -503,7 +513,8 @@ class mol_site:
         # print("save matrix"); print(self.orientation.r.as_matrix())
         # print("save angle"); print(self.orientation.r.as_euler('zxy', degrees=True))
         # print("angle"); print(dict0["orientation"])
-        dict0["center"] = self.position - np.floor(self.position)  # self.molecule.get_center(xyz)
+        # self.molecule.get_center(xyz)
+        dict0["center"] = self.position - np.floor(self.position)
         dict0["number"] = self.wp.number
         dict0["index"] = self.wp.index
         dict0["PBC"] = self.wp.PBC
@@ -523,7 +534,8 @@ class mol_site:
                 conf = mol.rdkit_mol().GetConformer(0)
                 if dicts["reflect"]:
                     mol.set_torsion_angles(conf, dicts["rotor"], False)
-                xyz = mol.set_torsion_angles(conf, dicts["rotor"], dicts["reflect"])
+                xyz = mol.set_torsion_angles(
+                    conf, dicts["rotor"], dicts["reflect"])
             else:
                 # for H2O, use the standard one
                 xyz = np.array(
@@ -535,7 +547,8 @@ class mol_site:
                 )
 
             mol.reset_positions(xyz)
-            matrix = R.from_euler("zxy", dicts["orientation"], degrees=True).as_matrix()
+            matrix = R.from_euler(
+                "zxy", dicts["orientation"], degrees=True).as_matrix()
             orientation = Orientation(matrix)
         else:
             orientation = Orientation(np.eye(3))
@@ -544,8 +557,10 @@ class mol_site:
         index = int(dicts["index"])
         dim = dicts["dim"]
         wp = Wyckoff_position.from_group_and_index(g, index, dim, dicts["PBC"])
-        lattice = Lattice.from_matrix(dicts["lattice"], ltype=dicts["lattice_type"])
-        position = dicts["center"]  # np.dot(dicts["center"], lattice.inv_matrix)
+        lattice = Lattice.from_matrix(
+            dicts["lattice"], ltype=dicts["lattice_type"])
+        # np.dot(dicts["center"], lattice.inv_matrix)
+        position = dicts["center"]
         position, wp, _ = wp.merge(position, lattice.matrix, 0.01)
 
         return cls(mol, position, orientation, wp, lattice)
@@ -585,7 +600,8 @@ class mol_site:
 
             # Rotate the molecule (Euclidean metric)
             # op2_m = self.wp.generators_m[point_index]
-            op2_m = self.wp.get_euclidean_generator(self.lattice.matrix, point_index)
+            op2_m = self.wp.get_euclidean_generator(
+                self.lattice.matrix, point_index)
             rot = op2_m.affine_matrix[:3, :3].T
             # NOTE=====the euclidean_generator has wrong translation vectors,
             # but we don't care. This needs to be fixed later
@@ -599,7 +615,8 @@ class mol_site:
             # Add absolute center to molecule
             tmp += center_absolute
             tmp = tmp.dot(self.lattice.inv_matrix)
-            wp_atomic_coords = tmp if wp_atomic_coords is None else np.append(wp_atomic_coords, tmp, axis=0)
+            wp_atomic_coords = tmp if wp_atomic_coords is None else np.append(
+                wp_atomic_coords, tmp, axis=0)
             wp_atomic_sites.extend(self.symbols)
             if first:
                 break
@@ -712,7 +729,8 @@ class mol_site:
         Returns:
             a molecule object
         """
-        coord0 = self.molecule.mol.cart_coords.dot(self.orientation.matrix.T)  #
+        coord0 = self.molecule.mol.cart_coords.dot(
+            self.orientation.matrix.T)  #
         # Obtain the center in absolute coords
         if not hasattr(self.wp, "generators"):
             self.wp.set_generators()
@@ -747,16 +765,22 @@ class mol_site:
         from pyxtal.viz import display_molecule
 
         mol = self.get_mol_object(id)
-        cell, vertices, center = self.molecule.get_box_coordinates(mol.cart_coords)
+        cell, vertices, center = self.molecule.get_box_coordinates(
+            mol.cart_coords)
         return display_molecule(mol, center, cell)
 
-    def update(self, coords, lattice=None, absolute=False, update_mol=True):
+    def update(self, coords=None, lattice=None, absolute=False, update_mol=True):
         """
         After the geometry relaxation, the returned atomic coordinates
         maybe rescaled to [0, 1] bound. In this case, we need to refind
         the molecular coordinates according to the original neighbor list.
         If the list does not change, we return the new coordinates
         otherwise, terminate the calculation.
+
+        Args:
+            coords (float): input xyz coordinates for the given molecule
+            absolute (bool): whether the input is absolute coordinates
+            update_mol (bool): whether update the molecule (used for substitution)
         """
         from pyxtal.molecule import Orientation, compare_mol_connectivity
 
@@ -768,13 +792,21 @@ class mol_site:
 
         if lattice is not None:
             self.lattice = lattice
+
+        if coords is None:
+            coords, _ = self._get_coords_and_species(
+                absolute=False, first=True, unitcell=True)
+            absolute = False
+
         if not absolute:
             coords = coords.dot(self.lattice.matrix)
+
         # mol = Molecule(self.symbols, coords-np.mean(coords, axis=0))
         center = self.molecule.get_center(coords)
         mol = Molecule(self.symbols, coords - center)
 
         # match, _ = compare_mol_connectivity(mol, self.mol, True)
+        # Update the orientation matrix
         match, _ = compare_mol_connectivity(mol, self.molecule.mol)
         if match:
             # position = np.mean(coords, axis=0).dot(self.lattice.inv_matrix)
@@ -840,7 +872,8 @@ class mol_site:
                     return list(range(-3, 4))
                 return [-1, 0, 1]
 
-            ijk_lists = [get_ijk_range(self.PBC[idx], abc[idx], ignore, self.radius) for idx in range(3)]
+            ijk_lists = [get_ijk_range(
+                self.PBC[idx], abc[idx], ignore, self.radius) for idx in range(3)]
 
         matrix = [[0, 0, 0]] if center else []
         matrix += [
@@ -908,7 +941,8 @@ class mol_site:
         m_length = len(self.symbols)
         coords, _ = self._get_coords_and_species(unitcell=True)
         coord1 = coords[:m_length]  # 1st molecular coords
-        coord2 = coords[m_length:] if idx is None else coords[m_length * (idx) : m_length * (idx + 1)]
+        coord2 = coords[m_length:] if idx is None else coords[m_length *
+                                                              (idx): m_length * (idx + 1)]
 
         return self.get_distances(coord1, coord2, ignore=ignore)
 
@@ -989,7 +1023,8 @@ class mol_site:
             m2 = m_length1
 
         # compute the distance matrix
-        d, _ = self.get_distances(coord1 - np.floor(coord1), coord2 - np.floor(coord2), m2)
+        d, _ = self.get_distances(
+            coord1 - np.floor(coord1), coord2 - np.floor(coord2), m2)
         # print("short dist", len(c1), len(c2), d.min())
 
         if np.min(d) < np.max(tols_matrix):
@@ -1012,7 +1047,8 @@ class mol_site:
             min_ds: list of shortest distances
             neighs: list of neighboring molecular xyzs
         """
-        mol_center = np.dot(self.position - np.floor(self.position), self.lattice.matrix)
+        mol_center = np.dot(
+            self.position - np.floor(self.position), self.lattice.matrix)
         numbers = self.molecule.mol.atomic_numbers
         coord1, _ = self._get_coords_and_species(first=True, unitcell=True)
         tm = Tol_matrix(prototype="vdW", factor=factor)
@@ -1091,12 +1127,16 @@ class mol_site:
                                 #    engs.append(eng[id])
                                 #    dists.append(d[i][id])
                                 for id in range(len(ids[0])):
-                                    n1, n2 = numbers[ids[0][id]], numbers[ids[1][id]]
+                                    n1, n2 = numbers[ids[0][id]
+                                                     ], numbers[ids[1][id]]
                                     if 1 not in [n1, n2]:
-                                        pos = coord2[i][ids[1][id]] - mol_center
+                                        pos = coord2[i][ids[1]
+                                                        [id]] - mol_center
                                         pairs.append((n2, pos))
-                                        engs.append(eng[ids[0][id], ids[1][id]])
-                                        dists.append(d[i][ids[0][id], ids[1][id]])
+                                        engs.append(
+                                            eng[ids[0][id], ids[1][id]])
+                                        dists.append(
+                                            d[i][ids[0][id], ids[1][id]])
 
                             else:
                                 eng0 = A * np.exp(-B * d[i]) - C / (d[i] ** 6)
@@ -1108,9 +1148,11 @@ class mol_site:
                                 ids = np.where(d[i] < max_d)
                                 # for id in zip(*ids):
                                 for id in range(len(ids[0])):  # zip(*ids):
-                                    n1, n2 = numbers[ids[0][id]], numbers[ids[1][id]]
+                                    n1, n2 = numbers[ids[0][id]
+                                                     ], numbers[ids[1][id]]
                                     if 1 not in [n1, n2]:  # != [1, 1]:
-                                        pos = coord2[i][ids[1][id]] - mol_center
+                                        pos = coord2[i][ids[1]
+                                                        [id]] - mol_center
                                         pairs.append((n2, pos))
                                         dists.append(np.linalg.norm(pos))
 

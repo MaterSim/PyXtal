@@ -186,3 +186,6 @@ class TestMolecular(unittest.TestCase):
         struc = pyxtal(molecular=True)
         struc.from_random(3, 61, ["Benzene"], [4])
         assert struc.valid
+
+if __name__ == "__main__":
+    unittest.main()

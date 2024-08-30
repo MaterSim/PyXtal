@@ -36,7 +36,8 @@ def pymatgen2ase(struc):
     """
     A short cut to convert between pymatgen to ase
     """
-    atoms = Atoms(symbols=struc.atomic_numbers, cell=struc.lattice.matrix, pbc=True)
+    atoms = Atoms(symbols=struc.atomic_numbers,
+                  cell=struc.lattice.matrix, pbc=True)
     atoms.set_scaled_positions(struc.frac_coords)
     return atoms
 
@@ -62,7 +63,8 @@ def symmetrize_cell(struc, mode="C"):
     """
     P_struc = ase2pymatgen(struc)
     finder = sga(P_struc, symprec=0.06)
-    P_struc = finder.get_conventional_standard_structure() if mode == "C" else finder.get_primitive_standard_structure()
+    P_struc = finder.get_conventional_standard_structure(
+    ) if mode == "C" else finder.get_primitive_standard_structure()
 
     return pymatgen2ase(P_struc)
 
@@ -99,7 +101,8 @@ def symmetrize(pmg, tol=1e-3, a_tol=5.0, style="pyxtal", hn=None):
     if hn is None:
         hn = Hall(dataset["number"], style=style).hall_default
     if hn != dataset["hall_number"]:
-        dataset = get_symmetry_dataset(atoms, tol, angle_tolerance=a_tol, hall_number=hn)
+        dataset = get_symmetry_dataset(
+            atoms, tol, angle_tolerance=a_tol, hall_number=hn)
     cell = dataset["std_lattice"]
     pos = dataset["std_positions"]
     numbers = dataset["std_types"]
@@ -130,7 +133,8 @@ def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0, style="pyxtal", hn=None):
     # if hn is None:
     #    hn = Hall(s._space_group_data['number'], style=style).hall_default
     if hn != s._space_group_data["hall_number"]:
-        s._space_group_data = get_symmetry_dataset(s._cell, tol, angle_tolerance=a_tol, hall_number=hn)
+        s._space_group_data = get_symmetry_dataset(
+            s._cell, tol, angle_tolerance=a_tol, hall_number=hn)
     return s.get_symmetrized_structure(), s.get_space_group_number()
 
 
@@ -184,7 +188,7 @@ def parse_cif(filename, header=False, spg=False, eng=False, csd=False, sim=False
                 end = i
                 if start is not None:
                     tmp = []
-                    for l in lines[start : end - 1]:
+                    for l in lines[start: end - 1]:
                         if len(re.findall(r"[0-9][B-C]", l)) > 0 or len(re.findall(r"[A-Z][0-9]\' [0-9]", l)) > 0:
                             # print(l) #; import sys; sys.exit()
                             continue
@@ -264,7 +268,8 @@ def get_similar_cids_from_pubchem(base, MaxRecords):
 
     if isinstance(base, int):
         base = str(base)
-    cids = pcp.get_compounds(base, searchtype="similarity", MaxRecords=MaxRecords)
+    cids = pcp.get_compounds(
+        base, searchtype="similarity", MaxRecords=MaxRecords)
     results = []
     for x in cids:
         csd_codes = search_ccdc_structures(x.cid)
@@ -313,7 +318,8 @@ def search_csd_code_by_pubchem(cid):
             data = json.loads(contents, cls=MontyDecoder)
             if ("Section" in data["Record"]["Section"][0]) & (len(data["Record"]["Section"][0]["Section"]) == 3):
                 infos = data["Record"]["Section"][0]["Section"][2]["Section"][0]["Information"]
-                csd_codes = [info["Value"]["StringWithMarkup"][0]["String"] for info in infos]
+                csd_codes = [info["Value"]["StringWithMarkup"]
+                             [0]["String"] for info in infos]
     except:
         csd_codes = []
         print("Failed to parse json", url, "\n")
@@ -462,7 +468,7 @@ def sort_by_dimer(atoms, N_mols, id=10, tol=4.0):
 
     N_atoms = int(len(atoms) / N_mols)
     pos = atoms.get_scaled_positions()
-    refs = pos[id : len(pos) : N_atoms, :]
+    refs = pos[id: len(pos): N_atoms, :]
     # print(refs)
 
     # compuate the indices and shift
@@ -551,7 +557,8 @@ def generate_wp_lib(
             max_fu = max([int(len(g[0]) / max(composition)), 1])
         count = 0
         for i in range(max_fu, min_fu - 1, -1):
-            letters, _, wp_ids = g.list_wyckoff_combinations(composition * i, numWp=(min_wp, max_wp), Nmax=100000)
+            letters, _, wp_ids = g.list_wyckoff_combinations(
+                composition * i, numWp=(min_wp, max_wp), Nmax=100000)
             for _j, wp in enumerate(wp_ids):
                 wp_dofs = 0
                 num = 0
@@ -689,7 +696,8 @@ def split_list_by_ratio(nums, ratio):
         group2.pop()
 
     solutions = []
-    nums = sorted(nums, reverse=True)  # Optional: Sorting can sometimes speed up the process
+    # Optional: Sorting can sometimes speed up the process
+    nums = sorted(nums, reverse=True)
 
     find_splits(0, 0, 0, [], [])
     return solutions
@@ -708,5 +716,6 @@ if __name__ == "__main__":
 
     options = parser.parse_args()
     ids = options.id
-    ids = [int(id) for id in ids.split(",")] if ids.find(",") > 0 else [int(ids)]
+    ids = [int(id) for id in ids.split(",")] if ids.find(
+        ",") > 0 else [int(ids)]
     extract_ase_db(options.file, ids)

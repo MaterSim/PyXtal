@@ -187,7 +187,7 @@ class molecular_crystal:
             if isinstance(mol, pyxtal_molecule):
                 p_mol = mol
             else:
-                p_mol = pyxtal_molecule(mol, seed=self.seed, torsions=torsions[i], tm=self.tol_matrix)
+                p_mol = pyxtal_molecule(mol, seed=self.seed, torsions=torsions[i], tm=self.tol_matrix, random_state=self.random_state)
             self.molecules.append(p_mol)
 
     def set_orientations(self):
@@ -271,6 +271,7 @@ class molecular_crystal:
                         thickness=self.thickness,
                         area=self.area,
                         min_special=coef * max([mol.get_max_length() for mol in self.molecules]),
+                        random_state=self.random_state,
                     )
                     good_lattice = True
                     break
@@ -381,9 +382,9 @@ class molecular_crystal:
 
             if type(site) is dict:  # site with coordinates
                 key = next(iter(site.keys()))
-                wp = wyc_mol(self.group, diff, key, valid_ori, True, self.dim)
+                wp = wyc_mol(self.group, diff, key, valid_ori, True, self.dim, self.random_state)
             else:
-                wp = wyc_mol(self.group, diff, site, valid_ori, True, self.dim)
+                wp = wyc_mol(self.group, diff, site, valid_ori, True, self.dim, self.random_state)
 
             if wp is not False:
                 # Generate a list of coords from the wyckoff position

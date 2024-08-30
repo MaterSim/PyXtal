@@ -24,14 +24,14 @@ ab-initio generation of random crystal structures. It has the following features
 - Structural manipulation via symmetry relation (both subgroup and supergroup)
 - Geometry optimization from built-in and external optimization methods
 
-The current version is ``0.6.8`` at `GitHub <https://github.com/qzhu2017/PyXtal>`_.
+The current version is ``1.0.2`` at `GitHub <https://github.com/MaterSim/PyXtal>`_.
 It is available for use under the MIT license. Expect updates upon request by
 `Qiang Zhu\'s group <https://qzhu2017.github.io>`_ at the
 University of North Carolina at Charlotte.
 
 PyXtal is an open source project. You are welcome to contribute it directly via
-the `GitHub platform <https://github.com/qzhu2017/PyXtal>`_ or send your
-comments and suggestions to the `developer <http://www.physics.unlv.edu/~qzhu/>`_.
+the `GitHub platform <https://github.com/MaterSim/PyXtal>`_ or send your
+comments and suggestions to the `developer <https://qzhu2017.github.io>`_.
 
 
 A basic tutorial is provided below for common functions. Additionally, 
@@ -40,9 +40,9 @@ documentation and source code are provided for individual modules.
 For an experienced Python user who are familiar with Jupyter notebook, you are
 also encouraged to check out the following examples
 
-- `Atomic crystal <https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/01_atomic_crystals.ipynb>`_
-- `Molecular crystal <https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/02_molecular_crystals.ipynb>`_
-- `XRD <https://nbviewer.jupyter.org/github/qzhu2017/PyXtal/blob/master/examples/tutorials_notebook/03_pxrd.ipynb>`_
+- `Atomic crystal <https://nbviewer.jupyter.org/github/MaterSim/PyXtal/blob/master/examples/tutorials_notebook/01_atomic_crystals.ipynb>`_
+- `Molecular crystal <https://nbviewer.jupyter.org/github/MaterSim/PyXtal/blob/master/examples/tutorials_notebook/02_molecular_crystals.ipynb>`_
+- `XRD <https://nbviewer.jupyter.org/github/MaterSim/PyXtal/blob/master/examples/tutorials_notebook/03_pxrd.ipynb>`_
 
 Tutorial
 ========================

@@ -583,7 +583,7 @@ def rotate_vector(v1, v2, rtol=1e-4):
     if np.abs(dot - 1) < rtol:
         return np.identity(3)
     elif np.abs(dot + 1) < rtol:
-        r = [np.random.random(), np.random.random(), np.random.random()]
+        r = np.random.sample(3) #[np.random.random(), np.random.random(), np.random.random()]
         v3 = np.cross(v1, r)
         v3 /= np.linalg.norm(v3)
         # return aa2matrix(v3, np.pi)

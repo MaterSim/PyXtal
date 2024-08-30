@@ -86,7 +86,8 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05)
                 scc_iter=100,
             )
             s, eng = my.run(mode="vc-relax", step=int(steps / 2))
-            my = DFTB(s, skf_dir, kresol=kresol, folder=".", scc_error=1e-4, scc_iter=100)
+            my = DFTB(s, skf_dir, kresol=kresol, folder=".",
+                      scc_error=1e-4, scc_iter=100)
             s, eng = my.run(mode="vc-relax", step=int(steps / 2))
             s = my.struc
     except CalculationFailed:
@@ -109,7 +110,8 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05)
         else:
             eng /= len(s)
 
-        status = xtal.check_validity(criteria) if criteria is not None else True
+        status = xtal.check_validity(
+            criteria) if criteria is not None else True
 
         header = f"{id:4d}"
         dicts = {"validity": status, "energy": eng}
@@ -133,10 +135,15 @@ def gulp_opt_par(ids, xtals, ff, path, criteria):
     """
     results = []
     for id, xtal in zip(ids, xtals):
-        res = gulp_opt_single(id, xtal, ff, path, criteria)
+        folder = path + '/g' + str(id)
+        res = gulp_opt_single(id, xtal, ff, folder, criteria)
         (xtal, eng, status) = res
         if status:
             results.append((id, xtal, eng))
+            try:
+                os.rmdir(folder)
+            except:
+                print("Folder is not empty", folder)
     return results
 
 
@@ -162,7 +169,8 @@ def gulp_opt_single(id, xtal, ff, path, criteria):
     )
     status = False
     if not error:
-        status = xtal.check_validity(criteria) if criteria is not None else True
+        status = xtal.check_validity(
+            criteria) if criteria is not None else True
     if status:
         header = f"{id:4d}"
         dicts = {"validity": status, "energy": eng}
@@ -320,7 +328,7 @@ class database:
                 print("find duplicate! remove", row.id, row.csd_code)
                 self.db.delete([row.id])
         return codes
-        #self.codes = codes
+        # self.codes = codes
 
     def add(self, entry):
         (atom, kvp, data) = entry
@@ -510,7 +518,8 @@ class database_topology:
             "dftb_energy",
             "dftb_relaxed",
         ]
-        self.matcher = sm.StructureMatcher(ltol=ltol, stol=stol, angle_tol=atol)
+        self.matcher = sm.StructureMatcher(
+            ltol=ltol, stol=stol, angle_tol=atol)
 
     def vacuum(self):
         self.db.vacuum()
@@ -533,7 +542,8 @@ class database_topology:
             if hasattr(row, use_relaxed):
                 xtal_str = getattr(row, use_relaxed)
             else:
-                raise ValueError("No ff or vasp relaxed attributes for structure", id)
+                raise ValueError(
+                    "No ff or vasp relaxed attributes for structure", id)
 
             pmg = Structure.from_str(xtal_str, fmt="cif")
 
@@ -615,7 +625,8 @@ class database_topology:
                             elif key == "dof":
                                 kvp[key] = xtal.get_dof()
                             elif key == "wps":
-                                kvp[key] == str(s.wp.get_label() for s in xtal.atom_sites)
+                                kvp[key] == str(s.wp.get_label()
+                                                for s in xtal.atom_sites)
                             elif key == "pearson_symbol":
                                 kvp[key] = xtal.get_Pearson_Symbol()
 
@@ -690,7 +701,8 @@ class database_topology:
                         )
                     )
                 else:
-                    unique_rows.append((row.natoms, row.space_group_number, row.wps, None))
+                    unique_rows.append(
+                        (row.natoms, row.space_group_number, row.wps, None))
             else:
                 to_delete.append(row.id)
         print(len(to_delete), "structures were deleted", to_delete)
@@ -700,9 +712,9 @@ class database_topology:
         """
         Clean up the db by removing the duplicate structures
         Here we check the follow criteria
-            - same number of atoms
-            - same density
-            - same energy
+        - same number of atoms
+        - same density
+        - same energy
 
         Args:
             dtol (float): tolerance of density
@@ -728,7 +740,8 @@ class database_topology:
                     )
 
                 if unique and (
-                    "MAX_energy" in criteria and hasattr(row, "ff_energy") and row.ff_energy > criteria["MAX_energy"]
+                    "MAX_energy" in criteria and hasattr(
+                        row, "ff_energy") and row.ff_energy > criteria["MAX_energy"]
                 ):
                     unique = False
                     print(
@@ -802,7 +815,8 @@ class database_topology:
                         )
                     )
                 else:
-                    unique_rows.append((row.natoms, row.space_group_number, row.wps, row.density, None))
+                    unique_rows.append(
+                        (row.natoms, row.space_group_number, row.wps, row.density, None))
             else:
                 to_delete.append(row.id)
         print(len(to_delete), "structures were deleted", to_delete)
@@ -810,12 +824,9 @@ class database_topology:
 
     def clean_structures_pmg(self, ids=(None, None), min_id=None, dtol=5e-2, criteria=None):
         """
-        Clean up the db by removing the duplicate structures
-        Here we check the follow criteria
-            - same density
-            - pymatgen check
-
-        criteria should look like the following,
+        Clean up the db by removing the duplicate structures.
+        Here we check the follow criteria same density and pymatgen matcher.
+        The criteria should look like the following,
         {'CN': {'C': 3},
          'cutoff': 1.8,
          'MAX_energy': -8.00,
@@ -852,7 +863,8 @@ class database_topology:
                     )
 
                 if unique and (
-                    "MAX_energy" in criteria and hasattr(row, "ff_energy") and row.ff_energy > criteria["MAX_energy"]
+                    "MAX_energy" in criteria and hasattr(
+                        row, "ff_energy") and row.ff_energy > criteria["MAX_energy"]
                 ):
                     unique = False
                     print(
@@ -908,7 +920,8 @@ class database_topology:
                     if abs(den - row.density) < dtol:
                         ref_pmg = xtal.to_pymatgen()
                         s_pmg = ase2pymatgen(self.db.get_atoms(id=rowid))
-                        if self.matcher.fit(s_pmg, ref_pmg):  # , symmetric=True):
+                        # , symmetric=True):
+                        if self.matcher.fit(s_pmg, ref_pmg):
                             print(
                                 "Found duplicate",
                                 row.id,
@@ -985,6 +998,7 @@ class database_topology:
 
         os.makedirs(calc_folder, exist_ok=True)
         ids, xtals = self.select_xtals(ids, overwrite, "ff_energy")
+        assert len(ids) == len(set(ids))
 
         if len(ids) > 0:
             gulp_results = []
@@ -1003,18 +1017,28 @@ class database_topology:
                 if len(ids) < ncpu:
                     ncpu = len(ids)
                 N_cycle = int(np.ceil(len(ids) / ncpu))
-                print("\n# Parallel GULP optimizations", ncpu, N_cycle, len(ids))
-                args_list = []
+                print("\n# Parallel GULP optimizations",
+                      ncpu, N_cycle, len(ids))
 
+                args_list = []
+                # Partition to ensure that each proc get the a similar load for the sorted structures
                 for i in range(ncpu):
-                    id1 = i * N_cycle
-                    id2 = min([id1 + N_cycle, len(ids)])
-                    args_list.append((ids[id1:id2], xtals[id1:id2], ff, calc_folder, criteria))
+                    par_ids = []
+                    par_xtals = []
+                    for j in range(N_cycle):
+                        _id = j * ncpu + i
+                        if _id < len(ids):
+                            par_ids.append(ids[_id])
+                            par_xtals.append(xtals[_id])
+                    args_list.append(
+                        (par_ids, par_xtals, ff, calc_folder, criteria))
 
                 with ProcessPoolExecutor(max_workers=ncpu) as executor:
-                    results = [executor.submit(gulp_opt_par, *p) for p in args_list]
+                    results = [executor.submit(gulp_opt_par, *p)
+                               for p in args_list]
                     for result in results:
                         gulp_results.extend(result.result())
+                print("Finish Parallel GULP optimizations", len(gulp_results))
             self._update_db_gulp(gulp_results, ff)
         else:
             print("All structures have the ff_energy already")
@@ -1022,16 +1046,22 @@ class database_topology:
     def _update_db_gulp(self, gulp_results, ff):
         """
         Update db with the gulp_results
+        This may take some time to complete if there are many rows
+        https://wiki.fysik.dtu.dk/ase/ase/db/db.html#writing-and-updating-many-rows-efficiently
+        Better do it in a single transaction
 
         Args:
             gulp_results: list of (id, xtal, eng) tuples
             ff (str): forcefield type (e.g., 'reaxff')
         """
         print("Wrap up the final results and update db", len(gulp_results))
-        for gulp_result in gulp_results:
-            (id, xtal, eng) = gulp_result
-            if xtal is not None:
-                self.db.update(id, ff_energy=eng, ff_lib=ff, ff_relaxed=xtal.to_file())
+        with self.db:
+            for gulp_result in gulp_results:
+                (id, xtal, eng) = gulp_result
+                if xtal is not None:
+                    self.db.update(id, ff_energy=eng, ff_lib=ff,
+                                   ff_relaxed=xtal.to_file())
+                    print('update_db_gulp', id)
 
     def update_row_dftb_energy(
         self,
@@ -1062,7 +1092,8 @@ class database_topology:
         os.makedirs(calc_folder, exist_ok=True)
         use_relaxed = "ff_relaxed" if use_ff else None
 
-        ids, xtals = self.select_xtals(ids, overwrite, "dftb_energy", use_relaxed)
+        ids, xtals = self.select_xtals(
+            ids, overwrite, "dftb_energy", use_relaxed)
 
         dftb_results = []
         os.chdir(calc_folder)
@@ -1070,7 +1101,8 @@ class database_topology:
         # Serial or Parallel computation
         if ncpu == 1:
             for id, xtal in zip(ids, xtals):
-                res = dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria)
+                res = dftb_opt_single(
+                    id, xtal, skf_dir, steps, symmetrize, criteria)
                 (xtal, eng, status) = res
                 if status:
                     dftb_results.append((id, xtal, eng))
@@ -1100,7 +1132,8 @@ class database_topology:
                 )
 
             with ProcessPoolExecutor(max_workers=ncpu) as executor:
-                results = [executor.submit(dftb_opt_par, *p) for p in args_list]
+                results = [executor.submit(dftb_opt_par, *p)
+                           for p in args_list]
                 for result in results:
                     dftb_results.extend(result.result())
 
@@ -1121,7 +1154,8 @@ class database_topology:
         try:
             import juliacall
         except:
-            print("Cannot load JuliaCall, no support on topology parser")
+            raise RuntimeError(
+                "Cannot load JuliaCall, Plz enable it before running")
 
         def parse_topology(topology_info):
             """
@@ -1136,7 +1170,8 @@ class database_topology:
                     dim = d
                 tmp = n.split(",")[0]
                 if tmp.startswith("UNKNOWN"):
-                    detail = tmp[7:]  # tuple(int(num) for num in tmp[7:].split())
+                    # tuple(int(num) for num in tmp[7:].split())
+                    detail = tmp[7:]
                     tmp = "aaa"
                 elif tmp.startswith("unstable"):
                     tmp = "unstable"
@@ -1191,7 +1226,8 @@ class database_topology:
                     detail[:10],
                 )
                 # Unknown will be labeled as aaa
-                self.db.update(row.id, topology=name, dimension=dim, topology_detail=detail)
+                self.db.update(row.id, topology=name,
+                               dimension=dim, topology_detail=detail)
             else:
                 print("Existing Topology", row.topology)
 
@@ -1270,11 +1306,15 @@ class database_topology:
             den = row.density
             dof = row.dof
             ps = row.pearson_symbol
-            sim = float(row.similarity) if hasattr(row, "similarity") and row.similarity is not None else None
+            sim = float(row.similarity) if hasattr(
+                row, "similarity") and row.similarity is not None else None
             top = row.topology if hasattr(row, "topology") else None
-            ff_eng = float(row.ff_energy) if hasattr(row, "ff_energy") else None
-            vasp_eng = float(row.vasp_energy) if hasattr(row, "vasp_energy") else None
-            properties.append([row.id, ps, spg, den, dof, sim, ff_eng, vasp_eng, top])
+            ff_eng = float(row.ff_energy) if hasattr(
+                row, "ff_energy") else None
+            vasp_eng = float(row.vasp_energy) if hasattr(
+                row, "vasp_energy") else None
+            properties.append([row.id, ps, spg, den, dof,
+                              sim, ff_eng, vasp_eng, top])
 
         dicts = {}
         for i, key in enumerate(keys):
@@ -1307,7 +1347,8 @@ class database_topology:
             # if True:
             try:
                 xtal = self.get_pyxtal(id, use_relaxed)
-                number, symbol = xtal.group.number, xtal.group.symbol.replace("/", "")
+                number, symbol = xtal.group.number, xtal.group.symbol.replace(
+                    "/", "")
                 # convert to the desired subgroup representation if needed
                 if number != spg:
                     paths = xtal.group.path_to_subgroup(spg)
@@ -1322,9 +1363,11 @@ class database_topology:
                     f"{id:d}-{xtal.get_Pearson_Symbol():s}-{number:d}-{symbol:s}",
                 )
 
-                status = xtal.check_validity(criteria, True) if criteria is not None else True
+                status = xtal.check_validity(
+                    criteria, True) if criteria is not None else True
             except:
                 status = False
+                label = "Error"
 
             if status:
                 try:
@@ -1334,10 +1377,10 @@ class database_topology:
                         _l, _sp, _cn = s.wp.get_label(), s.specie, s.coordination
                         label += f"-{_l:s}-{_sp:s}{_cn:d}"
                     label += f"-S{sim:.3f}"
+                    if len(label) > 40:
+                        label = label[:40]
                 except:
                     print("Problem in setting site coordination")
-                if len(label) > 40:
-                    label = label[:40]
 
                 if den is not None:
                     label += f"-D{abs(den):.2f}"
@@ -1366,43 +1409,42 @@ class database_topology:
             folder = f"cpu0{i}"
         return folder
 
-    def get_db_unique(self, db_name=None, etol=2e-3):
+    def get_db_unique(self, db_name=None, prec=3):
         """
         Get a db file with only unique structures
         with the following identical attributes:
         (topology, ff_energy)
+
+        Args:
+            db_name (str): filename for the new db
+            prec (int): ff_energy precision for the round number
         """
+
         print(f"The {self.db_name:s} has {self.db.count():d} strucs")
         if db_name is None:
             db_name = self.db_name[:-3] + "_unique.db"
         if os.path.exists(db_name):
             os.remove(db_name)
 
-        unique_props = []
+        unique_props = {}  # Using a dictionary to store unique properties
         for row in self.db.select():
             if hasattr(row, "topology") and hasattr(row, "ff_energy"):
-                # spg = row.space_group_number
                 top, top_detail = row.topology, row.topology_detail
-                dof, ff_energy = row.dof, row.ff_energy
-                prop = (row.id, dof, top, top_detail, ff_energy)
-                unique = True
-                for unique_prop in unique_props:
-                    # (_id, _spg, _top, _top_detail, _ff_energy) = unique_prop
-                    (_id, _dof, _top, _top_detail, _ff_energy) = unique_prop
-                    if top == _top and top_detail == _top_detail and abs(ff_energy - _ff_energy) < etol:
-                        if dof < _dof:
-                            print("updating", row.id, top, ff_energy)
-                            unique_prop = prop
-                        else:
-                            print("Duplicate", row.id, top, ff_energy)
-                        unique = False
-                        break
-
-                if unique:
+                dof, ff_energy = row.dof, round(row.ff_energy, prec)
+                prop_key = (top, top_detail, ff_energy)
+                # A dictionary lookup
+                if prop_key in unique_props:
+                    _id, _dof = unique_props[prop_key]
+                    if dof < _dof:
+                        print("Updating", row.id, top, ff_energy)
+                        unique_props[prop_key] = (row.id, dof)
+                    else:
+                        print("Duplicate", row.id, top, ff_energy)
+                else:
                     print("Adding", row.id, top, ff_energy)
-                    unique_props.append(prop)
+                    unique_props[prop_key] = (row.id, dof)
 
-        ids = [prop[0] for prop in unique_props]
+        ids = [unique_props[key][0] for key in unique_props.keys()]
         with connect(db_name) as db:
             for id in ids:
                 row = self.db.get(id)
@@ -1430,7 +1472,8 @@ class database_topology:
         ref_data = []
         for row in db_ref.db.select():
             if hasattr(row, "topology") and hasattr(row, "ff_energy"):
-                ref_data.append((row.topology, row.topology_detail, row.ff_energy))
+                ref_data.append(
+                    (row.topology, row.topology_detail, row.ff_energy))
 
         overlaps = []
         for row in self.db.select():
@@ -1521,7 +1564,8 @@ if __name__ == "__main__":
         os.environ["ASE_DFTB_COMMAND"] = "/Users/qzhu8/opt/dftb+/bin/dftb+ > PREFIX.out"
         skf_dir = "/Users/qzhu8/GitHub/MOF-Builder/3ob-3-1/"
         # db.update_row_dftb_energy(skf_dir, ncpu=1, ids=(0, 2), overwrite=True)
-        db.update_row_dftb_energy(skf_dir, ncpu=1, ids=(17, 17), overwrite=True)
+        db.update_row_dftb_energy(
+            skf_dir, ncpu=1, ids=(17, 17), overwrite=True)
 
     db = database_topology("total.db")
     db.get_db_unique()

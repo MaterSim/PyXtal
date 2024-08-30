@@ -28,13 +28,13 @@ class Lattice:
         kwargs: various values which may be defined. If none are defined,
             random ones will be generated. Values will be passed to
             generate_lattice. Options include:
-            area: The cross-sectional area (in Ang^2). Only for 1D crystals
-            thickness: The cell's thickness (in Angstroms) for 2D crystals
-            unique_axis: The unique axis for certain symmetry (and especially
+            'area': The cross-sectional area (in Ang^2). Only for 1D crystals
+            'thickness': The cell's thickness (in Angstroms) for 2D crystals
+            'unique_axis': The unique axis for certain symmetry (and especially
                 layer) groups. Because the symmetry operations are not also
                 transformed, you should use the default values for random
                 crystal generation
-            random: If False, keeps the stored values for the lattice geometry
+            'random': If False, keeps the stored values for the lattice geometry
                 even upon applying reset_matrix. To alter the matrix, use
                 set_matrix() or set_para
             'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
@@ -574,13 +574,13 @@ class Lattice:
 
     def generate_para(self):
         if self.dim == 3:
-            return generate_cellpara(self.ltype, self.volume, **self.kwargs)
+            return generate_cellpara(self.ltype, self.volume, random_state=self.random_state, **self.kwargs)
         elif self.dim == 2:
-            return generate_cellpara_2D(self.ltype, self.volume, **self.kwargs)
+            return generate_cellpara_2D(self.ltype, self.volume, random_state=self.random_state, **self.kwargs)
         elif self.dim == 1:
-            return generate_cellpara_1D(self.ltype, self.volume, **self.kwargs)
+            return generate_cellpara_1D(self.ltype, self.volume, random_state=self.random_state, **self.kwargs)
         elif self.dim == 0:
-            return generate_cellpara_0D(self.ltype, self.volume, **self.kwargs)
+            return generate_cellpara_0D(self.ltype, self.volume, random_state=self.random_state, **self.kwargs)
         return None
 
     def generate_matrix(self):

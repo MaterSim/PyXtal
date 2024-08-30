@@ -65,8 +65,10 @@ class planes:
         self.cell_reciprocal = xtal.lattice.inv_matrix
 
     def set_planes(self):
-        planes = list(itertools.product(range(-self.extent, self.extent + 1), repeat=3))
-        planes = [hkl for hkl in planes if hkl != (0, 0, 0) and not has_reduction(hkl)]
+        planes = list(itertools.product(
+            range(-self.extent, self.extent + 1), repeat=3))
+        planes = [hkl for hkl in planes if hkl !=
+                  (0, 0, 0) and not has_reduction(hkl)]
         self.planes = planes
 
     def get_cp_factor(self, hkl):
@@ -76,7 +78,8 @@ class planes:
         cp_factor = 0
         for n in range(1, 10):
             if dspacing / n > self.d_min:
-                _factor = np.abs(self.get_structure_factor(n * hkl)) / len(self.atoms)
+                _factor = np.abs(self.get_structure_factor(
+                    n * hkl)) / len(self.atoms)
                 if _factor > cp_factor:
                     cp_factor = _factor
             else:

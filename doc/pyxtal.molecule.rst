@@ -2,6 +2,6 @@ pyxtal.molecule module
 ======================
 
 .. automodule:: pyxtal.molecule
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

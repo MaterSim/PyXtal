@@ -51,7 +51,7 @@ or make a copy of the source code, and then install it manually.
 
 ::
 
-    $ git clone https://github.com/qzhu2017/pyxtal
+    $ git clone https://github.com/MaterSim/pyxtal
     $ cd pyxtal
     $ pip install .
 
@@ -60,7 +60,7 @@ or update the code to our developing version
 
 ::
 
-    $ pip install --upgrade git+https://github.com/qzhu2017/PyXtal.git@master
+    $ pip install --upgrade git+https://github.com/MaterSim/PyXtal.git@master
 
 
 This will install the module. You can check the installation of the code by a
@@ -86,7 +86,7 @@ You expect to see the following output.
     ----------------------(version 0.0.1 )----------------------
 
     A Python package for random crystal generation
-    The source code is available at https://github.com/qzhu2017/pyxtal
+    The source code is available at https://github.com/MaterSim/pyxtal
     Developed by Zhu's group at University of Nevada Las Vegas
 
 

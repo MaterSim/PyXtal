@@ -1,5 +1,5 @@
 """
-Global Optimizer
+WFS sampler
 """
 
 from __future__ import annotations
@@ -49,7 +49,8 @@ class WFS(GlobalOptimize):
         E_max (float): maximum energy defined as an invalid structure
         verbose (bool): show more details
         matcher : structurematcher from pymatgen
-        early_quit: whether quit the program early when the target is found
+        early_quit (bool): if quit the program early when the target is found
+        use_mpi (bool): if use mpi
     """
 
     def __init__(
@@ -66,8 +67,8 @@ class WFS(GlobalOptimize):
         ref_criteria: dict[any, any] | None = None,
         N_gen: int = 10,
         N_pop: int = 10,
-        fracs: list | None = None,
         N_cpu: int = 1,
+        fracs: list | None = None,
         cif: str | None = None,
         block: list[any] | None = None,
         num_block: list[any] | None = None,
@@ -87,6 +88,7 @@ class WFS(GlobalOptimize):
         matcher: StructureMatcher | None = None,
         early_quit: bool = False,
         check_stable: bool = False,
+        use_mpi: bool = False,
     ):
         if isinstance(random_state, Generator):
             self.random_state = random_state.spawn(1)[0]
@@ -95,7 +97,7 @@ class WFS(GlobalOptimize):
 
         # POPULATION parameters:
         if fracs is None:
-            fracs = [0.6, 0.4, 0.0]
+            fracs = [0.6, 0.4]
         self.N_gen = N_gen
         self.N_pop = N_pop
         self.fracs = np.array(fracs)
@@ -134,120 +136,155 @@ class WFS(GlobalOptimize):
             matcher,
             early_quit,
             check_stable,
+            use_mpi,
         )
 
         # Setup the stats [N_gen, Npop, (E, matches)]
         self.stats = np.zeros([self.N_gen, self.N_pop, 2])
         self.stats[:, :, 0] = self.E_max
 
-        strs = self.full_str()
-        self.logging.info(strs)
-        print(strs)
+        if self.rank == 0:
+            strs = self.full_str()
+            self.logging.info(strs)
+            print(strs)
 
     def full_str(self):
         s = str(self)
         s += "\nMethod    : Stochastic Width First Sampling"
         s += f"\nGeneration: {self.N_gen:4d}"
         s += f"\nPopulation: {self.N_pop:4d}"
-        s += "\nFraction  : {:4.2f} {:4.2f} {:4.2f}".format(*self.fracs)
+        s += "\nFraction  : {:4.2f} {:4.2f}".format(*self.fracs)
         # The rest base information from now on
         return s
 
-    def run(self, ref_pmg=None, ref_eng=None, ref_pxrd=None):
+    def run_mpi(self):
         """
-        The main code to run WFS prediction
-
-        Args:
-            ref_pmg: reference pmg structure
-            ref_eng: reference energy
-            ref_pxrd: reference pxrd profile in 2D array
+        The mpi code to run WFS prediction
 
         Returns:
             success_rate or None
         """
-        if ref_pmg is not None:
-            ref_pmg.remove_species("H")
-
         # Related to the FF optimization
         N_added = 0
         success_rate = 0
 
         for gen in range(self.N_gen):
+
+            current_xtals = None
+
+            if self.rank == 0:
+                print(f"\nGeneration {gen:d} starts")
+                self.logging.info(f"Generation {gen:d} starts")
+                self.generation = gen + 1
+                t0 = time()
+
+                # Initialize
+                current_xtals = [(None, "Random")] * self.N_pop
+
+                # WFS update
+                if gen > 0:
+                    N_pops = [int(self.N_pop * i) for i in self.fracs]
+                    count = N_pops[0]
+                    for _sub_pop in range(N_pops[1]):
+                        id = self._selTournament(engs)
+                        current_xtals[count] = (prev_xtals[id][0], "Mutation")
+                        count += 1
+
+            # broadcast
+            current_xtals = self.comm.bcast(current_xtals, root=0)
+
+            # Local optimization
+            gen_results = self.local_optimization(gen, current_xtals)
+
+            prev_xtals = None
+            if self.rank == 0:
+                # pass results, summary_and_ranking
+                current_xtals, matches, engs = self.gen_summary(gen,
+                                    t0, gen_results, current_xtals)
+
+                # Save the reps for next move
+                prev_xtals = current_xtals  # ; print(self.engs)
+
+            # broadcast
+            prev_xtals = self.comm.bcast(prev_xtals, root=0)
+
+            # Update the FF parameters if necessary
+            if self.ff_opt:
+                N_added = self.update_ff_paramters(
+                    current_xtals, engs, N_added)
+            else:
+                if self.rank == 0:
+                    if self.ref_pmg is not None:
+                        success_rate = self.success_count(gen,
+                                                          current_xtals,
+                                                          matches)
+                        if self.early_termination(success_rate):
+                            return success_rate
+
+                    elif self.ref_pxrd is not None:
+                        self.count_pxrd_match(gen,
+                                              current_xtals,
+                                              matches)
+
+        return success_rate
+
+    def run_serial(self):
+        """
+        The serial/multiprocess code to run WFS prediction
+
+        Returns:
+            success_rate or None
+        """
+        # Related to the FF optimization
+        N_added = 0
+        success_rate = 0
+
+        for gen in range(self.N_gen):
+
             print(f"\nGeneration {gen:d} starts")
             self.logging.info(f"Generation {gen:d} starts")
             self.generation = gen + 1
             t0 = time()
 
-            # lists for structure information
-            current_xtals = [None] * self.N_pop
-            current_tags = ["Random"] * self.N_pop
+            # Initialize
+            current_xtals = [(None, "Random")] * self.N_pop
 
-            # Set up the origin for new structures
+            # WFS update
             if gen > 0:
                 N_pops = [int(self.N_pop * i) for i in self.fracs]
                 count = N_pops[0]
-
                 for _sub_pop in range(N_pops[1]):
                     id = self._selTournament(engs)
-                    xtal = prev_xtals[id]
-                    current_tags[count] = "Mutation"
-                    if xtal is None:
-                        print(id)
-                        print(len(engs))
-                        print(engs)
-                        print(len(prev_xtals))
-                        print(prev_xtals)
-                        raise ValueError("Problem in selection")
-                    current_xtals[count] = xtal
-                    count += 1
-
-                # Not Working
-                for _sub_pop in range(N_pops[2]):
-                    xtal1 = prev_xtals[self.selTournament(engs)]
-                    xtal2 = prev_xtals[self.selTournament(engs)]
-                    current_tags[count] = "Crossover"
-                    current_xtals[count] = self._crossover(xtal1, xtal2)
+                    current_xtals[count] = (prev_xtals[id][0], "Mutation")
                     count += 1
 
             # Local optimization
-            gen_results = self.local_optimization(gen, current_xtals,
-                    ref_pmg, ref_pxrd)
+            gen_results = self.local_optimization(gen, current_xtals)
 
-            # summary_and_ranking
-            current_xtals, current_matches, engs = self.gen_summary(gen,
-                    t0, gen_results, current_xtals, current_tags, ref_pxrd)
+            # pass results, summary_and_ranking
+            current_xtals, matches, engs = self.gen_summary(gen,
+                                t0, gen_results, current_xtals)
 
             # Save the reps for next move
             prev_xtals = current_xtals  # ; print(self.engs)
-            self.min_energy = np.min(np.array(self.engs))
-            self.N_struc = len(self.engs)
 
             # Update the FF parameters if necessary
             if self.ff_opt:
-                N_max = min([int(self.N_pop * 0.6), 50])
-                ids = np.argsort(engs)
-                xtals = self.select_xtals(current_xtals, ids, N_max)
-                print("Select Good structures for FF optimization", len(xtals))
-                N_added = self.ff_optimization(xtals, N_added)
+                N_added = self.update_ff_paramters(
+                    current_xtals, engs, N_added)
             else:
-                if ref_pmg is not None:
+                if self.ref_pmg is not None:
                     success_rate = self.success_count(gen,
                                                       current_xtals,
-                                                      current_matches,
-                                                      current_tags,
-                                                      ref_pmg)
-                    gen_out = f"Success rate at Gen {gen:3d}: {success_rate:7.4f}%"
-                    self.logging.info(gen_out)
-                    print(gen_out)
+                                                      matches)
 
                     if self.early_termination(success_rate):
                         return success_rate
-                elif ref_pxrd is not None:
-                        self.count_pxrd_match(gen,
-                                              current_xtals,
-                                              current_matches,
-                                              current_tags)
 
+                elif self.ref_pxrd is not None:
+                    self.count_pxrd_match(gen,
+                                          current_xtals,
+                                          matches)
 
         return success_rate
 
@@ -257,15 +294,10 @@ class WFS(GlobalOptimize):
         individuals, *k* times. The list returned contains
         references to the input *individuals*.
         """
-        IDs = self.random_state.choice(len(fitness), size=int(len(fitness) * factor), replace=False)
+        IDs = self.random_state.choice(len(fitness), size=int(
+            len(fitness) * factor), replace=False)
         min_fit = np.argmin(fitness[IDs])
         return IDs[min_fit]
-
-    def _crossover(self, x1, x2):
-        """
-        How to design this?
-        """
-        raise NotImplementedError
 
 
 if __name__ == "__main__":
@@ -291,8 +323,10 @@ if __name__ == "__main__":
         default=10,
         help="Population size, optional",
     )
-    parser.add_argument("-n", "--ncpu", dest="ncpu", type=int, default=1, help="cpu number, optional")
-    parser.add_argument("--ffopt", action="store_true", help="enable ff optimization")
+    parser.add_argument("-n", "--ncpu", dest="ncpu", type=int,
+                        default=1, help="cpu number, optional")
+    parser.add_argument("--ffopt", action="store_true",
+                        help="enable ff optimization")
 
     options = parser.parse_args()
     gen = options.gen
@@ -307,7 +341,8 @@ if __name__ == "__main__":
     db = database(db_name)
     row = db.get_row(name)
     xtal = db.get_pyxtal(name)
-    smile, wt, spg = row.mol_smi, row.mol_weight, row.space_group.replace(" ", "")
+    smile, wt, spg = row.mol_smi, row.mol_weight, row.space_group.replace(
+        " ", "")
     chm_info = None
     if not ffopt:
         if "charmm_info" in row.data:
@@ -323,7 +358,8 @@ if __name__ == "__main__":
                 os.remove("parameters.xml")
     # load reference xtal
     pmg0 = xtal.to_pymatgen()
-    if xtal.has_special_site(): xtal = xtal.to_subgroup()
+    if xtal.has_special_site():
+        xtal = xtal.to_subgroup()
     N_torsion = xtal.get_num_torsions()
 
     # GO run
@@ -334,7 +370,7 @@ if __name__ == "__main__":
         xtal.group.number,
         name.lower(),
         info=chm_info,
-        ff_style="openff",  #'gaff',
+        ff_style="openff",  # 'gaff',
         ff_opt=ffopt,
         N_gen=gen,
         N_pop=pop,

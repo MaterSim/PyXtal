@@ -1,7 +1,7 @@
-pyxtal.wyckoff_site module
-==========================
+pyxtal.wyckoff\_site module
+===========================
 
 .. automodule:: pyxtal.wyckoff_site
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -32,5 +32,36 @@ jobs:
       - name: Install dependencies
         run: uv pip install .[test] --system
 
-      - name: Run Tests
+      - name: Test_general
         run: pytest tests/test_all.py
+
+      - name: Test_crystal
+        run: pytest tests/test_crystal.py
+
+      - name: Test_lattice
+        run: pytest tests/test_lattice.py
+
+      - name: Test_molecule
+        run: pytest tests/test_molecule.py
+
+      - name: Test_wyckoff
+        run: pytest tests/test_wyckoff.py
+
+      - name: Test_symmetry
+        run: pytest tests/test_symmetry.py
+
+      - name: Test_supergroup
+        run: pytest tests/test_supergroup.py
+
+      - name: Test_group
+        run: pytest tests/test_group.py
+
+      - name: Test_lego
+        run: pytest tests/test_lego.py 
+
+      #- name: Test_xrd
+      #  run: pytest tests/test_xrd.py
+
+
+
+

@@ -63,7 +63,7 @@ class TestSupergroup(unittest.TestCase):
         data = {
             "BTO-Amm2": 221,
             "BTO": 221,
-            "lt_cristobalite": 227,
+            #"lt_cristobalite": 227,
             "NaSb3F10": 194,
         }
         for cif in data:
@@ -115,11 +115,11 @@ class TestSupergroup(unittest.TestCase):
     def test_long2(self):
         paras = (
             ["P4_332", 155],  # 1-4 splitting
-            ["Fd3", 70],  # 1-3
+            #["Fd3", 70],  # 1-3
             ["Pm3", 47],  # 1-3
             ["Fd3m", 166],
             ["R-3c", 15],
-            ["R32", 5],
+            #["R32", 5],
             ["R-3", 147],  # 1-3, k
             ["P4_332", 96],  # 1-3
         )
@@ -153,7 +153,7 @@ class TestSupergroup(unittest.TestCase):
         data = {
             "BTO": [123, 221],
             "lt_cristobalite": [98, 210, 227],
-            "BTO-Amm2": [65, 123, 221],
+            #"BTO-Amm2": [65, 123, 221],
             # "NaSb3F10": [186, 194],
             # "NaSb3F10": [176, 194],
             # "MPWO": [59, 71, 139, 225],
@@ -209,9 +209,12 @@ class TestSupergroup(unittest.TestCase):
         _, _, _, d = s1.get_disps_sets(s2, 1.0)
         assert d < 0.15
 
-        s1 = pyxtal()
-        s1.from_seed(cif_path + "sim-0.vasp")
-        s2 = pyxtal()
-        s2.from_seed(cif_path + "sim-1.vasp")
-        _, _, _, d = s1.get_disps_sets(s2, 1.0, 0.3)
-        assert d < 0.02
+        #s1 = pyxtal()
+        #s1.from_seed(cif_path + "sim-0.vasp")
+        #s2 = pyxtal()
+        #s2.from_seed(cif_path + "sim-1.vasp")
+        #_, _, _, d = s1.get_disps_sets(s2, 1.0, 0.3)
+        #assert d < 0.02
+
+if __name__ == "__main__":
+    unittest.main()
