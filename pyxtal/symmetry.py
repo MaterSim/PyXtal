@@ -1659,8 +1659,8 @@ class Group:
             a list of (g_types, subgroup_id, spg_number, wp_list (optional))
         """
         # label = [str(self[index].multiplicity) + self[index].letter]
-        k_subgroup = subgroup_data.get_k_subgroup()
-        t_subgroup = subgroup_data.get_t_subgroup()
+        k_subgroup = SYMDATA.get_k_subgroup()
+        t_subgroup = SYMDATA.get_t_subgroup()
 
         label = [self[index].get_label()]
         potential = [[(None, None, self.number, label)]]
