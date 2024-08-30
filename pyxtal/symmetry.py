@@ -74,7 +74,6 @@ class SymmetryData:
             self._wyckoff_sg = read_csv(rf("pyxtal", "database/wyckoff_list.csv"))
         return self._wyckoff_sg
 
-    @property
     def get_wyckoff_lg(self):
         if self._wyckoff_lg is None:
             self._wyckoff_lg = read_csv(rf("pyxtal", "database/layer.csv"))
@@ -98,7 +97,7 @@ class SymmetryData:
     def get_symmetry_lg(self):
         if self._symmetry_lg is None:
             self._symmetry_lg = read_csv(rf("pyxtal", "database/layer_symmetry.csv"))
-        return self._wyckoff_lg
+        return self._symmetry_lg
 
     def get_symmetry_rg(self):
         if self._symmetry_rg is None:
@@ -120,12 +119,12 @@ class SymmetryData:
             self._generator_lg = read_csv(rf("pyxtal", "database/layer_generators.csv"))
         return self._generator_lg
 
-    def get_symmetry_rg(self):
+    def get_generator_rg(self):
         if self._generator_rg is None:
             self._generator_rg = read_csv(rf("pyxtal", "database/rod_generators.csv"))
         return self._generator_rg
 
-    def get_symmetry_pg(self):
+    def get_generator_pg(self):
         if self._generator_pg is None:
             self._generator_pg = read_csv(rf("pyxtal", "database/point_generators.csv"))
         return self._generator_pg
