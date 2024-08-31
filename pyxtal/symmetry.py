@@ -1331,6 +1331,24 @@ class Group:
             msg = "Only supports the supergroups for space group"
             raise NotImplementedError(msg)
 
+    @classmethod
+    def _get_max_subgroup_numbers(cls, number, max_cell=9):
+        """
+        Returns the minimal supergroups as a dictionary
+        """
+        groups = []
+        sub_k = Group._get_max_k_subgroup(number)
+        sub_t = Group._get_max_t_subgroup(number)
+        k = sub_k["subgroup"]
+        t = sub_t["subgroup"]
+        for i, n in enumerate(t):
+            if np.linalg.det(sub_t["transformation"][i][:3, :3]) <= max_cell:
+                groups.append(n)
+        for i, n in enumerate(k):
+            if np.linalg.det(sub_k["transformation"][i][:3, :3]) <= max_cell:
+                groups.append(n)
+        return groups
+
     def get_max_subgroup_numbers(self, max_cell=9):
         """
         Returns the minimal supergroups as a dictionary
@@ -1550,8 +1568,8 @@ class Group:
             groups = []
             subgroups = []
             for g in previous_layer_groups:
-                subgroup_numbers = np.unique(
-                    Group(g, quick=True).get_max_subgroup_numbers())
+                #subgroup_numbers = np.unique(Group(g, quick=True).get_max_subgroup_numbers())
+                subgroup_numbers = np.unique(Group._get_max_subgroup_numbers(g))
 
                 # If a subgroup list has been found with H
                 # trace a path through the dictionary to build the path
@@ -1605,6 +1623,7 @@ class Group:
     #            path_list.append((g_type, id, p))
     #            g0 = g1
     #    return path_list
+
     def path_to_subgroup(self, H):
         """
         For a given a path, extract the
@@ -1693,7 +1712,6 @@ class Group:
         Find the path to transform the special wp into general site
 
         Args:
-            group: Group object
             index: the index of starting wp
             max_steps: the number of steps to search
 
@@ -1748,11 +1766,11 @@ class Group:
                 [
                     deepcopy(p)[1:]
                     for p in potential
-                    if (len(set(p[-1][3])) == 1 and p[-1][3][0][-1] == Group(p[-1][2])[0].letter)
+                    if (len(set(p[-1][3])) == 1 and p[-1][3][0][-1] == Wyckoff_position.from_group_and_index(p[-1][2], 0).letter)
                 ]
             )
             potential = [
-                p for p in potential if not (len(set(p[-1][3])) == 1 and p[-1][3][0][-1] == Group(p[-1][2])[0].letter)
+                p for p in potential if not (len(set(p[-1][3])) == 1 and p[-1][3][0][-1] == Wyckoff_position.from_group_and_index(p[-1][2], 0).letter)
             ]
 
         return solutions
@@ -2325,7 +2343,11 @@ class Wyckoff_position:
                 trans = np.array([[1, 0, 1], [0, 1, 0], [1, 0, 1]])
 
         if 2 < self.number < 16:
-            ops = Group(self.number)[self.index] if reset else self.ops
+            #ops = Group(self.number)[self.index] if reset else self.ops
+            if reset:
+                ops = Wyckoff_position.from_group_and_index(self.number, self.index)
+            else:
+                ops = self.ops
 
             for j, op in enumerate(ops):
                 vec = op.translation_vector.dot(trans)

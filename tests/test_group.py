@@ -134,5 +134,10 @@ class TestGroup(unittest.TestCase):
             else:
                 assert wp.get_label() == wp0
 
+    def test_short_path_to_general_wp():
+        data = [('t', 0, 141, ['16h']), ('t', 6, 122, ['16e'])]
+        G = Group(227)
+        assert G.short_path_to_general_wp(4) == data
+
 if __name__ == "__main__":
     unittest.main()
