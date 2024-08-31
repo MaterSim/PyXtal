@@ -42,6 +42,10 @@ def rf(package_name, resource_path):
 Properties for Lazy Loading
 """
 class SymmetryData:
+
+    _k_subgroup = None
+    _t_subgroup = None
+
     def __init__(self):
         self._wyckoff_sg = None
         self._wyckoff_lg = None
@@ -59,15 +63,17 @@ class SymmetryData:
         self._k_subgroup = None
         self._hall_table = None
 
-    def get_t_subgroup(self):
-        if self._t_subgroup is None:
-            self._t_subgroup = loadfn(rf("pyxtal", "database/t_subgroup.json"))
-        return self._t_subgroup
+    @classmethod
+    def get_t_subgroup(cls):
+        if cls._t_subgroup is None:
+            cls._t_subgroup = loadfn(rf("pyxtal", "database/t_subgroup.json"))
+        return cls._t_subgroup
 
-    def get_k_subgroup(self):
-        if self._k_subgroup is None:
-            self._k_subgroup = loadfn(rf("pyxtal", "database/k_subgroup.json"))
-        return self._k_subgroup
+    @classmethod
+    def get_k_subgroup(cls):
+        if cls._k_subgroup is None:
+            cls._k_subgroup = loadfn(rf("pyxtal", "database/k_subgroup.json"))
+        return cls._k_subgroup
 
     def get_wyckoff_sg(self):
         if self._wyckoff_sg is None:
@@ -1127,34 +1133,44 @@ class Group:
             msg = "Only supports the subgroups for space group"
             raise NotImplementedError(msg)
 
-    def get_max_k_subgroup(self):
+    @classmethod
+    def _get_max_k_subgroup(cls, number=None):
         """
         Returns the maximal k-subgroups as a dictionary
         """
-        if self.dim == 3:
-            k_subgroup = SYMDATA.get_k_subgroup()
-            return k_subgroup[str(self.number)]
-        else:
-            msg = "Only supports the subgroups for space group"
-            raise NotImplementedError(msg)
+        if number is None:
+            number = cls.number
+        k_subgroup = SYMDATA.get_k_subgroup()
+        return k_subgroup[str(number)]
 
-    def get_max_t_subgroup(self):
+    @classmethod
+    def _get_max_t_subgroup(cls, number=None):
         """
         Returns the maximal t-subgroups as a dictionary
         """
-        if self.dim == 3:
-            t_subgroup = SYMDATA.get_t_subgroup()
-            return t_subgroup[str(self.number)]
-        else:
-            msg = "Only supports the subgroups for space group"
-            raise NotImplementedError(msg)
+        if number is None:
+            number = cls.number
+        t_subgroup = SYMDATA.get_t_subgroup()
+        return t_subgroup[str(number)]
+
+    def get_max_k_subgroup(self):
+
+        return self._get_max_k_subgroup(self.number)
+
+    def get_max_t_subgroup(self):
+
+        return self._get_max_t_subgroup(self.number)
 
     def get_max_subgroup(self, H):
         """
-        Returns the dicts for both t and k subgroup, H is just track the type
-        QZ: the function name is not instructive, need to revise later
+        Returns the dicts for both t and k subgroup according the to
+        trail group H
+
+        Args:
+            H (int): 1-230
         """
-        if self.point_group == Group(H, quick=True).point_group:
+        #if self.point_group == Group(H, quick=True).point_group:
+        if self.point_group == get_point_group(H):
             g_type = "k"
             dicts = self.get_max_k_subgroup()
         else:
@@ -1183,8 +1199,10 @@ class Group:
         Returns:
             list of valid transitions [(id, (['4a'], ['4b'], [['4a'], ['4c']])]
         """
-
-        dicts = self.get_max_t_subgroup() if group_type == "t" else self.get_max_k_subgroup()
+        if group_type == "t" :
+            dicts = self.get_max_t_subgroup()
+        else:
+            dicts = self.get_max_k_subgroup()
 
         # search for the compatible solutions
         solutions = []
@@ -1294,11 +1312,11 @@ class Group:
                 subgroups = None
                 if group_type == "t":
                     if sg > self.number:
-                        subgroups = Group(sg, quick=True).get_max_t_subgroup()
+                        subgroups = Group._get_max_t_subgroup(sg)
                 else:
-                    g1 = Group(sg)
-                    if g1.point_group == self.point_group:
-                        subgroups = Group(sg, quick=True).get_max_k_subgroup()
+                    #g1 = Group(sg)
+                    if self.point_group == get_point_group(sg):
+                        subgroups = Group._get_max_k_subgroup(sg)
                 if subgroups is not None:
                     for i, sub in enumerate(subgroups["subgroup"]):
                         if sub == self.number:
@@ -1562,6 +1580,31 @@ class Group:
             layers[l - 1]["subgroups"] = deepcopy(subgroups)
         return final
 
+    #def path_to_subgroup(self, H):
+    #    """
+    #    For a given a path, extract the
+    #        a list of (g_types, subgroup_id, spg_number, wp_list (optional))
+    #    """
+    #    path_list = []
+    #    paths = self.search_subgroup_paths(H)
+    #    if len(paths) > 0:
+    #        path = paths[0]
+    #        g0 = Group(path[0], quick=True)
+    #        for p in path[1:]:
+    #            #g1 = Group(p, quick=True)
+    #            #pg = get_point_group(p)
+    #            if g0.point_group == get_point_group(p):
+    #                g_type = "k"
+    #                spgs = g0.get_max_k_subgroup()["subgroup"]
+    #            else:
+    #                g_type = "t"
+    #                spgs = g0.get_max_t_subgroup()["subgroup"]
+    #            for spg in spgs:
+    #                if spg == p:
+    #                    break
+    #            path_list.append((g_type, id, p))
+    #            g0 = g1
+    #    return path_list
     def path_to_subgroup(self, H):
         """
         For a given a path, extract the
@@ -1571,20 +1614,21 @@ class Group:
         paths = self.search_subgroup_paths(H)
         if len(paths) > 0:
             path = paths[0]
-            g0 = Group(path[0], quick=True)
+            pg0 = get_point_group(path[0])
+            #pg0 = Group(path[0], quick=True)
             for p in path[1:]:
-                g1 = Group(p, quick=True)
-                if g0.point_group == g1.point_group:
+                pg1 = get_point_group(p)
+                if pg0 == pg1:
                     g_type = "k"
-                    spgs = g0.get_max_k_subgroup()["subgroup"]
+                    spgs = Group._get_max_k_subgroup(sg0)["subgroup"]
                 else:
                     g_type = "t"
-                    spgs = g0.get_max_t_subgroup()["subgroup"]
+                    spgs = Group._get_max_t_subgroup(sg0)["subgroup"]
                 for spg in spgs:
                     if spg == p:
                         break
                 path_list.append((g_type, id, p))
-                g0 = g1
+                pg0 = pg1
         return path_list
 
     def search_subgroup_paths(self, G, max_layer=5):
@@ -1620,13 +1664,11 @@ class Group:
         Returns:
             a list of maximal subgroup chains with extra k type transitions
         """
-
-        k_subgroup = SYMDATA.get_k_subgroup()
-        t_subgroup = SYMDATA.get_t_subgroup()
-
         if n != 1:
             print("only 1 extra k type supported at this time")
             return None
+        k_subgroup = SYMDATA.get_k_subgroup()
+        t_subgroup = SYMDATA.get_t_subgroup()
 
         solutions = []
         for i in range(len(path[:-1])):
