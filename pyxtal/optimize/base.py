@@ -32,18 +32,19 @@ def run_optimizer_single_with_timeout(args, timeout=60.0):
     """Run optimizer_single with a timeout and error handling."""
     def worker(*args):
         try:
-            return optimizer_single(*args)
+            xtal, match = optimizer_single(*args)
+            return args[1], xtal, match
         except Exception as e:
             print(f"Error in worker thread: {e}")
-            return None, False  # Or any default value you prefer
+            return None, None, False  # Or any default value you prefer
 
     with ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(worker, *args)
         try:
-            return future.result(timeout=timeout)
-        except concurrent.futures.TimeoutError:
+            return future.result() #timeout=timeout)
+        except TimeoutError:
             print(f"Timeout: Optimization took longer than {timeout} seconds.")
-            return None, False  # Return a default value indicating a timeout
+            return None, None, False  # Return a default value indicating a timeout
 
 def run_optimizer(args, timeout=60):
     """
@@ -51,10 +52,12 @@ def run_optimizer(args, timeout=60):
     This function can be pickled and used with multiprocessing.
     """
     try:
-        return run_optimizer_single_with_timeout(args, timeout)
+        #return run_optimizer_single_with_timeout(args, timeout)
+        xtal, match = optimizer_single(*args)
+        return args[1], xtal, match
     except Exception as e:
         print(f"Error in run_optimizer: {e}")
-        return None, False  # Return a default value indicating an error
+        return None, None, False  # Return a default value indicating an error
 
 class GlobalOptimize:
     """
@@ -126,14 +129,10 @@ class GlobalOptimize:
             from mpi4py import MPI
             self.comm = MPI.COMM_WORLD
             self.rank = self.comm.Get_rank()
-            node_name = MPI.Get_processor_name()
-            unique_node_names = self.comm.gather(node_name, root=0) 
-            self.node = node_name
-            self.size = len(unique_node_names)
-            #self.size = self.comm.Get_size()
+            self.node = MPI.Get_processor_name()
         else:
             self.rank = 0
-            self.size = self.ncpu
+        self.size = self.ncpu
 
         # Molecular information
         self.smile = smiles
@@ -195,7 +194,7 @@ class GlobalOptimize:
             self.matcher = StructureMatcher(ltol=0.3, stol=0.3, angle_tol=5)
         else:
             self.matcher = matcher
-        
+
         self.E_max = E_max
         self.tag = tag
         self.suffix = f"{self.workdir:s}/{self.name:s}-{self.ff_style:s}"
@@ -992,7 +991,7 @@ class GlobalOptimize:
         #    local_results.append((args[1], xtal, match))
 
         # Determine the number of cores available on the node
-        num_cores = multiprocessing.cpu_count() // self.size
+        num_cores = multiprocessing.cpu_count()
         print("Local optimization distribution", self.rank, num_cores)
 
         # Use multiprocessing within each MPI rank (node)
