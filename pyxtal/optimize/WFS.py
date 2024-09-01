@@ -193,7 +193,7 @@ class WFS(GlobalOptimize):
 
             # broadcast
             current_xtals = self.comm.bcast(current_xtals, root=0)
-            print(f"Rank {self.rank} after broadcast: current_xtals = {current_xtals}")
+            #print(f"Rank {self.rank} after broadcast: current_xtals = {current_xtals}")
 
             # Local optimization
             gen_results = self.local_optimization(gen, current_xtals)
