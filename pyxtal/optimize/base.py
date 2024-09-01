@@ -982,36 +982,27 @@ class GlobalOptimize:
         # Distribute args_lists across available ranks (processes)
         local_args = args_lists[self.rank::self.size]
 
-        # Run the optimizer in parallel using MPI
-        #local_results = []
-        #for args in local_args:
-        #    # print('rank', self.rank, 'id', args[1])
-        #    xtal, match = run_optimizer_single_with_timeout(args, timeout=60)
-        #    # (xtal, match) = optimizer_single(*args)
-        #    local_results.append((args[1], xtal, match))
-
         # Determine the number of cores available on the node
-        num_cores = multiprocessing.cpu_count()
+        num_cores = multiprocessing.cpu_count() #// self.size
         print("Local optimization distribution", self.rank, num_cores)
 
         # Use multiprocessing within each MPI rank (node)
         with multiprocessing.Pool(processes=num_cores) as pool:
             local_results = pool.map(run_optimizer, local_args)
 
-        #local_results = []
-        #for args in local_args:
-        #    print("Local optimization", self.rank, args[1])
-        #    result = run_optimizer(args)
-        #    print("Local optimization", self.rank, result)
-        #    local_results.append(result)
+        # Synchronize before gathering
+        self.comm.Barrier()
+        print(f"Rank {self.rank} reached before gather")
 
         # Gather all results at the root process
+        print('Gather all results at the root process')
         all_results = self.comm.gather(local_results, root=0)
 
         # Process results at the root process
+        print("Process results at the root process")
         gen_results = None
         if self.rank == 0:
-            gen_results = [(None, None)] * len(xtals)
+            gen_results = [(None, None, None)] * len(xtals)
             for result_set in all_results:
                 for res in result_set:
                     (id, xtal, match) = res
