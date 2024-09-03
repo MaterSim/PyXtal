@@ -748,7 +748,7 @@ class GlobalOptimize:
             folder = f"cpu0{i}"
         return folder
 
-    def print_matches(self, header=None, pxrd=False):
+    def print_matches(self, header=None):
         """
         Formatted output for the matched structures with xtal rep and eng rank
         """
@@ -756,7 +756,7 @@ class GlobalOptimize:
             all_engs = np.sort(np.array(self.engs))
             ranks = []
             xtals = []
-            if pxrd:
+            if self.ref_pxrd is not None:
                 matches = sorted(
                     self.matches, key=lambda x: -x[4])  # similarity
             else:
@@ -764,7 +764,7 @@ class GlobalOptimize:
 
             for match_data in matches:
                 d1, match = None, None
-                if pxrd:
+                if self.ref_pxrd is not None:
                     (_, id, xtal, e, match, tag) = match_data
                     add = self.new_struc(xtal, xtals)
                     if add:
@@ -1173,14 +1173,14 @@ class GlobalOptimize:
             # Extract (pop_id, eng, sim) when pxrd is True
             for i in range(self.N_gen):
                 for j in range(self.N_pop):
-                    if self.ref_pxrd:
+                    if self.ref_pxrd is not None:
                         data1.append(
                             [i, j, self.stats[i, j, 0], self.stats[i, j, 1]])
                     else:
                         data1.append([i, j, self.stats[i, j, 0]])
 
             for match in self.matches:
-                if self.ref_pxrd:
+                if self.ref_pxrd is not None:
                     data2.append([match[0], match[1], match[3], match[4]])
                 else:
                     data2.append([match[0], match[1], match[3]])
@@ -1188,7 +1188,7 @@ class GlobalOptimize:
             fig = plt.figure(figsize=figsize)
             plt.ylabel("Lattice Energy (kcal)")  # , weight='bold')
             data1 = np.array(data1)
-            if self.ref_pxrd:
+            if self.ref_pxrd is not None:
                 # (similarity, eng, gen_id)
                 x1, y1, z1 = data1[:, 3], data1[:, 2], data1[:, 0]
                 plt.xlabel("XRD Similarity")  # , weight='bold')
@@ -1210,7 +1210,7 @@ class GlobalOptimize:
                 data2 = np.array(data2)
                 if len(data2.shape) == 1:
                     data2 = data2.reshape(-1, 1)
-                if self.ref_pxrd:
+                if self.ref_pxrd is not None:
                     x2, y2, z2 = data2[:, 3], data2[:, 2], data2[:, 0]
                 else:
                     x2, y2, z2 = data2[:, 1], data2[:, 2], data2[:, 0]
@@ -1223,7 +1223,7 @@ class GlobalOptimize:
             plt.savefig(figname)
 
             if save:
-                if self.ref_pxrd:
+                if self.ref_pxrd is not None:
                     header = "#Generation, Population, Energy, Similarity"
                 else:
                     header = "#Generation, Population, Energy"
