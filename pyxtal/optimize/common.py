@@ -621,7 +621,7 @@ def load_reference_from_db(db_name, code=None):
         lat = xtal.lattice
         tag = code.lower()
         args.append((smile, wdir, sg, tag, chm_info, comp, lat, pmg0, wt, spg, N_torsion))
-        return args
+    return args
 
 
 
