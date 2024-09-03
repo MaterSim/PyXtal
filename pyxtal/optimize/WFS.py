@@ -172,6 +172,7 @@ class WFS(GlobalOptimize):
         for gen in range(self.N_gen):
             self.generation = gen
             cur_xtals = None
+            print(f"Rank {self.rank} entering generation {gen}")
 
             if self.rank == 0:
                 print(f"\nGeneration {gen:d} starts")
@@ -193,6 +194,7 @@ class WFS(GlobalOptimize):
             # broadcast
             if self.use_mpi:
                 cur_xtals = self.comm.bcast(cur_xtals, root=0)
+            #print(f"Rank {self.rank} after broadcast: current_xtals = {current_xtals}")
 
             # Local optimization
             gen_results = self.local_optimization(cur_xtals, pool=pool)
