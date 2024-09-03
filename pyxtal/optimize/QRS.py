@@ -197,13 +197,16 @@ class QRS(GlobalOptimize):
             check_stable,
             use_mpi,
         )
-        strs = self.full_str()
-        self.logging.info(strs)
-        print(strs)
 
         # Setup the stats [N_gen, Npop, (E, matches)]
         self.stats = np.zeros([self.N_gen, self.N_pop, 2])
         self.stats[:, :, 0] = self.E_max
+
+
+        if self.rank == 0:
+            strs = self.full_str()
+            self.logging.info(strs)
+            print(strs)
 
     def full_str(self):
         s = str(self)
@@ -213,180 +216,96 @@ class QRS(GlobalOptimize):
         # The rest base information from now on
         return s
 
-    def run_serial(self):
+    def _run(self, pool=None):
         """
-        The serial code to run QRS prediction
+        The main code to run QRS prediction
 
         Returns:
             success_rate or None
         """
         self.ref_volumes = []
-        # Related to the FF optimization
         N_added = 0
-
-        # lists for structure information
-        current_reps = [None] * self.N_pop
-        current_matches = [False] * self.N_pop if self.ref_pxrd is None else [0.0] * self.N_pop
-        current_engs = [self.E_max] * self.N_pop
+        success_rate = 0
 
         for gen in range(self.N_gen):
-            print(f"\nGeneration {gen:d} starts")
-            self.logging.info(f"Generation {gen:d} starts")
-            self.generation = gen + 1
-            t0 = time()
-            if gen > 0:
-                if self.lattice is not None:
-                    cell = [self.hall_number] + self.lattice.encode()
-                    sampler = self.sampler
-                else:
-                    cell = generate_qrs_cell(self.sampler,
-                                             self.cell_bounds,
-                                             self.ref_volumes[-1],
-                                             self.ltype)
-                    cell = [self.hall_number] + cell
-                    sampler = None
-                current_xtals = generate_qrs_xtals(cell,
+            self.generation = gen
+            cur_xtals = None
+            
+            if self.rank == 0:
+                print(f"\nGeneration {gen:d} starts")
+                self.logging.info(f"Generation {gen:d} starts")
+                t0 = time()
+
+                # Initialize
+                cur_xtals = [(None, "Random")] * self.N_pop
+
+                # QRS update
+                if gen > 0:
+                    if self.lattice is not None:
+                        cell = [self.hall_number] + self.lattice.encode()
+                        sampler = self.sampler
+                    else:
+                        cell = generate_qrs_cell(self.sampler,
+                                                 self.cell_bounds,
+                                                 self.ref_volumes[-1],
+                                                 self.ltype)
+                        cell = [self.hall_number] + cell
+                        sampler = None
+
+                    cur_xtals = generate_qrs_xtals(cell,
                                                    self.wp_bounds,
                                                    self.N_pop,
                                                    self.smiles,
                                                    self.composition,
                                                    sampler)
-                strs = f"Cell parameters in Gen-{gen:d}: "
-                print(strs, cell, self.ref_volumes[-1], len(current_xtals))
-            else:
-                 # 1st generation from random
-                 current_xtals = [(None, "Random")] * self.N_pop
+                    strs = f"Cell parameters in Gen-{gen:d}: "
+                    print(strs, cell, self.ref_volumes[-1], len(cur_xtals))
+
+
+            # Broadcast
+            if self.use_mpi:
+                cur_xtals = self.comm.bcast(cur_xtals, root=0)
 
             # Local optimization
-            gen_results = self.local_optimization(gen, current_xtals, True)
+            gen_results = self.local_optimization(cur_xtals, qrs=True, pool=pool)
 
             # Summary and Ranking
-            current_xtals, matches, engs = self.gen_summary(gen,
-                    t0, gen_results, current_xtals)
+            if self.rank == 0:
+                cur_xtals, matches, engs = self.gen_summary(t0, 
+                                        gen_results, cur_xtals)
 
-            # update hist_best
-            vols = []
-            for id, (xtal, _) in enumerate(current_xtals):
-                if xtal is not None:
-                    vols.append(xtal.lattice.volume)
+                # update hist_best
+                vols = []
+                for id, (xtal, _) in enumerate(cur_xtals):
+                    if xtal is not None:
+                        vols.append(xtal.lattice.volume)
 
-            # update best volume
-            self.ref_volumes.append(np.array(vols).mean())
-            if gen == 0:
-                best_xtal = current_xtals[0][0]
-                self.cell_bounds = best_xtal.lattice.get_bounds(2.5, 25)
-                self.ltype = best_xtal.lattice.ltype
-                self.wp_bounds = [site.get_bounds() for site in best_xtal.mol_sites]
-                self.hall_number = best_xtal.group.hall_number
-                if self.lattice is not None:
-                    len_reps = sum(len(bound) for bound in self.wp_bounds)
-                else:
-                    len_reps = len(self.cell_bounds)
-                self.sampler = qmc.Sobol(d=len_reps, scramble=False)
+                # update best volume
+                self.ref_volumes.append(np.array(vols).mean())
+                if gen == 0:
+                    best_xtal = cur_xtals[0][0]
+                    self.cell_bounds = best_xtal.lattice.get_bounds(2.5, 25)
+                    self.ltype = best_xtal.lattice.ltype
+                    self.wp_bounds = [site.get_bounds() for site in best_xtal.mol_sites]
+                    self.hall_number = best_xtal.group.hall_number
+                    if self.lattice is not None:
+                        len_reps = sum(len(bound) for bound in self.wp_bounds)
+                    else:
+                        len_reps = len(self.cell_bounds)
+                    self.sampler = qmc.Sobol(d=len_reps, scramble=False)
 
-            if self.ref_pmg is not None:
-                success_rate = self.success_count(gen,
-                                                  current_xtals,
-                                                  matches)
+                if self.ref_pmg is not None:
+                    success_rate = self.success_count(cur_xtals,
+                                                      matches)
 
-                if self.early_termination(success_rate):
-                    return success_rate
+                    if self.early_termination(success_rate):
+                        return success_rate
 
-            elif ref_pxrd is not None:
-                self.count_pxrd_match(gen,
-                                      current_xtals,
-                                      matches)
+                elif ref_pxrd is not None:
+                    self.count_pxrd_match(cur_xtals,
+                                          matches)
 
         return success_rate
 
 if __name__ == "__main__":
-    import argparse
-    import os
-
-    from pyxtal.db import database
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-g",
-        "--gen",
-        dest="gen",
-        type=int,
-        default=10,
-        help="Number of generation, optional",
-    )
-    parser.add_argument(
-        "-p",
-        "--pop",
-        dest="pop",
-        type=int,
-        default=10,
-        help="Population size, optional",
-    )
-    parser.add_argument("-n", "--ncpu", dest="ncpu", type=int, default=1, help="cpu number, optional")
-    parser.add_argument("--ffopt", action="store_true", help="enable ff optimization")
-
-    options = parser.parse_args()
-    gen = options.gen
-    pop = options.pop
-    ncpu = options.ncpu
-    ffopt = options.ffopt
-    db_name, name = "pyxtal/database/test.db", "ACSALA"
-    wdir = name
-    os.makedirs(wdir, exist_ok=True)
-    os.makedirs(wdir + "/calc", exist_ok=True)
-
-    db = database(db_name)
-    row = db.get_row(name)
-    xtal = db.get_pyxtal(name)
-    smile, wt, spg = row.mol_smi, row.mol_weight, row.space_group.replace(" ", "")
-    chm_info = None
-    if not ffopt:
-        if "charmm_info" in row.data:
-            # prepare charmm input
-            chm_info = row.data["charmm_info"]
-            with open(wdir + "/calc/pyxtal.prm", "w") as prm:
-                prm.write(chm_info["prm"])
-            with open(wdir + "/calc/pyxtal.rtf", "w") as rtf:
-                rtf.write(chm_info["rtf"])
-        else:
-            # Make sure we generate the initial guess from ambertools
-            if os.path.exists("parameters.xml"):
-                os.remove("parameters.xml")
-
-    # load reference xtal
-    pmg0 = xtal.to_pymatgen()
-    if xtal.has_special_site(): xtal = xtal.to_subgroup()
-    N_torsion = xtal.get_num_torsions()
-
-    # GO run
-    t0 = time()
-    go = QRS(
-        smile,
-        wdir,
-        xtal.group.number,
-        name.lower(),
-        info=chm_info,
-        ff_style="openff",  #'gaff',
-        ff_opt=ffopt,
-        N_gen=gen,
-        N_pop=pop,
-        N_cpu=ncpu,
-        cif="pyxtal.cif",
-        check_stable=True,
-    )
-
-    suc_rate = go.run(pmg0)
-    print(f"CSD {name:s} in Gen {go.generation:d}")
-
-    if len(go.matches) > 0:
-        best_rank = go.print_matches()
-        mytag = f"True {best_rank:d}/{go.N_struc:d} Succ_rate: {suc_rate:7.4f}%"
-    else:
-        mytag = f"False 0/{go.N_struc:d}"
-
-    eng = go.min_energy
-    t1 = int((time() - t0)/60)
-    strs = "Final {:8s} [{:2d}]{:10s} ".format(name, sum(xtal.numMols), spg)
-    strs += "{:3d}m {:2d} {:6.1f}".format(t1, N_torsion, wt)
-    strs += "{:12.3f} {:20s} {:s}".format(eng, mytag, smile)
-    print(strs)
+    print("test")

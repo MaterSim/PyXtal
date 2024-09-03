@@ -577,6 +577,54 @@ def compute(row, pmg, work_dir, skf_dir, info=None):
 
     return data
 
+def load_reference_from_db(db_name, code=None):
+    """
+    Load the reference data from the db file
+
+    Args:
+        db_name (str): database path
+        code (str): code name
+
+    Returns:
+        a list of args
+    """
+    from pyxtal.db import database
+    db = database(db_name)
+    if code is None:
+        codes = db.codes
+    else:
+        codes = [code]
+
+    args = []
+    for code in codes:
+        wdir = code
+        row = db.get_row(code)
+        xtal = db.get_pyxtal(code)
+        smile, wt, spg = row.mol_smi, row.mol_weight, row.space_group.replace(" ", "")
+
+        chm_info = None
+        if 'charmm_info' in row.data.keys():
+            print("prepare charmm input", wdir)
+            os.makedirs(wdir, exist_ok=True)
+            os.makedirs(wdir+'/calc', exist_ok=True)
+
+            chm_info = row.data['charmm_info']
+            prm = open(wdir+'/calc/pyxtal.prm', 'w'); prm.write(chm_info['prm']); prm.close()
+            rtf = open(wdir+'/calc/pyxtal.rtf', 'w'); rtf.write(chm_info['rtf']); rtf.close()
+
+        if xtal.has_special_site(): xtal = xtal.to_subgroup()
+
+        pmg0 = xtal.to_pymatgen()
+        sg = xtal.group.number
+        comp = xtal.get_zprime(integer=True)
+        N_torsion = xtal.get_num_torsions()
+        lat = xtal.lattice
+        tag = code.lower()
+        args.append((smile, wdir, sg, tag, chm_info, comp, lat, pmg0, wt, spg, N_torsion))
+        return args
+
+
+
 
 if __name__ == "__main__":
     import pymatgen.analysis.structure_matcher as sm

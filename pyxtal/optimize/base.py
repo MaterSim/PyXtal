@@ -7,6 +7,7 @@ A base class for global optimization including:
 """
 from __future__ import annotations
 import multiprocessing
+from multiprocessing import Pool
 from concurrent.futures import ProcessPoolExecutor, TimeoutError
 
 import logging
@@ -25,17 +26,36 @@ from pyxtal.optimize.common import optimizer, randomizer
 from pyxtal.optimize.common import optimizer_par, optimizer_single
 from pyxtal.lattice import Lattice
 from pyxtal.symmetry import Group
+import signal
+import gc
 
-def run_optimizer_single_with_timeout(args, timeout=30.0):
-    """Run optimizer_single with a timeout."""
-    with multiprocessing.Pool(processes=1) as pool:
-        result = pool.apply_async(optimizer_single, args)
-        try:
-            return result.get(timeout=timeout)
-        except multiprocessing.TimeoutError:
-            print(f"Timeout: Optimization took longer than {timeout} seconds.")
-            return None, False  # Return a default value indicating a timeout
 
+def run_optimizer_with_timeout(args):
+    """
+    Run the optimizer with a timeout.
+    This function will be executed by each process.
+    """
+    def handler(signum, frame):
+        raise TimeoutError("Optimization timed out")
+
+    # Set the timeout signal
+    cwd = os.getcwd()
+    timeout = int(args[-1])
+    signal.signal(signal.SIGALRM, handler)
+    signal.alarm(timeout)
+
+    try:
+        result = optimizer_par(*args[:-1])
+        signal.alarm(0)  # Disable the alarm
+        return result
+    except TimeoutError:
+        print(f"Process {os.getpid()} timed out after {timeout} seconds.")
+        os.chdir(cwd)
+        return None  # or some other placeholder for timeout results
+
+def process_task(args):
+    result = run_optimizer_with_timeout(args) 
+    return result
 
 class GlobalOptimize:
     """
@@ -155,8 +175,8 @@ class GlobalOptimize:
         self.workdir = workdir
         self.log_file = self.workdir + "/loginfo"
         self.skip_ani = skip_ani
-        #self.randomizer = randomizer
-        #self.optimizer = optimizer
+        # self.randomizer = randomizer
+        # self.optimizer = optimizer
         self.check_stable = check_stable
         if not self.opt_lat:
             self.check_stable = False
@@ -173,6 +193,12 @@ class GlobalOptimize:
         self.ff_opt = ff_opt
         self.ff_style = ff_style
 
+        # Setup logger
+        logging.getLogger().handlers.clear()
+        logging.basicConfig(format="%(asctime)s| %(message)s",
+                            filename=self.log_file, level=logging.INFO)
+        self.logging = logging
+
         if info is not None:
             self.atom_info = info
             self.parameters = None
@@ -180,19 +206,16 @@ class GlobalOptimize:
         else:
             self.ff_parameters = ff_parameters
             self.reference_file = reference_file
-            self.parameters = ForceFieldParameters(self.smiles, style=ff_style, f_coef=1.0, s_coef=1.0, ncpu=self.ncpu)
+            os.makedirs(self.workdir, exist_ok=True)
             # Only call ForceFieldParameters once
             # No need to broadcast self.parameters?
             # Just broadcast atom_info should be fine
-            #parameters = None
+            # parameters = None
             atom_info = None
             if self.rank == 0:
-                self.ff_parameters = ff_parameters
-                self.reference_file = reference_file
-                os.makedirs(self.workdir, exist_ok=True)
                 from pyocse.parameters import ForceFieldParameters
                 self.parameters = ForceFieldParameters(
-                self.smiles, style=ff_style, f_coef=1.0, s_coef=1.0, ncpu=self.ncpu)
+                    self.smiles, style=ff_style, f_coef=1.0, s_coef=1.0, ncpu=self.ncpu)
 
                 # Preload two set for FF parameters 1 for opt and 2 for refinement
                 if isinstance(self.ff_parameters, list):
@@ -225,10 +248,11 @@ class GlobalOptimize:
                         params0 = self.parameters.params_init.copy()
                         self.parameters.export_parameters(
                             self.workdir + "/" + self.ff_parameters, params0)
-                    atom_info = self._prepare_chm_info(params0, suffix='pyxtal')
+                    atom_info = self._prepare_chm_info(
+                        params0, suffix='pyxtal')
 
             if self.use_mpi:
-                #self.parameters = self.comm.bcast(parameters, root=0)
+                # self.parameters = self.comm.bcast(parameters, root=0)
                 self.atom_info = self.comm.bcast(atom_info, root=0)
             else:
                 self.atom_info = atom_info
@@ -255,12 +279,6 @@ class GlobalOptimize:
                 f.writelines(str(self))
             self.matched_cif = self.suffix + "-matched.cif"
             # print(self)
-
-            # Setup logger
-            logging.getLogger().handlers.clear()
-            logging.basicConfig(format="%(asctime)s| %(message)s",
-                                filename=self.log_file, level=logging.INFO)
-            self.logging = logging
 
             # Some neccessary trackers
             self.matches = []
@@ -329,13 +347,16 @@ class GlobalOptimize:
         self.ref_pmg = ref_pmg
         self.ref_pxrd = ref_pxrd
 
-        if self.use_mpi:
-            results = self.run_mpi()
+        if self.ncpu > 1:
+            pool = Pool(processes=self.ncpu)
         else:
-            results = self.run_serial()
+            pool = None
 
-        t = (time() - t0)/60
-        self.print(f"{self.name:s} COMPLETED in {t:.1f} mins {self.N_struc:d} strucs.")
+        results = self._run(pool)
+
+        if self.rank == 0:
+            t = (time() - t0)/60
+            print(f"{self.name:s} COMPLETED in {t:.1f} mins {self.N_struc:d} strucs.")
 
         return results
 
@@ -353,12 +374,11 @@ class GlobalOptimize:
         # xtals = [xtal.to_ase(resort=False) for xtal in xtals]
         return xtals
 
-    def count_pxrd_match(self, gen, xtals, matches):
+    def count_pxrd_match(self, xtals, matches):
         """
         Wrap up the matched PXRD results
 
         Args:
-            gen (int): current generation index
             xtals: list of (xtal, tag) tuples
             matches (list): list of XRD matches
 
@@ -369,25 +389,25 @@ class GlobalOptimize:
                 with open(self.matched_cif, "a+") as f:
                     e = xtal.energy / sum(xtal.numMols)
                     try:
-                        label = self.tag + "-g" + str(gen) + "-p" + str(i)
+                        label = self.tag + "-g" + str(self.generation) + "-p" + str(i)
                         label += f"-e{e:.3f}-{tag:s}-{match:4.2f}"
                     except:
                         print("Error in e, tag, match", e, tag, match)
                     f.writelines(xtal.to_file(header=label))
-                    self.matches.append((gen, i, xtal, e, match, tag))
+                    self.matches.append((self.generation, i, xtal, e, match, tag))
 
-    def success_count(self, gen, xtals, matches):
+    def success_count(self, xtals, matches):
         """
         Wrap up the matched results and count success rate.
 
         Args:
-            gen (int): current generation index
             xtals: list of (xtal, tag) tuples
             matches (list): list of matches [True, False, ..]
 
         Return:
             success_rate
         """
+        gen = self.generation
         for i, match in enumerate(matches):
             if match:
                 (xtal, tag) = xtals[i]
@@ -471,7 +491,7 @@ class GlobalOptimize:
                 ref_dics = self.parameters.clean_ref_dics(
                     ref_dics, self.ref_criteria)
                 ref_dics = self.parameters.cut_references_by_error(
-                    ref_dics, params_opt, dE = dE, FMSE = FMSE)
+                    ref_dics, params_opt, dE=dE, FMSE=FMSE)
             # self.parameters.generate_report(ref_dics, params_opt)
         else:
             ref_dics = []
@@ -505,8 +525,9 @@ class GlobalOptimize:
             for numMol, xtal in zip(numMols, xtals):
                 struc = reset_lammps_cell(xtal)
                 lmp_struc, lmp_dat = self.parameters.get_lmp_input_from_structure(
-                    struc, numMol, set_template = False)
-                replicate= len(lmp_struc.atoms) / self.parameters.natoms_per_unit
+                    struc, numMol, set_template=False)
+                replicate = len(lmp_struc.atoms) / \
+                    self.parameters.natoms_per_unit
 
                 try:
                     # ; print('Debug KONTIQ', struc, e1)
@@ -736,7 +757,8 @@ class GlobalOptimize:
             ranks = []
             xtals = []
             if pxrd:
-                matches = sorted(self.matches, key=lambda x: -x[4])  # similarity
+                matches = sorted(
+                    self.matches, key=lambda x: -x[4])  # similarity
             else:
                 matches = sorted(self.matches, key=lambda x: x[4])  # rmsd
 
@@ -924,192 +946,144 @@ class GlobalOptimize:
         ]
         return args
 
-    def local_optimization(self, gen, xtals, qrs=False):
+    def local_optimization(self, xtals, qrs=False, pool=None):
         """
         Perform MPI optimization for each structure in each generation.
 
         Args:
-            gen (int):
             xtals : list of (xtal, tag) tuples
             qrs (bool): Force mutation or not (related to QRS)
         """
         if self.use_mpi:
-            return self.local_optimization_mpi(gen, xtals, qrs)
+            return self.local_optimization_mpi(xtals, qrs=qrs, pool=pool)
+        elif self.ncpu == 1:
+            return self.local_optimization_serial(xtals, qrs)
         else:
-            return self.local_optimization_serial(gen, xtals, qrs)
+            return self.local_optimization_mproc(xtals, self.ncpu, qrs=qrs, pool=pool)
 
-    def local_optimization_mpi(self, gen, xtals, qrs=False):
+    def local_optimization_serial(self, xtals, qrs=False):
+        """
+        Perform optimization for each structure in each generation.
+
+        Args:
+            xtals : list of (xtal, tag) tuples
+            qrs (bool): Force mutation or not (related to QRS)
+        """
+        args = self._get_local_optimization_args()
+        gen = self.generation
+        gen_results = [(None, None, None)] * len(xtals)
+        for pop in range(len(xtals)):
+            xtal = xtals[pop][0]
+            job_tag = self.tag + "-g" + str(gen) + "-p" + str(pop)
+            mutated = False if qrs else xtal is not None 
+            my_args = [xtal, pop, mutated, job_tag, *args]
+            xtal, match = optimizer_single(*tuple(my_args))
+            gen_results[pop] = (pop, xtal, match)
+        return gen_results
+
+    def local_optimization_mpi(self, xtals, qrs, pool):
         """
         Perform MPI optimization for each structure in each generation.
 
         Args:
-            gen (int):
             xtals : list of (xtal, tag) tuples
             qrs (bool): Force mutation or not (related to QRS)
         """
-        self.print("Local optimization enabled by MPI", self.size)
-        args = self._get_local_optimization_args()
-        args_lists = []
-        for i in range(self.N_pop):
-            job_tag = self.tag + "-g" + str(gen) + "-p" + str(i)
-            xtal = xtals[i][0]
-            if qrs:
-                mutate = False
-            else:
-                mutate = xtal is not None
-            my_args = [xtal, i, mutate, job_tag, *args]
-            args_lists.append(tuple(my_args))
+        #t0 = time()
+        gen = self.generation
+        self.print("Local optimization enabled by MPI", self.size, self.ncpu)
 
         # Distribute args_lists across available ranks (processes)
-        local_args = args_lists[self.rank::self.size]
+        local_xtals = xtals[self.rank::self.size]
+        local_ids = list(range(self.N_pop))[self.rank::self.size]
 
-        # Run the optimizer in parallel using MPI
-        local_results = []
-        for args in local_args:
-            # print('rank', self.rank, 'id', args[1])
-            xtal, match = run_optimizer_single_with_timeout(args, timeout=60)
-            # (xtal, match) = optimizer_single(*args)
-            local_results.append((args[1], xtal, match))
+        # Determine the number of cores available on the node
+        results = self.local_optimization_mproc(local_xtals,
+                                                self.ncpu,
+                                                local_ids,
+                                                qrs,
+                                                pool)
+        # Synchronize before gathering
+        self.comm.Barrier()
 
         # Gather all results at the root process
-        all_results = self.comm.gather(local_results, root=0)
+        #print(f"Rank {self.rank} in MPI_Gather at gen {gen} {time()-t0}")
+        all_results = self.comm.gather(results, root=0)
+        #print(f"Rank {self.rank} done MPI_Gather at gen {gen} {time()-t0}")
 
         # If root process, process the results
         gen_results = None
         if self.rank == 0:
-            gen_results = [(None, None)] * len(xtals)
+            gen_results = [(None, None, None)] * len(xtals)
             for result_set in all_results:
                 for res in result_set:
                     (id, xtal, match) = res
-                    gen_results[id] = (xtal, match)
+                    gen_results[id] = (id, xtal, match)
 
         # Broadcast
         gen_results = self.comm.bcast(gen_results, root=0)
 
         return gen_results
 
-    def local_optimization_serial(self, gen, xtals, qrs=False):
+    def local_optimization_mproc(self, xtals, ncpu, ids=None, qrs=False, pool=None):
         """
-        Perform optimization for each structure in each generation.
+        Perform optimization for each structure in multiprocess mode.
 
         Args:
-            gen (int):
             xtals : list of (xtal, tag) tuples
+            ncpu (int): number of parallel python processes
+            ids (list): 
             qrs (bool): Force mutation or not (related to QRS)
         """
+        print("Local optimization enabled by multi-threads", ncpu)
+        gen = self.generation
+        t0 = time()
         args = self._get_local_optimization_args()
+        if ids is None:
+            ids = range(len(xtals))
 
-        gen_results = [(None, None)] * len(xtals)
-        if self.ncpu == 1:
-            for pop in range(len(xtals)):
-                xtal = xtals[pop][0]
-                job_tag = self.tag + "-g" + str(gen) + "-p" + str(pop)
-                if qrs:
-                    mutated = False
-                else:
-                    mutated = xtal is not None
-                my_args = [xtal, pop, mutated, job_tag, *args]
-                gen_results[pop] = optimizer_single(*tuple(my_args))
-            # if gen == 1: import sys; sys.exit()
+        N_cycle = int(np.ceil(len(xtals) / ncpu))
+        args_lists = []
 
-        else:
-            import psutil
-            print("Local optimization enabled by multi-threads", self.ncpu)
-            N_cycle = int(np.ceil(self.N_pop / self.ncpu))
-            args_lists = []
-            for i in range(self.ncpu):
-                id1 = i * N_cycle
-                id2 = min([id1 + N_cycle, len(xtals)])
-                # os.makedirs(folder, exist_ok=True)
-                ids = range(id1, id2)
-                job_tags = [self.tag + "-g" +
-                            str(gen) + "-p" + str(id) for id in ids]
-                _xtals = [xtals[id][0] for id in range(id1, id2)]
-                if qrs:
-                    mutates = [False for xtal in _xtals]
-                else:
-                    mutates = [xtal is not None for xtal in _xtals]
-                my_args = [_xtals, ids, mutates, job_tags, *args]
-                args_lists.append(tuple(my_args))
+        for i in range(ncpu):
+           id1 = i * N_cycle
+           id2 = min([id1 + N_cycle, len(xtals)])
+           # os.makedirs(folder, exist_ok=True)
+           _ids = ids[id1: id2]
+           job_tags = [self.tag + "-g" + str(gen) 
+                        + "-p" + str(id) for id in _ids]
+           _xtals = [xtals[id][0] for id in range(id1, id2)]
+           mutates = [False if qrs else xtal is not None for xtal in _xtals]
+           my_args = [_xtals, _ids, mutates, job_tags, *args, self.timeout]
+           args_lists.append(tuple(my_args))
 
-            def process_with_timeout(results, timeout):
-                for result in results:
-                    try:
-                        res_list = result.result(timeout=timeout)
-                        for res in res_list:
-                            (id, xtal, match) = res
-                            gen_results[id] = (xtal, match)
-                    except TimeoutError:
-                        self.logging.info(
-                            "ERROR: Opt timed out after %d seconds", timeout)
-                    except Exception as e:
-                        self.logging.info(
-                            "ERROR: An unexpected error occurred: %s", str(e))
-                return gen_results
+        gen_results = []
+        for result in pool.imap_unordered(process_task, args_lists):
+            if result is not None:
+                for _res in result:
+                    gen_results.append(_res)
 
-            def run_with_global_timeout(ncpu, args_lists, timeout, return_dict):
-                with ProcessPoolExecutor(max_workers=ncpu) as executor:
-                    results = [executor.submit(optimizer_par, *p)
-                               for p in args_lists]
-                    gen_results = process_with_timeout(results, timeout)
-                    return_dict["gen_results"] = gen_results
-
-            # Set your global timeout value here
-            global_timeout = self.timeout
-
-            # Run multiprocess
-            manager = multiprocessing.Manager()
-            return_dict = manager.dict()
-            p = multiprocessing.Process(
-                target=run_with_global_timeout, args=(
-                    self.ncpu, args_lists, global_timeout, return_dict)
-            )
-            p.start()
-            p.join(global_timeout)
-
-            if p.is_alive():
-                self.logging.info(
-                    "ERROR: Global execution timed out after %d seconds", global_timeout)
-                # p.terminate()
-                # Ensure all child processes are terminated
-                child_processes = psutil.Process(
-                    p.pid).children(recursive=True)
-                self.logging.info(
-                    "Checking child process total: %d", len(child_processes))
-                for proc in child_processes:
-                    # self.logging.info("Checking child process ID: %d", pid)
-                    try:
-                        # proc = psutil.Process(pid)
-                        if proc.status() == "running":  # is_running():
-                            proc.terminate()
-                            self.logging.info(
-                                "Terminate abnormal child process ID: %d", proc.pid)
-                    except psutil.NoSuchProcess:
-                        self.logging.info(
-                            "ERROR: PID %d does not exist", proc.pid)
-                p.join()
-
-            gen_results = return_dict.get("gen_results", {})
         return gen_results
 
-    def gen_summary(self, gen, t0, gen_results, xtals):
+    def gen_summary(self, t0, gen_results, xtals):
         """
         Write the generic summary for each generation.
 
         Args:
-            gen (int): current generation number
             t0 (float): time stamp
-            gen_results: list of results
+            gen_results: list of results (id, xtal, match)
             xtals: list of (xtal, tag) tuples
         """
-        matches = [False] * \
-            self.N_pop if self.ref_pxrd is None else [0.0] * self.N_pop
+        matches = [False] if self.ref_pxrd is None else [0.0] 
+        matches *= self.N_pop
+
         eng0s = [self.E_max] * self.N_pop
         reps = [None] * self.N_pop
         new_xtals = [(None, None)] * len(xtals)
+        gen = self.generation
 
-        for id, res in enumerate(gen_results):
-            (xtal, match) = res
+        for res in gen_results:
+            (id, xtal, match) = res
 
             if xtal is not None:
                 new_xtals[id] = (xtal, xtals[id][1])
@@ -1174,12 +1148,11 @@ class GlobalOptimize:
 
         return new_xtals, matches, engs
 
-    def plot_results(self, pxrd=False, save=True, figsize=(8.0, 5.0), figname=None, ylim=None):
+    def plot_results(self, save=True, figsize=(8.0, 5.0), figname=None, ylim=None):
         """
         Plot the results
 
         Args:
-            pxrd (bool): whether or not in pxrd mode
             save (bool): whether or not save the data
             figsize: e.g. (8.5, 5.0)
             figname (str):
@@ -1200,15 +1173,14 @@ class GlobalOptimize:
             # Extract (pop_id, eng, sim) when pxrd is True
             for i in range(self.N_gen):
                 for j in range(self.N_pop):
-                    if pxrd:
+                    if self.ref_pxrd:
                         data1.append(
                             [i, j, self.stats[i, j, 0], self.stats[i, j, 1]])
                     else:
                         data1.append([i, j, self.stats[i, j, 0]])
 
-            # self.matches.append((gen, i, xtal, e, match, tag))
             for match in self.matches:
-                if pxrd:
+                if self.ref_pxrd:
                     data2.append([match[0], match[1], match[3], match[4]])
                 else:
                     data2.append([match[0], match[1], match[3]])
@@ -1216,7 +1188,7 @@ class GlobalOptimize:
             fig = plt.figure(figsize=figsize)
             plt.ylabel("Lattice Energy (kcal)")  # , weight='bold')
             data1 = np.array(data1)
-            if pxrd:
+            if self.ref_pxrd:
                 # (similarity, eng, gen_id)
                 x1, y1, z1 = data1[:, 3], data1[:, 2], data1[:, 0]
                 plt.xlabel("XRD Similarity")  # , weight='bold')
@@ -1238,7 +1210,7 @@ class GlobalOptimize:
                 data2 = np.array(data2)
                 if len(data2.shape) == 1:
                     data2 = data2.reshape(-1, 1)
-                if pxrd:
+                if self.ref_pxrd:
                     x2, y2, z2 = data2[:, 3], data2[:, 2], data2[:, 0]
                 else:
                     x2, y2, z2 = data2[:, 1], data2[:, 2], data2[:, 0]
@@ -1251,7 +1223,7 @@ class GlobalOptimize:
             plt.savefig(figname)
 
             if save:
-                if pxrd:
+                if self.ref_pxrd:
                     header = "#Generation, Population, Energy, Similarity"
                 else:
                     header = "#Generation, Population, Energy"

@@ -157,29 +157,29 @@ class WFS(GlobalOptimize):
         # The rest base information from now on
         return s
 
-    def run_mpi(self):
+    def _run(self, pool=None):
         """
-        The mpi code to run WFS prediction
+        The main code to run WFS prediction
 
         Returns:
             success_rate or None
         """
+
         # Related to the FF optimization
         N_added = 0
         success_rate = 0
 
         for gen in range(self.N_gen):
-
-            current_xtals = None
+            self.generation = gen
+            cur_xtals = None
 
             if self.rank == 0:
                 print(f"\nGeneration {gen:d} starts")
                 self.logging.info(f"Generation {gen:d} starts")
-                self.generation = gen + 1
                 t0 = time()
 
                 # Initialize
-                current_xtals = [(None, "Random")] * self.N_pop
+                cur_xtals = [(None, "Random")] * self.N_pop
 
                 # WFS update
                 if gen > 0:
@@ -187,104 +187,43 @@ class WFS(GlobalOptimize):
                     count = N_pops[0]
                     for _sub_pop in range(N_pops[1]):
                         id = self._selTournament(engs)
-                        current_xtals[count] = (prev_xtals[id][0], "Mutation")
+                        cur_xtals[count] = (prev_xtals[id][0], "Mutation")
                         count += 1
 
             # broadcast
-            current_xtals = self.comm.bcast(current_xtals, root=0)
+            if self.use_mpi:
+                cur_xtals = self.comm.bcast(cur_xtals, root=0)
 
             # Local optimization
-            gen_results = self.local_optimization(gen, current_xtals)
+            gen_results = self.local_optimization(cur_xtals, pool=pool)
 
             prev_xtals = None
             if self.rank == 0:
                 # pass results, summary_and_ranking
-                current_xtals, matches, engs = self.gen_summary(gen,
-                                    t0, gen_results, current_xtals)
+                cur_xtals, matches, engs = self.gen_summary(t0, 
+                                        gen_results, cur_xtals)
 
                 # Save the reps for next move
-                prev_xtals = current_xtals  # ; print(self.engs)
+                prev_xtals = cur_xtals  
 
-            # broadcast
-            prev_xtals = self.comm.bcast(prev_xtals, root=0)
+            # Broadcast
+            if self.use_mpi:
+                prev_xtals = self.comm.bcast(prev_xtals, root=0)
 
             # Update the FF parameters if necessary
             if self.ff_opt:
-                N_added = self.update_ff_paramters(
-                    current_xtals, engs, N_added)
+                N_added = self.update_ff_paramters(cur_xtals, engs, N_added)
             else:
                 if self.rank == 0:
                     if self.ref_pmg is not None:
-                        success_rate = self.success_count(gen,
-                                                          current_xtals,
+                        success_rate = self.success_count(cur_xtals,
                                                           matches)
                         if self.early_termination(success_rate):
                             return success_rate
 
                     elif self.ref_pxrd is not None:
-                        self.count_pxrd_match(gen,
-                                              current_xtals,
+                        self.count_pxrd_match(cur_xtals,
                                               matches)
-
-        return success_rate
-
-    def run_serial(self):
-        """
-        The serial/multiprocess code to run WFS prediction
-
-        Returns:
-            success_rate or None
-        """
-        # Related to the FF optimization
-        N_added = 0
-        success_rate = 0
-
-        for gen in range(self.N_gen):
-
-            print(f"\nGeneration {gen:d} starts")
-            self.logging.info(f"Generation {gen:d} starts")
-            self.generation = gen + 1
-            t0 = time()
-
-            # Initialize
-            current_xtals = [(None, "Random")] * self.N_pop
-
-            # WFS update
-            if gen > 0:
-                N_pops = [int(self.N_pop * i) for i in self.fracs]
-                count = N_pops[0]
-                for _sub_pop in range(N_pops[1]):
-                    id = self._selTournament(engs)
-                    current_xtals[count] = (prev_xtals[id][0], "Mutation")
-                    count += 1
-
-            # Local optimization
-            gen_results = self.local_optimization(gen, current_xtals)
-
-            # pass results, summary_and_ranking
-            current_xtals, matches, engs = self.gen_summary(gen,
-                                t0, gen_results, current_xtals)
-
-            # Save the reps for next move
-            prev_xtals = current_xtals  # ; print(self.engs)
-
-            # Update the FF parameters if necessary
-            if self.ff_opt:
-                N_added = self.update_ff_paramters(
-                    current_xtals, engs, N_added)
-            else:
-                if self.ref_pmg is not None:
-                    success_rate = self.success_count(gen,
-                                                      current_xtals,
-                                                      matches)
-
-                    if self.early_termination(success_rate):
-                        return success_rate
-
-                elif self.ref_pxrd is not None:
-                    self.count_pxrd_match(gen,
-                                          current_xtals,
-                                          matches)
 
         return success_rate
 

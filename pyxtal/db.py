@@ -286,7 +286,7 @@ class database:
         # if not os.path.exists(db_name):
         #    raise ValueError(db_name, 'doesnot exist')
 
-        self.db = connect(db_name)
+        self.db = connect(db_name, serial=True)
         self.codes = self.get_all_codes()
         self.keys = [
             "csd_code",
@@ -500,7 +500,7 @@ class database_topology:
         #    raise ValueError(db_name, 'doesnot exist')
 
         self.db_name = db_name
-        self.db = connect(db_name)
+        self.db = connect(db_name, serial=True)
         self.keys = [
             "space_group_number",
             "pearson_symbol",

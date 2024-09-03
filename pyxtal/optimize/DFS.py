@@ -138,7 +138,7 @@ class DFS(GlobalOptimize):
         # Setup the stats [N_gen, Npop, (E, matches)]
         self.stats = np.zeros([self.N_gen, self.N_pop, 2])
         self.stats[:, :, 0] = self.E_max
-        
+
         if self.rank == 0:
             strs = self.full_str()
             self.logging.info(strs)
@@ -152,9 +152,9 @@ class DFS(GlobalOptimize):
         # The rest base information from now on
         return s
 
-    def run_mpi(self):
+    def _run(self, pool=None):
         """
-        The mpi code to run DFS prediction
+        The main code to run DFS prediction
 
         Returns:
             success_rate or None
@@ -164,59 +164,66 @@ class DFS(GlobalOptimize):
         success_rate = 0
 
         # To save for comparison
-        current_survivals = [0] * self.N_pop  # track the survivals
+        cur_survivals = [0] * self.N_pop  # track the survivals
         hist_best_xtals = [None] * self.N_pop
         hist_best_engs = [self.E_max] * self.N_pop
 
         for gen in range(self.N_gen):
-
-            current_xtals = None
+            self.generation = gen
+            cur_xtals = None
 
             if self.rank == 0:
                 print(f"\nGeneration {gen:d} starts")
                 self.logging.info(f"Generation {gen:d} starts")
-                self.generation = gen + 1
                 t0 = time()
 
                 # Initialize structure and tags
-                current_xtals = [(None, "Random")] * self.N_pop
+                cur_xtals = [(None, "Random")] * self.N_pop
 
                 # DFS update
                 if gen > 0:
                     count = 0
+                    mid_E = np.median(engs)
+
                     for id in range(self.N_pop):
+
                         # select the structures for further mutation
-                        # Current_best or hist_best
-                        if min([engs[id], hist_best_engs[id]]) < np.median(engs) and current_survivals[id] < self.N_survival:
-                            source = prev_xtals[id][0] if self.random_state.random(
-                            ) < 0.7 else hist_best_xtals[id]
+                        min_E = min([engs[id], hist_best_engs[id]])
+                        if min_E < mid_E and cur_survivals[id] < self.N_survival:
+
+                            if self.random_state.random() < 0.7:
+                                source = prev_xtals[id][0] 
+                            else:
+                                source = hist_best_xtals[id]
+
                             if source is not None:
-                                current_xtals[id] = (source, "Mutation")
-                                current_survivals[id] += 1
+                                cur_xtals[id] = (source, "Mutation")
+                                cur_survivals[id] += 1
                                 # Forget about the local best
-                                if current_survivals[id] == self.N_survival:
+                                if cur_survivals[id] == self.N_survival:
                                     hist_best_engs[id] = engs[id]
                                     hist_best_xtals[id] = prev_xtals[id][0]
                                 count += 1
 
                         # Reset it to 0
-                        if current_xtals[id][1] == "Random":
-                            current_survivals[id] = 0
+                        if cur_xtals[id][1] == "Random":
+                            cur_survivals[id] = 0
 
             # broadcast
-            current_xtals = self.comm.bcast(current_xtals, root=0)
+            if self.use_mpi:
+                cur_xtals = self.comm.bcast(cur_xtals, root=0)
 
             # Local optimization
-            gen_results = self.local_optimization(gen, current_xtals)
+            gen_results = self.local_optimization(cur_xtals, pool=pool)
 
             prev_xtals = None
             if self.rank == 0:
                 # pass results, summary_and_ranking
-                current_xtals, matches, engs = self.gen_summary(gen,
-                                                                t0, gen_results, current_xtals)
+                cur_xtals, matches, engs = self.gen_summary(t0, 
+                                        gen_results, cur_xtals)
 
                 # update hist_best
-                for id, (xtal, _) in enumerate(current_xtals):
+                for id, (xtal, _) in enumerate(cur_xtals):
                     if xtal is not None:
                         eng = xtal.energy / sum(xtal.numMols)
                         if eng < hist_best_engs[id]:
@@ -224,115 +231,25 @@ class DFS(GlobalOptimize):
                             hist_best_xtals[id] = xtal
 
                 # Save the reps for next move
-                prev_xtals = current_xtals  # ; print(self.engs)
+                prev_xtals = cur_xtals  # ; print(self.engs)
 
             # broadcast
-            prev_xtals = self.comm.bcast(prev_xtals, root=0)
+            if self.use_mpi:
+                prev_xtals = self.comm.bcast(prev_xtals, root=0)
 
             # Update the FF parameters if necessary
             if self.ff_opt:
-                N_added = self.update_ff_paramters(
-                    current_xtals, engs, N_added)
+                N_added = self.update_ff_paramters(cur_xtals, engs, N_added)
             else:
                 if self.rank == 0:
                     if self.ref_pmg is not None:
-                        success_rate = self.success_count(gen,
-                                                          current_xtals,
+                        success_rate = self.success_count(cur_xtals,
                                                           matches)
                         if self.early_termination(success_rate):
                             return success_rate
 
                     elif self.ref_pxrd is not None:
-                        self.count_pxrd_match(gen,
-                                              current_xtals,
-                                              matches)
-
-        return success_rate
-
-    def run_serial(self):
-        """
-        The mpi code to run DFS prediction
-
-        Returns:
-            success_rate or None
-        """
-        # Related to the FF optimization
-        N_added = 0
-        success_rate = 0
-
-        # To save for comparison
-        current_survivals = [0] * self.N_pop  # track the survivals
-        hist_best_xtals = [None] * self.N_pop
-        hist_best_engs = [self.E_max] * self.N_pop
-
-        for gen in range(self.N_gen):
-
-            current_xtals = None
-
-            print(f"\nGeneration {gen:d} starts")
-            self.logging.info(f"Generation {gen:d} starts")
-            self.generation = gen + 1
-            t0 = time()
-
-            # Initialize structure and tags
-            current_xtals = [(None, "Random")] * self.N_pop
-
-            # DFS update
-            if gen > 0:
-                count = 0
-                for id in range(self.N_pop):
-                    # select the structures for further mutation
-                    # Current_best or hist_best
-                    if min([engs[id], hist_best_engs[id]]) < np.median(engs) and current_survivals[id] < self.N_survival:
-                        source = prev_xtals[id][0] if self.random_state.random(
-                        ) < 0.7 else hist_best_xtals[id]
-                        if source is not None:
-                            current_xtals[id] = (source, "Mutation")
-                            current_survivals[id] += 1
-                            # Forget about the local best
-                            if current_survivals[id] == self.N_survival:
-                                hist_best_engs[id] = engs[id]
-                                hist_best_xtals[id] = prev_xtals[id][0]
-                            count += 1
-
-                    # Reset it to 0
-                    if current_xtals[id][1] == "Random":
-                        current_survivals[id] = 0
-
-            # Local optimization
-            gen_results = self.local_optimization(gen, current_xtals)
-
-            # pass results, summary_and_ranking
-            current_xtals, matches, engs = self.gen_summary(gen,
-                                                            t0, gen_results, current_xtals)
-
-            # update hist_best
-            for id, (xtal, _) in enumerate(current_xtals):
-                if xtal is not None:
-                    eng = xtal.energy / sum(xtal.numMols)
-                    if eng < hist_best_engs[id]:
-                        hist_best_engs[id] = eng
-                        hist_best_xtals[id] = xtal
-
-            # Save the reps for next move
-            prev_xtals = current_xtals  # ; print(self.engs)
-
-            # Update the FF parameters if necessary
-            if self.ff_opt:
-                N_added = self.update_ff_paramters(
-                    current_xtals, engs, N_added)
-            else:
-                if self.ref_pmg is not None:
-                    success_rate = self.success_count(gen,
-                                                      current_xtals,
-                                                      matches)
-                    if self.early_termination(success_rate):
-                        return success_rate
-
-                elif self.ref_pxrd is not None:
-                    self.count_pxrd_match(gen,
-                                          current_xtals,
-                                          matches)
+                        self.count_pxrd_match(cur_xtals, matches)
 
         return success_rate
 
