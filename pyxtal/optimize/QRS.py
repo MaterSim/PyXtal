@@ -270,6 +270,7 @@ class QRS(GlobalOptimize):
             gen_results = self.local_optimization(cur_xtals, qrs=True, pool=pool)
 
             # Summary and Ranking
+            quit = False
             if self.rank == 0:
                 cur_xtals, matches, engs = self.gen_summary(t0, 
                                         gen_results, cur_xtals)
@@ -295,15 +296,19 @@ class QRS(GlobalOptimize):
                     self.sampler = qmc.Sobol(d=len_reps, scramble=False)
 
                 if self.ref_pmg is not None:
-                    success_rate = self.success_count(cur_xtals,
-                                                      matches)
+                    success_rate = self.success_count(cur_xtals, matches)
 
                     if self.early_termination(success_rate):
-                        return success_rate
+                        quit = True
 
                 elif ref_pxrd is not None:
-                    self.count_pxrd_match(cur_xtals,
-                                          matches)
+                    self.count_pxrd_match(cur_xtals, matches)
+
+            if self.use_mpi:
+                quit = self.comm.bcast(quit, root=0)
+
+            if quit:
+                return success_rate
 
         return success_rate
 

@@ -241,15 +241,23 @@ class DFS(GlobalOptimize):
             if self.ff_opt:
                 N_added = self.update_ff_paramters(cur_xtals, engs, N_added)
             else:
+                quit = False
                 if self.rank == 0:
                     if self.ref_pmg is not None:
-                        success_rate = self.success_count(cur_xtals,
-                                                          matches)
+                        success_rate = self.success_count(cur_xtals, matches)
                         if self.early_termination(success_rate):
-                            return success_rate
+                            quit = True
 
                     elif self.ref_pxrd is not None:
                         self.count_pxrd_match(cur_xtals, matches)
+
+                # quit the loop
+                if self.use_mpi:
+                    quit = self.comm.bcast(quit, root=0)
+
+                # Ensure that all ranks exit
+                if quit:
+                    return success_rate
 
         return success_rate
 

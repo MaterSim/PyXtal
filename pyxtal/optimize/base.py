@@ -356,8 +356,9 @@ class GlobalOptimize:
 
         if self.rank == 0:
             t = (time() - t0)/60
-            print(f"{self.name:s} COMPLETED in {t:.1f} mins {self.N_struc:d} strucs.")
-
+            strs = f"{self.name:s} {self.workdir} COMPLETED "
+            strs += f"in {t:.1f} mins {self.N_struc:d} strucs."
+            print(strs)
         return results
 
     def select_xtals(self, ref_xtals, ids, N_max):
@@ -383,18 +384,19 @@ class GlobalOptimize:
             matches (list): list of XRD matches
 
         """
+        gen = self.generation
         for i, match in enumerate(matches):
             if match > 0.85:
                 (xtal, tag) = xtals[i]
                 with open(self.matched_cif, "a+") as f:
                     e = xtal.energy / sum(xtal.numMols)
                     try:
-                        label = self.tag + "-g" + str(self.generation) + "-p" + str(i)
+                        label = self.tag + "-g" + str(gen) + "-p" + str(i)
                         label += f"-e{e:.3f}-{tag:s}-{match:4.2f}"
                     except:
                         print("Error in e, tag, match", e, tag, match)
                     f.writelines(xtal.to_file(header=label))
-                    self.matches.append((self.generation, i, xtal, e, match, tag))
+                    self.matches.append((gen, i, xtal, e, match, tag))
 
     def success_count(self, xtals, matches):
         """
