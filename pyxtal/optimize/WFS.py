@@ -172,7 +172,7 @@ class WFS(GlobalOptimize):
         for gen in range(self.N_gen):
             self.generation = gen
             cur_xtals = None
-            print(f"Rank {self.rank} entering generation {gen}")
+            print(f"Rank {self.rank} entering generation {gen} in {self.tag}")
 
             if self.rank == 0:
                 print(f"\nGeneration {gen:d} starts")
@@ -228,6 +228,7 @@ class WFS(GlobalOptimize):
                 # quit the loop
                 if self.use_mpi:
                     quit = self.comm.bcast(quit, root=0)
+                    self.comm.Barrier()
 
                 # Ensure that all ranks exit
                 if quit:
