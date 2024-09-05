@@ -1228,8 +1228,8 @@ class database_topology:
                 # Unknown will be labeled as aaa
                 self.db.update(row.id, topology=name,
                                dimension=dim, topology_detail=detail)
-            else:
-                print("Existing Topology", row.topology)
+            #else:
+            #    print("Existing Topology", row.topology)
 
     def update_db_description(self):
         """

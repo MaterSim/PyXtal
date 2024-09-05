@@ -3845,3 +3845,52 @@ class pyxtal:
         xtal0.from_seed(self.to_pymatgen(), tol=tol)
 
         return xtal0
+
+    def from_prototype(self, prototype):
+        """
+        A shortcut to load template structures for quick testing
+
+        Args:
+            prototype (str): 'diamond', 'graphite', .etc
+        """
+
+        if prototype == 'graphite':
+            self.from_spg_wps_rep(194, ['2c', '2b'], [2.46, 6.70])
+
+        elif prototype == 'diamond':
+            self.from_spg_wps_rep(227, ['8a'], [3.6])
+
+        elif prototype == 'a-cristobalite':
+            self.from_spg_wps_rep(92,
+                                  ['4a', '8b'],
+                                  [5.085, 7.099, 0.294, 0.094, 0.241, 0.826],
+                                  ['Si', 'O'])
+        elif prototype == 'b-cristobalite':
+            self.from_spg_wps_rep(227,
+                                  ['8a', '16c'],
+                                  [7.46086],
+                                  ['Si', 'O'])
+        elif prototype == 'a-quartz':
+            self.from_spg_wps_rep(152,
+                                  ['3a', '6c'],
+                                  [4.91, 5.43, 0.4689, 0.2692, 0.4134, 0.7849],
+                                  ['Si', 'O'])
+        elif prototype == 'b-quartz':
+            self.from_spg_wps_rep(181,
+                                  ['3c', '6j'],
+                                  [5.06, 5.54, 0.2086],
+                                  ['Si', 'O'])
+        elif prototype in ['rocksalt', 'B1']:
+            self.from_spg_wps_rep(225,
+                                  ['4a', '4b'],
+                                  [5.59],
+                                  ['Na', 'Cl'])
+        elif prototype in ['B2']:
+            self.from_spg_wps_rep(221,
+                                  ['1a', '1b'],
+                                  [5.59],
+                                  ['Cs', 'Cl'])
+        else:
+            raise ValueError("Cannot support the input prototype", prototype)
+
+
