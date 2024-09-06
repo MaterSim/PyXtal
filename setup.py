@@ -5,7 +5,7 @@ import os
 class CustomInstallCommand(install):
     def run(self):
         # Check if the custom environment variable is set
-        if os.getenv("INSTALL_JULIA", "0") == "1":
+        if os.getenv("INSTALL_JULIA") == "1":
             print("CustomInstallCommand: Installing Julia packages...")
             try:
                 from juliacall import Main as jl

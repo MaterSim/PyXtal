@@ -762,7 +762,7 @@ class mof_builder(object):
         """
         args = (opt_type, T, niter, early_quit, add_db, symmetrize, minimizers)
         if ncpu == 1:
-            valdi_xtals = self.optimize_xtals_serial(xtals, args)
+            valid_xtals = self.optimize_xtals_serial(xtals, args)
         else:
             valid_xtals = self.optimize_xtals_mproc(xtals, ncpu, args)
         return valid_xtals
