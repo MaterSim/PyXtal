@@ -3652,7 +3652,7 @@ class pyxtal:
               self.get_xtal_string())
         for sites_id in ids:
             rep = self.get_tabular_representation(
-                sites_id, normalize, N_wp, perturb, eps=eps)
+                sites_id, normalize, N_wp, perturb, eps=eps, standardize=False)
             reps.append(rep)
         return reps
 
@@ -3665,6 +3665,7 @@ class pyxtal:
         max_abc=50.0,
         max_angle=np.pi,
         eps=0.05,
+        standardize=True,
     ):
         """
         Convert the xtal to a 1D reprsentation organized as
@@ -3715,8 +3716,10 @@ class pyxtal:
                 rep[count] /= len(self.group)
             xyz = site.coords[id]  # position
             xyz -= np.floor(xyz)
-            free_xyzs = site.wp.get_free_xyzs(xyz, perturb=perturb, eps=0.05)
-            xyz = site.wp.get_position_from_free_xyzs(free_xyzs)
+            if standardize:
+                free_xyzs = site.wp.get_free_xyzs(
+                    xyz, perturb=perturb, eps=eps)
+                xyz = site.wp.get_position_from_free_xyzs(free_xyzs)
             rep[count + 1: count + 4] = xyz
             count += 4
         return rep
@@ -3892,5 +3895,3 @@ class pyxtal:
                                   ['Cs', 'Cl'])
         else:
             raise ValueError("Cannot support the input prototype", prototype)
-
-
