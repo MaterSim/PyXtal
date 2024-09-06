@@ -241,7 +241,7 @@ def optimizer(
             calc.run()  # print("Debug", calc.optimized); import sys; sys.exit()
 
             # only count good struc
-            if calc.structure.energy < 9999:
+            if not calc.error:
                 calc = CHARMM(calc.structure, tag, steps=steps, atom_info=atom_info)
                 calc.run()#clean=False)
 
@@ -623,12 +623,9 @@ def load_reference_from_db(db_name, code=None):
         args.append((smile, wdir, sg, tag, chm_info, comp, lat, pmg0, wt, spg, N_torsion))
     return args
 
-
-
-
 if __name__ == "__main__":
+    
     import pymatgen.analysis.structure_matcher as sm
-
     from pyxtal.db import database
 
     w_dir = "tmp"

@@ -147,6 +147,7 @@ class WFS(GlobalOptimize):
             strs = self.full_str()
             self.logging.info(strs)
             print(strs)
+        print(f"Rank {self.rank} finish initialization {self.tag}")
 
     def full_str(self):
         s = str(self)
@@ -168,17 +169,15 @@ class WFS(GlobalOptimize):
         # Related to the FF optimization
         N_added = 0
         success_rate = 0
+        print(f"Rank {self.rank} starts WFS in {self.tag}")
 
         for gen in range(self.N_gen):
             self.generation = gen
             cur_xtals = None
-            print(f"Rank {self.rank} entering generation {gen} in {self.tag}")
-
+            self.logging.info(f"Gen {gen} starts in Rank {self.rank} {self.tag}")
             if self.rank == 0:
                 print(f"\nGeneration {gen:d} starts")
-                self.logging.info(f"Generation {gen:d} starts")
                 t0 = time()
-
                 # Initialize
                 cur_xtals = [(None, "Random")] * self.N_pop
 
@@ -194,10 +193,11 @@ class WFS(GlobalOptimize):
             # broadcast
             if self.use_mpi:
                 cur_xtals = self.comm.bcast(cur_xtals, root=0)
-            #print(f"Rank {self.rank} after broadcast: current_xtals = {current_xtals}")
+            #self.logging.info(f"Rank {self.rank} gets {len(cur_xtals)} strucs {self.tag}")
 
             # Local optimization
             gen_results = self.local_optimization(cur_xtals, pool=pool)
+            self.logging.info(f"Rank {self.rank} finishes local_opt {self.tag}")
 
             prev_xtals = None
             if self.rank == 0:
@@ -212,6 +212,8 @@ class WFS(GlobalOptimize):
             if self.use_mpi:
                 prev_xtals = self.comm.bcast(prev_xtals, root=0)
 
+            self.logging.info(f"Gen {gen} bcast in Rank {self.rank} {self.tag}")
+
             # Update the FF parameters if necessary
             if self.ff_opt:
                 N_added = self.update_ff_paramters(cur_xtals, engs, N_added)
@@ -225,13 +227,16 @@ class WFS(GlobalOptimize):
 
                     elif self.ref_pxrd is not None:
                         self.count_pxrd_match(cur_xtals, matches)
+
                 # quit the loop
                 if self.use_mpi:
                     quit = self.comm.bcast(quit, root=0)
                     self.comm.Barrier()
 
+                self.logging.info(f"Gen {gen} Finish in Rank {self.rank} {self.tag}")
                 # Ensure that all ranks exit
                 if quit:
+                    self.logging.info(f"Early Termination in Rank {self.rank} {self.tag}")
                     return success_rate
 
         return success_rate

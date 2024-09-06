@@ -6,9 +6,9 @@ A base class for global optimization including:
 - QRS
 """
 from __future__ import annotations
-import multiprocessing
 from multiprocessing import Pool
-from concurrent.futures import ProcessPoolExecutor, TimeoutError
+from concurrent.futures import TimeoutError
+import signal
 
 import logging
 import os
@@ -26,9 +26,6 @@ from pyxtal.optimize.common import optimizer, randomizer
 from pyxtal.optimize.common import optimizer_par, optimizer_single
 from pyxtal.lattice import Lattice
 from pyxtal.symmetry import Group
-import signal
-import gc
-
 
 def run_optimizer_with_timeout(args):
     """
@@ -174,6 +171,8 @@ class GlobalOptimize:
         # Generation and Optimization
         self.workdir = workdir
         self.log_file = self.workdir + "/loginfo"
+        if self.rank > 0: self.log_file += f"-{self.rank}"
+
         self.skip_ani = skip_ani
         # self.randomizer = randomizer
         # self.optimizer = optimizer
@@ -359,6 +358,9 @@ class GlobalOptimize:
             strs = f"{self.name:s} {self.workdir} COMPLETED "
             strs += f"in {t:.1f} mins {self.N_struc:d} strucs."
             print(strs)
+
+        if self.use_mpi:
+            self.comm.Barrier()
         return results
 
     def select_xtals(self, ref_xtals, ids, N_max):
@@ -961,6 +963,7 @@ class GlobalOptimize:
         elif self.ncpu == 1:
             return self.local_optimization_serial(xtals, qrs)
         else:
+            print(f"Local optimization by multi-threads {ncpu}")
             return self.local_optimization_mproc(xtals, self.ncpu, qrs=qrs, pool=pool)
 
     def local_optimization_serial(self, xtals, qrs=False):
@@ -997,21 +1000,24 @@ class GlobalOptimize:
 
         # Distribute args_lists across available ranks (processes)
         local_xtals = xtals[self.rank::self.size]
+
         local_ids = list(range(self.N_pop))[self.rank::self.size]
 
-        # Determine the number of cores available on the node
+        # Call local_optimization_mproc
+        self.logging.info(f"Rank {self.rank} gets {len(local_xtals)} strucs")
         results = self.local_optimization_mproc(local_xtals,
                                                 self.ncpu,
                                                 local_ids,
                                                 qrs,
                                                 pool)
         # Synchronize before gathering
+        self.logging.info(f"Rank {self.rank} finish local_optimization_mproc")
         self.comm.Barrier()
 
         # Gather all results at the root process
-        #print(f"Rank {self.rank} in MPI_Gather at gen {gen} {time()-t0}")
+        self.logging.info(f"Rank {self.rank} in MPI_Gather at gen {gen}")
         all_results = self.comm.gather(results, root=0)
-        #print(f"Rank {self.rank} done MPI_Gather at gen {gen} {time()-t0}")
+        self.logging.info(f"Rank {self.rank} done MPI_Gather at gen {gen}")
 
         # If root process, process the results
         gen_results = None
@@ -1023,6 +1029,7 @@ class GlobalOptimize:
                     gen_results[id] = (id, xtal, match)
 
         # Broadcast
+        self.logging.info(f"Rank {self.rank} MPI_bcast at gen {gen}")
         gen_results = self.comm.bcast(gen_results, root=0)
 
         return gen_results
@@ -1037,7 +1044,6 @@ class GlobalOptimize:
             ids (list): 
             qrs (bool): Force mutation or not (related to QRS)
         """
-        print("Local optimization enabled by multi-threads", ncpu)
         gen = self.generation
         t0 = time()
         args = self._get_local_optimization_args()
@@ -1047,6 +1053,7 @@ class GlobalOptimize:
         N_cycle = int(np.ceil(len(xtals) / ncpu))
         args_lists = []
 
+        # Assign args
         for i in range(ncpu):
            id1 = i * N_cycle
            id2 = min([id1 + N_cycle, len(xtals)])
@@ -1059,6 +1066,7 @@ class GlobalOptimize:
            my_args = [_xtals, _ids, mutates, job_tags, *args, self.timeout]
            args_lists.append(tuple(my_args))
 
+        self.logging.info(f"Rank {self.rank} assign args in local_opt_mproc")
         gen_results = []
         for result in pool.imap_unordered(process_task, args_lists):
             if result is not None:

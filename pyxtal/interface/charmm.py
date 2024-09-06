@@ -1,7 +1,7 @@
 import contextlib
 import os
 import shutil
-
+import subprocess
 import numpy as np
 
 
@@ -36,11 +36,14 @@ class CHARMM:
         output="charmm.log",
         dump="result.pdb",
         debug=False,
+        timeout=20,
     ):
+        self.errorE = 1e+5
+        self.error = False
         if steps is None:
             steps = [2000, 1000]
         self.debug = debug
-
+        self.timeout = timeout
         # check charmm Executable
         if shutil.which(exe) is None:
             raise BaseException(f"{exe} is not installed")
@@ -101,16 +104,32 @@ class CHARMM:
         os.chdir(self.folder)
 
         self.write()  # ; print("write", time()-t0)
-        self.execute()  # ; print("exe", time()-t0)
-        self.read()  # ; print("read", self.structure.energy)
+        res = self.execute()  # ; print("exe", time()-t0)
+        if res is not None:
+            self.read()  # ; print("read", self.structure.energy)
+        else:
+            self.structure.energy = self.errorE
+            self.error = True
         if clean:
             self.clean()
 
         os.chdir(cwd)
 
     def execute(self):
-        cmd = self.exe + "<" + self.input + ">" + self.output
-        os.system(cmd)
+        cmd = self.exe + " < " + self.input + " > " + self.output 
+        # os.system(cmd)
+        with open(os.devnull, 'w') as devnull:
+            try:
+                # Run the external command with a timeout
+                result = subprocess.run(
+                    cmd, shell=True, timeout=self.timeout, check=True, stderr=devnull)
+                return result.returncode  # Or handle the result as needed
+            except subprocess.CalledProcessError as e:
+                print(f"Command '{cmd}' failed with return code {e.returncode}.")
+                return None
+            except subprocess.TimeoutExpired:
+                print(f"External command {cmd} timed out.")
+                return None
 
     def clean(self):
         os.remove(self.input)
@@ -129,7 +148,8 @@ class CHARMM:
 
         a, b, c, alpha, beta, gamma = lat.get_para(degree=True)
         ltype = lat.ltype
-        if ltype in ['trigonal', 'Trigonal']: ltype = 'hexagonal'
+        if ltype in ['trigonal', 'Trigonal']:
+            ltype = 'hexagonal'
 
         fft = self.FFTGrid(np.array([a, b, c]))
 
@@ -148,14 +168,16 @@ class CHARMM:
                 if self.atom_info is None:
                     f.write(f"U0{site.type:d} ")
                 else:
-                    f.write("{:s} ".format(self.atom_info["resName"][site.type]))
+                    f.write("{:s} ".format(
+                        self.atom_info["resName"][site.type]))
 
             f.write("\ngenerate main first none last none setup warn\n")
             f.write("Read coor card free\n")
             f.write("* Residues coordinate\n*\n")
             f.write(f"{sum(atom_count):5d}\n")
             for i, site in enumerate(self.structure.mol_sites):
-                res_name = f"U0{site.type:d}" if self.atom_info is None else self.atom_info["resName"][site.type]
+                res_name = f"U0{site.type:d}" if self.atom_info is None else self.atom_info[
+                    "resName"][site.type]
 
                 # reset lattice if needed (to move out later)
                 site.lattice = lat
@@ -179,12 +201,13 @@ class CHARMM:
                             j + 1 + count, i + 1, res_name, label, *coord
                         )
                     )
-                    # quickly check if 
+                    # quickly check if
                     if abs(coord).max() > 500.0:
                         print("Unexpectedly large input coordinates, stop and debug")
                         print(self.structure)
                         self.structure.to_file('bug.cif')
-                        import sys; sys.exit()
+                        import sys
+                        sys.exit()
 
             f.write(f"write psf card name {self.psf:s}\n")
             f.write(f"write coor crd card name {self.crd:s}\n")
@@ -204,26 +227,31 @@ class CHARMM:
             f.write("coor stat select all end\n")
             f.write("Crystal Define @shape @a @b @c @alpha @beta @gamma\n")
             site0 = self.structure.mol_sites[0]
-            f.write(f"Crystal Build cutoff 14.0 noperations {len(site0.wp.ops) - 1:d}\n")
+            f.write(
+                f"Crystal Build cutoff 14.0 noperations {len(site0.wp.ops) - 1:d}\n")
             for i, op in enumerate(site0.wp.ops):
                 if i > 0:
                     f.write(f"({op.as_xyz_str():s})\n")
 
-            f.write("image byres xcen ?xave ycen ?yave zcen ?zave sele resn LIG end\n")
+            f.write(
+                "image byres xcen ?xave ycen ?yave zcen ?zave sele resn LIG end\n")
             f.write("set 7 fswitch\n")
             f.write("set 8 atom\n")
             f.write("set 9 vatom\n")
             f.write("Update inbfrq 10 imgfrq 10 ihbfrq 10 -\n")
-            f.write("ewald pmewald lrc fftx {:d} ffty {:d} fftz {:d} -\n".format(*fft))
+            f.write(
+                "ewald pmewald lrc fftx {:d} ffty {:d} fftz {:d} -\n".format(*fft))
             f.write("kappa 0.34 order 6 CTOFNB 12.0 CUTNB 14.0 QCOR 1.0 -\n")
             f.write("@7 @8 @9 vfswitch !\n")
             f.write(f"mini {self.algo:s} nstep {self.steps[0]:d}\n")
             if len(self.steps) > 1:
-                f.write(f"mini {self.algo:s} lattice nstep {self.steps[1]:d} \n")
+                f.write(
+                    f"mini {self.algo:s} lattice nstep {self.steps[1]:d} \n")
             if len(self.steps) > 2:
                 f.write(f"mini {self.algo:s} nstep {self.steps[2]:d}\n")
 
-            f.write("coor conv SYMM FRAC ?xtla ?xtlb ?xtlc ?xtlalpha ?xtlbeta ?xtlgamma\n")  #
+            f.write(
+                "coor conv SYMM FRAC ?xtla ?xtlb ?xtlc ?xtlalpha ?xtlbeta ?xtlgamma\n")  #
             f.write(f"\nwrite coor pdb name {self.dump:s}\n")  #
             f.write("*CELL :  ?xtla  ?xtlb  ?xtlc ?xtlalpha ?xtlbeta ?xtlgamma\n")  #
             f.write(f"*Z = {len(site0.wp):d}\n")
@@ -270,7 +298,8 @@ class CHARMM:
                             XYZ = [float(x) for x in xyz]
                             positions.append(XYZ)
                         except:
-                            pass  # print("Warning: BAD charmm output: " + line)
+                            # print("Warning: BAD charmm output: " + line)
+                            pass
                 positions = np.array(positions)
                 self.structure.energy *= Z
 
@@ -283,7 +312,7 @@ class CHARMM:
             # if True:
             try:
                 for _i, site in enumerate(self.structure.mol_sites):
-                    coords = positions[count : count + len(site.molecule.mol)]
+                    coords = positions[count: count + len(site.molecule.mol)]
                     site.update(coords, self.structure.lattice)
                     count += len(site.molecule.mol)
                 # print("after relaxation  : ", self.structure.lattice, "iter: ", self.structure.iter)
@@ -292,7 +321,8 @@ class CHARMM:
                 # print("after latticeopt  : ", self.structure.lattice, self.structure.check_distance()); import sys; sys.exit()
             except:
                 # molecular connectivity or lattice optimization
-                self.structure.energy = 10000
+                self.structure.energy = self.errorE
+                self.error = True
                 if self.debug:
                     print("Unable to retrieve Structure after optimization")
                     print("lattice", self.structure.lattice)
@@ -304,12 +334,11 @@ class CHARMM:
                         print("short distance pair", pairs)
 
         else:
-            self.structure.energy = 10000
+            self.structure.energy = self.errorE
+            self.error = True
             if self.debug:
                 print(self.structure)
-                import sys
-
-                sys.exit()
+                import sys; sys.exit()
 
     def FFTGrid(self, ABC):
         """
@@ -616,7 +645,8 @@ class RTF:
                 for a in res["ANGL"]:
                     tmp = a.split("!")
                     tmp1 = tmp[0].split()
-                    a1, a2, a3 = str(i) + tmp1[1], str(i) + tmp1[2], str(i) + tmp1[3]
+                    a1, a2, a3 = str(
+                        i) + tmp1[1], str(i) + tmp1[2], str(i) + tmp1[3]
                     a = f"ANGL {a1:6s} {a2:6s} {a3:6s} "
                     if len(tmp) > 1:
                         a += f"!{tmp[-1]:12s}"

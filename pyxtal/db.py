@@ -379,7 +379,7 @@ class database:
         """
         if db_name == self.db_name:
             raise RuntimeError("Cannot use the same db file for copy")
-        with connect(db_name) as db:
+        with connect(db_name, serial=True) as db:
             for csd_code in csd_codes:
                 row_info = self.get_row_info(code=csd_code)
                 (atom, kvp, data) = row_info
@@ -603,7 +603,7 @@ class database_topology:
         print(f"\nAdding new strucs from {db_file:s}")
 
         count = 0
-        with connect(db_file) as db:
+        with connect(db_file, serial=True) as db:
             for row in db.select():
                 atoms = row.toatoms()
                 xtal = pyxtal()
@@ -1448,7 +1448,7 @@ class database_topology:
                     unique_props[prop_key] = (row.id, dof)
 
         ids = [unique_props[key][0] for key in unique_props.keys()]
-        with connect(db_name) as db:
+        with connect(db_name, serial=True) as db:
             for id in ids:
                 row = self.db.get(id)
                 kvp = {}
