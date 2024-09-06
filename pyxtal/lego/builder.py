@@ -20,8 +20,6 @@ import random
 from scipy.optimize import minimize
 from pyxtal.lego.basinhopping import basinhopping
 from pyxtal.lego.SO3 import SO3
-
-import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
 
 # Material science Libraries
@@ -70,11 +68,12 @@ def generate_xtal_par(wp_libs, niter, dim, elements, calculator, ref_environment
     return (xtals, sims)
 
 
-def minimize_from_x_par(dim, wp_libs, elements, calculator, ref_environments,
-                        opt_type, T, niter, early_quit, minimizers):
+def minimize_from_x_par(*args):
     """
     A wrapper to call minimize_from_x function in parallel
     """
+    dim, wp_libs, elements, calculator, ref_environments, opt_type, T, niter, early_quit, minimizers = args[
+        0]
     xtals = []
     xs = []
     for wp_lib in wp_libs:
@@ -538,31 +537,38 @@ class mof_builder(object):
     >>> builder = mof_builder(['P', 'O', 'N'], [1, 1, 1], db_file='PON.db')
     """
 
-    def __init__(self, elements, composition, dim=3,
-                 db_file='mof.db', log_file='mof.log',
-                 verbose=False):
+    def __init__(self, elements, composition, dim=3, prefix='mof',
+                 db_file=None, log_file=None, rank=0, verbose=False):
 
+        self.rank = rank
+        self.prefix = f"{prefix}-{rank}"
         # Define the chemical system
         self.dim = dim
         self.elements = elements
         self.composition = composition
 
-        # Define the I/O
+        # Initialize neccessary functions and attributes
+        self.calculator = None       # will be a callable function
+        self.ref_environments = None  # will be a numpy array
+        self.criteria = {}           # will be a dictionary
         self.verbose = verbose
+
+        # Define the I/O
         logging.getLogger().handlers.clear()
-        self.log_file = log_file
+        if log_file is not None:
+            self.log_file = log_file
+        else:
+            self.log_file = self.prefix + '.log'
         logging.basicConfig(format="%(asctime)s| %(message)s",
                             filename=self.log_file,
                             level=logging.INFO)
 
         self.logging = logging
-        self.db_file = db_file
-        self.db = database_topology(db_file)
-
-        # Initialize neccessary functions and attributes
-        self.calculator = None       # will be a callable function
-        self.ref_environments = None  # will be a numpy array
-        self.criteria = {}           # will be a dictionary
+        if db_file is not None:
+            self.db_file = db_file
+        else:
+            self.db_file = self.prefix + '.db'
+        self.db = database_topology(self.db_file)
 
     def __str__(self):
 
@@ -720,35 +726,92 @@ class mof_builder(object):
         return calculate_S(x, xtal, self.ref_environments,
                            self.calculator)
 
+    def process_xtals(self, xtals, xs, add_db, symmetrize):
+        # Now process each of the results
+        valid_xtals = []
+        count = 0
+        for xtal, _xs in zip(xtals, xs):
+            status = xtal.check_validity(self.criteria, verbose=self.verbose)
+            if status:
+                valid_xtals.append(xtal)
+                sim1 = self.get_similarity(xtal)
+                if symmetrize:
+                    pmg = xtal.to_pymatgen()
+                    xtal = pyxtal()
+                    xtal.from_seed(pmg)
+                if add_db:
+                    self.process_xtal(xtal, [0, sim1], count, xs=_xs)
+                    count += 1
+                else:
+                    dicts = {'sim': "{:6.3f}".format(sim1)}
+                    print(xtal.get_xtal_string(dicts))
+        return valid_xtals
+
     def optimize_xtals(self, xtals, ncpu=1, opt_type='local',
                        T=0.2, niter=20, early_quit=0.02,
                        add_db=True, symmetrize=False,
                        minimizers=[('Nelder-Mead', 100), ('L-BFGS-B', 100)],
                        ):
-        xtals_opt = []
-        xs = []
-        count = 0
-        if ncpu == 1:
-            for i, xtal in enumerate(xtals):
-                xtal, sim, _xs = self.optimize_xtal(xtal, i, opt_type, T,
-                                                    niter, early_quit,
-                                                    add_db, symmetrize,
-                                                    minimizers=minimizers,
-                                                    )
-                if xtal is not None:
-                    xtals_opt.append(xtal)
-                    xs.append(_xs)
-        else:
-            N_cycle = int(np.ceil(len(xtals)/ncpu))
-            print("\n# Parallel Calculation in optimize_xtals", ncpu, N_cycle)
+        """
+        Perform optimization for each structure
 
+        Args:
+            xtals: list of xtals
+            ncpu (int):
+
+        """
+        args = (opt_type, T, niter, early_quit, add_db, symmetrize, minimizers)
+        if ncpu == 1:
+            valdi_xtals = self.optimize_xtals_serial(xtals, args)
+        else:
+            valid_xtals = self.optimize_xtals_mproc(xtals, ncpu, args)
+        return valid_xtals
+
+    def optimize_xtals_serial(self, xtals, args):
+        """
+        Optimization in serial mode.
+
+        Args:
+            xtals: list of xtals
+            args: (opt_type, T, n_iter, early_quit, add_db, symmetrize, minimizers)
+        """
+        # (opt_type, T, n_iter, early_quit, add_db, symmetrize, minimizers) = args
+        xtals_opt = []
+        for i, xtal in enumerate(xtals):
+            xtal, sim, _xs = self.optimize_xtal(xtal, i, *args)
+            if xtal is not None:
+                xtals_opt.append(xtal)
+        return xtals_opt
+
+    def optimize_xtals_mproc(self, xtals, ncpu, args):
+        """
+        Optimization in multiprocess mode.
+
+        Args:
+            xtals: list of xtals
+            ncpu (int): number of parallel python processes
+            args: (opt_type, T, n_iter, early_quit, add_db, symmetrize, minimizers)
+        """
+        from multiprocessing import Pool
+        pool = Pool(processes=ncpu)
+
+        (opt_type, T, niter, early_quit, add_db, symmetrize, minimizers) = args
+
+        xtals_opt = []
+
+        # Split the input structures to minibatches
+        N_rep = 4
+        N_batches = N_rep * ncpu
+        for _i, i in enumerate(range(0, len(xtals), N_batches)):
+            start, end = i, min([i+N_batches, len(xtals)])
+            ids = list(range(start, end))
+            print(f"Rank {self.rank} minibatch {start} {end}")
             args_list = []
-            for i in range(ncpu):
-                id1 = i * N_cycle
-                id2 = min([id1 + N_cycle, len(xtals)])
+            for j in range(ncpu):
+                _ids = ids[j::ncpu]
+                # print(f"test batch_{_i} cpu_{j}", _ids)
                 wp_libs = []
-                # print('cpu', i, id1, id2)
-                for id in range(id1, id2):
+                for id in _ids:
                     xtal = xtals[id]
                     x = xtal.get_1d_rep_x()
                     spg, wps, _ = self.get_input_from_ref_xtal(xtal)
@@ -764,33 +827,19 @@ class mof_builder(object):
                                   niter,
                                   early_quit,
                                   minimizers))
-            with ProcessPoolExecutor(max_workers=ncpu) as executor:
-                results = [executor.submit(minimize_from_x_par, *p)
-                           for p in args_list]
-                for result in results:
-                    _xtals, _xs = result.result()
-                    xtals_opt.extend(_xtals)
-                    xs.extend(_xs)
+            for result in pool.imap_unordered(minimize_from_x_par, args_list):
+                if result is not None:
+                    (_xtals, _xs) = result
+                    valid_xtals = self.process_xtals(
+                        _xtals, _xs, add_db, symmetrize)
+                    xtals_opt.extend(valid_xtals)
 
-        # Now process each of the results
-        valid_xtals = []
-        for xtal, _xs in zip(xtals_opt, xs):
-            status = xtal.check_validity(self.criteria, verbose=self.verbose)
-            if status:
-                valid_xtals.append(xtal)
-                sim1 = self.get_similarity(xtal)
-                if symmetrize:
-                    pmg = xtal.to_pymatgen()
-                    xtal = pyxtal()
-                    xtal.from_seed(pmg)
-                if add_db:
-                    self.process_xtal(xtal, [0, sim1], count, xs=_xs)
-                    count += 1
-                else:
-                    dicts = {'sim': "{:6.3f}".format(sim1)}
-                    print(xtal.get_xtal_string(dicts))
+            # Remove the duplicate structures
+            self.db.update_row_topology(overwrite=False, prefix=self.prefix)
+            self.db.clean_structures_spg_topology(dim=self.dim)
 
-        return valid_xtals
+        print(f"Rank {self.rank} finish optimize_xtals_mproc {len(xtals_opt)}")
+        return xtals_opt
 
     def optimize_xtal(self, xtal, count=0, opt_type='local',
                       T=0.2, niter=20, early_quit=0.02,

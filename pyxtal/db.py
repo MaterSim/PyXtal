@@ -705,7 +705,8 @@ class database_topology:
                         (row.natoms, row.space_group_number, row.wps, None))
             else:
                 to_delete.append(row.id)
-        print(len(to_delete), "structures were deleted", to_delete)
+        if len(to_delete) > 0:
+            print(len(to_delete), "structures were deleted", to_delete)
         self.db.delete(to_delete)
 
     def clean_structures(self, ids=(None, None), dtol=2e-3, etol=1e-3, criteria=None):
@@ -1142,7 +1143,7 @@ class database_topology:
             (id, xtal, eng) = dftb_result
             self.db.update(id, dftb_energy=eng, dftb_relaxed=xtal.to_file())
 
-    def update_row_topology(self, StructureType="Auto", overwrite=True, prefix=None):
+    def update_row_topology(self, StructureType="Auto", overwrite=True, prefix=None, ref_dim=3):
         """
         Update row topology base on the CrystalNets.jl
 
@@ -1150,6 +1151,7 @@ class database_topology:
             StructureType (str): 'Zeolite', 'MOF' or 'Auto'
             overwrite (bool): remove the existing attributes
             prefix (str): prefix for tmp cif file
+            ref_dim (int): desired dimension
         """
         try:
             import juliacall
@@ -1196,7 +1198,7 @@ class database_topology:
         for row in self.db.select():
             if overwrite or not hasattr(row, "topology"):
                 atoms = self.db.get_atoms(row.id)
-                atoms.write(cif_file, format="cif")
+                atoms.write(cif_file, format="cif", parallel=False)
 
                 # Call crystalnet.jl
                 result = jl.determine_topology(cif_file, option)
@@ -1217,14 +1219,15 @@ class database_topology:
                     dim, name, detail = parse_topology(topo)
                 except:
                     dim, name, detail = 3, "error", "error"
-                print(
-                    "Updating Topology",
-                    row.space_group_number,
-                    row.wps,
-                    dim,
-                    name,
-                    detail[:10],
-                )
+                if dim == ref_dim:
+                    print(
+                        "Updating Topology",
+                        row.space_group_number,
+                        row.wps,
+                        dim,
+                        name,
+                        detail[:10],
+                    )
                 # Unknown will be labeled as aaa
                 self.db.update(row.id, topology=name,
                                dimension=dim, topology_detail=detail)

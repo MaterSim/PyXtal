@@ -99,13 +99,13 @@ def symmetrize(pmg, tol=1e-3, a_tol=5.0, style="pyxtal", hn=None):
     atoms = (pmg.lattice.matrix, pmg.frac_coords, numbers)
     dataset = get_symmetry_dataset(atoms, tol, angle_tolerance=a_tol)
     if hn is None:
-        hn = Hall(dataset["number"], style=style).hall_default
-    if hn != dataset["hall_number"]:
+        hn = Hall(dataset.number, style=style).hall_default
+    if hn != dataset.hall_number:
         dataset = get_symmetry_dataset(
             atoms, tol, angle_tolerance=a_tol, hall_number=hn)
-    cell = dataset["std_lattice"]
-    pos = dataset["std_positions"]
-    numbers = dataset["std_types"]
+    cell = dataset.std_lattice
+    pos = dataset.std_positions
+    numbers = dataset.std_types
 
     return Structure(cell, numbers, pos), hn
 
@@ -132,7 +132,7 @@ def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0, style="pyxtal", hn=None):
     # make sure that the coordinates are in standard setting
     # if hn is None:
     #    hn = Hall(s._space_group_data['number'], style=style).hall_default
-    if hn != s._space_group_data["hall_number"]:
+    if hn != s._space_group_data.hall_number:
         s._space_group_data = get_symmetry_dataset(
             s._cell, tol, angle_tolerance=a_tol, hall_number=hn)
     return s.get_symmetrized_structure(), s.get_space_group_number()
