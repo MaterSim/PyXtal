@@ -102,6 +102,7 @@ def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125, random_state=None):
                 x[i][j] *= -1
     try:
         struc = representation(x, smiles).to_pyxtal(composition=comp)
+        return struc
     except:
         print(xtal)
         print("x", x)
@@ -111,9 +112,8 @@ def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125, random_state=None):
         print("is_valid_matrix\n", xtal.lattice.get_matrix())
         print("cell_para", xtal.lattice.get_para(degree=True))
         print(x[0])
-        raise RuntimeError("Problem occurs in mutation_lattice")
-    return struc
-
+        #raise RuntimeError("Problem occurs in mutation_lattice")
+        return None
 
 def randomizer(
     smiles,
@@ -229,7 +229,6 @@ def optimizer(
             if i == 0:
                 calc = CHARMM(struc, tag, steps=[1000], atom_info=atom_info)
                 calc.run()#clean=False); import sys; sys.exit()
-                # in case CHARMM over-relax the structure
                 # print("CCCCCC", calc.optimized); import sys; sys.exit()
                 if calc.error:
                     os.chdir(cwd)
@@ -258,7 +257,7 @@ def optimizer(
                 if calc.error:
                     os.chdir(cwd)
                     return None
-                else: 
+                else:
                     if calc.optlat:  # with bad inclination angles
                         calc = CHARMM(calc.structure, tag, steps=steps, atom_info=atom_info)
                         calc.run()#clean=False)
@@ -280,10 +279,10 @@ def optimizer(
                         os.chdir(cwd)
                         return None
 
-        if calc.error: 
+        if calc.error:
             os.chdir(cwd)
-            return None       
-        else: 
+            return None
+        else:
             struc = calc.structure
             struc.resort()
 
@@ -332,11 +331,6 @@ def optimizer(
         results["xtal"] = struc
         results["energy"] = calc.structure.energy
         results["time"] = time() - t0
-    # else:
-    #    print("energy:", struc.energy)
-    #    print("distance is wrong", struc.to_pymatgen().density)
-    #    print(struc.to_file())
-    #    import sys; sys.exit()
 
     return results
 
@@ -467,7 +461,10 @@ def optimizer_single(
             tag = "QRandom "
 
     # 2. Optimization
-    res = optimizer(xtal, atom_info, workdir, job_tag, opt_lat, skip_ani=skip_ani)
+    if xtal is None:
+        res = None
+    else:
+        res = optimizer(xtal, atom_info, workdir, job_tag, opt_lat, skip_ani=skip_ani)
 
     # 3. Check match w.r.t the reference
     match = False
@@ -654,7 +651,7 @@ def load_reference_from_db(db_name, code=None):
     return args
 
 if __name__ == "__main__":
-    
+
     import pymatgen.analysis.structure_matcher as sm
     from pyxtal.db import database
 

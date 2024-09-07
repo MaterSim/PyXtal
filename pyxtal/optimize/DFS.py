@@ -162,22 +162,20 @@ class DFS(GlobalOptimize):
         # Related to the FF optimization
         N_added = 0
         success_rate = 0
-
-        # To save for comparison
         cur_survivals = [0] * self.N_pop  # track the survivals
         hist_best_xtals = [None] * self.N_pop
         hist_best_engs = [self.E_max] * self.N_pop
+        print(f"Rank {self.rank} starts DFS in {self.tag}")
 
         for gen in range(self.N_gen):
             self.generation = gen
             cur_xtals = None
-            print(f"Rank {self.rank} entering generation {gen} in {self.tag}")
+            self.logging.info(f"Gen {gen} starts in Rank {self.rank}")
 
             if self.rank == 0:
                 print(f"\nGeneration {gen:d} starts")
                 self.logging.info(f"Generation {gen:d} starts")
                 t0 = time()
-
                 # Initialize structure and tags
                 cur_xtals = [(None, "Random")] * self.N_pop
 
@@ -193,7 +191,7 @@ class DFS(GlobalOptimize):
                         if min_E < mid_E and cur_survivals[id] < self.N_survival:
 
                             if self.random_state.random() < 0.7:
-                                source = prev_xtals[id][0] 
+                                source = prev_xtals[id][0]
                             else:
                                 source = hist_best_xtals[id]
 
@@ -216,11 +214,12 @@ class DFS(GlobalOptimize):
 
             # Local optimization
             gen_results = self.local_optimization(cur_xtals, pool=pool)
+            self.logging.info(f"Rank {self.rank} finishes local_opt.")
 
             prev_xtals = None
             if self.rank == 0:
                 # pass results, summary_and_ranking
-                cur_xtals, matches, engs = self.gen_summary(t0, 
+                cur_xtals, matches, engs = self.gen_summary(t0,
                                         gen_results, cur_xtals)
 
                 # update hist_best
@@ -237,6 +236,7 @@ class DFS(GlobalOptimize):
             # broadcast
             if self.use_mpi:
                 prev_xtals = self.comm.bcast(prev_xtals, root=0)
+                self.logging.info(f"Gen {gen} bcast in Rank {self.rank}")
 
             # Update the FF parameters if necessary
             if self.ff_opt:
@@ -256,9 +256,11 @@ class DFS(GlobalOptimize):
                 if self.use_mpi:
                     quit = self.comm.bcast(quit, root=0)
                     self.comm.Barrier()
+                    self.logging.info(f"Gen {gen} Finish in Rank {self.rank}")
 
                 # Ensure that all ranks exit
                 if quit:
+                    self.logging.info(f"Early Termination in Rank {self.rank}")
                     return success_rate
 
         return success_rate

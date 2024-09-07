@@ -53,7 +53,7 @@ def run_optimizer_with_timeout(args):
 def process_task(args):
     #logger = args[-1]
     #logger.info(f"Rank start processing task")
-    result = run_optimizer_with_timeout(args)#[:-1]) 
+    result = run_optimizer_with_timeout(args)#[:-1])
     #logger.info(f"Rank finished processing task")
     return result
 
@@ -727,8 +727,7 @@ class GlobalOptimize:
         """
         pwd = os.getcwd()
         os.chdir(self.workdir)
-        if not os.path.exists(folder):
-            os.mkdir(folder)
+        os.makedirs(folder, exist_ok=True)
         suffix = folder + '/' + suffix
 
         # To remove the old pyxtal1 files
@@ -984,7 +983,7 @@ class GlobalOptimize:
         for pop in range(len(xtals)):
             xtal = xtals[pop][0]
             job_tag = self.tag + "-g" + str(gen) + "-p" + str(pop)
-            mutated = False if qrs else xtal is not None 
+            mutated = False if qrs else xtal is not None
             my_args = [xtal, pop, mutated, job_tag, *args]
             xtal, match = optimizer_single(*tuple(my_args))
             gen_results[pop] = (pop, xtal, match)
@@ -1045,7 +1044,7 @@ class GlobalOptimize:
         Args:
             xtals : list of (xtal, tag) tuples
             ncpu (int): number of parallel python processes
-            ids (list): 
+            ids (list):
             qrs (bool): Force mutation or not (related to QRS)
         """
         gen = self.generation
@@ -1063,7 +1062,7 @@ class GlobalOptimize:
            id2 = min([id1 + N_cycle, len(xtals)])
            # os.makedirs(folder, exist_ok=True)
            _ids = ids[id1: id2]
-           job_tags = [self.tag + "-g" + str(gen) 
+           job_tags = [self.tag + "-g" + str(gen)
                         + "-p" + str(id) for id in _ids]
            _xtals = [xtals[id][0] for id in range(id1, id2)]
            mutates = [False if qrs else xtal is not None for xtal in _xtals]
@@ -1090,7 +1089,7 @@ class GlobalOptimize:
             gen_results: list of results (id, xtal, match)
             xtals: list of (xtal, tag) tuples
         """
-        matches = [False] if self.ref_pxrd is None else [0.0] 
+        matches = [False] if self.ref_pxrd is None else [0.0]
         matches *= self.N_pop
 
         eng0s = [self.E_max] * self.N_pop

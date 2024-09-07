@@ -87,36 +87,40 @@ class CHARMM:
         try:
             self.structure.optimize_lattice()
         except:
-            print("bug")
+            print("bug in Lattice")
             print(self.structure)
             print(self.structure.lattice)
             print(self.structure.lattice.matrix)
-            raise ValueError("Problem in Lattice")
+            #raise ValueError("Problem in Lattice")
+            self.error = True
         # print("\nbeginining lattice: ", struc.lattice)
 
         self.lat_mut = lat_mut
         self.rotate = rotate
 
     def run(self, clean=True):
-        if not os.path.exists(self.folder):
-            os.makedirs(self.folder)
-        cwd = os.getcwd()
-        os.chdir(self.folder)
+        """
+        Only run calc if it makes sense
+        """
+        if not self.error:
+            os.makedirs(self.folder, exist_ok=True)
+            cwd = os.getcwd()
+            os.chdir(self.folder)
 
-        self.write()  # ; print("write", time()-t0)
-        res = self.execute()  # ; print("exe", time()-t0)
-        if res is not None:
-            self.read()  # ; print("read", self.structure.energy)
-        else:
-            self.structure.energy = self.errorE
-            self.error = True
-        if clean:
-            self.clean()
+            self.write()  # ; print("write", time()-t0)
+            res = self.execute()  # ; print("exe", time()-t0)
+            if res is not None:
+                self.read()  # ; print("read", self.structure.energy)
+            else:
+                self.structure.energy = self.errorE
+                self.error = True
+            if clean:
+                self.clean()
 
-        os.chdir(cwd)
+            os.chdir(cwd)
 
     def execute(self):
-        cmd = self.exe + " < " + self.input + " > " + self.output 
+        cmd = self.exe + " < " + self.input + " > " + self.output
         # os.system(cmd)
         with open(os.devnull, 'w') as devnull:
             try:
@@ -304,11 +308,6 @@ class CHARMM:
                 self.structure.energy *= Z
 
             count = 0
-            # for i, site in enumerate(self.structure.mol_sites):
-            #    coords = positions[count:count+len(site.mol)]
-            #    site.update(coords, self.structure.lattice)
-            #    count += len(site.mol)
-
             # if True:
             try:
                 for _i, site in enumerate(self.structure.mol_sites):
