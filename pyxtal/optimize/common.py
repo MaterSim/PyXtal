@@ -218,13 +218,12 @@ def optimizer(
     """
     if calculators is None:
         calculators = ["CHARMM"]
+
     cwd = os.getcwd()
     t0 = time()
     os.chdir(workdir)
-    stress_tol = 10.0 if len(struc.mol_sites[0].molecule.mol) < 10 else 5.0
 
     results = None
-
     for i, calculator in enumerate(calculators):
         if calculator == "CHARMM":
             if i == 0:
@@ -232,22 +231,40 @@ def optimizer(
                 calc.run()#clean=False); import sys; sys.exit()
                 # in case CHARMM over-relax the structure
                 # print("CCCCCC", calc.optimized); import sys; sys.exit()
-                if not calc.optimized:  #
-                    calc = CHARMM(struc, tag, steps=[500], atom_info=atom_info)
-                    calc.run()
+                if calc.error:
+                    os.chdir(cwd)
+                    return None
+                else:
+                    if not calc.optimized:  #
+                        calc = CHARMM(struc, tag, steps=[500], atom_info=atom_info)
+                        calc.run()
+                        if calc.error:
+                            os.chdir(cwd)
+                            return None
+
             # print(calc.structure)
             steps = [1000, 1000] if opt_lat else [2000]
             calc = CHARMM(calc.structure, tag, steps=steps, atom_info=atom_info)
             calc.run()  # print("Debug", calc.optimized); import sys; sys.exit()
 
             # only count good struc
-            if not calc.error:
+            if calc.error:
+                os.chdir(cwd)
+                return None
+            else:
                 calc = CHARMM(calc.structure, tag, steps=steps, atom_info=atom_info)
                 calc.run()#clean=False)
 
-                if calc.optlat:  # lattice with bad inclination angles
-                    calc = CHARMM(calc.structure, tag, steps=steps, atom_info=atom_info)
-                    calc.run()#clean=False)
+                if calc.error:
+                    os.chdir(cwd)
+                    return None
+                else: 
+                    if calc.optlat:  # with bad inclination angles
+                        calc = CHARMM(calc.structure, tag, steps=steps, atom_info=atom_info)
+                        calc.run()#clean=False)
+                        if calc.error:
+                            os.chdir(cwd)
+                            return None
 
                 # Check if there exists a 2nd FF model for better energy ranking
                 if os.path.exists("pyxtal1.prm"):
@@ -259,12 +276,22 @@ def optimizer(
                         atom_info=atom_info,
                     )
                     calc.run()
+                    if calc.error:
+                        os.chdir(cwd)
+                        return None
 
-        struc = calc.structure
-        struc.resort()
+        if calc.error: 
+            os.chdir(cwd)
+            return None       
+        else: 
+            struc = calc.structure
+            struc.resort()
+
     os.chdir(cwd)
+
     # density should not be too small
     if not skip_ani:
+        stress_tol = 10.0 if len(struc.mol_sites[0].molecule.mol) < 10 else 5.0
         if (
             struc.energy < 9999
             and struc.lattice.is_valid_matrix()
@@ -284,6 +311,7 @@ def optimizer(
                     struc.optimize_lattice()
                 except:
                     print("Trouble in optLat")
+                    return None
             elif stress < stress_tol:
                 results = {}
                 results["xtal"] = struc
@@ -291,9 +319,11 @@ def optimizer(
                     results["energy"] = eng  # /sum(struc.numMols)
                 else:
                     results["energy"] = 10000
+                    return None
                 results["time"] = time() - t0
             else:
                 print(f"stress is wrong {stress:6.2f}")
+                return None
                 # print(struc)
                 # print(struc.to_file())
                 # import sys; sys.exit()

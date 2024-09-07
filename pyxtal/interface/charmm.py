@@ -324,7 +324,7 @@ class CHARMM:
                 self.structure.energy = self.errorE
                 self.error = True
                 if self.debug:
-                    print("Unable to retrieve Structure after optimization")
+                    print("Cannot retrieve Structure after optimization")
                     print("lattice", self.structure.lattice)
                     self.structure.to_file("1.cif")
                     print("Check 1.cif in ", os.getcwd())

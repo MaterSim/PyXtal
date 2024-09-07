@@ -51,8 +51,12 @@ def run_optimizer_with_timeout(args):
         return None  # or some other placeholder for timeout results
 
 def process_task(args):
-    result = run_optimizer_with_timeout(args) 
+    #logger = args[-1]
+    #logger.info(f"Rank start processing task")
+    result = run_optimizer_with_timeout(args)#[:-1]) 
+    #logger.info(f"Rank finished processing task")
     return result
+
 
 class GlobalOptimize:
     """
@@ -1063,13 +1067,15 @@ class GlobalOptimize:
                         + "-p" + str(id) for id in _ids]
            _xtals = [xtals[id][0] for id in range(id1, id2)]
            mutates = [False if qrs else xtal is not None for xtal in _xtals]
-           my_args = [_xtals, _ids, mutates, job_tags, *args, self.timeout]
+           my_args = [_xtals, _ids, mutates, job_tags, *args, self.timeout]#, self.logging]
            args_lists.append(tuple(my_args))
 
         self.logging.info(f"Rank {self.rank} assign args in local_opt_mproc")
         gen_results = []
+
         for result in pool.imap_unordered(process_task, args_lists):
             if result is not None:
+                #self.logging.info(f"Rank {self.rank} grab {len(result)} strucs")
                 for _res in result:
                     gen_results.append(_res)
 
