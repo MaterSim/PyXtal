@@ -199,7 +199,7 @@ class WFS(GlobalOptimize):
 
             # Local optimization
             gen_results = self.local_optimization(cur_xtals, pool=pool)
-            self.logging.info(f"Rank {self.rank} finishes local_opt")
+            self.logging.info(f"Rank {self.rank} finishes local_opt {len(gen_results)}")
 
             prev_xtals = None
             if self.rank == 0:

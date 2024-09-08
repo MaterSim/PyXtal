@@ -335,8 +335,11 @@ def minimize_from_x(x, dim, spg, wps, elements, calculator, ref_environments,
 
     # Extract the optimized xtal
     xtal = pyxtal()
-    xtal.from_1d_rep(res.x, sites, dim=dim)
-    return xtal, (x0, res.x)
+    try:
+        xtal.from_1d_rep(res.x, sites, dim=dim)
+        return xtal, (x0, res.x)
+    except:
+        return None
 
 
 def calculate_dSdx(x, xtal, des_ref, f, eps=1e-4, symmetry=True, verbose=False):
@@ -592,6 +595,12 @@ class mof_builder(object):
     def __repr__(self):
         return str(self)
 
+    def print_memory_usage(self):
+        import psutil
+        process = psutil.Process(os.getpid())
+        mem = process.memory_info().rss / 1024 ** 2
+        self.logging.info(f"Rank {self.rank} memory: {mem:.1f} MB")
+
     def set_descriptor_calculator(self, dtype='SO3', mykwargs={}):
         """
         Set up the calculator for descriptor computation.
@@ -808,6 +817,7 @@ class mof_builder(object):
             start, end = i, min([i+N_batches, len(xtals)])
             ids = list(range(start, end))
             print(f"Rank {self.rank} minibatch {start} {end}")
+            self.print_memory_usage()
 
             def generate_args():
                 """
@@ -825,7 +835,8 @@ class mof_builder(object):
                            self.ref_environments, opt_type, T, niter,
                            early_quit, minimizers)
             # Use the generator to pass args to reduce memory usage
-            for result in pool.imap_unordered(minimize_from_x_par, args_list):
+            _xtal, _xs = None, None
+            for result in pool.imap_unordered(minimize_from_x_par, generate_args()):
                 if result is not None:
                     (_xtals, _xs) = result
                     valid_xtals = self.process_xtals(
@@ -837,7 +848,7 @@ class mof_builder(object):
             self.db.clean_structures_spg_topology(dim=self.dim)
 
             # After each minibatch, delete the local variables and run garbage collection
-            del ids, wp_libs, _xtals, _xs
+            del ids, _xtals, _xs
             gc.collect()  # Explicitly call garbage collector to free memory
 
         xtals_opt = list(xtals_opt)

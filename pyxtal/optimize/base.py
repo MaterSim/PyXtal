@@ -52,7 +52,6 @@ def run_optimizer_with_timeout(args):
         return None  # or some other placeholder for timeout results
 
 def process_task(args):
-    #logger = args[-1]
     #logger.info(f"Rank start processing task")
     result = run_optimizer_with_timeout(args)#[:-1])
     #logger.info(f"Rank finished processing task")
@@ -329,6 +328,13 @@ class GlobalOptimize:
 
     def __repr__(self):
         return str(self)
+
+    def print_memory_usage(self):
+        import psutil
+        process = psutil.Process(os.getpid())
+        mem = process.memory_info().rss / 1024 ** 2
+        gen = self.generation
+        self.logging.info(f"Rank {self.rank} memory: {mem:.1f} MB in gen {gen}")
 
     def new_struc(self, xtal, xtals):
         return new_struc(xtal, xtals)
@@ -967,7 +973,7 @@ class GlobalOptimize:
         elif self.ncpu == 1:
             return self.local_optimization_serial(xtals, qrs)
         else:
-            print(f"Local optimization by multi-threads {ncpu}")
+            print(f"Local optimization by multi-threads {self.ncpu}")
             return self.local_optimization_mproc(xtals, self.ncpu, qrs=qrs, pool=pool)
 
     def local_optimization_serial(self, xtals, qrs=False):
@@ -1057,7 +1063,6 @@ class GlobalOptimize:
             ids = range(len(xtals))
 
         N_cycle = int(np.ceil(len(xtals) / ncpu))
-
         # Generator to create arg_lists for multiprocessing tasks
         def generate_args_lists():
             for i in range(ncpu):
@@ -1071,7 +1076,8 @@ class GlobalOptimize:
                 my_args = [_xtals, _ids, mutates, job_tags, *args, self.timeout]
                 yield tuple(my_args)  # Yield args instead of appending to a list
 
-        self.logging.info(f"Rank {self.rank} assign args in local_opt_mproc")
+        self.print_memory_usage()
+        self.logging.info(f"Rank {self.rank} assign local_opt")
 
         gen_results = []
         # Stream the results to avoid holding too much in memory at once
@@ -1081,8 +1087,9 @@ class GlobalOptimize:
                 for _res in result:
                     gen_results.append(_res)
             # Explicitly delete the result and call garbage collection
-            def result
+            del result
             gc.collect()
+        self.logging.info(f"Rank {self.rank} finish local_opt {len(gen_results)}")
 
         return gen_results
 
