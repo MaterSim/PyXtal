@@ -178,11 +178,12 @@ def minimize_from_x(x, dim, spg, wps, elements, calculator, ref_environments,
         while True:
             count += 1
             try:
-                xtal.from_random(
-                    dim, g, elements, numIons, sites=sites_wp, factor=1.0, random_state=random_state)
+                xtal.from_random(dim, g, elements, numIons, 
+                                 sites=sites_wp, factor=1.0, 
+                                 random_state=random_state)
             except RuntimeError:
                 print(g.number, numIons, sites)
-                print("Trouble in generating random xtals from pyxtal, try again")
+                print("Trouble in generating random xtals from pyxtal")
             if xtal.valid:
                 atoms = xtal.to_ase(resort=False, add_vaccum=False)
                 try:
@@ -793,11 +794,12 @@ class mof_builder(object):
             args: (opt_type, T, n_iter, early_quit, add_db, symmetrize, minimizers)
         """
         from multiprocessing import Pool
+        from collections import deque
+        import gc
+
         pool = Pool(processes=ncpu)
-
         (opt_type, T, niter, early_quit, add_db, symmetrize, minimizers) = args
-
-        xtals_opt = []
+        xtals_opt = deque()
 
         # Split the input structures to minibatches
         N_rep = 4
@@ -806,38 +808,39 @@ class mof_builder(object):
             start, end = i, min([i+N_batches, len(xtals)])
             ids = list(range(start, end))
             print(f"Rank {self.rank} minibatch {start} {end}")
-            args_list = []
-            for j in range(ncpu):
-                _ids = ids[j::ncpu]
-                # print(f"test batch_{_i} cpu_{j}", _ids)
-                wp_libs = []
-                for id in _ids:
-                    xtal = xtals[id]
-                    x = xtal.get_1d_rep_x()
-                    spg, wps, _ = self.get_input_from_ref_xtal(xtal)
-                    wp_libs.append((x, xtal.group.number, wps))
 
-                args_list.append((self.dim,
-                                  wp_libs,
-                                  self.elements,
-                                  self.calculator,
-                                  self.ref_environments,
-                                  opt_type,
-                                  T,
-                                  niter,
-                                  early_quit,
-                                  minimizers))
+            def generate_args():
+                """
+                A generator to yield argument lists for minimize_from_x_par.
+                """
+                for j in range(ncpu):
+                    _ids = ids[j::ncpu]
+                    wp_libs = []
+                    for id in _ids:
+                        xtal = xtals[id]
+                        x = xtal.get_1d_rep_x()
+                        spg, wps, _ = self.get_input_from_ref_xtal(xtal)
+                        wp_libs.append((x, xtal.group.number, wps))
+                    yield (self.dim, wp_libs, self.elements, self.calculator,
+                           self.ref_environments, opt_type, T, niter,
+                           early_quit, minimizers)
+            # Use the generator to pass args to reduce memory usage
             for result in pool.imap_unordered(minimize_from_x_par, args_list):
                 if result is not None:
                     (_xtals, _xs) = result
                     valid_xtals = self.process_xtals(
                         _xtals, _xs, add_db, symmetrize)
-                    xtals_opt.extend(valid_xtals)
+                    xtals_opt.extend(valid_xtals)  # Use deque to reduce memory
 
             # Remove the duplicate structures
             self.db.update_row_topology(overwrite=False, prefix=self.prefix)
             self.db.clean_structures_spg_topology(dim=self.dim)
 
+            # After each minibatch, delete the local variables and run garbage collection
+            del ids, wp_libs, _xtals, _xs
+            gc.collect()  # Explicitly call garbage collector to free memory
+
+        xtals_opt = list(xtals_opt)
         print(f"Rank {self.rank} finish optimize_xtals_mproc {len(xtals_opt)}")
         return xtals_opt
 

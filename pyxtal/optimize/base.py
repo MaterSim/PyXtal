@@ -9,6 +9,7 @@ from __future__ import annotations
 from multiprocessing import Pool
 from concurrent.futures import TimeoutError
 import signal
+import gc
 
 import logging
 import os
@@ -1046,37 +1047,42 @@ class GlobalOptimize:
             ncpu (int): number of parallel python processes
             ids (list):
             qrs (bool): Force mutation or not (related to QRS)
+            pool : multiprocess pool
         """
         gen = self.generation
         t0 = time()
         args = self._get_local_optimization_args()
+
         if ids is None:
             ids = range(len(xtals))
 
         N_cycle = int(np.ceil(len(xtals) / ncpu))
-        args_lists = []
 
-        # Assign args
-        for i in range(ncpu):
-           id1 = i * N_cycle
-           id2 = min([id1 + N_cycle, len(xtals)])
-           # os.makedirs(folder, exist_ok=True)
-           _ids = ids[id1: id2]
-           job_tags = [self.tag + "-g" + str(gen)
-                        + "-p" + str(id) for id in _ids]
-           _xtals = [xtals[id][0] for id in range(id1, id2)]
-           mutates = [False if qrs else xtal is not None for xtal in _xtals]
-           my_args = [_xtals, _ids, mutates, job_tags, *args, self.timeout]#, self.logging]
-           args_lists.append(tuple(my_args))
+        # Generator to create arg_lists for multiprocessing tasks
+        def generate_args_lists():
+            for i in range(ncpu):
+                id1 = i * N_cycle
+                id2 = min([id1 + N_cycle, len(xtals)])
+                _ids = ids[id1: id2]
+                job_tags = [self.tag + "-g" + str(gen)
+                            + "-p" + str(id) for id in _ids]
+                _xtals = [xtals[id][0] for id in range(id1, id2)]
+                mutates = [False if qrs else xtal is not None for xtal in _xtals]
+                my_args = [_xtals, _ids, mutates, job_tags, *args, self.timeout]
+                yield tuple(my_args)  # Yield args instead of appending to a list
 
         self.logging.info(f"Rank {self.rank} assign args in local_opt_mproc")
-        gen_results = []
 
-        for result in pool.imap_unordered(process_task, args_lists):
+        gen_results = []
+        # Stream the results to avoid holding too much in memory at once
+        for result in pool.imap_unordered(process_task, generate_args_lists()):
             if result is not None:
                 #self.logging.info(f"Rank {self.rank} grab {len(result)} strucs")
                 for _res in result:
                     gen_results.append(_res)
+            # Explicitly delete the result and call garbage collection
+            def result
+            gc.collect()
 
         return gen_results
 

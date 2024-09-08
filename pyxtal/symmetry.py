@@ -14,6 +14,7 @@ import operator
 import os
 import re
 from copy import deepcopy
+from ast import literal_eval
 
 import numpy as np
 from monty.serialization import loadfn
@@ -731,7 +732,6 @@ class Group:
     [[71, 139], [129, 139], [137, 139]]
 
 
-
     Args:
         group: the group symbol or international number
         dim (defult: 3): the periodic dimension of the group
@@ -745,6 +745,8 @@ class Group:
         self.dim = dim
         names = ["Point", "Rod", "Layer", "Space"]
         self.header = "-- " + names[dim] + "group --"
+
+        # Retrieve symbol and number for the group (avoid redundancy)
         if not use_hall:
             self.symbol, self.number = get_symbol_and_number(group, dim)
         else:
@@ -755,60 +757,68 @@ class Group:
 
         if dim == 3:
             results = get_point_group(self.number)
-            self.point_group = results[0]
-            self.pg_number = results[1]
-            self.polar = results[2]
-            self.inversion = results[3]
-            self.chiral = results[4]
+            self.point_group, self.pg_number, self.polar, self.inversion, self.chiral = results
 
+        # Lazy load Wyckoff positions and hall data unless quick=True
         if not quick:
-            if dim == 3:
-                if not use_hall:
-                    if style == "pyxtal":
-                        self.hall_number = pyxtal_hall_numbers[self.number - 1]
-                    else:
-                        self.hall_number = spglib_hall_numbers[self.number - 1]
+            self._initialize_hall_data(group, use_hall, style, dim)
+            self._initialize_wyckoff_data(dim)
+
+    def _initialize_hall_data(self, group, use_hall, style, dim):
+        """Initialize hall number and transformation matrices."""
+        if dim == 3:
+            if not use_hall:
+                if style == "pyxtal":
+                    self.hall_number = pyxtal_hall_numbers[self.number - 1]
                 else:
-                    self.hall_number = group
-                self.P = abc2matrix(HALL_TABLE["P"][self.hall_number - 1])
-                self.P1 = abc2matrix(HALL_TABLE["P^-1"][self.hall_number - 1])
+                    self.hall_number = spglib_hall_numbers[self.number - 1]
             else:
-                self.hall_number = None
-                self.P = None
-                self.P1 = None
+                self.hall_number = group
+            self.P = abc2matrix(HALL_TABLE["P"][self.hall_number - 1])
+            self.P1 = abc2matrix(HALL_TABLE["P^-1"][self.hall_number - 1])
+        else:
+            self.hall_number, self.P, self.P1 = None, None, None
 
-            # Wyckoff positions, site_symmetry, generator
-            self.wyckoffs = get_wyckoffs(self.number, dim=dim)
-            self.w_symm = get_wyckoff_symmetry(self.number, dim=dim)
+    def _initialize_wyckoff_data(self, dim):
+        """Initialize Wyckoff positions and organize them."""
+        # Wyckoff positions, site_symmetry, generator
+        self.wyckoffs = get_wyckoffs(self.number, dim=dim)
+        self.w_symm = get_wyckoff_symmetry(self.number, dim=dim)
 
-            wpdicts = [
-                {
-                    "index": i,
-                    "letter": letter_from_index(i, self.wyckoffs, dim=self.dim),
-                    "ops": self.wyckoffs[i],
-                    "multiplicity": len(self.wyckoffs[i]),
-                    "symmetry": self.w_symm[i],
-                    "PBC": self.PBC,
-                    "dim": self.dim,
-                    "number": self.number,
-                    "symbol": self.symbol,
-                    "P": self.P,
-                    "P1": self.P1,
-                    "hall_number": self.hall_number,
-                    "directions": self.get_symmetry_directions(),
-                    "lattice_type": self.lattice_type,
-                }
-                for i in range(len(self.wyckoffs))
-            ]
+        # Create dicts with relevant Wyckoff position data lazily
+        wpdicts_gen = [
+            {
+                "index": i,
+                "letter": letter_from_index(i, self.wyckoffs, dim=self.dim),
+                "ops": self.wyckoffs[i],
+                "multiplicity": len(self.wyckoffs[i]),
+                "symmetry": self.w_symm[i],
+                "PBC": self.PBC,
+                "dim": self.dim,
+                "number": self.number,
+                "symbol": self.symbol,
+                "P": self.P,
+                "P1": self.P1,
+                "hall_number": self.hall_number,
+                "directions": self.get_symmetry_directions(),
+                "lattice_type": self.lattice_type,
+            }
+            for i in range(len(self.wyckoffs))
+        ]
 
-            # A list of Wyckoff_positions sorted by descending multiplicity
-            self.Wyckoff_positions = []
-            for wpdict in wpdicts:
-                wp = Wyckoff_position.from_dict(wpdict)
-                self.Wyckoff_positions.append(wp)
+        # A list of Wyckoff_positions sorted by descending multiplicity
+        #self.Wyckoff_positions = []
+        #for wpdict in wpdicts:
+        #    wp = Wyckoff_position.from_dict(wpdict)
+        #    self.Wyckoff_positions.append(wp)
 
-            # A 2D list of WP objects, grouped and sorted by multiplicity
-            self.wyckoffs_organized = organized_wyckoffs(self)
+        # Use a generator to avoid keeping the full list of dicts in memory
+        self.Wyckoff_positions = [
+            Wyckoff_position.from_dict(wpdict) for wpdict in wpdicts_gen
+        ]
+
+        # Organize wyckoffs by multiplicity
+        self.wyckoffs_organized = organized_wyckoffs(self)
 
     def __str__(self):
         if self.string is not None:
@@ -3899,7 +3909,8 @@ def get_wyckoffs(num, organized=False, dim=3):
     elif dim == 0:
         df = SYMDATA.get_wyckoff_pg()
 
-    wyckoff_strings = eval(df["0"][num])
+    # Convert the string from df into a list of wyckoff strings
+    wyckoff_strings = literal_eval(df["0"][num])  # Use literal_eval instead of eval
 
     wyckoffs = []
     for x in wyckoff_strings:
@@ -3920,8 +3931,8 @@ def get_wyckoffs(num, organized=False, dim=3):
             wyckoffs_organized[-1].append(wp)
         return wyckoffs_organized
     else:
+        # Return Wyckoff positions without organization
         return wyckoffs
-
 
 def get_wyckoff_symmetry(num, dim=3):
     """
