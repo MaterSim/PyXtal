@@ -1457,6 +1457,7 @@ class database_topology:
                         kvp[key] = getattr(row, key)
                 db.write(row.toatoms(), key_value_pairs=kvp)
         print(f"Created {db_name:s} with {db.count():d} strucs")
+        return db.count()
 
     def check_overlap(self, reference_db, etol=2e-3, verbose=True):
         """
