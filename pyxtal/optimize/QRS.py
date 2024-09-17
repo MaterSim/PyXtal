@@ -226,12 +226,13 @@ class QRS(GlobalOptimize):
         self.ref_volumes = []
         N_added = 0
         success_rate = 0
+        print(f"Rank {self.rank} starts QRS in {self.tag}")
 
         for gen in range(self.N_gen):
             self.generation = gen
             cur_xtals = None
-            print(f"Rank {self.rank} entering generation {gen} in {self.tag}")
-            
+            self.logging.info(f"Gen {gen} starts in Rank {self.rank}")
+
             if self.rank == 0:
                 print(f"\nGeneration {gen:d} starts")
                 self.logging.info(f"Generation {gen:d} starts")
@@ -269,11 +270,12 @@ class QRS(GlobalOptimize):
 
             # Local optimization
             gen_results = self.local_optimization(cur_xtals, qrs=True, pool=pool)
+            self.logging.info(f"Rank {self.rank} finishes local_opt")
 
             # Summary and Ranking
             quit = False
             if self.rank == 0:
-                cur_xtals, matches, engs = self.gen_summary(t0, 
+                cur_xtals, matches, engs = self.gen_summary(t0,
                                         gen_results, cur_xtals)
 
                 # update hist_best
@@ -308,8 +310,10 @@ class QRS(GlobalOptimize):
             if self.use_mpi:
                 quit = self.comm.bcast(quit, root=0)
                 self.comm.Barrier()
+                self.logging.info(f"Gen {gen} Finish in Rank {self.rank}")
 
             if quit:
+                self.logging.info(f"Early Termination in Rank {self.rank}")
                 return success_rate
 
         return success_rate

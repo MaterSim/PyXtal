@@ -60,7 +60,7 @@ setup(
     ],
     setup_requires=["juliacall>=0.9.0"],
     install_requires=[
-        "spglib>=1.10.4",
+        "spglib>=2.5.0",
         "pymatgen>=2024.3.1",
         "pandas>=2.0.2",
         "networkx>=2.3",
@@ -71,6 +71,7 @@ setup(
         "importlib_metadata>=1.4",
         "typing-extensions>=4.12",
         "pyocse>=0.1.1",
+        "psutil",
     ],
     extras_require={
         "visualization": ["py3Dmol>=0.8.0"],

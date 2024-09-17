@@ -174,10 +174,13 @@ class WFS(GlobalOptimize):
         for gen in range(self.N_gen):
             self.generation = gen
             cur_xtals = None
-            self.logging.info(f"Gen {gen} starts in Rank {self.rank} {self.tag}")
+            self.logging.info(f"Gen {gen} starts in Rank {self.rank}")
+
             if self.rank == 0:
                 print(f"\nGeneration {gen:d} starts")
+                self.logging.info(f"Generation {gen:d} starts")
                 t0 = time()
+
                 # Initialize
                 cur_xtals = [(None, "Random")] * self.N_pop
 
@@ -193,26 +196,24 @@ class WFS(GlobalOptimize):
             # broadcast
             if self.use_mpi:
                 cur_xtals = self.comm.bcast(cur_xtals, root=0)
-            #self.logging.info(f"Rank {self.rank} gets {len(cur_xtals)} strucs {self.tag}")
 
             # Local optimization
             gen_results = self.local_optimization(cur_xtals, pool=pool)
-            self.logging.info(f"Rank {self.rank} finishes local_opt {self.tag}")
+            self.logging.info(f"Rank {self.rank} finishes local_opt {len(gen_results)}")
 
             prev_xtals = None
             if self.rank == 0:
                 # pass results, summary_and_ranking
-                cur_xtals, matches, engs = self.gen_summary(t0, 
+                cur_xtals, matches, engs = self.gen_summary(t0,
                                         gen_results, cur_xtals)
 
                 # Save the reps for next move
-                prev_xtals = cur_xtals  
+                prev_xtals = cur_xtals
 
             # Broadcast
             if self.use_mpi:
                 prev_xtals = self.comm.bcast(prev_xtals, root=0)
-
-            self.logging.info(f"Gen {gen} bcast in Rank {self.rank} {self.tag}")
+                self.logging.info(f"Gen {gen} bcast in Rank {self.rank}")
 
             # Update the FF parameters if necessary
             if self.ff_opt:
@@ -232,11 +233,10 @@ class WFS(GlobalOptimize):
                 if self.use_mpi:
                     quit = self.comm.bcast(quit, root=0)
                     self.comm.Barrier()
-
-                self.logging.info(f"Gen {gen} Finish in Rank {self.rank} {self.tag}")
+                    self.logging.info(f"Gen {gen} Finish in Rank {self.rank}")
                 # Ensure that all ranks exit
                 if quit:
-                    self.logging.info(f"Early Termination in Rank {self.rank} {self.tag}")
+                    self.logging.info(f"Early Termination in Rank {self.rank}")
                     return success_rate
 
         return success_rate

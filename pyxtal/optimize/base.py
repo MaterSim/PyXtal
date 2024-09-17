@@ -9,6 +9,7 @@ from __future__ import annotations
 from multiprocessing import Pool
 from concurrent.futures import TimeoutError
 import signal
+import gc
 
 import logging
 import os
@@ -51,8 +52,11 @@ def run_optimizer_with_timeout(args):
         return None  # or some other placeholder for timeout results
 
 def process_task(args):
-    result = run_optimizer_with_timeout(args) 
+    #logger.info(f"Rank start processing task")
+    result = run_optimizer_with_timeout(args)#[:-1])
+    #logger.info(f"Rank finished processing task")
     return result
+
 
 class GlobalOptimize:
     """
@@ -324,6 +328,13 @@ class GlobalOptimize:
 
     def __repr__(self):
         return str(self)
+
+    def print_memory_usage(self):
+        import psutil
+        process = psutil.Process(os.getpid())
+        mem = process.memory_info().rss / 1024 ** 2
+        gen = self.generation
+        self.logging.info(f"Rank {self.rank} memory: {mem:.1f} MB in gen {gen}")
 
     def new_struc(self, xtal, xtals):
         return new_struc(xtal, xtals)
@@ -723,8 +734,7 @@ class GlobalOptimize:
         """
         pwd = os.getcwd()
         os.chdir(self.workdir)
-        if not os.path.exists(folder):
-            os.mkdir(folder)
+        os.makedirs(folder, exist_ok=True)
         suffix = folder + '/' + suffix
 
         # To remove the old pyxtal1 files
@@ -963,7 +973,7 @@ class GlobalOptimize:
         elif self.ncpu == 1:
             return self.local_optimization_serial(xtals, qrs)
         else:
-            print(f"Local optimization by multi-threads {ncpu}")
+            print(f"Local optimization by multi-threads {self.ncpu}")
             return self.local_optimization_mproc(xtals, self.ncpu, qrs=qrs, pool=pool)
 
     def local_optimization_serial(self, xtals, qrs=False):
@@ -980,7 +990,7 @@ class GlobalOptimize:
         for pop in range(len(xtals)):
             xtal = xtals[pop][0]
             job_tag = self.tag + "-g" + str(gen) + "-p" + str(pop)
-            mutated = False if qrs else xtal is not None 
+            mutated = False if qrs else xtal is not None
             my_args = [xtal, pop, mutated, job_tag, *args]
             xtal, match = optimizer_single(*tuple(my_args))
             gen_results[pop] = (pop, xtal, match)
@@ -1041,37 +1051,45 @@ class GlobalOptimize:
         Args:
             xtals : list of (xtal, tag) tuples
             ncpu (int): number of parallel python processes
-            ids (list): 
+            ids (list):
             qrs (bool): Force mutation or not (related to QRS)
+            pool : multiprocess pool
         """
         gen = self.generation
         t0 = time()
         args = self._get_local_optimization_args()
+
         if ids is None:
             ids = range(len(xtals))
 
         N_cycle = int(np.ceil(len(xtals) / ncpu))
-        args_lists = []
+        # Generator to create arg_lists for multiprocessing tasks
+        def generate_args_lists():
+            for i in range(ncpu):
+                id1 = i * N_cycle
+                id2 = min([id1 + N_cycle, len(xtals)])
+                _ids = ids[id1: id2]
+                job_tags = [self.tag + "-g" + str(gen)
+                            + "-p" + str(id) for id in _ids]
+                _xtals = [xtals[id][0] for id in range(id1, id2)]
+                mutates = [False if qrs else xtal is not None for xtal in _xtals]
+                my_args = [_xtals, _ids, mutates, job_tags, *args, self.timeout]
+                yield tuple(my_args)  # Yield args instead of appending to a list
 
-        # Assign args
-        for i in range(ncpu):
-           id1 = i * N_cycle
-           id2 = min([id1 + N_cycle, len(xtals)])
-           # os.makedirs(folder, exist_ok=True)
-           _ids = ids[id1: id2]
-           job_tags = [self.tag + "-g" + str(gen) 
-                        + "-p" + str(id) for id in _ids]
-           _xtals = [xtals[id][0] for id in range(id1, id2)]
-           mutates = [False if qrs else xtal is not None for xtal in _xtals]
-           my_args = [_xtals, _ids, mutates, job_tags, *args, self.timeout]
-           args_lists.append(tuple(my_args))
+        self.print_memory_usage()
+        self.logging.info(f"Rank {self.rank} assign local_opt")
 
-        self.logging.info(f"Rank {self.rank} assign args in local_opt_mproc")
         gen_results = []
-        for result in pool.imap_unordered(process_task, args_lists):
+        # Stream the results to avoid holding too much in memory at once
+        for result in pool.imap_unordered(process_task, generate_args_lists()):
             if result is not None:
+                #self.logging.info(f"Rank {self.rank} grab {len(result)} strucs")
                 for _res in result:
                     gen_results.append(_res)
+            # Explicitly delete the result and call garbage collection
+            del result
+            gc.collect()
+        self.logging.info(f"Rank {self.rank} finish local_opt {len(gen_results)}")
 
         return gen_results
 
@@ -1084,7 +1102,7 @@ class GlobalOptimize:
             gen_results: list of results (id, xtal, match)
             xtals: list of (xtal, tag) tuples
         """
-        matches = [False] if self.ref_pxrd is None else [0.0] 
+        matches = [False] if self.ref_pxrd is None else [0.0]
         matches *= self.N_pop
 
         eng0s = [self.E_max] * self.N_pop
