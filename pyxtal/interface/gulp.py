@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import subprocess
 
 import numpy as np
 from ase import Atoms
@@ -125,6 +126,7 @@ class GULP:
         dump=None,
         symmetry=False,
         labels=None,
+        timeout=3600,
     ):
         if isinstance(struc, pyxtal):
             self.pyxtal = struc
@@ -165,6 +167,7 @@ class GULP:
         self.optimized = False
         self.cputime = 0
         self.error = False
+        self.timeout = timeout
 
     def set_catlow(self):
         """
@@ -189,7 +192,19 @@ class GULP:
 
     def execute(self):
         cmd = self.exe + "<" + self.input + ">" + self.output
-        os.system(cmd)
+        # os.system(cmd)
+        with open(os.devnull, 'w') as devnull:
+            try:
+                # Run the external command with a timeout
+                result = subprocess.run(
+                    cmd, shell=True, timeout=self.timeout, check=True, stderr=devnull)
+                return result.returncode  # Or handle the result as needed
+            except subprocess.CalledProcessError as e:
+                print(f"Command '{cmd}' failed with return code {e.returncode}.")
+                return None
+            except subprocess.TimeoutExpired:
+                print(f"External command {cmd} timed out.")
+                return None
 
     def clean(self):
         if self.error:

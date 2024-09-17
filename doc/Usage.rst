@@ -350,6 +350,54 @@ structure formats. Below we show a few working examples.
     pmg = read('1.cif', format='cif')
     c.from_seed(pmg)
 
+There is also a shortcut to allow the user to quickly make a well known structure prototype
+via the ``from_prototype`` function,
+
+.. code-block:: Python
+
+>>> from pyxtal import pyxtal
+>>> c = pyxtal()
+>>> c.from_prototype('graphite')
+>>> c
+
+------Crystal from Build------
+Dimension: 3
+Composition: C4
+Group: P 63/m m c (194)
+  2.4600,   2.4600,   6.7000,  90.0000,  90.0000, 120.0000, hexagonal
+Wyckoff sites:
+	 C @ [ 0.3333  0.6667  0.2500], WP [2c] Site [-622m2]
+	 C @ [ 0.0000  0.0000  0.2500], WP [2b] Site [-622m2]
+
+Note that this function so far only supports `graphite`, `diamond`, `a-cristobalite`, `b-cristobalite`, `a-quartz`, `b-quartz`, `rocksalt`, `B1`, `B2`.
+
+A more general approach is to call the ``build`` function,
+
+.. code-block:: Python
+
+from pyxtal import pyxtal
+from pyxtal.lattice import Lattice
+
+c = pyxtal()
+l = Lattice.from_para(5.62, 5.62, 5.62, 90, 90, 90, ltype='Cubic')
+
+#define the sites as dictionary 
+sites = [{"4a": None}, # Na 
+         {"4b": None}, # Cl
+        ]
+c.build(225, ['Na', 'Cl'], [4, 4], lattice=l, sites=sites)
+print(c)
+
+or the ``from_spg_wps_rep`` function
+
+.. code-block:: Python
+
+from pyxtal import pyxtal
+c = pyxtal()
+c.from_spg_wps_rep(194, ['2c', '2b'], [2.46, 6.70])        # graphite
+c.from_spg_wps_rep(227, ['8a'], [3.6])                     # diamond
+c.from_spg_wps_rep(225, ['4a', '4b'], [5.59], ['Na', 'Cl'] # B1-rocksalt
+
 
 Random 3D Atomic Crystals
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -380,19 +428,19 @@ with a list of numbers. For example,
     >>> my_crystal = pyxtal()
     >>> my_crystal.from_random(3, 99, ['Ba','Ti','O'], [1,1,3], random_state=10)
     >>> my_crystal
-    
+
     ------Crystal from random------
     Dimension: 3
     Composition: Ba1Ti1O3
     Group: P 4 m m (99)
       4.0080,   4.0080,   9.3650,  90.0000,  90.0000,  90.0000, tetragonal
     Wyckoff sites:
-    	Ba @ [ 0.5000  0.5000  0.7043], WP [1b] Site [4mm]
-    	Ti @ [ 0.0000  0.0000  0.2199], WP [1a] Site [4mm]
-    	 O @ [ 0.5000  0.0000  0.3652], WP [2c] Site [2mm.]
-    	 O @ [ 0.0000  0.0000  0.6833], WP [1a] Site [4mm]
+    Ba @ [ 0.5000  0.5000  0.7043], WP [1b] Site [4mm]
+    Ti @ [ 0.0000  0.0000  0.2199], WP [1a] Site [4mm]
+     O @ [ 0.5000  0.0000  0.3652], WP [2c] Site [2mm.]
+     O @ [ 0.0000  0.0000  0.6833], WP [1a] Site [4mm]
 
-would create a random :math:`BaTiO_3` crystal. If the generation is successful, the value of ``my_crystal.valid`` will be set to ``True``; otherwise, it will be ``False``. Keep in mind that the you can pass an integer value to ``random_state`` to ensure the reproducibility. This feature would be useful for many different purposes. 
+would create a random ``BaTiO3`` crystal. If the generation is successful, the value of ``my_crystal.valid`` will be set to ``True``; otherwise, it will be ``False``. Keep in mind that the you can pass an integer value to ``random_state`` to ensure the reproducibility. This feature would be useful for many different purposes. 
 
 If you want to generate many random structures with a fixed random number generator, we recommend the following scripts by setting up a random number generator via ``np.random.default_rng``:
 
@@ -401,7 +449,7 @@ If you want to generate many random structures with a fixed random number genera
     from pyxtal import pyxtal
     import numpy as np
     rng = np.random.default_rng(0)
-    
+
     xtals = []
     for i in range(10):
         xtal = pyxtal()
@@ -429,7 +477,7 @@ unit cell.
     Volume factor: 1.0
     orthorhombic lattice:   5.6448   6.3389   4.4262  90.0000  90.0000  90.0000
     Wyckoff sites:
-    	H2 O1 @ [ 0.000  0.596  0.986]  Wyckoff letter:  4a, Site symmetry m.. ==> Rotvec: -0.343  0.000  0.000
+    H2 O1 @ [ 0.000  0.596  0.986]  Wyckoff letter:  4a, Site symmetry m.. ==> Rotvec: -0.343  0.000  0.000
 
 
 For molecular crystals, it is possible that a structure is better represented in

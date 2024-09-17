@@ -267,7 +267,7 @@ def optimize(
         setup: vasp setup
 
     Returns:
-        list of structures, energies and time costs
+        list of structure, energies and time costs
     """
 
     if levels is None:

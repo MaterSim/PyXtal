@@ -13,27 +13,34 @@ from ase.db import connect
 from pyxtal import pyxtal
 from pyxtal.util import ase2pymatgen
 
-
-def dftb_opt_par(ids, xtals, skf_dir, steps, folder, symmetrize, criteria):
+def opt_par(ids, xtals, fun, args): #ff, path, criteria):
     """
-    Run GULP optimization in parallel for a list of atomic xtals
+    Run optimization in parallel for a list of atomic xtals
     Args:
-        xtal: pyxtal instance
-        ff (str): e.g., `reaxff`, `tersoff`
-        path (str): path of calculation folder
-        criteria (dicts): to check if the structure
+        ids: list of ids
+        xtals: list of pyxtal instances
+        fun (callable): single optimize function
+        args (list): list of args (e.g. (ff, path, criteria) for gulp)
     """
-    cwd = os.getcwd()
-    os.chdir(folder)
     results = []
     for id, xtal in zip(ids, xtals):
-        res = dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria)
+        res = fun(id, xtal, *args)
         (xtal, eng, status) = res
         if status:
             results.append((id, xtal, eng))
-    os.chdir(cwd)
     return results
 
+def opt_single(id, xtal, calc, *args):
+    if calc == 'GULP':
+        return gulp_opt_single(id, xtal, *args)
+    elif calc == 'DFTB':
+        return dftb_opt_single(id, xtal, *args)
+    elif calc == 'VASP':
+        return vasp_opt_single(id, xtal, *args)
+    elif calc == 'MACE':
+        return mace_opt_single(id, xtal, *args)
+    else:
+        raise ValueError("Cannot support this calcultor", calc)
 
 def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05):
     """
@@ -54,16 +61,6 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05)
     stress = None
     try:
         if symmetrize:
-            s = DFTB_relax(
-                atoms,
-                skf_dir,
-                True,
-                int(steps / 2),
-                kresol=kresol * 1.2,
-                folder=".",
-                scc_iter=100,
-                logfile="ase.log",
-            )
             s = DFTB_relax(
                 atoms,
                 skf_dir,
@@ -123,60 +120,93 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05)
     else:
         return None, None, False
 
-
-def gulp_opt_par(ids, xtals, ff, path, criteria):
+def vasp_opt_single(id, xtal, path, criteria):
     """
-    Run GULP optimization in parallel for a list of atomic xtals
+    Single VASP optimization for a given atomic xtal
+
     Args:
+        id (int): id of the give xtal
         xtal: pyxtal instance
-        ff (str): e.g., `reaxff`, `tersoff`
-        path (str): path of calculation folder
+        steps (int): number of relaxation steps
         criteria (dicts): to check if the structure
     """
-    results = []
-    for id, xtal in zip(ids, xtals):
-        folder = path + '/g' + str(id)
-        res = gulp_opt_single(id, xtal, ff, folder, criteria)
-        (xtal, eng, status) = res
-        if status:
-            results.append((id, xtal, eng))
-            try:
-                os.rmdir(folder)
-            except:
-                print("Folder is not empty", folder)
-    return results
+    from pyxtal.interface.vasp import optimize as vasp_opt
+    path += '/g' + str(id)
+    try:
+        xtal, eng, _, error = vasp_opt(xtal, path, walltime=1800)
+        if not error:
+            process_xtal(xtal, eng, criteria)
+        return xtal, eng, status
+    else:
+        return None, None, False
 
 
-def gulp_opt_single(id, xtal, ff, path, criteria):
+def gulp_opt_single(id, xtal, ff_lib, path, criteria):
     """
     Single GULP optimization for a given atomic xtal
 
     Args:
         xtal: pyxtal instance
-        ff (str): e.g., `reaxff`, `tersoff`
+        ff_lib (str): e.g., `reaxff`, `tersoff`
         path (str): path of calculation folder
         criteria (dicts): to check if the structure
     """
     from pyxtal.interface.gulp import single_optimize as gulp_opt
 
+    path += '/g' + str(id)
     xtal, eng, _, error = gulp_opt(
         xtal,
-        ff=ff,
+        ff=ff_lib,
         label=str(id),
-        # clean=False,
         path=path,
         symmetry=True,
     )
     status = False
     if not error:
-        status = xtal.check_validity(
-            criteria) if criteria is not None else True
+        process_xtal(xtal, eng, criteria)
+        try:
+            os.rmdir(path)
+        except:
+            print("Folder is not empty", path)
+    return xtal, eng, status
+
+def mace_opt_single(id, xtal, criteria, step=250):
+    """
+    Single mace optimization for a given atomic xtal
+
+    Args:
+        xtal: pyxtal instance
+        criteria (dicts): to check if the structure
+        step (int): relaxation steps
+    """
+    from pyxtal.interface.ase_opt import ASE_relax as mace_opt
+
+    atoms = xtal.to_ase(resort=False)
+    s = mace_opt(atoms,
+                 'MACE',
+                 opt_cell=True,
+                 step=step,
+                 max_time=6.0,
+                 )
+    error = False
+    try:
+        xtal = pyxtal()
+        xtal.from_seed(s)
+        eng = s.get_potential_energy() / len(s)
+    except:
+        error = True
+
+    if not error:
+        process_xtal(xtal, eng, criteria)
+    return xtal, eng, status
+
+def process_xtal(xtal, eng, criteria):
+    status = xtal.check_validity(
+        criteria) if criteria is not None else True
     if status:
         header = f"{id:4d}"
         dicts = {"validity": status, "energy": eng}
         print(xtal.get_xtal_string(header=header, dicts=dicts))
-    return xtal, eng, status
-
 
 def make_entry_from_pyxtal(xtal):
     """
@@ -492,12 +522,13 @@ class database_topology:
     This is a database class to process atomic crystal data
 
     Args:
-        db_name: *.db format from ase database
+        db_name (str): *.db format from ase database
+        ltol (float): lattice tolerance
+        stol (float): site tolerance
+        atol (float): angle tolerance
     """
 
     def __init__(self, db_name, ltol=0.05, stol=0.05, atol=3):
-        # if not os.path.exists(db_name):
-        #    raise ValueError(db_name, 'doesnot exist')
 
         self.db_name = db_name
         self.db = connect(db_name, serial=True)
@@ -515,8 +546,12 @@ class database_topology:
             "ff_energy",
             "ff_lib",
             "ff_relaxed",
+            "mace_energy",
+            "mace_relaxed",
             "dftb_energy",
             "dftb_relaxed",
+            "vasp_energy",
+            "vasp_relaxed",
         ]
         self.matcher = sm.StructureMatcher(
             ltol=ltol, stol=stol, angle_tol=atol)
@@ -526,7 +561,7 @@ class database_topology:
 
     def get_pyxtal(self, id, use_relaxed=None):
         """
-        Get pyxtal based on row_id, if use_relaxed, get pyxtal from the ff_relaxed file
+        Get pyxtal based on row_id, if use_relaxed, get pyxtal from ff_relaxed
 
         Args:
             id (int): row id
@@ -951,7 +986,7 @@ class database_topology:
     def select_xtals(self, ids, overwrite=False, attribute=None, use_relaxed=None):
         """
         Extract xtals based on attribute name.
-        Mostly called by update_row_ff_energy or update_row_dftb_energy.
+        Mostly called by update_row_energy
 
         Args:
             ids:
@@ -975,76 +1010,86 @@ class database_topology:
                         print("Loading xtals from db", len(xtals))
         return ids, xtals
 
-    def update_row_ff_energy(
+    def update_row_energy(
         self,
-        ff="reaxff",
+        calculator='GULP',
         ids=(None, None),
         ncpu=1,
-        calc_folder="gulp_calc",
         criteria=None,
+        symmetrize=False,
         overwrite=False,
         write_freq=10,
+        ff_lib='reaxff',
+        steps=500,
     ):
         """
-        Update row ff_energy with GULP calculator
+        Update row mace_energy with mace calculator
 
         Args:
-            ff (str): GULP force field library (e.g., 'reaxff', 'tersoff')
+            calculator (str): 'GULP', 'MACE', 'VASP', 'DFTB'
             ids (tuple): row ids e.g., (0, 100)
             ncpu (int): number of parallel processes
-            calc_folder (str): temporary folder for GULP calculations
             overwrite (bool): remove the existing attributes
             write_freq (int): frequency to write results to db for ncpu=1
-        """
+            ff_lib (str): 'reaxff', or others for GULP
 
-        os.makedirs(calc_folder, exist_ok=True)
-        ids, xtals = self.select_xtals(ids, overwrite, "ff_energy")
+        """
+        label = calculator.lower() + "_energy"
+        ids, xtals = self.select_xtals(ids, overwrite, label)
         assert len(ids) == len(set(ids))
+        calc_folder = calculator.lower() + "_calc"
 
         if len(ids) > 0:
-            gulp_results = []
+            os.makedirs(calc_folder, exist_ok=True)
+            results = []
+            args_up = []
+            if calculator == 'GULP':
+                args = [ff_lib, calc_folder, criteria]
+                args_up = [ff_lib]
+            elif calculator == 'MACE':
+                args = [criteria]
+            elif calculator == 'DFTB':
+                args = [skf_dir, steps, symmetrize, criteria]
+            elif calculator == 'VASP':
+                args = [skf_dir, steps, symmetrize, criteria]
 
-            # Serial or Parallel computation
             if ncpu == 1:
                 for id, xtal in zip(ids, xtals):
-                    res = gulp_opt_single(id, xtal, ff, calc_folder, criteria)
+                    res = opt_single(id, xtal, calculator, *args)
                     (xtal, eng, status) = res
-                    if status:
-                        gulp_results.append((id, xtal, eng))
-                    if len(gulp_results) >= write_freq:
-                        self._update_db_gulp(gulp_results, ff)
-                        gulp_results = []
+                    if status: results.append((id, xtal, eng))
+                    if len(results) >= write_freq:
+                        print(*args_up)
+                        self._update_db(results, calculator, *args_up)
+                        results = []
             else:
-                if len(ids) < ncpu:
-                    ncpu = len(ids)
+                if len(ids) < ncpu: ncpu = len(ids)
                 N_cycle = int(np.ceil(len(ids) / ncpu))
-                print("\n# Parallel GULP optimizations",
-                      ncpu, N_cycle, len(ids))
+                print("\n# Parallel optimizations", ncpu, N_cycle, len(ids))
 
                 args_list = []
-                # Partition to ensure that each proc get the a similar load for the sorted structures
                 for i in range(ncpu):
-                    par_ids = []
-                    par_xtals = []
+                    par_ids, par_xtals = [], []
                     for j in range(N_cycle):
                         _id = j * ncpu + i
                         if _id < len(ids):
                             par_ids.append(ids[_id])
                             par_xtals.append(xtals[_id])
-                    args_list.append(
-                        (par_ids, par_xtals, ff, calc_folder, criteria))
+                        args_list.append((par_ids, par_xtals, *args))
 
                 with ProcessPoolExecutor(max_workers=ncpu) as executor:
-                    results = [executor.submit(gulp_opt_par, *p)
-                               for p in args_list]
+                    results = [executor.submit(opt_par, *p) for p in args_list]
                     for result in results:
-                        gulp_results.extend(result.result())
-                print("Finish Parallel GULP optimizations", len(gulp_results))
-            self._update_db_gulp(gulp_results, ff)
-        else:
-            print("All structures have the ff_energy already")
+                        results.extend(result.result())
 
-    def _update_db_gulp(self, gulp_results, ff):
+                print("Finish Parallel optimizations", len(results))
+                self._update_db(results, calculator, *args_up)
+
+        else:
+            print(f"All structures have the {calculator}_energy already!")
+
+
+    def _update_db(self, results, calc, *args):
         """
         Update db with the gulp_results
         This may take some time to complete if there are many rows
@@ -1052,96 +1097,36 @@ class database_topology:
         Better do it in a single transaction
 
         Args:
-            gulp_results: list of (id, xtal, eng) tuples
+            results: list of (id, xtal, eng) tuples
+            calc (str):
             ff (str): forcefield type (e.g., 'reaxff')
         """
-        print("Wrap up the final results and update db", len(gulp_results))
+        print("Wrap up the final results and update db", len(results))
+        if calc == 'GULP': ff_lib = args[0]
+
         with self.db:
-            for gulp_result in gulp_results:
-                (id, xtal, eng) = gulp_result
+            for result in results:
+                (id, xtal, eng) = result
                 if xtal is not None:
-                    self.db.update(id, ff_energy=eng, ff_lib=ff,
-                                   ff_relaxed=xtal.to_file())
-                    print('update_db_gulp', id)
+                    if calc == 'GULP':
+                        self.db.update(id,
+                                       ff_energy=eng,
+                                       ff_lib=ff_lib,
+                                       ff_relaxed=xtal.to_file())
+                    elif calc == 'MACE':
+                        self.db.update(id,
+                                       mace_energy=eng,
+                                       mace_relaxed=xtal.to_file())
+                    elif calc == 'VASP':
+                         self.db.update(id,
+                                        vasp_energy=eng,
+                                        vasp_relaxed=xtal.to_file())
+                    elif calc == 'DFTB':
+                         self.db.update(id,
+                                        dftb_energy=eng,
+                                        dftb_relaxed=xtal.to_file())
 
-    def update_row_dftb_energy(
-        self,
-        skf_dir,
-        steps=500,
-        ids=(None, None),
-        use_ff=True,
-        ncpu=1,
-        calc_folder="dftb_calc",
-        criteria=None,
-        symmetrize=False,
-        overwrite=False,
-    ):
-        """
-        Update row ff_energy with GULP calculator
-
-        Args:
-            skf_dir (str): GULP force field library (e.g., 'reaxff', 'tersoff')
-            steps (int): relaxation steps
-            ids (tuple): row ids e.g., (0, 100)
-            use_ff (bool): use the prerelaxed ff structure or not
-            ncpu (int): number of parallel processes
-            calc_folder (str): temporary folder for GULP calculations
-            symmetrize (bool): impose symmetry in optimization
-            overwrite (bool): remove the existing attributes
-        """
-
-        os.makedirs(calc_folder, exist_ok=True)
-        use_relaxed = "ff_relaxed" if use_ff else None
-
-        ids, xtals = self.select_xtals(
-            ids, overwrite, "dftb_energy", use_relaxed)
-
-        dftb_results = []
-        os.chdir(calc_folder)
-
-        # Serial or Parallel computation
-        if ncpu == 1:
-            for id, xtal in zip(ids, xtals):
-                res = dftb_opt_single(
-                    id, xtal, skf_dir, steps, symmetrize, criteria)
-                (xtal, eng, status) = res
-                if status:
-                    dftb_results.append((id, xtal, eng))
-        else:
-            # reset ncpus if the cpu is greater than the actual number of jobs
-            if len(ids) < ncpu:
-                ncpu = len(ids)
-            N_cycle = int(np.ceil(len(ids) / ncpu))
-            print("\n# Parallel DFTB optimizations", ncpu, N_cycle, len(ids))
-            args_list = []
-
-            for i in range(ncpu):
-                id1 = i * N_cycle
-                id2 = min([id1 + N_cycle, len(ids)])
-                folder = self.get_label(i)
-                os.makedirs(folder, exist_ok=True)
-                args_list.append(
-                    (
-                        ids[id1:id2],
-                        xtals[id1:id2],
-                        skf_dir,
-                        steps,
-                        folder,
-                        symmetrize,
-                        criteria,
-                    )
-                )
-
-            with ProcessPoolExecutor(max_workers=ncpu) as executor:
-                results = [executor.submit(dftb_opt_par, *p)
-                           for p in args_list]
-                for result in results:
-                    dftb_results.extend(result.result())
-
-        # Wrap up the final results and update db
-        for dftb_result in dftb_results:
-            (id, xtal, eng) = dftb_result
-            self.db.update(id, dftb_energy=eng, dftb_relaxed=xtal.to_file())
+                print(f'update_db_{calc}, {id}')
 
     def update_row_topology(self, StructureType="Auto", overwrite=True, prefix=None, ref_dim=3):
         """

@@ -4,19 +4,25 @@ import shutil
 import subprocess
 import numpy as np
 
-
 class CHARMM:
     """
-    This is a calculator to perform oragnic crystal structure optimization in GULP
+    A calculator to perform oragnic crystal structure optimization in CHARMM.
+
     Args:
-        struc: pyxtal.molecular_crystal.molecular_crystal object
-        rtf: path of rtf file
-        prm: path of prm file
-        opt: 'conv', 'conp', 'single'
-        input: charmm input file
-        output: charmm output file
-        dump: charmm dump structure
-        exe: charmm executable
+        - struc: pyxtal.molecular_crystal.molecular_crystal object
+        - label (str): label for this calculation
+        - algo (str): "abnr"
+        - lat_mut (bool): mutate lattice or not
+        - rotate (bool): rotate lattice or not
+        - prefix (str): prefix of this calculation
+        - atom_info (dict): atom_labels
+        - folder (str): folder name
+        - opt (str): 'conv', 'conp', 'single'
+        - steps (int): optimization steps
+        - exe (str): charmm executable
+        - input (str): charmm input file
+        - output (str): charmm output file
+        - dump (str): charmm dump structure
     """
 
     def __init__(
@@ -116,7 +122,7 @@ class CHARMM:
         os.chdir(cwd)
 
     def execute(self):
-        cmd = self.exe + " < " + self.input + " > " + self.output 
+        cmd = self.exe + " < " + self.input + " > " + self.output
         # os.system(cmd)
         with open(os.devnull, 'w') as devnull:
             try:
