@@ -837,6 +837,7 @@ class mof_builder(object):
             start, end = i, min([i+N_batches, len(reps)])
             ids = list(range(start, end))
             print(f"Rank {self.rank} minibatch {start} {end}")
+            self.logging.info(f"Rank {self.rank} minibatch {start} {end}")
             self.print_memory_usage()
 
             def generate_args():

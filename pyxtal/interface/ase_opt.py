@@ -20,7 +20,7 @@ def get_calculator(calculator):
 
     return calc
 
-def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile=None, max_time=6.0):
+def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile=None, max_time=10.0):
     """
     ASE optimizer
     Args:
@@ -39,15 +39,22 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile=Non
         dyn = FIRE(struc, a=0.1, logfile=logfile) if logfile is not None else FIRE(struc, a=0.1)
 
     # Run relaxation
-    if step < 50:
-        dyn.run(fmax=fmax, steps=step)
-    else:
-        t0 = time()
-        dyn.run(fmax=fmax, steps=int(step / 2))
-        # If time is too long, only run half steps
-        if (time() - t0) / 60 < max_time / 2:
+    dyn.run(fmax=fmax, steps=20)
+    forces = dyn.optimizable.get_forces()
+    _fmax = np.sqrt((forces ** 2).sum(axis=1).max())
+    # print("debug", _fmax)
+    if _fmax < 1e+2:
+        if step < 50:
+            dyn.run(fmax=fmax, steps=step)
+        else:
+            t0 = time()
             dyn.run(fmax=fmax, steps=int(step / 2))
-    return struc
+            # If time is too long, only run half steps
+            if (time() - t0) / 60 < max_time / 2:
+                dyn.run(fmax=fmax, steps=int(step / 2))
+        return struc
+    else:
+        return None
 
 
 class ASE_optimizer:
