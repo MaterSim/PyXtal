@@ -7,9 +7,9 @@ A base class for global optimization including:
 """
 from __future__ import annotations
 from multiprocessing import Pool
+
 from concurrent.futures import TimeoutError
 import signal
-import gc
 
 import logging
 import os
@@ -28,7 +28,18 @@ from pyxtal.optimize.common import optimizer_par, optimizer_single
 from pyxtal.lattice import Lattice
 from pyxtal.symmetry import Group
 
-def run_optimizer_with_timeout(args):
+def setup_worker_logger(log_file):
+    """
+    Set up the logger for each worker process.
+    """
+    logging.getLogger().handlers.clear()
+    logging.basicConfig(format="%(asctime)s| %(message)s",
+                        filename=log_file,
+                        level=logging.INFO)
+
+
+# Update run_optimizer_with_timeout to accept a logger
+def run_optimizer_with_timeout(args, logger):
     """
     Run the optimizer with a timeout.
     This function will be executed by each process.
@@ -39,24 +50,28 @@ def run_optimizer_with_timeout(args):
     # Set the timeout signal
     cwd = os.getcwd()
     timeout = int(args[-1])
+    logger.info(f"Rank-{args[-2]} entering optimizer_with_timeout")
     signal.signal(signal.SIGALRM, handler)
     signal.alarm(timeout)
+    logger.info(f"Rank-{args[-2]} after signal")
 
     try:
-        result = optimizer_par(*args[:-1])
+        logger.info(f"Rank-{args[-2]} running optimizer_par for PID {os.getpid()}")
+        result = optimizer_par(*args[:-2])
+        logger.info(f"Rank-{args[-2]} finished optimizer_par for PID {os.getpid()} successfully")
         signal.alarm(0)  # Disable the alarm
         return result
     except TimeoutError:
-        print(f"Process {os.getpid()} timed out after {timeout} seconds.")
+        logger.info(f"Rank-{args[-1]} Process {os.getpid()} timed out after {timeout} seconds.")
         os.chdir(cwd)
         return None  # or some other placeholder for timeout results
 
+# Update process_task to accept a logger
 def process_task(args):
-    #logger.info(f"Rank start processing task")
-    result = run_optimizer_with_timeout(args)#[:-1])
-    #logger.info(f"Rank finished processing task")
+    logger = logging.getLogger()
+    logger.info(f"Rank {args[-2]} start process_task.")
+    result = run_optimizer_with_timeout(args, logger)
     return result
-
 
 class GlobalOptimize:
     """
@@ -329,13 +344,6 @@ class GlobalOptimize:
     def __repr__(self):
         return str(self)
 
-    def print_memory_usage(self):
-        import psutil
-        process = psutil.Process(os.getpid())
-        mem = process.memory_info().rss / 1024 ** 2
-        gen = self.generation
-        self.logging.info(f"Rank {self.rank} memory: {mem:.1f} MB in gen {gen}")
-
     def new_struc(self, xtal, xtals):
         return new_struc(xtal, xtals)
 
@@ -358,7 +366,7 @@ class GlobalOptimize:
         self.ref_pxrd = ref_pxrd
 
         if self.ncpu > 1:
-            pool = Pool(processes=self.ncpu)
+            pool = Pool(processes=self.ncpu, initializer=setup_worker_logger, initargs=(self.log_file,))
         else:
             pool = None
 
@@ -734,7 +742,8 @@ class GlobalOptimize:
         """
         pwd = os.getcwd()
         os.chdir(self.workdir)
-        os.makedirs(folder, exist_ok=True)
+        if not os.path.exists(folder):
+            os.mkdir(folder)
         suffix = folder + '/' + suffix
 
         # To remove the old pyxtal1 files
@@ -973,7 +982,7 @@ class GlobalOptimize:
         elif self.ncpu == 1:
             return self.local_optimization_serial(xtals, qrs)
         else:
-            print(f"Local optimization by multi-threads {self.ncpu}")
+            print(f"Local optimization by multi-threads {ncpu}")
             return self.local_optimization_mproc(xtals, self.ncpu, qrs=qrs, pool=pool)
 
     def local_optimization_serial(self, xtals, qrs=False):
@@ -1051,14 +1060,12 @@ class GlobalOptimize:
         Args:
             xtals : list of (xtal, tag) tuples
             ncpu (int): number of parallel python processes
-            ids (list):
+            ids (list): list of ids of the associated xtals
             qrs (bool): Force mutation or not (related to QRS)
-            pool : multiprocess pool
         """
         gen = self.generation
         t0 = time()
         args = self._get_local_optimization_args()
-
         if ids is None:
             ids = range(len(xtals))
 
@@ -1076,20 +1083,12 @@ class GlobalOptimize:
                 my_args = [_xtals, _ids, mutates, job_tags, *args, self.timeout]
                 yield tuple(my_args)  # Yield args instead of appending to a list
 
-        self.print_memory_usage()
-        self.logging.info(f"Rank {self.rank} assign local_opt")
-
         gen_results = []
-        # Stream the results to avoid holding too much in memory at once
+        #for result in pool.imap_unordered(process_task, args_lists):
         for result in pool.imap_unordered(process_task, generate_args_lists()):
             if result is not None:
-                #self.logging.info(f"Rank {self.rank} grab {len(result)} strucs")
                 for _res in result:
                     gen_results.append(_res)
-            # Explicitly delete the result and call garbage collection
-            del result
-            gc.collect()
-        self.logging.info(f"Rank {self.rank} finish local_opt {len(gen_results)}")
 
         return gen_results
 

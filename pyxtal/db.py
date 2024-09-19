@@ -4,6 +4,7 @@ Database class
 
 import os
 from concurrent.futures import ProcessPoolExecutor
+import logging 
 
 import numpy as np
 import pymatgen.analysis.structure_matcher as sm
@@ -13,26 +14,25 @@ from ase.db import connect
 from pyxtal import pyxtal
 from pyxtal.util import ase2pymatgen
 
-def call_opt_par(p):
-    return opt_par(*p)
+def setup_worker_logger(log_file):
+    """
+    Set up the logger for each worker process.
+    """
+    logging.getLogger().handlers.clear()
+    logging.basicConfig(format="%(asctime)s| %(message)s",
+                        filename=log_file,
+                        level=logging.INFO)
 
-def opt_par(ids, xtals, calc, *args): 
-    """
-    Run optimization in parallel for a list of atomic xtals
-    Args:
-        ids: list of ids
-        xtals: list of pyxtal instances
-        *args (list): list of args (e.g. (ff, path, criteria) for gulp)
-    """
-    #print("++++++++++++++++++++++++++++++++++++++++++++++++++++++", ids)
-    results = []
-    for id, xtal in zip(ids, xtals):
-        #print("================================================", id, xtal.lattice)
-        res = opt_single(id, xtal, calc, *args)
-        (xtal, eng, status) = res
-        if status:
-            results.append((id, xtal, eng))
-    return results
+def call_opt_single(p):
+    id = p[0]
+    logger = logging.getLogger()
+    #logger.info(f"Start id: {id}")
+    xtal, eng, status = opt_single(*p)
+    if eng is not None:
+        logger.info(f"Finish id: {id}, eng {eng:.3f}")
+    else:
+        logger.info(f"Finish id: {id}, Failed")
+    return id, xtal, eng
 
 def opt_single(id, xtal, calc, *args):
     if calc == 'GULP':
@@ -532,8 +532,8 @@ class database_topology:
         atol (float): angle tolerance
     """
 
-    def __init__(self, db_name, ltol=0.05, stol=0.05, atol=3):
-
+    def __init__(self, db_name, rank=0, ltol=0.05, stol=0.05, atol=3):
+        self.rank = rank
         self.db_name = db_name
         self.db = connect(db_name, serial=True)
         self.keys = [
@@ -560,8 +560,23 @@ class database_topology:
         self.matcher = sm.StructureMatcher(
             ltol=ltol, stol=stol, angle_tol=atol)
 
+        # Define logfile
+        self.log_file = 'db.log'
+        logging.getLogger().handlers.clear()
+        logging.basicConfig(format="%(asctime)s| %(message)s",
+                            filename=self.log_file,
+                            level=logging.INFO)
+        self.logging = logging
+
     def vacuum(self):
         self.db.vacuum()
+
+    def print_memory_usage(self):
+        import psutil
+        process = psutil.Process(os.getpid())
+        mem = process.memory_info().rss / 1024 ** 2
+        self.logging.info(f"Rank {self.rank} memory: {mem:.1f} MB")
+        print(f"Rank {self.rank} memory: {mem:.1f} MB")
 
     def get_pyxtal(self, id, use_relaxed=None):
         """
@@ -583,7 +598,6 @@ class database_topology:
             else:
                 raise ValueError(
                     "No ff or vasp relaxed attributes for structure", id)
-
             pmg = Structure.from_str(xtal_str, fmt="cif")
 
         else:
@@ -1014,6 +1028,30 @@ class database_topology:
                         print("Loading xtals from db", len(xtals))
         return ids, xtals
 
+    def select_xtal(self, ids, overwrite=False, attribute=None, use_relaxed=None):
+        """
+        Lazy extraction
+        Mostly called by update_row_energy
+
+        Args:
+            ids:
+            overwrite:
+            atttribute:
+            use_relaxed (str): 'ff_relaxed' or 'vasp_relaxed'
+        """
+        (min_id, max_id) = ids
+        if min_id is None:
+            min_id = 1
+        if max_id is None:
+            max_id = self.get_max_id()
+        ids, xtals = [], []
+        for row in self.db.select():
+            if overwrite or attribute is None or not hasattr(row, attribute):
+                if min_id <= row.id <= max_id:
+                    xtal = self.get_pyxtal(row.id, use_relaxed)
+                    yield row.id, xtal
+
+
     def update_row_energy(
         self,
         calculator='GULP',
@@ -1025,6 +1063,7 @@ class database_topology:
         write_freq=100,
         ff_lib='reaxff',
         steps=250,
+        use_relaxed=None,
     ):
         """
         Update row mace_energy with mace calculator
@@ -1036,68 +1075,76 @@ class database_topology:
             overwrite (bool): remove the existing attributes
             write_freq (int): frequency to write results to db for ncpu=1
             ff_lib (str): 'reaxff', or others for GULP
+            use_relaxed (str): 'ff_relaxed' or 'vasp_relaxed'
         """
         label = calculator.lower() + "_energy"
-        ids, xtals = self.select_xtals(ids, overwrite, label)
-        #assert len(ids) == len(set(ids))
+        xtal_generator = self.select_xtal(ids, overwrite, label, use_relaxed)
         calc_folder = calculator.lower() + "_calc"
+        os.makedirs(calc_folder, exist_ok=True)
+        args_up = []
+        if calculator == 'GULP':
+            args = [calculator, ff_lib, calc_folder, criteria]
+            args_up = [ff_lib]
+        elif calculator == 'MACE':
+            args = [calculator, criteria]
+        elif calculator == 'DFTB':
+            args = [calculator, skf_dir, steps, symmetrize, criteria]
+        elif calculator == 'VASP':
+            args = [calculator, skf_dir, steps, symmetrize, criteria]
 
-        if len(ids) > 0:
-            os.makedirs(calc_folder, exist_ok=True)
-            args_up = []
-            if calculator == 'GULP':
-                args = [calculator, ff_lib, calc_folder, criteria]
-                args_up = [ff_lib]
-            elif calculator == 'MACE':
-                args = [calculator, criteria]
-            elif calculator == 'DFTB':
-                args = [calculator, skf_dir, steps, symmetrize, criteria]
-            elif calculator == 'VASP':
-                args = [calculator, skf_dir, steps, symmetrize, criteria]
-
-            if ncpu == 1:
-                results = []
-                for id, xtal in zip(ids, xtals):
-                    res = opt_single(id, xtal, *args)
-                    (xtal, eng, status) = res
-                    if status: results.append((id, xtal, eng))
-                    if len(results) >= write_freq:
-                        print(*args_up)
-                        self._update_db(results, calculator, *args_up)
-                        results = []
-            else:
-                from multiprocessing import Pool
-
-                print("\n# Parallel optimizations", ncpu, len(ids))
-                if len(ids) < ncpu: ncpu = len(ids)
-                pool = Pool(processes=ncpu)
-
-                N_rep = max([1, write_freq // ncpu])
-                N_batches = N_rep * ncpu
-                for _i, i in enumerate(range(0, len(ids), N_batches)): 
-                    results = []
-                    start, end = i, min([i+N_batches, len(ids)]) 
-                    myids = list(range(start, end))
-                    myargs = []
-                    for j in range(ncpu):
-                        _ids = myids[j::ncpu]
-                        par_ids, par_xtals = [], []
-                        for _id in _ids:
-                            par_ids.append(ids[_id])
-                            par_xtals.append(xtals[_id])
-
-                        # Make sure both par_ids and par_xtals are passed
-                        myargs.append(tuple([par_ids, par_xtals] + args))
-
-                    for result in pool.imap_unordered(call_opt_par, myargs):
-                        if result is not None:
-                            for _res in result:
-                                results.append(_res)
-                    self._update_db(results, calculator, *args_up)
-
-                print("Finish Parallel optimizations", len(results))
+        if ncpu == 1:
+            self.update_row_energy_serial(xtal_generator, write_freq, args, args_up)
         else:
-            print(f"All structures have the {calculator}_energy already!")
+            self.update_row_energy_mproc(ncpu, xtal_generator, write_freq, args, args_up)
+
+        print("Complete update_row_energy")
+
+    def update_row_energy_serial(self, xtal_generator, write_freq, args, args_up):
+        results = []
+        for id, xtal in xtal_generator:
+            res = opt_single(id, xtal, *args)
+            (xtal, eng, status) = res
+            if status:
+                results.append((id, xtal, eng))
+            if len(results) >= write_freq:
+                self._update_db(results, args[0], *args_up)
+                results = []
+                self.print_memory_usage()
+
+    def update_row_energy_mproc(self, ncpu, xtal_generator, write_freq, args, args_up):
+        from multiprocessing import Pool
+
+        print("\n# Parallel optimizations", ncpu)
+        pool = Pool(processes=ncpu, initializer=setup_worker_logger, initargs=(self.log_file,))
+
+        def chunkify(generator, chunk_size):
+            chunk = []
+            for item in generator:
+                chunk.append(item)
+                if len(chunk) == chunk_size:
+                    yield chunk
+                    chunk = []
+            if chunk:
+                yield chunk
+
+        for chunk in chunkify(xtal_generator, ncpu):
+            myargs = []
+            #print('Current chunk size', len(chunk), ncpu)
+            for _id, xtal in chunk:
+                myargs.append(tuple([_id, xtal] + args))# + [self.logging]))
+                #print('debug myargs', len(myargs), len(myargs[-1]))
+
+            results = []
+            for result in pool.imap_unordered(call_opt_single, myargs):
+                if result is not None:
+                    (id, xtal, eng) = result
+                    if eng is not None:
+                        results.append(result)
+                        #self.logging.info(f'id-{id} updates energy {eng:.3f}')
+            self._update_db(results, args[0], *args_up)
+            self.print_memory_usage()
+        pool.close()
+        pool.join()
 
 
     def _update_db(self, results, calc, *args):
