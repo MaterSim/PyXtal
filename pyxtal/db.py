@@ -4,7 +4,7 @@ Database class
 
 import os
 from concurrent.futures import ProcessPoolExecutor
-import logging 
+import logging
 
 import numpy as np
 import pymatgen.analysis.structure_matcher as sm
@@ -25,13 +25,14 @@ def setup_worker_logger(log_file):
 
 def call_opt_single(p):
     id = p[0]
-    logger = logging.getLogger()
-    #logger.info(f"Start id: {id}")
     xtal, eng, status = opt_single(*p)
+    logger = logging.getLogger()
+    #logger.info(f"Start id: {id} *{sum(xtal.numIons)}")
+
     if eng is not None:
-        logger.info(f"Finish id: {id}, eng {eng:.3f}")
+        logger.info(f"ID: {id}, eng {eng:.3f} *{sum(xtal.numIons)}")
     else:
-        logger.info(f"Finish id: {id}, Failed")
+        logger.info(f"ID: {id}, Failed")
     return id, xtal, eng
 
 def opt_single(id, xtal, calc, *args):
@@ -111,7 +112,7 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05)
             eng = s.get_potential_energy() / len(s)
         else:
             eng /= len(s)
-        
+
         status = process_xtal(id, xtal, eng, criteria)
         print(xtal.get_xtal_string(header=header, dicts=dicts))
 
@@ -133,7 +134,7 @@ def vasp_opt_single(id, xtal, path, criteria):
     path += '/g' + str(id)
     status = False
     try:
-        xtal, eng, _, error = vasp_opt(xtal, path, walltime=1800)
+        xtal, eng, _, error = vasp_opt(xtal, path, walltime="59m")
         if not error:
             status = process_xtal(id, xtal, eng, criteria)
         return xtal, eng, status
@@ -186,7 +187,7 @@ def mace_opt_single(id, xtal, criteria, step=250):
                  'MACE',
                  opt_cell=True,
                  step=step,
-                 max_time=6.0,
+                 max_time=10.0,
                  )
     error = False
     try:

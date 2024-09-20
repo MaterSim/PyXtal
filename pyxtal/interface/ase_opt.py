@@ -19,7 +19,7 @@ def timeout_handler(signum, frame):
     raise TimeoutException
 
 def get_calculator(calculator):
-    global _cached_mace_mp 
+    global _cached_mace_mp
 
     if type(calculator) is str:
         if calculator == 'ANI':
@@ -44,25 +44,27 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile='as
         max_time: float (minutes)
     """
     max_time *= 60
+    timeout = int(max_time)
     calc = get_calculator(calculator)
     struc.set_calculator(calc)
     struc.set_constraint(FixSymmetry(struc))
-    if opt_cell:
-        ecf = UnitCellFilter(struc)
-        dyn = FIRE(ecf, a=0.1, logfile=logfile) if logfile is not None else FIRE(ecf, a=0.1)
-    else:
-        dyn = FIRE(struc, a=0.1, logfile=logfile) if logfile is not None else FIRE(struc, a=0.1)
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(timeout)
 
-    # Run relaxation
-    dyn.run(fmax=fmax, steps=20)
-    forces = dyn.optimizable.get_forces()
-    _fmax = np.sqrt((forces ** 2).sum(axis=1).max())
-    # print("debug", _fmax)
-    if _fmax < 1e+3:
-        signal.signal(signal.SIGALRM, timeout_handler)
-        timeout = int(max_time)
-        signal.alarm(timeout)
-        try:
+    try:
+        if opt_cell:
+            ecf = UnitCellFilter(struc)
+            dyn = FIRE(ecf, a=0.1, logfile=logfile) if logfile is not None else FIRE(ecf, a=0.1)
+        else:
+            dyn = FIRE(struc, a=0.1, logfile=logfile) if logfile is not None else FIRE(struc, a=0.1)
+
+        # Run relaxation
+        dyn.run(fmax=fmax, steps=20)
+        forces = dyn.optimizable.get_forces()
+        _fmax = np.sqrt((forces ** 2).sum(axis=1).max())
+        # print("debug", _fmax)
+
+        if _fmax < 1e+3:
             if step < 50:
                 dyn.run(fmax=fmax, steps=step)
             else:
@@ -71,7 +73,6 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile='as
                 # If time is too long, only run half steps
                 if (time() - t0)  < max_time / 2:
                     dyn.run(fmax=fmax, steps=int(step / 2))
-            signal.alarm(0)  # Cancel the alarm if finished within time
             forces = dyn.optimizable.get_forces()
             _fmax = np.sqrt((forces ** 2).sum(axis=1).max())
             if _fmax > 100:
@@ -79,11 +80,14 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile='as
             else:
                 return struc
 
-        except TimeoutError:
-            print("ASE_relax timed out after {timeout} seconds.")
-            return None
-    else:
+    except TimeoutException:
+        print(f"ASE_relax timed out after {timeout} seconds.")
         return None
+
+    finally:
+        signal.alarm(0)  # Cancel the alarm if finished within time
+
+    return None
 
 
 class ASE_optimizer:
