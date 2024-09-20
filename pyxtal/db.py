@@ -120,26 +120,32 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05)
     else:
         return None, None, False
 
-def vasp_opt_single(id, xtal, path, criteria):
+def vasp_opt_single(id, xtal, path, cmd, criteria):
     """
     Single VASP optimization for a given atomic xtal
 
     Args:
         id (int): id of the give xtal
         xtal: pyxtal instance
-        steps (int): number of relaxation steps
+        path: calculation folder
+        cmd: vasp command
         criteria (dicts): to check if the structure
     """
     from pyxtal.interface.vasp import optimize as vasp_opt
     path += '/g' + str(id)
     status = False
-    try:
-        xtal, eng, _, error = vasp_opt(xtal, path, walltime="59m")
+
+    #try:
+    if True:
+        xtal, eng, _, error = vasp_opt(xtal,
+                                       path,
+                                       cmd=cmd,
+                                       walltime="59m")
         if not error:
             status = process_xtal(id, xtal, eng, criteria)
         return xtal, eng, status
-    except:
-        return None, None, False
+    #except:
+    #    return None, None, False
 
 
 def gulp_opt_single(id, xtal, ff_lib, path, criteria):
@@ -588,7 +594,6 @@ class database_topology:
             use_relaxed (str): 'ff_relaxed', 'vasp_relaxed'
         """
         from pymatgen.core import Structure
-
         from pyxtal import pyxtal
         from pyxtal.util import ase2pymatgen
 
@@ -1065,23 +1070,45 @@ class database_topology:
         ff_lib='reaxff',
         steps=250,
         use_relaxed=None,
+        cmd=None,
     ):
         """
-        Update row mace_energy with mace calculator
+        Update the row energy in the database for a given calculator.
 
         Args:
             calculator (str): 'GULP', 'MACE', 'VASP', 'DFTB'
-            ids (tuple): row ids e.g., (0, 100)
+            ids (tuple): A tuple specifying row IDs to update (e.g., (0, 100)).
             ncpu (int): number of parallel processes
-            overwrite (bool): remove the existing attributes
-            write_freq (int): frequency to write results to db for ncpu=1
-            ff_lib (str): 'reaxff', or others for GULP
-            use_relaxed (str): 'ff_relaxed' or 'vasp_relaxed'
+            criteria (dict, optional): Criteria when selecting structures.
+            symmetrize (bool): If True, symmetrize the structure before calculation
+            overwrite (bool): If True, overwrite the existing energy attributes.
+            write_freq (int): frequency to update db for ncpu=1
+            ff_lib (str): Force field to use for GULP ('reaxff' by default).
+            steps (int): Number of optimization steps for DFTB (default is 250).
+            use_relaxed (str, optional): Use relaxed structures (e.g. 'ff_relaxed')
+            cmd (str, optional): Command for VASP calculations.
+
+        Functionality:
+            Based on the selected calculator, it updates the energy rows of the
+            database. If `ncpu > 1`, calculations are ran in parallel; otherwise,
+            they are executed serially. The method of calculation and structure
+            generation is specific to the chosen calculator.
+
+        Calculator Options:
+            - 'GULP': Uses a force field (e.g., 'reaxff').
+            - 'MACE': Uses the MACE calculator.
+            - 'DFTB': Uses DFTB+ with symmetrization options.
+            - 'VASP': Uses VASP, with a specified command (`cmd`).
         """
+
         label = calculator.lower() + "_energy"
-        xtal_generator = self.select_xtal(ids, overwrite, label, use_relaxed)
         calc_folder = calculator.lower() + "_calc"
         os.makedirs(calc_folder, exist_ok=True)
+
+        # Generate structures for calculation
+        xtal_generator = self.select_xtal(ids, overwrite, label, use_relaxed)
+
+        # Set up arguments for the chosen calculator
         args_up = []
         if calculator == 'GULP':
             args = [calculator, ff_lib, calc_folder, criteria]
@@ -1091,18 +1118,39 @@ class database_topology:
         elif calculator == 'DFTB':
             args = [calculator, skf_dir, steps, symmetrize, criteria]
         elif calculator == 'VASP':
-            args = [calculator, skf_dir, steps, symmetrize, criteria]
+            args = [calculator, calc_folder, cmd, criteria]
+        else:
+            raise ValueError(f"Unsupported calculator: {calculator}")
 
+        # Perform calculation serially or in parallel
         if ncpu == 1:
             self.update_row_energy_serial(xtal_generator, write_freq, args, args_up)
         else:
-            self.update_row_energy_mproc(ncpu, xtal_generator, write_freq, args, args_up)
+            self.update_row_energy_mproc(ncpu, xtal_generator, args, args_up)
 
         print("Complete update_row_energy")
 
     def update_row_energy_serial(self, xtal_generator, write_freq, args, args_up):
+        """
+        Perform a serial update of row energies
+
+        Args:
+            xtal_generator (generator): Yielding tuples of (id, xtal), where:
+                - `id` (int): Unique identifier for the structure.
+                - `xtal` (object): pyxtal instance.
+            write_freq (int): Frequency to update the database.
+            args (list): Additional arguments to the function `opt_single`.
+            args_up (list): Additional arguments for function `_update_db`.
+
+        Functionality:
+            The function iterates over structures provided by `xtal_generator`,
+            optimizes them using `opt_single`, and collects results that have
+            successfully converged (`status == True`). Once the number of results
+            reaches `write_freq`, it updates the database and prints memory usage.
+        """
         results = []
         for id, xtal in xtal_generator:
+            print(f"Processing {id} {xtal.lattice} {args[0]}")
             res = opt_single(id, xtal, *args)
             (xtal, eng, status) = res
             if status:
@@ -1112,11 +1160,39 @@ class database_topology:
                 results = []
                 self.print_memory_usage()
 
-    def update_row_energy_mproc(self, ncpu, xtal_generator, write_freq, args, args_up):
+    def update_row_energy_mproc(self, ncpu, xtal_generator, args, args_up):
+        """
+        Perform parallel row energy updates by optimizing atomic structures.
+
+        Args:
+            ncpu (int): Number of CPUs to use for parallel processing.
+            xtal_generator (generator): yielding tuples of (id, xtal), where:
+                - `id` (int): Unique identifier for the structure.
+                - `xtal` (object): pyxtal instance.
+            args (list): Additional arguments passed to `call_opt_single`.
+                - Typically includes a calculator or potential parameters.
+            args_up (list): Additional arguments for function `_update_db`.
+
+        Functionality:
+            This function distributes the structures across multiple CPUs
+            using `multiprocessing.Pool`. It creates chunks (based on `ncpu`),
+            and each chunk is processed in parallel by calling `call_opt_single`.
+            Successful results are periodically written to the database.
+            The function also prints memory usage after each database update.
+
+        Parallelization Process:
+            - The `Pool` is initialized with `ncpu` processes.
+            - Structures are divided into chunks with the `chunkify` function.
+            - Each chunk is processed by `pool.imap_unordered` and `call_opt_single`.
+            - Successful optimizied results are periodically written to the database.
+            - The pool is closed and joined after processing is complete.
+        """
         from multiprocessing import Pool
 
         print("\n# Parallel optimizations", ncpu)
-        pool = Pool(processes=ncpu, initializer=setup_worker_logger, initargs=(self.log_file,))
+        pool = Pool(processes=ncpu,
+                    initializer=setup_worker_logger,
+                    initargs=(self.log_file,))
 
         def chunkify(generator, chunk_size):
             chunk = []
