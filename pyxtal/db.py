@@ -1297,21 +1297,28 @@ class database_topology:
             if chunk:
                 yield chunk
 
-        for chunk in chunkify(xtal_generator, ncpu*2):
+        for chunk in chunkify(xtal_generator, ncpu*8):
             myargs = []
             for _id, xtal in chunk:
                 myargs.append(tuple([_id, xtal] + args))# + [self.logging]))
                 #print('debug myargs', len(myargs), len(myargs[-1]))
 
             results = []
-            for result in pool.imap_unordered(call_opt_single, myargs):
+            for result in pool.imap_unordered(call_opt_single, myargs, chunksize=1):
                 if result is not None:
                     (id, xtal, eng) = result
                     if eng is not None:
                         results.append(result)
-                        #self.logging.info(f'id-{id} updates energy {eng:.3f}')
-            self._update_db(results, args[0], *args_up)
-            self.print_memory_usage()
+
+                if len(results) >= ncpu * 2:
+                    self._update_db(results, args[0], *args_up)
+                    self.print_memory_usage()
+                    results = []
+
+            # After the loop, handle any remaining results that didn't make a full batch
+            if results:
+                self._update_db(results, args[0], *args_up)
+
         pool.close()
         pool.join()
 
