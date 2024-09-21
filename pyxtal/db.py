@@ -24,6 +24,23 @@ def setup_worker_logger(log_file):
                         level=logging.INFO)
 
 def call_opt_single(p):
+    """
+    Optimize a single structure and log the result.
+
+    Args:
+        p (tuple): A tuple where the first element is an identifier (id), and the
+                   remaining elements are the arguments to pass to `opt_single`.
+
+    Returns:
+        tuple: A tuple (id, xtal, eng) where:
+               - id (int): The identifier of the structure.
+               - xtal: The optimized structure.
+               - eng (float): The energy of the opt_structure, or None if it failed.
+
+    Behavior:
+        This function calls `opt_single` to perform the optimization of the structure
+        associated with the given id.
+    """
     id = p[0]
     xtal, eng, status = opt_single(*p)
     logger = logging.getLogger()
@@ -36,6 +53,25 @@ def call_opt_single(p):
     return id, xtal, eng
 
 def opt_single(id, xtal, calc, *args):
+    """
+    Optimize a structure using the specified calculator.
+
+    Args:
+        id (int): Identifier of the structure to be optimized.
+        xtal: Crystal structure object to be optimized.
+        calc (str): The calculator to use ('GULP', 'DFTB', 'VASP', 'MACE').
+        *args: Additional arguments to pass to the calculator function.
+
+    Returns:
+        tuple: The result of the optimization, which typically includes:
+               - xtal: The optimized structure.
+               - energy (float): The energy of the optimized structure.
+               - status (bool): Whether the optimization was successful.
+
+    Raises:
+        ValueError: If an unsupported calculator is specified.
+    """
+
     if calc == 'GULP':
         return gulp_opt_single(id, xtal, *args)
     elif calc == 'DFTB':
@@ -150,17 +186,32 @@ def vasp_opt_single(id, xtal, path, cmd, criteria):
 
 def gulp_opt_single(id, xtal, ff_lib, path, criteria):
     """
-    Single GULP optimization for a given atomic xtal
+    Perform a single GULP optimization for a given crystal structure.
 
     Args:
-        xtal: pyxtal instance
-        ff_lib (str): e.g., `reaxff`, `tersoff`
-        path (str): path of calculation folder
-        criteria (dicts): to check if the structure
+        id (int): Identifier for the current structure.
+        xtal: PyXtal instance representing the crystal to be optimized.
+        ff_lib (str): Force field library for GULP, e.g., 'reaxff', 'tersoff'.
+        path (str): Path to the folder where the calculation is stored.
+        criteria (dict): Dictionary to check the validity of the opt_structure.
+
+    Returns:
+        tuple:
+            - xtal: Optimized PyXtal instance.
+            - eng (float): Energy of the optimized structure.
+            - status (bool): Whether the optimization process is successful.
+
+    Behavior:
+        This function performs a GULP optimization using the force field.
+        After the optimization, it checks the validity of the structure and
+        attempts to remove the calculation folder if it is empty.
     """
     from pyxtal.interface.gulp import single_optimize as gulp_opt
 
+    # Create the path for this specific structure
     path += '/g' + str(id)
+
+    # Perform the optimization with GULP
     xtal, eng, _, error = gulp_opt(
         xtal,
         ff=ff_lib,
@@ -168,6 +219,8 @@ def gulp_opt_single(id, xtal, ff_lib, path, criteria):
         path=path,
         symmetry=True,
     )
+
+    # Default status to False, will be updated if successful
     status = False
     if not error:
         status = process_xtal(id, xtal, eng, criteria)
@@ -179,12 +232,19 @@ def gulp_opt_single(id, xtal, ff_lib, path, criteria):
 
 def mace_opt_single(id, xtal, criteria, step=250):
     """
-    Single mace optimization for a given atomic xtal
+    Perform a single MACE optimization for a given atomic crystal structure.
 
     Args:
-        xtal: pyxtal instance
-        criteria (dicts): to check if the structure
-        step (int): relaxation steps
+        id (int): Identifier for the current structure.
+        xtal: PyXtal instance representing the crystal structure.
+        criteria (dict): Dictionary to check the validity of the optimized structure.
+        step (int): Maximum number of relaxation steps. Default is 250.
+
+    Returns:
+        tuple:
+            - xtal: Optimized PyXtal instance (or None if optimization failed).
+            - eng (float): Energy/atom of the opt_structure (or None if it failed).
+            - status (bool): Whether the optimization was successful.
     """
     from pyxtal.interface.ase_opt import ASE_relax as mace_opt
 
@@ -193,8 +253,7 @@ def mace_opt_single(id, xtal, criteria, step=250):
                  'MACE',
                  opt_cell=True,
                  step=step,
-                 max_time=10.0,
-                 )
+                 max_time=10.0)
     error = False
     try:
         xtal = pyxtal()
@@ -221,24 +280,57 @@ def process_xtal(id, xtal, eng, criteria):
 
 def make_entry_from_pyxtal(xtal):
     """
-    make entry from the pyxtal object, assuming that
-    the smiles/ccdc_number info is given
+    Generate an entry dictionary from a PyXtal object, assuming
+    the SMILES and CCDC number information is provided.
 
     Args:
-        xtal: pyxtal object
+        xtal: PyXtal object (must contain the SMILES (`xtal.tag["smiles"]`)
+        and CCDC number (`xtal.tag["ccdc_number"]`) in the `xtal.tag`.
 
     Returns:
-        entry dictionary
+        tuple: (ase_atoms, entry_dict, None)
+            - ase_atoms: ASE Atoms object converted from the PyXtal structure.
+            - entry_dict (dict): A dictionary containing information
+            - None: Placeholder for future use (currently returns None).
+
+    Structure of `entry_dict`:
+        - "csd_code" (str): CSD code (if available) for the crystal structure.
+        - "mol_smi" (str): SMILES representation of the molecule.
+        - "ccdc_number" (str): CCDC identifier number.
+        - "space_group" (str): Space group symbol of the crystal.
+        - "spg_num" (int): Space group number.
+        - "Z" (int): Number of molecules in the unit cell.
+        - "Zprime" (float): Z' value of the crystal.
+        - "url" (str): URL link to the CCDC database entry for the crystal.
+        - "mol_formula" (str): Molecular formula of the structure.
+        - "mol_weight" (float): Molecular weight of the structure.
+        - "mol_name" (str): Name of the molecule, typically the CSD code.
+        - "l_type" (str): Lattice type of the structure.
+
+    Returns None if the PyXtal structure is invalid (i.e., `xtal.valid` is False).
+
+    Example:
+        entry = make_entry_from_pyxtal(xtal_instance)
+        ase_atoms, entry_dict, _ = entry
+
+    Notes:
+        - The CCDC link is generated using the structure's CCDC number.
     """
+
     from rdkit import Chem
     from rdkit.Chem.Descriptors import ExactMolWt
     from rdkit.Chem.rdMolDescriptors import CalcMolFormula
 
     if xtal.valid:
         url0 = "https://www.ccdc.cam.ac.uk/structures/Search?Ccdcid="
+        # Create RDKit molecule from SMILES string
         m = Chem.MolFromSmiles(xtal.tag["smiles"])
+
+        # Calculate molecular weight and molecular formula using RDKit
         mol_wt = ExactMolWt(m)
         mol_formula = CalcMolFormula(m)
+
+        # Create a dictionary containing information
         kvp = {
             "csd_code": xtal.tag["csd_code"],
             "mol_smi": xtal.tag["smiles"],
@@ -253,6 +345,7 @@ def make_entry_from_pyxtal(xtal):
             "mol_name": xtal.tag["csd_code"],
             "l_type": xtal.lattice.ltype,
         }
+        # Return the ASE Atoms the entry dictionary, and None as a placeholder
         return (xtal.to_ase(), kvp, None)
     else:
         return None
@@ -1204,9 +1297,8 @@ class database_topology:
             if chunk:
                 yield chunk
 
-        for chunk in chunkify(xtal_generator, ncpu):
+        for chunk in chunkify(xtal_generator, ncpu*2):
             myargs = []
-            #print('Current chunk size', len(chunk), ncpu)
             for _id, xtal in chunk:
                 myargs.append(tuple([_id, xtal] + args))# + [self.logging]))
                 #print('debug myargs', len(myargs), len(myargs[-1]))

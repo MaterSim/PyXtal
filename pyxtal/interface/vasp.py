@@ -179,6 +179,11 @@ class VASP:
         os.remove("OUTCAR")
         if os.path.exists("OSZICAR"):
             os.remove("OSZICAR")
+            os.remove("DOSCAR")
+            os.remove("EIGENVAL")
+            #os.remove("vasprun.xml")
+            #os.remove("vasp.out")
+            os.remove("ase-sort.dat")
 
     def to_pymatgen(self):
         from pymatgen.core.structure import Structure

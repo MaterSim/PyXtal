@@ -3840,7 +3840,6 @@ class pyxtal:
         Useful to identify a higher space group symmetry
 
         Args:
-
             tol (float): the tolerance value for symmetry finder
         """
 
@@ -3851,10 +3850,20 @@ class pyxtal:
 
     def from_prototype(self, prototype):
         """
-        A shortcut to load template structures for quick testing
+        Load a template structure based on a prototype name for quick testing.
 
         Args:
-            prototype (str): 'diamond', 'graphite', .etc
+            prototype (str): Name of the crystal structure prototype to load.
+                Supported ('diamond', 'graphite': 'a-cristobalite', .etc)
+
+        Example:
+            self.from_prototype('diamond')
+            self.from_prototype('graphite')
+
+        Notes:
+            This method acts as a shortcut to quickly generate known crystals
+            by loading the space group, Wyckoff positions, lattice parameters,
+            and atomic species.
         """
 
         if prototype == 'graphite':
