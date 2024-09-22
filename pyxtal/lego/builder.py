@@ -831,7 +831,7 @@ class mof_builder(object):
         xtals_opt = deque()
 
         # Split the input structures to minibatches
-        N_batches = 8 * ncpu
+        N_batches = 10 * ncpu
         for _i, i in enumerate(range(0, len(reps), N_batches)):
             start, end = i, min([i+N_batches, len(reps)])
             ids = list(range(start, end))
@@ -897,7 +897,7 @@ class mof_builder(object):
         xtals_opt = deque()
 
         # Split the input structures to minibatches
-        N_batches = 8 * ncpu
+        N_batches = 10 * ncpu
         for _i, i in enumerate(range(0, len(xtals), N_batches)):
             start, end = i, min([i+N_batches, len(xtals)])
             ids = list(range(start, end))
@@ -921,7 +921,9 @@ class mof_builder(object):
                            early_quit, minimizers)
             # Use the generator to pass args to reduce memory usage
             _xtal, _xs = None, None
-            for result in pool.imap_unordered(minimize_from_x_par, generate_args(), chunksize=1):
+            for result in pool.imap_unordered(minimize_from_x_par,
+                                              generate_args(),
+                                              chunksize=1):
                 if result is not None:
                     (_xtals, _xs) = result
                     valid_xtals = self.process_xtals(
