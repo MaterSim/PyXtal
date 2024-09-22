@@ -572,7 +572,7 @@ class mof_builder(object):
             self.db_file = db_file
         else:
             self.db_file = self.prefix + '.db'
-        self.db = database_topology(self.db_file)
+        self.db = database_topology(self.db_file, log_file=self.log_file)
 
     def __str__(self):
 
@@ -831,8 +831,7 @@ class mof_builder(object):
         xtals_opt = deque()
 
         # Split the input structures to minibatches
-        N_rep = 4
-        N_batches = N_rep * ncpu
+        N_batches = 8 * ncpu
         for _i, i in enumerate(range(0, len(reps), N_batches)):
             start, end = i, min([i+N_batches, len(reps)])
             ids = list(range(start, end))
@@ -859,7 +858,9 @@ class mof_builder(object):
                            early_quit, minimizers)
             # Use the generator to pass args to reduce memory usage
             _xtal, _xs = None, None
-            for result in pool.imap_unordered(minimize_from_x_par, generate_args()):
+            for result in pool.imap_unordered(minimize_from_x_par,
+                                              generate_args(),
+                                              chunksize=1):
                 if result is not None:
                     (_xtals, _xs) = result
                     valid_xtals = self.process_xtals(
@@ -896,8 +897,7 @@ class mof_builder(object):
         xtals_opt = deque()
 
         # Split the input structures to minibatches
-        N_rep = 4
-        N_batches = N_rep * ncpu
+        N_batches = 8 * ncpu
         for _i, i in enumerate(range(0, len(xtals), N_batches)):
             start, end = i, min([i+N_batches, len(xtals)])
             ids = list(range(start, end))
@@ -921,7 +921,7 @@ class mof_builder(object):
                            early_quit, minimizers)
             # Use the generator to pass args to reduce memory usage
             _xtal, _xs = None, None
-            for result in pool.imap_unordered(minimize_from_x_par, generate_args()):
+            for result in pool.imap_unordered(minimize_from_x_par, generate_args(), chunksize=1):
                 if result is not None:
                     (_xtals, _xs) = result
                     valid_xtals = self.process_xtals(

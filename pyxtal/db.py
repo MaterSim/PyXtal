@@ -630,9 +630,11 @@ class database_topology:
         ltol (float): lattice tolerance
         stol (float): site tolerance
         atol (float): angle tolerance
+        log_file (str): log_file
     """
 
-    def __init__(self, db_name, rank=0, ltol=0.05, stol=0.05, atol=3):
+    def __init__(self, db_name, rank=0, ltol=0.05, stol=0.05, atol=3,
+                 log_file='db.log'):
         self.rank = rank
         self.db_name = db_name
         self.db = connect(db_name, serial=True)
@@ -661,7 +663,7 @@ class database_topology:
             ltol=ltol, stol=stol, angle_tol=atol)
 
         # Define logfile
-        self.log_file = 'db.log'
+        self.log_file = log_file
         logging.getLogger().handlers.clear()
         logging.basicConfig(format="%(asctime)s| %(message)s",
                             filename=self.log_file,
@@ -1164,6 +1166,7 @@ class database_topology:
         steps=250,
         use_relaxed=None,
         cmd=None,
+        calc_folder=None,
     ):
         """
         Update the row energy in the database for a given calculator.
@@ -1180,6 +1183,7 @@ class database_topology:
             steps (int): Number of optimization steps for DFTB (default is 250).
             use_relaxed (str, optional): Use relaxed structures (e.g. 'ff_relaxed')
             cmd (str, optional): Command for VASP calculations.
+            calc_folder (str, optional): calc_folder for GULP/VASP calculations
 
         Functionality:
             Based on the selected calculator, it updates the energy rows of the
@@ -1195,7 +1199,8 @@ class database_topology:
         """
 
         label = calculator.lower() + "_energy"
-        calc_folder = calculator.lower() + "_calc"
+        if calc_folder is None:
+            calc_folder = calculator.lower() + "_calc"
         os.makedirs(calc_folder, exist_ok=True)
 
         # Generate structures for calculation
