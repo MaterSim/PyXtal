@@ -151,9 +151,12 @@ class VASP:
             self.read_OSZICAR()
         except RuntimeError:
             # VASP is not full done
-            self.read_OSZICAR()
-            if self.energy < 10000:
-                self.error = False
+            if os.path.exists('OSZICAR'):
+                self.read_OSZICAR()
+                if self.energy < 10000:
+                    self.error = False
+            else:
+                self.error = True
         except (IndexError, ValueError, UnboundLocalError):
             print("Error in parsing vasp output or VASP calc is wrong")
             os.system("cp OUTCAR Error-OUTCAR")
@@ -167,7 +170,7 @@ class VASP:
             self.read_OUTCAR()
             if read_gap:
                 self.read_bandgap()
-        if clean:
+        if clean and not self.error:
             self.clean()
 
         os.chdir(cwd)
@@ -219,9 +222,11 @@ def single_optimize(
     Returns:
         the structure, energy and time costs
     """
+    cwd = os.getcwd()
     calc = VASP(struc, path, cmd=cmd)
     calc.run(setup, pstress, level, clean=clean)
     if calc.error:
+        os.chdir(cwd)
         return None, None, 0, True
     else:
         try:
@@ -229,6 +234,8 @@ def single_optimize(
             struc.optimize_lattice()
             return struc, calc.energy_per_atom, calc.cputime, calc.error
         except:
+            print('vasp single_optimize failed in ', cwd)
+            os.chdir(cwd)
             return None, None, 0, True
 
 
@@ -284,6 +291,7 @@ def optimize(
         time_total += time
         # print(eng, time, time_total, '++++++++++++++++++++++++++++++')
         if error or not good_lattice(struc):
+            print("VASP failed in ", os.getcwd(), error)
             return None, None, 0, True
     return struc, eng, time_total, error
 

@@ -2,7 +2,7 @@
 Database class
 """
 
-import os
+import os, time
 from concurrent.futures import ProcessPoolExecutor
 import logging
 
@@ -168,20 +168,19 @@ def vasp_opt_single(id, xtal, path, cmd, criteria):
         criteria (dicts): to check if the structure
     """
     from pyxtal.interface.vasp import optimize as vasp_opt
+    cwd = os.getcwd()
     path += '/g' + str(id)
     status = False
 
-    #try:
-    if True:
-        xtal, eng, _, error = vasp_opt(xtal,
-                                       path,
-                                       cmd=cmd,
-                                       walltime="59m")
-        if not error:
-            status = process_xtal(id, xtal, eng, criteria)
-        return xtal, eng, status
-    #except:
-    #    return None, None, False
+    xtal, eng, _, error = vasp_opt(xtal,
+                                   path,
+                                   cmd=cmd,
+                                   walltime="59m")
+    if not error:
+        status = process_xtal(id, xtal, eng, criteria)
+    else:
+        os.chdir(cwd)
+    return xtal, eng, status
 
 
 def gulp_opt_single(id, xtal, ff_lib, path, criteria):
@@ -627,15 +626,18 @@ class database_topology:
 
     Args:
         db_name (str): *.db format from ase database
+        rank (int): default 0
+        size (int): default 1
         ltol (float): lattice tolerance
         stol (float): site tolerance
         atol (float): angle tolerance
         log_file (str): log_file
     """
 
-    def __init__(self, db_name, rank=0, ltol=0.05, stol=0.05, atol=3,
+    def __init__(self, db_name, rank=0, size=1, ltol=0.05, stol=0.05, atol=3,
                  log_file='db.log'):
         self.rank = rank
+        self.size = size
         self.db_name = db_name
         self.db = connect(db_name, serial=True)
         self.keys = [
@@ -1131,8 +1133,7 @@ class database_topology:
 
     def select_xtal(self, ids, overwrite=False, attribute=None, use_relaxed=None):
         """
-        Lazy extraction
-        Mostly called by update_row_energy
+        Lazy extraction of select xtals
 
         Args:
             ids:
@@ -1145,12 +1146,14 @@ class database_topology:
             min_id = 1
         if max_id is None:
             max_id = self.get_max_id()
+
         ids, xtals = [], []
         for row in self.db.select():
             if overwrite or attribute is None or not hasattr(row, attribute):
-                if min_id <= row.id <= max_id:
-                    xtal = self.get_pyxtal(row.id, use_relaxed)
-                    yield row.id, xtal
+                id = row.id
+                if min_id <= id <= max_id and id % self.size== self.rank:
+                    xtal = self.get_pyxtal(id, use_relaxed)
+                    yield id, xtal
 
 
     def update_row_energy(
@@ -1176,8 +1179,8 @@ class database_topology:
             ids (tuple): A tuple specifying row IDs to update (e.g., (0, 100)).
             ncpu (int): number of parallel processes
             criteria (dict, optional): Criteria when selecting structures.
-            symmetrize (bool): If True, symmetrize the structure before calculation
-            overwrite (bool): If True, overwrite the existing energy attributes.
+            symmetrize (bool): symmetrize the structure before calculation
+            overwrite (bool): overwrite the existing energy attributes.
             write_freq (int): frequency to update db for ncpu=1
             ff_lib (str): Force field to use for GULP ('reaxff' by default).
             steps (int): Number of optimization steps for DFTB (default is 250).
@@ -1186,10 +1189,8 @@ class database_topology:
             calc_folder (str, optional): calc_folder for GULP/VASP calculations
 
         Functionality:
-            Based on the selected calculator, it updates the energy rows of the
-            database. If `ncpu > 1`, calculations are ran in parallel; otherwise,
-            they are executed serially. The method of calculation and structure
-            generation is specific to the chosen calculator.
+            Using the selected calculator, it updates the energy rows of the
+            database. If `ncpu > 1`, run in parallel; otherwise in serial.
 
         Calculator Options:
             - 'GULP': Uses a force field (e.g., 'reaxff').
@@ -1201,10 +1202,13 @@ class database_topology:
         label = calculator.lower() + "_energy"
         if calc_folder is None:
             calc_folder = calculator.lower() + "_calc"
-        os.makedirs(calc_folder, exist_ok=True)
+        # MACE does not need a folder
+        if calculator != 'MACE':
+            #self.logging.info("make new folders", calc_folder, os.getpwd())
+            os.makedirs(calc_folder, exist_ok=True)
 
         # Generate structures for calculation
-        xtal_generator = self.select_xtal(ids, overwrite, label, use_relaxed)
+        generator = self.select_xtal(ids, overwrite, label, use_relaxed)
 
         # Set up arguments for the chosen calculator
         args_up = []
@@ -1221,19 +1225,19 @@ class database_topology:
             raise ValueError(f"Unsupported calculator: {calculator}")
 
         # Perform calculation serially or in parallel
+        self.logging.info(f"Rank-{self.rank} row_energy {calculator} {self.log_file}")
         if ncpu == 1:
-            self.update_row_energy_serial(xtal_generator, write_freq, args, args_up)
+            self.update_row_energy_serial(generator, write_freq, args, args_up)
         else:
-            self.update_row_energy_mproc(ncpu, xtal_generator, args, args_up)
+            self.update_row_energy_mproc(ncpu, generator, args, args_up)
+        self.logging.info(f"Rank-{self.rank} complete update_row_energy")
 
-        print("Complete update_row_energy")
-
-    def update_row_energy_serial(self, xtal_generator, write_freq, args, args_up):
+    def update_row_energy_serial(self, generator, write_freq, args, args_up):
         """
         Perform a serial update of row energies
 
         Args:
-            xtal_generator (generator): Yielding tuples of (id, xtal), where:
+            generator (generator): Yielding tuples of (id, xtal), where:
                 - `id` (int): Unique identifier for the structure.
                 - `xtal` (object): pyxtal instance.
             write_freq (int): Frequency to update the database.
@@ -1241,14 +1245,14 @@ class database_topology:
             args_up (list): Additional arguments for function `_update_db`.
 
         Functionality:
-            The function iterates over structures provided by `xtal_generator`,
+            It iterates over structures provided by `generator`,
             optimizes them using `opt_single`, and collects results that have
-            successfully converged (`status == True`). Once the number of results
-            reaches `write_freq`, it updates the database and prints memory usage.
+            converged (`status == True`). Once the number of results
+            reaches `write_freq`, it updates the database.
         """
         results = []
-        for id, xtal in xtal_generator:
-            print(f"Processing {id} {xtal.lattice} {args[0]}")
+        for id, xtal in generator:
+            self.logging.info(f"Processing {id} {xtal.lattice} {args[0]}")
             res = opt_single(id, xtal, *args)
             (xtal, eng, status) = res
             if status:
@@ -1258,13 +1262,13 @@ class database_topology:
                 results = []
                 self.print_memory_usage()
 
-    def update_row_energy_mproc(self, ncpu, xtal_generator, args, args_up):
+    def update_row_energy_mproc(self, ncpu, generator, args, args_up):
         """
         Perform parallel row energy updates by optimizing atomic structures.
 
         Args:
             ncpu (int): Number of CPUs to use for parallel processing.
-            xtal_generator (generator): yielding tuples of (id, xtal), where:
+            generator (generator): yielding tuples of (id, xtal), where:
                 - `id` (int): Unique identifier for the structure.
                 - `xtal` (object): pyxtal instance.
             args (list): Additional arguments passed to `call_opt_single`.
@@ -1274,20 +1278,20 @@ class database_topology:
         Functionality:
             This function distributes the structures across multiple CPUs
             using `multiprocessing.Pool`. It creates chunks (based on `ncpu`),
-            and each chunk is processed in parallel by calling `call_opt_single`.
+            and process them in parallel by calling `call_opt_single`.
             Successful results are periodically written to the database.
             The function also prints memory usage after each database update.
 
         Parallelization Process:
             - The `Pool` is initialized with `ncpu` processes.
             - Structures are divided into chunks with the `chunkify` function.
-            - Each chunk is processed by `pool.imap_unordered` and `call_opt_single`.
-            - Successful optimizied results are periodically written to the database.
+            - Each chunk is processed by `call_opt_single` via the pool.
+            - Successful results are periodically written to the database.
             - The pool is closed and joined after processing is complete.
         """
         from multiprocessing import Pool
 
-        print("\n# Parallel optimizations", ncpu)
+        self.logging.info(f"Parallel optimizations {ncpu}")
         pool = Pool(processes=ncpu,
                     initializer=setup_worker_logger,
                     initargs=(self.log_file,))
@@ -1302,11 +1306,10 @@ class database_topology:
             if chunk:
                 yield chunk
 
-        for chunk in chunkify(xtal_generator, ncpu*8):
+        for chunk in chunkify(generator, ncpu*8):
             myargs = []
             for _id, xtal in chunk:
                 myargs.append(tuple([_id, xtal] + args))# + [self.logging]))
-                #print('debug myargs', len(myargs), len(myargs[-1]))
 
             results = []
             for result in pool.imap_unordered(call_opt_single, myargs, chunksize=1):
@@ -1315,12 +1318,12 @@ class database_topology:
                     if eng is not None:
                         results.append(result)
 
-                if len(results) >= ncpu * 2:
+                if len(results) >= ncpu:
                     self._update_db(results, args[0], *args_up)
                     self.print_memory_usage()
                     results = []
 
-            # After the loop, handle any remaining results that didn't make a full batch
+            # After the loop, handle the remaining results
             if results:
                 self._update_db(results, args[0], *args_up)
 
@@ -1330,16 +1333,16 @@ class database_topology:
 
     def _update_db(self, results, calc, *args):
         """
-        Update db with the gulp_results
-        This may take some time to complete if there are many rows
+        Update db with the calculation_results
         https://wiki.fysik.dtu.dk/ase/ase/db/db.html#writing-and-updating-many-rows-efficiently
-        Better do it in a single transaction
 
         Args:
             results: list of (id, xtal, eng) tuples
-            calc (str):
-            ff (str): forcefield type (e.g., 'reaxff')
+            calc (str): calculator
         """
+        delay = 20
+        max_retries = 3
+
         print("Wrap up the final results and update db", len(results))
         if calc == 'GULP': ff_lib = args[0]
 
@@ -1347,24 +1350,33 @@ class database_topology:
             for result in results:
                 (id, xtal, eng) = result
                 if xtal is not None:
-                    if calc == 'GULP':
-                        self.db.update(id,
+                    for attempt in range(max_retries):
+                        try:
+                            if calc == 'GULP':
+                                self.db.update(id,
                                        ff_energy=eng,
                                        ff_lib=ff_lib,
                                        ff_relaxed=xtal.to_file())
-                    elif calc == 'MACE':
-                        self.db.update(id,
+                            elif calc == 'MACE':
+                                self.db.update(id,
                                        mace_energy=eng,
                                        mace_relaxed=xtal.to_file())
-                    elif calc == 'VASP':
-                         self.db.update(id,
+                            elif calc == 'VASP':
+                                self.db.update(id,
                                         vasp_energy=eng,
                                         vasp_relaxed=xtal.to_file())
-                    elif calc == 'DFTB':
-                         self.db.update(id,
+                            elif calc == 'DFTB':
+                                self.db.update(id,
                                         dftb_energy=eng,
                                         dftb_relaxed=xtal.to_file())
-
+                            # If update is successful, break out loop
+                            break
+                        except Exception as e:
+                            msg = f"Rank-{self.rank} failed in updating {id}, Wait"
+                            self.logging.info(msg)
+                            if attempt == max_retries - 1:
+                                raise e
+                            time.sleep(delay)
                 print(f'update_db_{calc}, {id}')
 
     def update_row_topology(self, StructureType="Auto", overwrite=True, prefix=None, ref_dim=3):
