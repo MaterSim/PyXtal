@@ -21,6 +21,9 @@ from scipy.optimize import minimize
 from pyxtal.lego.basinhopping import basinhopping
 from pyxtal.lego.SO3 import SO3
 from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import Pool
+from collections import deque
+import gc
 
 # Material science Libraries
 from ase.io import write
@@ -72,8 +75,7 @@ def minimize_from_x_par(*args):
     """
     A wrapper to call minimize_from_x function in parallel
     """
-    dim, wp_libs, elements, calculator, ref_environments, opt_type, T, niter, early_quit, minimizers = args[
-        0]
+    dim, wp_libs, elements, calculator, ref_environments, opt_type, T, niter, early_quit, minimizers = args[0]
     xtals = []
     xs = []
     for wp_lib in wp_libs:
@@ -822,9 +824,6 @@ class mof_builder(object):
             ncpu (int): number of parallel python processes
             args: (opt_type, T, n_iter, early_quit, add_db, symmetrize, minimizers)
         """
-        from multiprocessing import Pool
-        from collections import deque
-        import gc
 
         pool = Pool(processes=ncpu)
         (opt_type, T, niter, early_quit, add_db, symmetrize, minimizers) = args
@@ -856,6 +855,7 @@ class mof_builder(object):
                     yield (self.dim, wp_libs, self.elements, self.calculator,
                            self.ref_environments, opt_type, T, niter,
                            early_quit, minimizers)
+
             # Use the generator to pass args to reduce memory usage
             _xtal, _xs = None, None
             for result in pool.imap_unordered(minimize_from_x_par,
@@ -888,9 +888,6 @@ class mof_builder(object):
             ncpu (int): number of parallel python processes
             args: (opt_type, T, n_iter, early_quit, add_db, symmetrize, minimizers)
         """
-        from multiprocessing import Pool
-        from collections import deque
-        import gc
 
         pool = Pool(processes=ncpu)
         (opt_type, T, niter, early_quit, add_db, symmetrize, minimizers) = args
@@ -919,6 +916,7 @@ class mof_builder(object):
                     yield (self.dim, wp_libs, self.elements, self.calculator,
                            self.ref_environments, opt_type, T, niter,
                            early_quit, minimizers)
+
             # Use the generator to pass args to reduce memory usage
             _xtal, _xs = None, None
             for result in pool.imap_unordered(minimize_from_x_par,

@@ -14,6 +14,7 @@ from ase.db import connect
 from pyxtal import pyxtal
 from pyxtal.util import ase2pymatgen
 
+
 def setup_worker_logger(log_file):
     """
     Set up the logger for each worker process.
@@ -22,6 +23,7 @@ def setup_worker_logger(log_file):
     logging.basicConfig(format="%(asctime)s| %(message)s",
                         filename=log_file,
                         level=logging.INFO)
+
 
 def call_opt_single(p):
     """
@@ -44,13 +46,14 @@ def call_opt_single(p):
     id = p[0]
     xtal, eng, status = opt_single(*p)
     logger = logging.getLogger()
-    #logger.info(f"Start id: {id} *{sum(xtal.numIons)}")
+    # logger.info(f"Start id: {id} *{sum(xtal.numIons)}")
 
     if eng is not None:
         logger.info(f"ID: {id}, eng {eng:.3f} *{sum(xtal.numIons)}")
     else:
         logger.info(f"ID: {id}, Failed")
     return id, xtal, eng
+
 
 def opt_single(id, xtal, calc, *args):
     """
@@ -82,6 +85,7 @@ def opt_single(id, xtal, calc, *args):
         return mace_opt_single(id, xtal, *args)
     else:
         raise ValueError("Cannot support this calcultor", calc)
+
 
 def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05):
     """
@@ -156,6 +160,7 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05)
     else:
         return None, None, False
 
+
 def vasp_opt_single(id, xtal, path, cmd, criteria):
     """
     Single VASP optimization for a given atomic xtal
@@ -171,7 +176,7 @@ def vasp_opt_single(id, xtal, path, cmd, criteria):
     path += '/g' + str(id)
     status = False
 
-    #try:
+    # try:
     if True:
         xtal, eng, _, error = vasp_opt(xtal,
                                        path,
@@ -180,7 +185,7 @@ def vasp_opt_single(id, xtal, path, cmd, criteria):
         if not error:
             status = process_xtal(id, xtal, eng, criteria)
         return xtal, eng, status
-    #except:
+    # except:
     #    return None, None, False
 
 
@@ -230,6 +235,7 @@ def gulp_opt_single(id, xtal, ff_lib, path, criteria):
             print("Folder is not empty", path)
     return xtal, eng, status
 
+
 def mace_opt_single(id, xtal, criteria, step=250):
     """
     Perform a single MACE optimization for a given atomic crystal structure.
@@ -269,6 +275,7 @@ def mace_opt_single(id, xtal, criteria, step=250):
         status = process_xtal(id, xtal, eng, criteria)
     return xtal, eng, status
 
+
 def process_xtal(id, xtal, eng, criteria):
     status = xtal.check_validity(
         criteria) if criteria is not None else True
@@ -277,6 +284,7 @@ def process_xtal(id, xtal, eng, criteria):
         dicts = {"validity": status, "energy": eng}
         print(xtal.get_xtal_string(header=header, dicts=dicts))
     return status
+
 
 def make_entry_from_pyxtal(xtal):
     """
@@ -696,14 +704,15 @@ class database_topology:
         if use_relaxed is not None:
             if hasattr(row, use_relaxed):
                 xtal_str = getattr(row, use_relaxed)
+                pmg = Structure.from_str(xtal_str, fmt="cif")
             else:
-                raise ValueError(
-                    "No ff or vasp relaxed attributes for structure", id)
-            pmg = Structure.from_str(xtal_str, fmt="cif")
-
+                print(f"No {use_relaxed} attributes for structure", id)
+                atom = self.db.get_atoms(id=id)
+                pmg = ase2pymatgen(atom)
         else:
             atom = self.db.get_atoms(id=id)
             pmg = ase2pymatgen(atom)
+
         xtal = pyxtal()
         try:
             xtal.from_seed(pmg)
@@ -1152,7 +1161,6 @@ class database_topology:
                     xtal = self.get_pyxtal(row.id, use_relaxed)
                     yield row.id, xtal
 
-
     def update_row_energy(
         self,
         calculator='GULP',
@@ -1222,7 +1230,8 @@ class database_topology:
 
         # Perform calculation serially or in parallel
         if ncpu == 1:
-            self.update_row_energy_serial(xtal_generator, write_freq, args, args_up)
+            self.update_row_energy_serial(
+                xtal_generator, write_freq, args, args_up)
         else:
             self.update_row_energy_mproc(ncpu, xtal_generator, args, args_up)
 
@@ -1305,11 +1314,13 @@ class database_topology:
         for chunk in chunkify(xtal_generator, ncpu*8):
             myargs = []
             for _id, xtal in chunk:
-                myargs.append(tuple([_id, xtal] + args))# + [self.logging]))
-                #print('debug myargs', len(myargs), len(myargs[-1]))
+                if xtal is not None:
+                    myargs.append(tuple([_id, xtal] + args))
 
             results = []
-            for result in pool.imap_unordered(call_opt_single, myargs, chunksize=1):
+            for result in pool.imap_unordered(call_opt_single,
+                                              myargs,
+                                              chunksize=1):
                 if result is not None:
                     (id, xtal, eng) = result
                     if eng is not None:
@@ -1327,7 +1338,6 @@ class database_topology:
         pool.close()
         pool.join()
 
-
     def _update_db(self, results, calc, *args):
         """
         Update db with the gulp_results
@@ -1341,7 +1351,8 @@ class database_topology:
             ff (str): forcefield type (e.g., 'reaxff')
         """
         print("Wrap up the final results and update db", len(results))
-        if calc == 'GULP': ff_lib = args[0]
+        if calc == 'GULP':
+            ff_lib = args[0]
 
         with self.db:
             for result in results:
@@ -1357,13 +1368,13 @@ class database_topology:
                                        mace_energy=eng,
                                        mace_relaxed=xtal.to_file())
                     elif calc == 'VASP':
-                         self.db.update(id,
-                                        vasp_energy=eng,
-                                        vasp_relaxed=xtal.to_file())
+                        self.db.update(id,
+                                       vasp_energy=eng,
+                                       vasp_relaxed=xtal.to_file())
                     elif calc == 'DFTB':
-                         self.db.update(id,
-                                        dftb_energy=eng,
-                                        dftb_relaxed=xtal.to_file())
+                        self.db.update(id,
+                                       dftb_energy=eng,
+                                       dftb_relaxed=xtal.to_file())
 
                 print(f'update_db_{calc}, {id}')
 
@@ -1455,7 +1466,7 @@ class database_topology:
                 # Unknown will be labeled as aaa
                 self.db.update(row.id, topology=name,
                                dimension=dim, topology_detail=detail)
-            #else:
+            # else:
             #    print("Existing Topology", row.topology)
 
     def update_db_description(self):
@@ -1694,8 +1705,8 @@ class database_topology:
         """
 
         db_ref = database_topology(reference_db)
-        print(f"\nCurrent   database {self.db_name:s}: {self.db.count():d}")
-        print(f"Reference database {db_ref.db_name:s}: {db_ref.db.count():d}")
+        print(f"\nCurrent   database {self.db_name}: {self.db.count()}")
+        print(f"Reference database {db_ref.db_name}: {db_ref.db.count()}")
 
         ref_data = []
         for row in db_ref.db.select():
@@ -1748,7 +1759,7 @@ class database_topology:
         """
         if excluded_ids is None:
             excluded_ids = []
-        print(f"\nCurrent   database {self.db_name:s}: {self.db.count():d}")
+        print(f"\nCurrent database {self.db_name}: {self.db.count()}")
         output = []
         for row in self.db.select():
             if row.id not in excluded_ids and hasattr(row, "topology") and hasattr(row, "ff_energy"):
@@ -1766,8 +1777,84 @@ class database_topology:
         for entry in sorted_output[:cutoff]:
             print("{:4d} {:6s} {:4d} {:20s} {:10.3f}".format(*entry))
 
-        strs = f"Showed structures: {len(sorted_output):d}/{self.db.count():d}"
+        strs = f"Showed structures: {len(sorted_output)}/{self.db.count()}"
         print(strs)
+
+    def plot_histogram(self, prop, ax=None, filename=None, xlim=None, nbins=20):
+        """
+        Plot the histogram of a specified row property.
+
+        Args:
+            prop (str): The name of the property to plot (e.g., 'ff_energy').
+            ax (matplotlib.axes.Axes, optional): Pre-existing axis to plot on.
+                                                 If None, a new ax will be created.
+            filename (str, optional): Path to save the plot (e.g., 'plot.png'). 
+                                      If None, the plot will not be saved.
+            xlim (tuple, optional): Limits for the x-axis (e.g., (0, 10)).
+                                    If None, the x-axis will scale automatically.
+            nbins (int, optional): Number of bins for the histogram. Default is 20.
+
+        Returns:
+            matplotlib.axes.Axes: The axis object with the histogram plotted.
+        """
+        import matplotlib.pyplot as plt
+
+        if ax is None:
+            f, ax = plt.subplots()
+
+        # Get the properties from the database
+        props = self.get_properties(prop)
+
+        # Check if there are values to plot
+        if not props:
+            raise ValueError(f"No rows contain the property '{prop}'.")
+
+        ax.hist(props, nbins, density=True, alpha=0.75)
+
+        # Set x-axis limits if provided
+        if xlim is not None:
+            ax.set_xlim(xlim)
+
+        ax.set_xlabel(prop)
+
+        # Save the plot if a filename is provided
+        if filename is not None:
+            plt.savefig(filename)
+
+        return ax
+
+    def get_properties(self, prop):
+        """
+        Retrieve a list of specific property values from the database rows.
+
+        Args:
+            prop (str): The property name to retrieve (e.g., 'ff_energy')
+
+        Returns:
+            list: A list of property values for rows that have the specified property.
+                  If a row does not contain the property, it is ignored.
+
+        Raises:
+            Warning: If no rows in the database contain the specified property.
+        """
+
+        props = []
+
+        # Loop through all rows in the database and collect the property values
+        for row in self.db.select():
+            if hasattr(row, prop):
+                props.append(getattr(row, prop))
+
+        # Print summary of rows
+        name, count = self.db_name, self.db.count()
+        print(f"Database {name} has {prop}: {len(props)}/{count}")
+
+        # Warn if no properties were found
+        if count == 0:
+            raise Warning(
+                f"No rows in the database contain the property '{prop}'.")
+
+        return props
 
 
 if __name__ == "__main__":

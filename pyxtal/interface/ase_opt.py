@@ -45,13 +45,13 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile='as
     """
     max_time *= 60
     timeout = int(max_time)
-    calc = get_calculator(calculator)
-    struc.set_calculator(calc)
-    struc.set_constraint(FixSymmetry(struc))
     signal.signal(signal.SIGALRM, timeout_handler)
     signal.alarm(timeout)
 
     try:
+        calc = get_calculator(calculator)
+        struc.set_calculator(calc)
+        struc.set_constraint(FixSymmetry(struc))
         if opt_cell:
             ecf = UnitCellFilter(struc)
             dyn = FIRE(ecf, a=0.1, logfile=logfile) if logfile is not None else FIRE(ecf, a=0.1)
@@ -82,6 +82,10 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile='as
 
     except TimeoutException:
         print(f"ASE_relax timed out after {timeout} seconds.")
+        return None
+
+    except TypeError:
+        print("spglib error in getting the lattice")
         return None
 
     finally:
