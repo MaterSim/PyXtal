@@ -69,7 +69,7 @@ def symmetrize_cell(struc, mode="C"):
     return pymatgen2ase(P_struc)
 
 
-def good_lattice(struc, maxvec=25.0, minvec=1.2, maxang=150, minang=30):
+def good_lattice(struc, maxvec=50.0, minvec=1.2, maxang=150, minang=30):
     """
     check if the lattice has a good shape.
 
