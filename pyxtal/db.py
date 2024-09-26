@@ -43,10 +43,10 @@ def call_opt_single(p):
         This function calls `opt_single` to perform the optimization of the structure
         associated with the given id.
     """
+    logger = logging.getLogger()
+    logger.info(f"ID: {p[0]} *{sum(p[1].numIons)}")
     id = p[0]
     xtal, eng, status = opt_single(*p)
-    logger = logging.getLogger()
-    # logger.info(f"Start id: {id} *{sum(xtal.numIons)}")
 
     if eng is not None:
         logger.info(f"ID: {id}, eng {eng:.3f} *{sum(xtal.numIons)}")
@@ -1233,7 +1233,7 @@ class database_topology:
             raise ValueError(f"Unsupported calculator: {calculator}")
 
         # Perform calculation serially or in parallel
-        self.logging.info(f"Rank-{self.rank} row_energy {calculator} {self.log_file}")
+        self.logging.info(f"Rank-{self.rank} row_energy {calculator} {self.db_name}")
         if ncpu == 1:
             self.update_row_energy_serial(generator, write_freq, args, args_up)
         else:
@@ -1314,13 +1314,13 @@ class database_topology:
             if chunk:
                 yield chunk
 
+        results = []
         for chunk in chunkify(generator, ncpu*8):
             myargs = []
             for _id, xtal in chunk:
                 if xtal is not None:
                     myargs.append(tuple([_id, xtal] + args))
 
-            results = []
             for result in pool.imap_unordered(call_opt_single,
                                               myargs,
                                               chunksize=1):
@@ -1328,15 +1328,21 @@ class database_topology:
                     (id, xtal, eng) = result
                     if eng is not None:
                         results.append(result)
+                        #self.logging.info(f"Add {id}, size: {len(results)}")
 
                 if len(results) >= ncpu:
                     self._update_db(results, args[0], *args_up)
                     self.print_memory_usage()
+                    self.logging.info(f"Update db: {len(results)}")
                     results = []
 
-            # After the loop, handle the remaining results
-            if results:
-                self._update_db(results, args[0], *args_up)
+            self.logging.info(f"Complete minicycle: {len(chunk)}")
+
+        # After the loop, handle the remaining results
+        if results:
+            self.logging.info(f"Update db leftover: {len(results)}")
+            self._update_db(results, args[0], *args_up)
+            self.logging.info(f"Finish Update db leftover: {len(results)}")
 
         pool.close()
         pool.join()
@@ -1353,16 +1359,18 @@ class database_topology:
         delay = 20
         max_retries = 3
 
-        print("Wrap up the final results and update db", len(results))
+        self.logging.info(f"Update db: {len(results)}")
         if calc == 'GULP':
             ff_lib = args[0]
 
         with self.db:
             for result in results:
                 (id, xtal, eng) = result
+                #self.logging.info(f"Start: id{id}")
                 if xtal is not None:
                     for attempt in range(max_retries):
-                        try:
+                        self.logging.info(f'update_db_{calc}_{id}, att: {attempt}')
+                        if True: #try:
                             if calc == 'GULP':
                                 self.db.update(id,
                                        ff_energy=eng,
@@ -1382,12 +1390,13 @@ class database_topology:
                                         dftb_relaxed=xtal.to_file())
                             # If update is successful, break out loop
                             break
-                        except Exception as e:
-                            msg = f"Rank-{self.rank} failed in updating {id}, Wait"
-                            self.logging.info(msg)
-                            if attempt == max_retries - 1:
-                                raise e
-                            time.sleep(delay)
+
+                        #except Exception as e:
+                        #    msg = f"Rank-{self.rank} failed in updating {id}, Wait"
+                        #    self.logging.info(msg)
+                        #    if attempt == max_retries - 1:
+                        #        break
+                        #    time.sleep(delay)
                 self.logging.info(f'update_db_{calc}, {id}')
 
     def update_row_topology(self, StructureType="Auto", overwrite=True, prefix=None, ref_dim=3):
