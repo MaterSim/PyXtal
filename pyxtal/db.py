@@ -24,7 +24,6 @@ def setup_worker_logger(log_file):
                         filename=log_file,
                         level=logging.INFO)
 
-
 def call_opt_single(p):
     """
     Optimize a single structure and log the result.
@@ -43,16 +42,11 @@ def call_opt_single(p):
         This function calls `opt_single` to perform the optimization of the structure
         associated with the given id.
     """
-    logger = logging.getLogger()
-    logger.info(f"ID: {p[0]} *{sum(p[1].numIons)}")
-    id = p[0]
+    #logger = logging.getLogger()
+    #logger.info(f"ID: {p[0]} *{sum(p[1].numIons)}")
+    myid = p[0]
     xtal, eng, status = opt_single(*p)
-
-    if eng is not None:
-        logger.info(f"ID: {id}, eng {eng:.3f} *{sum(xtal.numIons)}")
-    else:
-        logger.info(f"ID: {id}, Failed")
-    return id, xtal, eng
+    return myid, xtal, eng
 
 
 def opt_single(id, xtal, calc, *args):
@@ -253,26 +247,28 @@ def mace_opt_single(id, xtal, criteria, step=250):
     """
     from pyxtal.interface.ase_opt import ASE_relax as mace_opt
 
+    logger = logging.getLogger()
     atoms = xtal.to_ase(resort=False)
     s = mace_opt(atoms,
                  'MACE',
                  opt_cell=True,
                  step=step,
-                 max_time=10.0)
-    error = False
+                 max_time=9.0 * max([1, (len(atoms)/200)]),
+                 label=str(id))
+    if s is None:
+        logger.info(f"mace_opt_single Failure {id}")
+        return None, None, False
+
     try:
         xtal = pyxtal()
         xtal.from_seed(s)
         eng = s.get_potential_energy() / len(s)
-    except:
-        error = True
-        eng = None
-        xtal = None
-
-    status = False
-    if not error:
         status = process_xtal(id, xtal, eng, criteria)
-    return xtal, eng, status
+        logger.info(f"mace_opt_single Success {id}")
+        return xtal, eng, status
+    except:
+        logger.info(f"mace_opt_single Bug {id}")
+        return None, None, False
 
 
 def process_xtal(id, xtal, eng, criteria):
@@ -1261,6 +1257,7 @@ class database_topology:
         results = []
         for id, xtal in generator:
             self.logging.info(f"Processing {id} {xtal.lattice} {args[0]}")
+            print(f"Processing {id} {xtal.lattice} {args[0]}")
             res = opt_single(id, xtal, *args)
             (xtal, eng, status) = res
             if status:
@@ -1314,35 +1311,39 @@ class database_topology:
             if chunk:
                 yield chunk
 
-        results = []
-        for chunk in chunkify(generator, ncpu*8):
+        for chunk in chunkify(generator, ncpu*10):
             myargs = []
             for _id, xtal in chunk:
                 if xtal is not None:
                     myargs.append(tuple([_id, xtal] + args))
 
+            results = []
+            self.logging.info(f"Start minicycle: {myargs[0][0]}-{myargs[-1][0]}")
             for result in pool.imap_unordered(call_opt_single,
                                               myargs,
                                               chunksize=1):
                 if result is not None:
-                    (id, xtal, eng) = result
+                    (myid, xtal, eng) = result
                     if eng is not None:
                         results.append(result)
-                        #self.logging.info(f"Add {id}, size: {len(results)}")
+                        numIons = sum(xtal.numIons)
+                        count = len(results)
+                        self.logging.info(f"Add {myid:4d} {eng:.3f} *{numIons} {count}")
 
-                if len(results) >= ncpu:
+                # Only do frequent update for slow calculator VASP 
+                if len(results) >= ncpu and args[0] == 'VASP':
                     self._update_db(results, args[0], *args_up)
+                    self.logging.info(f"Finish minibatch: {len(results)}")
                     self.print_memory_usage()
-                    self.logging.info(f"Update db: {len(results)}")
                     results = []
 
-            self.logging.info(f"Complete minicycle: {len(chunk)}")
+            self.logging.info(f"Done  minicycle: {myargs[0][0]}-{myargs[-1][0]}")
 
-        # After the loop, handle the remaining results
-        if results:
-            self.logging.info(f"Update db leftover: {len(results)}")
-            self._update_db(results, args[0], *args_up)
-            self.logging.info(f"Finish Update db leftover: {len(results)}")
+            # After the loop, handle the remaining results
+            if results:
+                self.logging.info(f"Start  Update db: {len(results)}")
+                self._update_db(results, args[0], *args_up)
+                self.logging.info(f"Finish Update db: {len(results)}")
 
         pool.close()
         pool.join()
@@ -1356,48 +1357,32 @@ class database_topology:
             results: list of (id, xtal, eng) tuples
             calc (str): calculator
         """
-        delay = 20
-        max_retries = 3
-
-        self.logging.info(f"Update db: {len(results)}")
+        #self.logging.info(f"====================Update db: {len(results)}")
         if calc == 'GULP':
             ff_lib = args[0]
 
         with self.db:
             for result in results:
                 (id, xtal, eng) = result
-                #self.logging.info(f"Start: id{id}")
                 if xtal is not None:
-                    for attempt in range(max_retries):
-                        self.logging.info(f'update_db_{calc}_{id}, att: {attempt}')
-                        if True: #try:
-                            if calc == 'GULP':
-                                self.db.update(id,
-                                       ff_energy=eng,
-                                       ff_lib=ff_lib,
-                                       ff_relaxed=xtal.to_file())
-                            elif calc == 'MACE':
-                                self.db.update(id,
-                                       mace_energy=eng,
-                                       mace_relaxed=xtal.to_file())
-                            elif calc == 'VASP':
-                                self.db.update(id,
-                                        vasp_energy=eng,
-                                        vasp_relaxed=xtal.to_file())
-                            elif calc == 'DFTB':
-                                self.db.update(id,
-                                        dftb_energy=eng,
-                                        dftb_relaxed=xtal.to_file())
-                            # If update is successful, break out loop
-                            break
-
-                        #except Exception as e:
-                        #    msg = f"Rank-{self.rank} failed in updating {id}, Wait"
-                        #    self.logging.info(msg)
-                        #    if attempt == max_retries - 1:
-                        #        break
-                        #    time.sleep(delay)
-                self.logging.info(f'update_db_{calc}, {id}')
+                    if calc == 'GULP':
+                        self.db.update(id,
+                               ff_energy=eng,
+                               ff_lib=ff_lib,
+                               ff_relaxed=xtal.to_file())
+                    elif calc == 'MACE':
+                        self.db.update(id,
+                               mace_energy=eng,
+                               mace_relaxed=xtal.to_file())
+                    elif calc == 'VASP':
+                        self.db.update(id,
+                                vasp_energy=eng,
+                                vasp_relaxed=xtal.to_file())
+                    elif calc == 'DFTB':
+                        self.db.update(id,
+                                dftb_energy=eng,
+                                dftb_relaxed=xtal.to_file())
+                    #self.logging.info(f'update_db_{calc}, {id}')
 
     def update_row_topology(self, StructureType="Auto", overwrite=True, prefix=None, ref_dim=3):
         """
