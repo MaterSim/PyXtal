@@ -21,6 +21,9 @@ from scipy.optimize import minimize
 from pyxtal.lego.basinhopping import basinhopping
 from pyxtal.lego.SO3 import SO3
 from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import Pool
+from collections import deque
+import gc
 
 # Material science Libraries
 from ase.io import write
@@ -72,8 +75,7 @@ def minimize_from_x_par(*args):
     """
     A wrapper to call minimize_from_x function in parallel
     """
-    dim, wp_libs, elements, calculator, ref_environments, opt_type, T, niter, early_quit, minimizers = args[
-        0]
+    dim, wp_libs, elements, calculator, ref_environments, opt_type, T, niter, early_quit, minimizers = args[0]
     xtals = []
     xs = []
     for wp_lib in wp_libs:
@@ -572,7 +574,7 @@ class mof_builder(object):
             self.db_file = db_file
         else:
             self.db_file = self.prefix + '.db'
-        self.db = database_topology(self.db_file)
+        self.db = database_topology(self.db_file, log_file=self.log_file)
 
     def __str__(self):
 
@@ -822,17 +824,13 @@ class mof_builder(object):
             ncpu (int): number of parallel python processes
             args: (opt_type, T, n_iter, early_quit, add_db, symmetrize, minimizers)
         """
-        from multiprocessing import Pool
-        from collections import deque
-        import gc
 
         pool = Pool(processes=ncpu)
         (opt_type, T, niter, early_quit, add_db, symmetrize, minimizers) = args
         xtals_opt = deque()
 
         # Split the input structures to minibatches
-        N_rep = 4
-        N_batches = N_rep * ncpu
+        N_batches = 10 * ncpu
         for _i, i in enumerate(range(0, len(reps), N_batches)):
             start, end = i, min([i+N_batches, len(reps)])
             ids = list(range(start, end))
@@ -857,9 +855,12 @@ class mof_builder(object):
                     yield (self.dim, wp_libs, self.elements, self.calculator,
                            self.ref_environments, opt_type, T, niter,
                            early_quit, minimizers)
+
             # Use the generator to pass args to reduce memory usage
             _xtal, _xs = None, None
-            for result in pool.imap_unordered(minimize_from_x_par, generate_args()):
+            for result in pool.imap_unordered(minimize_from_x_par,
+                                              generate_args(),
+                                              chunksize=1):
                 if result is not None:
                     (_xtals, _xs) = result
                     valid_xtals = self.process_xtals(
@@ -887,17 +888,13 @@ class mof_builder(object):
             ncpu (int): number of parallel python processes
             args: (opt_type, T, n_iter, early_quit, add_db, symmetrize, minimizers)
         """
-        from multiprocessing import Pool
-        from collections import deque
-        import gc
 
         pool = Pool(processes=ncpu)
         (opt_type, T, niter, early_quit, add_db, symmetrize, minimizers) = args
         xtals_opt = deque()
 
         # Split the input structures to minibatches
-        N_rep = 4
-        N_batches = N_rep * ncpu
+        N_batches = 10 * ncpu
         for _i, i in enumerate(range(0, len(xtals), N_batches)):
             start, end = i, min([i+N_batches, len(xtals)])
             ids = list(range(start, end))
@@ -919,9 +916,12 @@ class mof_builder(object):
                     yield (self.dim, wp_libs, self.elements, self.calculator,
                            self.ref_environments, opt_type, T, niter,
                            early_quit, minimizers)
+
             # Use the generator to pass args to reduce memory usage
             _xtal, _xs = None, None
-            for result in pool.imap_unordered(minimize_from_x_par, generate_args()):
+            for result in pool.imap_unordered(minimize_from_x_par,
+                                              generate_args(),
+                                              chunksize=1):
                 if result is not None:
                     (_xtals, _xs) = result
                     valid_xtals = self.process_xtals(

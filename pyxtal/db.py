@@ -2,7 +2,7 @@
 Database class
 """
 
-import os
+import os, time
 from concurrent.futures import ProcessPoolExecutor
 import logging
 
@@ -14,6 +14,7 @@ from ase.db import connect
 from pyxtal import pyxtal
 from pyxtal.util import ase2pymatgen
 
+
 def setup_worker_logger(log_file):
     """
     Set up the logger for each worker process.
@@ -24,18 +25,50 @@ def setup_worker_logger(log_file):
                         level=logging.INFO)
 
 def call_opt_single(p):
-    id = p[0]
-    xtal, eng, status = opt_single(*p)
-    logger = logging.getLogger()
-    #logger.info(f"Start id: {id} *{sum(xtal.numIons)}")
+    """
+    Optimize a single structure and log the result.
 
-    if eng is not None:
-        logger.info(f"ID: {id}, eng {eng:.3f} *{sum(xtal.numIons)}")
-    else:
-        logger.info(f"ID: {id}, Failed")
-    return id, xtal, eng
+    Args:
+        p (tuple): A tuple where the first element is an identifier (id), and the
+                   remaining elements are the arguments to pass to `opt_single`.
+
+    Returns:
+        tuple: A tuple (id, xtal, eng) where:
+               - id (int): The identifier of the structure.
+               - xtal: The optimized structure.
+               - eng (float): The energy of the opt_structure, or None if it failed.
+
+    Behavior:
+        This function calls `opt_single` to perform the optimization of the structure
+        associated with the given id.
+    """
+    #logger = logging.getLogger()
+    #logger.info(f"ID: {p[0]} *{sum(p[1].numIons)}")
+    myid = p[0]
+    xtal, eng, status = opt_single(*p)
+    return myid, xtal, eng
+
 
 def opt_single(id, xtal, calc, *args):
+    """
+    Optimize a structure using the specified calculator.
+
+    Args:
+        id (int): Identifier of the structure to be optimized.
+        xtal: Crystal structure object to be optimized.
+        calc (str): The calculator to use ('GULP', 'DFTB', 'VASP', 'MACE').
+        *args: Additional arguments to pass to the calculator function.
+
+    Returns:
+        tuple: The result of the optimization, which typically includes:
+               - xtal: The optimized structure.
+               - energy (float): The energy of the optimized structure.
+               - status (bool): Whether the optimization was successful.
+
+    Raises:
+        ValueError: If an unsupported calculator is specified.
+    """
+
     if calc == 'GULP':
         return gulp_opt_single(id, xtal, *args)
     elif calc == 'DFTB':
@@ -46,6 +79,7 @@ def opt_single(id, xtal, calc, *args):
         return mace_opt_single(id, xtal, *args)
     else:
         raise ValueError("Cannot support this calcultor", calc)
+
 
 def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05):
     """
@@ -120,41 +154,62 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05)
     else:
         return None, None, False
 
-def vasp_opt_single(id, xtal, path, criteria):
+
+def vasp_opt_single(id, xtal, path, cmd, criteria):
     """
     Single VASP optimization for a given atomic xtal
 
     Args:
         id (int): id of the give xtal
         xtal: pyxtal instance
-        steps (int): number of relaxation steps
+        path: calculation folder
+        cmd: vasp command
         criteria (dicts): to check if the structure
     """
     from pyxtal.interface.vasp import optimize as vasp_opt
+    cwd = os.getcwd()
     path += '/g' + str(id)
     status = False
-    try:
-        xtal, eng, _, error = vasp_opt(xtal, path, walltime="59m")
-        if not error:
-            status = process_xtal(id, xtal, eng, criteria)
-        return xtal, eng, status
-    except:
-        return None, None, False
+
+    xtal, eng, _, error = vasp_opt(xtal,
+                                   path,
+                                   cmd=cmd,
+                                   walltime="59m")
+    if not error:
+        status = process_xtal(id, xtal, eng, criteria)
+    else:
+        os.chdir(cwd)
+    return xtal, eng, status
 
 
 def gulp_opt_single(id, xtal, ff_lib, path, criteria):
     """
-    Single GULP optimization for a given atomic xtal
+    Perform a single GULP optimization for a given crystal structure.
 
     Args:
-        xtal: pyxtal instance
-        ff_lib (str): e.g., `reaxff`, `tersoff`
-        path (str): path of calculation folder
-        criteria (dicts): to check if the structure
+        id (int): Identifier for the current structure.
+        xtal: PyXtal instance representing the crystal to be optimized.
+        ff_lib (str): Force field library for GULP, e.g., 'reaxff', 'tersoff'.
+        path (str): Path to the folder where the calculation is stored.
+        criteria (dict): Dictionary to check the validity of the opt_structure.
+
+    Returns:
+        tuple:
+            - xtal: Optimized PyXtal instance.
+            - eng (float): Energy of the optimized structure.
+            - status (bool): Whether the optimization process is successful.
+
+    Behavior:
+        This function performs a GULP optimization using the force field.
+        After the optimization, it checks the validity of the structure and
+        attempts to remove the calculation folder if it is empty.
     """
     from pyxtal.interface.gulp import single_optimize as gulp_opt
 
+    # Create the path for this specific structure
     path += '/g' + str(id)
+
+    # Perform the optimization with GULP
     xtal, eng, _, error = gulp_opt(
         xtal,
         ff=ff_lib,
@@ -162,6 +217,8 @@ def gulp_opt_single(id, xtal, ff_lib, path, criteria):
         path=path,
         symmetry=True,
     )
+
+    # Default status to False, will be updated if successful
     status = False
     if not error:
         status = process_xtal(id, xtal, eng, criteria)
@@ -171,38 +228,48 @@ def gulp_opt_single(id, xtal, ff_lib, path, criteria):
             print("Folder is not empty", path)
     return xtal, eng, status
 
+
 def mace_opt_single(id, xtal, criteria, step=250):
     """
-    Single mace optimization for a given atomic xtal
+    Perform a single MACE optimization for a given atomic crystal structure.
 
     Args:
-        xtal: pyxtal instance
-        criteria (dicts): to check if the structure
-        step (int): relaxation steps
+        id (int): Identifier for the current structure.
+        xtal: PyXtal instance representing the crystal structure.
+        criteria (dict): Dictionary to check the validity of the optimized structure.
+        step (int): Maximum number of relaxation steps. Default is 250.
+
+    Returns:
+        tuple:
+            - xtal: Optimized PyXtal instance (or None if optimization failed).
+            - eng (float): Energy/atom of the opt_structure (or None if it failed).
+            - status (bool): Whether the optimization was successful.
     """
     from pyxtal.interface.ase_opt import ASE_relax as mace_opt
 
+    logger = logging.getLogger()
     atoms = xtal.to_ase(resort=False)
     s = mace_opt(atoms,
                  'MACE',
                  opt_cell=True,
                  step=step,
-                 max_time=10.0,
-                 )
-    error = False
+                 max_time=9.0 * max([1, (len(atoms)/200)]),
+                 label=str(id))
+    if s is None:
+        logger.info(f"mace_opt_single Failure {id}")
+        return None, None, False
+
     try:
         xtal = pyxtal()
         xtal.from_seed(s)
         eng = s.get_potential_energy() / len(s)
-    except:
-        error = True
-        eng = None
-        xtal = None
-
-    status = False
-    if not error:
         status = process_xtal(id, xtal, eng, criteria)
-    return xtal, eng, status
+        logger.info(f"mace_opt_single Success {id}")
+        return xtal, eng, status
+    except:
+        logger.info(f"mace_opt_single Bug {id}")
+        return None, None, False
+
 
 def process_xtal(id, xtal, eng, criteria):
     status = xtal.check_validity(
@@ -213,26 +280,60 @@ def process_xtal(id, xtal, eng, criteria):
         print(xtal.get_xtal_string(header=header, dicts=dicts))
     return status
 
+
 def make_entry_from_pyxtal(xtal):
     """
-    make entry from the pyxtal object, assuming that
-    the smiles/ccdc_number info is given
+    Generate an entry dictionary from a PyXtal object, assuming
+    the SMILES and CCDC number information is provided.
 
     Args:
-        xtal: pyxtal object
+        xtal: PyXtal object (must contain the SMILES (`xtal.tag["smiles"]`)
+        and CCDC number (`xtal.tag["ccdc_number"]`) in the `xtal.tag`.
 
     Returns:
-        entry dictionary
+        tuple: (ase_atoms, entry_dict, None)
+            - ase_atoms: ASE Atoms object converted from the PyXtal structure.
+            - entry_dict (dict): A dictionary containing information
+            - None: Placeholder for future use (currently returns None).
+
+    Structure of `entry_dict`:
+        - "csd_code" (str): CSD code (if available) for the crystal structure.
+        - "mol_smi" (str): SMILES representation of the molecule.
+        - "ccdc_number" (str): CCDC identifier number.
+        - "space_group" (str): Space group symbol of the crystal.
+        - "spg_num" (int): Space group number.
+        - "Z" (int): Number of molecules in the unit cell.
+        - "Zprime" (float): Z' value of the crystal.
+        - "url" (str): URL link to the CCDC database entry for the crystal.
+        - "mol_formula" (str): Molecular formula of the structure.
+        - "mol_weight" (float): Molecular weight of the structure.
+        - "mol_name" (str): Name of the molecule, typically the CSD code.
+        - "l_type" (str): Lattice type of the structure.
+
+    Returns None if the PyXtal structure is invalid (i.e., `xtal.valid` is False).
+
+    Example:
+        entry = make_entry_from_pyxtal(xtal_instance)
+        ase_atoms, entry_dict, _ = entry
+
+    Notes:
+        - The CCDC link is generated using the structure's CCDC number.
     """
+
     from rdkit import Chem
     from rdkit.Chem.Descriptors import ExactMolWt
     from rdkit.Chem.rdMolDescriptors import CalcMolFormula
 
     if xtal.valid:
         url0 = "https://www.ccdc.cam.ac.uk/structures/Search?Ccdcid="
+        # Create RDKit molecule from SMILES string
         m = Chem.MolFromSmiles(xtal.tag["smiles"])
+
+        # Calculate molecular weight and molecular formula using RDKit
         mol_wt = ExactMolWt(m)
         mol_formula = CalcMolFormula(m)
+
+        # Create a dictionary containing information
         kvp = {
             "csd_code": xtal.tag["csd_code"],
             "mol_smi": xtal.tag["smiles"],
@@ -247,6 +348,7 @@ def make_entry_from_pyxtal(xtal):
             "mol_name": xtal.tag["csd_code"],
             "l_type": xtal.lattice.ltype,
         }
+        # Return the ASE Atoms the entry dictionary, and None as a placeholder
         return (xtal.to_ase(), kvp, None)
     else:
         return None
@@ -528,13 +630,18 @@ class database_topology:
 
     Args:
         db_name (str): *.db format from ase database
+        rank (int): default 0
+        size (int): default 1
         ltol (float): lattice tolerance
         stol (float): site tolerance
         atol (float): angle tolerance
+        log_file (str): log_file
     """
 
-    def __init__(self, db_name, rank=0, ltol=0.05, stol=0.05, atol=3):
+    def __init__(self, db_name, rank=0, size=1, ltol=0.05, stol=0.05, atol=3,
+                 log_file='db.log'):
         self.rank = rank
+        self.size = size
         self.db_name = db_name
         self.db = connect(db_name, serial=True)
         self.keys = [
@@ -562,7 +669,7 @@ class database_topology:
             ltol=ltol, stol=stol, angle_tol=atol)
 
         # Define logfile
-        self.log_file = 'db.log'
+        self.log_file = log_file
         logging.getLogger().handlers.clear()
         logging.basicConfig(format="%(asctime)s| %(message)s",
                             filename=self.log_file,
@@ -588,7 +695,6 @@ class database_topology:
             use_relaxed (str): 'ff_relaxed', 'vasp_relaxed'
         """
         from pymatgen.core import Structure
-
         from pyxtal import pyxtal
         from pyxtal.util import ase2pymatgen
 
@@ -596,14 +702,15 @@ class database_topology:
         if use_relaxed is not None:
             if hasattr(row, use_relaxed):
                 xtal_str = getattr(row, use_relaxed)
+                pmg = Structure.from_str(xtal_str, fmt="cif")
             else:
-                raise ValueError(
-                    f"No {use_relaxed} attributes for row{id}")
-            pmg = Structure.from_str(xtal_str, fmt="cif")
-
+                print(f"No {use_relaxed} attributes for structure", id)
+                atom = self.db.get_atoms(id=id)
+                pmg = ase2pymatgen(atom)
         else:
             atom = self.db.get_atoms(id=id)
             pmg = ase2pymatgen(atom)
+
         xtal = pyxtal()
         try:
             xtal.from_seed(pmg)
@@ -1033,8 +1140,7 @@ class database_topology:
 
     def select_xtal(self, ids, overwrite=False, attribute=None, use_relaxed=None):
         """
-        Lazy extraction
-        Mostly called by update_row_energy
+        Lazy extraction of select xtals
 
         Args:
             ids:
@@ -1047,13 +1153,14 @@ class database_topology:
             min_id = 1
         if max_id is None:
             max_id = self.get_max_id()
+
         ids, xtals = [], []
         for row in self.db.select():
             if overwrite or attribute is None or not hasattr(row, attribute):
-                if min_id <= row.id <= max_id:
-                    xtal = self.get_pyxtal(row.id, use_relaxed)
-                    yield row.id, xtal
-
+                id = row.id
+                if min_id <= id <= max_id and id % self.size== self.rank:
+                    xtal = self.get_pyxtal(id, use_relaxed)
+                    yield id, xtal
 
     def update_row_energy(
         self,
@@ -1067,23 +1174,49 @@ class database_topology:
         ff_lib='reaxff',
         steps=250,
         use_relaxed=None,
+        cmd=None,
+        calc_folder=None,
     ):
         """
-        Update row mace_energy with mace calculator
+        Update the row energy in the database for a given calculator.
 
         Args:
             calculator (str): 'GULP', 'MACE', 'VASP', 'DFTB'
-            ids (tuple): row ids e.g., (0, 100)
+            ids (tuple): A tuple specifying row IDs to update (e.g., (0, 100)).
             ncpu (int): number of parallel processes
-            overwrite (bool): remove the existing attributes
-            write_freq (int): frequency to write results to db for ncpu=1
-            ff_lib (str): 'reaxff', or others for GULP
-            use_relaxed (str): 'ff_relaxed' or 'vasp_relaxed'
+            criteria (dict, optional): Criteria when selecting structures.
+            symmetrize (bool): symmetrize the structure before calculation
+            overwrite (bool): overwrite the existing energy attributes.
+            write_freq (int): frequency to update db for ncpu=1
+            ff_lib (str): Force field to use for GULP ('reaxff' by default).
+            steps (int): Number of optimization steps for DFTB (default is 250).
+            use_relaxed (str, optional): Use relaxed structures (e.g. 'ff_relaxed')
+            cmd (str, optional): Command for VASP calculations.
+            calc_folder (str, optional): calc_folder for GULP/VASP calculations
+
+        Functionality:
+            Using the selected calculator, it updates the energy rows of the
+            database. If `ncpu > 1`, run in parallel; otherwise in serial.
+
+        Calculator Options:
+            - 'GULP': Uses a force field (e.g., 'reaxff').
+            - 'MACE': Uses the MACE calculator.
+            - 'DFTB': Uses DFTB+ with symmetrization options.
+            - 'VASP': Uses VASP, with a specified command (`cmd`).
         """
+
         label = calculator.lower() + "_energy"
-        xtal_generator = self.select_xtal(ids, overwrite, label, use_relaxed)
-        calc_folder = calculator.lower() + "_calc"
-        os.makedirs(calc_folder, exist_ok=True)
+        if calc_folder is None:
+            calc_folder = calculator.lower() + "_calc"
+        # MACE does not need a folder
+        if calculator != 'MACE':
+            #self.logging.info("make new folders", calc_folder, os.getpwd())
+            os.makedirs(calc_folder, exist_ok=True)
+
+        # Generate structures for calculation
+        generator = self.select_xtal(ids, overwrite, label, use_relaxed)
+
+        # Set up arguments for the chosen calculator
         args_up = []
         if calculator == 'GULP':
             args = [calculator, ff_lib, calc_folder, criteria]
@@ -1093,18 +1226,40 @@ class database_topology:
         elif calculator == 'DFTB':
             args = [calculator, skf_dir, steps, symmetrize, criteria]
         elif calculator == 'VASP':
-            args = [calculator, skf_dir, steps, symmetrize, criteria]
-
-        if ncpu == 1:
-            self.update_row_energy_serial(xtal_generator, write_freq, args, args_up)
+            args = [calculator, calc_folder, cmd, criteria]
         else:
-            self.update_row_energy_mproc(ncpu, xtal_generator, write_freq, args, args_up)
+            raise ValueError(f"Unsupported calculator: {calculator}")
 
-        print("Complete update_row_energy")
+        # Perform calculation serially or in parallel
+        self.logging.info(f"Rank-{self.rank} row_energy {calculator} {self.db_name}")
+        if ncpu == 1:
+            self.update_row_energy_serial(generator, write_freq, args, args_up)
+        else:
+            self.update_row_energy_mproc(ncpu, generator, args, args_up)
+        self.logging.info(f"Rank-{self.rank} complete update_row_energy")
 
-    def update_row_energy_serial(self, xtal_generator, write_freq, args, args_up):
+    def update_row_energy_serial(self, generator, write_freq, args, args_up):
+        """
+        Perform a serial update of row energies
+
+        Args:
+            generator (generator): Yielding tuples of (id, xtal), where:
+                - `id` (int): Unique identifier for the structure.
+                - `xtal` (object): pyxtal instance.
+            write_freq (int): Frequency to update the database.
+            args (list): Additional arguments to the function `opt_single`.
+            args_up (list): Additional arguments for function `_update_db`.
+
+        Functionality:
+            It iterates over structures provided by `generator`,
+            optimizes them using `opt_single`, and collects results that have
+            converged (`status == True`). Once the number of results
+            reaches `write_freq`, it updates the database.
+        """
         results = []
-        for id, xtal in xtal_generator:
+        for id, xtal in generator:
+            self.logging.info(f"Processing {id} {xtal.lattice} {args[0]}")
+            print(f"Processing {id} {xtal.lattice} {args[0]}")
             res = opt_single(id, xtal, *args)
             (xtal, eng, status) = res
             if status:
@@ -1114,11 +1269,39 @@ class database_topology:
                 results = []
                 self.print_memory_usage()
 
-    def update_row_energy_mproc(self, ncpu, xtal_generator, write_freq, args, args_up):
+    def update_row_energy_mproc(self, ncpu, generator, args, args_up):
+        """
+        Perform parallel row energy updates by optimizing atomic structures.
+
+        Args:
+            ncpu (int): Number of CPUs to use for parallel processing.
+            generator (generator): yielding tuples of (id, xtal), where:
+                - `id` (int): Unique identifier for the structure.
+                - `xtal` (object): pyxtal instance.
+            args (list): Additional arguments passed to `call_opt_single`.
+                - Typically includes a calculator or potential parameters.
+            args_up (list): Additional arguments for function `_update_db`.
+
+        Functionality:
+            This function distributes the structures across multiple CPUs
+            using `multiprocessing.Pool`. It creates chunks (based on `ncpu`),
+            and process them in parallel by calling `call_opt_single`.
+            Successful results are periodically written to the database.
+            The function also prints memory usage after each database update.
+
+        Parallelization Process:
+            - The `Pool` is initialized with `ncpu` processes.
+            - Structures are divided into chunks with the `chunkify` function.
+            - Each chunk is processed by `call_opt_single` via the pool.
+            - Successful results are periodically written to the database.
+            - The pool is closed and joined after processing is complete.
+        """
         from multiprocessing import Pool
 
-        print("\n# Parallel optimizations", ncpu)
-        pool = Pool(processes=ncpu, initializer=setup_worker_logger, initargs=(self.log_file,))
+        self.logging.info(f"Parallel optimizations {ncpu}")
+        pool = Pool(processes=ncpu,
+                    initializer=setup_worker_logger,
+                    initargs=(self.log_file,))
 
         def chunkify(generator, chunk_size):
             chunk = []
@@ -1130,40 +1313,55 @@ class database_topology:
             if chunk:
                 yield chunk
 
-        for chunk in chunkify(xtal_generator, ncpu):
+        for chunk in chunkify(generator, ncpu*10):
             myargs = []
-            #print('Current chunk size', len(chunk), ncpu)
             for _id, xtal in chunk:
-                myargs.append(tuple([_id, xtal] + args))# + [self.logging]))
-                #print('debug myargs', len(myargs), len(myargs[-1]))
+                if xtal is not None:
+                    myargs.append(tuple([_id, xtal] + args))
 
             results = []
-            for result in pool.imap_unordered(call_opt_single, myargs):
+            self.logging.info(f"Start minicycle: {myargs[0][0]}-{myargs[-1][0]}")
+            for result in pool.imap_unordered(call_opt_single,
+                                              myargs,
+                                              chunksize=1):
                 if result is not None:
-                    (id, xtal, eng) = result
+                    (myid, xtal, eng) = result
                     if eng is not None:
                         results.append(result)
-                        #self.logging.info(f'id-{id} updates energy {eng:.3f}')
-            self._update_db(results, args[0], *args_up)
-            self.print_memory_usage()
+                        numIons = sum(xtal.numIons)
+                        count = len(results)
+                        self.logging.info(f"Add {myid:4d} {eng:.3f} *{numIons} {count}")
+
+                # Only do frequent update for slow calculator VASP
+                if len(results) >= ncpu and args[0] == 'VASP':
+                    self._update_db(results, args[0], *args_up)
+                    self.logging.info(f"Finish minibatch: {len(results)}")
+                    self.print_memory_usage()
+                    results = []
+
+            self.logging.info(f"Done  minicycle: {myargs[0][0]}-{myargs[-1][0]}")
+
+            # After the loop, handle the remaining results
+            if results:
+                self.logging.info(f"Start  Update db: {len(results)}")
+                self._update_db(results, args[0], *args_up)
+                self.logging.info(f"Finish Update db: {len(results)}")
+
         pool.close()
         pool.join()
 
-
     def _update_db(self, results, calc, *args):
         """
-        Update db with the gulp_results
-        This may take some time to complete if there are many rows
+        Update db with the calculation_results
         https://wiki.fysik.dtu.dk/ase/ase/db/db.html#writing-and-updating-many-rows-efficiently
-        Better do it in a single transaction
 
         Args:
             results: list of (id, xtal, eng) tuples
-            calc (str):
-            ff (str): forcefield type (e.g., 'reaxff')
+            calc (str): calculator
         """
-        print("Wrap up the final results and update db", len(results))
-        if calc == 'GULP': ff_lib = args[0]
+        #self.logging.info(f"====================Update db: {len(results)}")
+        if calc == 'GULP':
+            ff_lib = args[0]
 
         with self.db:
             for result in results:
@@ -1171,23 +1369,22 @@ class database_topology:
                 if xtal is not None:
                     if calc == 'GULP':
                         self.db.update(id,
-                                       ff_energy=eng,
-                                       ff_lib=ff_lib,
-                                       ff_relaxed=xtal.to_file())
+                               ff_energy=eng,
+                               ff_lib=ff_lib,
+                               ff_relaxed=xtal.to_file())
                     elif calc == 'MACE':
                         self.db.update(id,
-                                       mace_energy=eng,
-                                       mace_relaxed=xtal.to_file())
+                               mace_energy=eng,
+                               mace_relaxed=xtal.to_file())
                     elif calc == 'VASP':
-                         self.db.update(id,
-                                        vasp_energy=eng,
-                                        vasp_relaxed=xtal.to_file())
+                        self.db.update(id,
+                                vasp_energy=eng,
+                                vasp_relaxed=xtal.to_file())
                     elif calc == 'DFTB':
-                         self.db.update(id,
-                                        dftb_energy=eng,
-                                        dftb_relaxed=xtal.to_file())
-
-                print(f'update_db_{calc}, {id}')
+                        self.db.update(id,
+                                dftb_energy=eng,
+                                dftb_relaxed=xtal.to_file())
+                    #self.logging.info(f'update_db_{calc}, {id}')
 
     def update_row_topology(self, StructureType="Auto", overwrite=True, prefix=None, ref_dim=3):
         """
@@ -1277,7 +1474,7 @@ class database_topology:
                 # Unknown will be labeled as aaa
                 self.db.update(row.id, topology=name,
                                dimension=dim, topology_detail=detail)
-            #else:
+            # else:
             #    print("Existing Topology", row.topology)
 
     def update_db_description(self):
@@ -1522,8 +1719,8 @@ class database_topology:
         """
 
         db_ref = database_topology(reference_db)
-        print(f"\nCurrent   database {self.db_name:s}: {self.db.count():d}")
-        print(f"Reference database {db_ref.db_name:s}: {db_ref.db.count():d}")
+        print(f"\nCurrent   database {self.db_name}: {self.db.count()}")
+        print(f"Reference database {db_ref.db_name}: {db_ref.db.count()}")
 
         ref_data = []
         for row in db_ref.db.select():
@@ -1576,7 +1773,7 @@ class database_topology:
         """
         if excluded_ids is None:
             excluded_ids = []
-        print(f"\nCurrent   database {self.db_name:s}: {self.db.count():d}")
+        print(f"\nCurrent database {self.db_name}: {self.db.count()}")
         output = []
         for row in self.db.select():
             if row.id not in excluded_ids and hasattr(row, "topology") and hasattr(row, "ff_energy"):
@@ -1594,8 +1791,84 @@ class database_topology:
         for entry in sorted_output[:cutoff]:
             print("{:4d} {:6s} {:4d} {:20s} {:10.3f}".format(*entry))
 
-        strs = f"Showed structures: {len(sorted_output):d}/{self.db.count():d}"
+        strs = f"Showed structures: {len(sorted_output)}/{self.db.count()}"
         print(strs)
+
+    def plot_histogram(self, prop, ax=None, filename=None, xlim=None, nbins=20):
+        """
+        Plot the histogram of a specified row property.
+
+        Args:
+            prop (str): The name of the property to plot (e.g., 'ff_energy').
+            ax (matplotlib.axes.Axes, optional): Pre-existing axis to plot on.
+                                                 If None, a new ax will be created.
+            filename (str, optional): Path to save the plot (e.g., 'plot.png').
+                                      If None, the plot will not be saved.
+            xlim (tuple, optional): Limits for the x-axis (e.g., (0, 10)).
+                                    If None, the x-axis will scale automatically.
+            nbins (int, optional): Number of bins for the histogram. Default is 20.
+
+        Returns:
+            matplotlib.axes.Axes: The axis object with the histogram plotted.
+        """
+        import matplotlib.pyplot as plt
+
+        if ax is None:
+            f, ax = plt.subplots()
+
+        # Get the properties from the database
+        props = self.get_properties(prop)
+
+        # Check if there are values to plot
+        if not props:
+            raise ValueError(f"No rows contain the property '{prop}'.")
+
+        ax.hist(props, nbins, density=True, alpha=0.75)
+
+        # Set x-axis limits if provided
+        if xlim is not None:
+            ax.set_xlim(xlim)
+
+        ax.set_xlabel(prop)
+
+        # Save the plot if a filename is provided
+        if filename is not None:
+            plt.savefig(filename)
+
+        return ax
+
+    def get_properties(self, prop):
+        """
+        Retrieve a list of specific property values from the database rows.
+
+        Args:
+            prop (str): The property name to retrieve (e.g., 'ff_energy')
+
+        Returns:
+            list: A list of property values for rows that have the specified property.
+                  If a row does not contain the property, it is ignored.
+
+        Raises:
+            Warning: If no rows in the database contain the specified property.
+        """
+
+        props = []
+
+        # Loop through all rows in the database and collect the property values
+        for row in self.db.select():
+            if hasattr(row, prop):
+                props.append(getattr(row, prop))
+
+        # Print summary of rows
+        name, count = self.db_name, self.db.count()
+        print(f"Database {name} has {prop}: {len(props)}/{count}")
+
+        # Warn if no properties were found
+        if count == 0:
+            raise Warning(
+                f"No rows in the database contain the property '{prop}'.")
+
+        return props
 
 
 if __name__ == "__main__":

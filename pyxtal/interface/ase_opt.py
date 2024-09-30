@@ -5,18 +5,12 @@ from ase.constraints import FixSymmetry
 from ase.filters import UnitCellFilter
 from ase.optimize.fire import FIRE
 import torchani
+import logging
 
 import os
 from mace.calculators import mace_mp
 _cached_mace_mp = None
 
-
-# Define a handler for the timeout
-class TimeoutException(Exception):
-    pass
-
-def timeout_handler(signum, frame):
-    raise TimeoutException
 
 def get_calculator(calculator):
     global _cached_mace_mp
@@ -33,8 +27,8 @@ def get_calculator(calculator):
 
     return calc
 
-#def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile=None, max_time=10.0):
-def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile='ase.log', max_time=10.0):
+#def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile=None, max_time=10.0, label='ase'):
+def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile='ase.log', max_time=10.0, label='ase'):
     """
     ASE optimizer
     Args:
@@ -43,15 +37,23 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile='as
         step: optimization steps (int)
         max_time: float (minutes)
     """
+
+    def handler(signum, frame):
+        raise TimeoutError("Optimization timed out")
+
+    step_init = 40
+    logger = logging.getLogger()
     max_time *= 60
     timeout = int(max_time)
-    calc = get_calculator(calculator)
-    struc.set_calculator(calc)
-    struc.set_constraint(FixSymmetry(struc))
-    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.signal(signal.SIGALRM, handler)
     signal.alarm(timeout)
+    #logger.info(f"{label} start calculation")
 
     try:
+    #if True:
+        calc = get_calculator(calculator)
+        struc.set_calculator(calc)
+        struc.set_constraint(FixSymmetry(struc))
         if opt_cell:
             ecf = UnitCellFilter(struc)
             dyn = FIRE(ecf, a=0.1, logfile=logfile) if logfile is not None else FIRE(ecf, a=0.1)
@@ -59,36 +61,38 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile='as
             dyn = FIRE(struc, a=0.1, logfile=logfile) if logfile is not None else FIRE(struc, a=0.1)
 
         # Run relaxation
-        dyn.run(fmax=fmax, steps=20)
+        dyn.run(fmax=fmax, steps=step_init)
         forces = dyn.optimizable.get_forces()
         _fmax = np.sqrt((forces ** 2).sum(axis=1).max())
-        # print("debug", _fmax)
 
-        if _fmax < 1e+3:
-            if step < 50:
-                dyn.run(fmax=fmax, steps=step)
-            else:
-                t0 = time()
-                dyn.run(fmax=fmax, steps=int(step / 2))
-                # If time is too long, only run half steps
-                if (time() - t0)  < max_time / 2:
-                    dyn.run(fmax=fmax, steps=int(step / 2))
+        if _fmax < 1e+3 and step > step_init:
+            dyn.run(fmax=fmax, steps=step-step_init)
             forces = dyn.optimizable.get_forces()
             _fmax = np.sqrt((forces ** 2).sum(axis=1).max())
+            eng = struc.get_potential_energy() / len(struc)
             if _fmax > 100:
-                return None
+                logger.info(f"Warning {label} big stress {eng:.2f} / {_fmax:.2f}, skip")
+                struc = None
             else:
-                return struc
-
-    except TimeoutException:
-        print(f"ASE_relax timed out after {timeout} seconds.")
-        return None
-
-    finally:
+                logger.info(f"{label} Success  {eng:.2f} / {_fmax:.2f}")
+        else:
+            logger.info(f"Warning {label} big stress {_fmax:.2f} for 20 steps, skip")
+            struc = None
         signal.alarm(0)  # Cancel the alarm if finished within time
 
-    return None
+    except TimeoutError:
+        logger.info(f"Warning {label} timed out after {timeout} seconds.")
+        struc = None
 
+    except TypeError:
+        logger.info(f"Warning {label} spglib error in getting the lattice")
+        struc = None
+        signal.alarm(0)  # Cancel the alarm if finished within time
+
+    tag = 'False' if struc is None else 'True'
+    logger.info(f"Finishing {label} {tag}")
+    #signal.alarm(0)  # Cancel the alarm 
+    return struc
 
 class ASE_optimizer:
     """
