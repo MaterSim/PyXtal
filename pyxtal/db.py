@@ -598,7 +598,7 @@ class database_topology:
                 xtal_str = getattr(row, use_relaxed)
             else:
                 raise ValueError(
-                    "No ff or vasp relaxed attributes for structure", id)
+                    f"No {use_relaxed} attributes for row{id}")
             pmg = Structure.from_str(xtal_str, fmt="cif")
 
         else:
@@ -615,7 +615,7 @@ class database_topology:
         except:
             print("Cannot load the structure")
 
-    def get_all_xtals(self):
+    def get_all_xtals(self, include_energy=False):
         """
         Get all pyxtal instances from the current db
         """
@@ -623,6 +623,8 @@ class database_topology:
         for row in self.db.select():
             xtal = self.get_pyxtal(id=row.id)
             if xtal is not None:
+                if include_energy and hasattr('vasp_energy'):
+                    xtal.energy = row.vasp_energy
                 xtals.append(xtal)
         return xtals
 
@@ -1345,6 +1347,7 @@ class database_topology:
             "similarity",
             "ff_energy",
             "vasp_energy",
+            "mace_energy",
             "topology",
         ]
         properties = []
@@ -1360,8 +1363,11 @@ class database_topology:
                 row, "ff_energy") else None
             vasp_eng = float(row.vasp_energy) if hasattr(
                 row, "vasp_energy") else None
+            mace_eng = float(row.mace_energy) if hasattr(
+                row, "mace_energy") else None
             properties.append([row.id, ps, spg, den, dof,
-                              sim, ff_eng, vasp_eng, top])
+                              sim, ff_eng, vasp_eng, mace_eng,
+                              top])
 
         dicts = {}
         for i, key in enumerate(keys):
@@ -1379,7 +1385,7 @@ class database_topology:
         sorted_properties = sorted(properties, key=lambda x: x[col])
 
         for entry in sorted_properties[:cutoff]:
-            [id, ps, spg, den, dof, sim, ff_eng, vasp_eng, top] = entry
+            [id, ps, spg, den, dof, sim, ff_eng, vasp_eng, mace_eng, top] = entry
             id = int(id)
             spg = int(spg)
             sim = float(sim)
@@ -1387,23 +1393,25 @@ class database_topology:
             dof = int(dof)
             if vasp_eng is not None:
                 eng = float(vasp_eng)
+            elif mace_eng is not None:
+                eng = float(mace_eng)
             elif ff_eng is not None:
                 eng = float(ff_eng)
             else:
                 eng = None
-            # if True:
-            try:
+            if True:
+            #try:
                 xtal = self.get_pyxtal(id, use_relaxed)
                 number, symbol = xtal.group.number, xtal.group.symbol.replace(
                     "/", "")
                 # convert to the desired subgroup representation if needed
-                if number != spg:
-                    paths = xtal.group.path_to_subgroup(spg)
-                    xtal = xtal.to_subgroup(paths)
-                    number, symbol = (
-                        xtal.group.number,
-                        xtal.group.symbol.replace("/", ""),
-                    )
+                #if number != spg:
+                #    paths = xtal.group.path_to_subgroup(spg)
+                #    xtal = xtal.to_subgroup(paths)
+                #    number, symbol = (
+                #        xtal.group.number,
+                #        xtal.group.symbol.replace("/", ""),
+                #    )
 
                 label = os.path.join(
                     folder,
@@ -1412,9 +1420,9 @@ class database_topology:
 
                 status = xtal.check_validity(
                     criteria, True) if criteria is not None else True
-            except:
-                status = False
-                label = "Error"
+            #except:
+            #    status = False
+            #    label = "Error"
 
             if status:
                 try:
