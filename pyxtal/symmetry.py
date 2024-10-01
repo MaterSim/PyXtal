@@ -3048,6 +3048,25 @@ class Wyckoff_position:
             i = np.argmin(distances)
             return filtered_coords(new_vectors[i], PBC=PBC)
 
+    def to_discrete_grid(self, xyz, N_grids=50):
+        """
+        A function to convert (x, y, z) to a discrete grid
+        """
+        binwidth = 1.0 / N_grids
+        x = int(xyz[0] // binwidth)
+        y = int(xyz[1] // binwidth)
+        z = int(xyz[2] // binwidth)
+        return [x, y, z]
+
+    def from_discrete_grid(self, xyz, N_grids=50):
+        """
+        A function to convert from a discrete grid to (x, y, z)
+        """
+        binwidth = 1.0 / N_grids
+        x = binwidth * xyz[0]
+        y = binwidth * xyz[1]
+        z = binwidth * xyz[2]
+        return [x, y, z]
 
 # ----------------- Wyckoff Position selection  --------------------------
 

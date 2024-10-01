@@ -3623,17 +3623,28 @@ class pyxtal:
             strs += f"{s.wp.get_label():s} "
         return strs
 
-    def get_tabular_representations(self, N_max=30, N_wp=8, normalize=False, perturb=True, eps=0.05):
+    def get_tabular_representations(
+        self,
+        N_max=30,
+        N_wp=8,
+        normalize=False,
+        perturb=False,
+        eps=0.05,
+        discrete=False,
+        N_grids=50,
+    ):
         """
         Enumerate the equivalent representations for a give crystal.
-        For the example of 8a in space group 227, there exist 8 equivalent positions
+        For example, 8a in space group 227 has 8 equivalent positions
 
         Args:
-            N_max (int): the maximum number of samples from the enumeration
+            N_max (int): the max number of samples from the enumeration
             N_wp (int): the maximum number of allowed WP sites
-            normalize (bool): whether or not normalize all number to (0, 1)
-            perturb (bool): whether or not apply perturbation on the variables
-            eps (float): a float number to control the degree of perturbation
+            normalize (bool): normalize all number to (0, 1)
+            perturb (bool): whether or not perturb the variables
+            eps (float): the degree of perturbation
+            discrete (bool): to discretize xyz
+            N_grids (int): number of grids used for discretization
 
         Returns:
             a list of equivalent 1D tabular representations
@@ -3648,11 +3659,14 @@ class pyxtal:
         if len(ids) > N_max:
             ids = self.random_state.choice(ids, N_max)
 
-        print(f"Number of augments {len(ids):4d} from ",
-              self.get_xtal_string())
+        print(f"N_reps {len(ids)} from ", self.get_xtal_string())
         for sites_id in ids:
             rep = self.get_tabular_representation(
-                sites_id, normalize, N_wp, perturb, eps=eps, standardize=False)
+                    sites_id, normalize, N_wp, perturb,
+                    eps=eps,
+                    standardize=False,
+                    discrete=discrete,
+                    N_grids=N_grids)
             reps.append(rep)
         return reps
 
@@ -3666,6 +3680,8 @@ class pyxtal:
         max_angle=np.pi,
         eps=0.05,
         standardize=True,
+        discrete=False,
+        N_grids=50,
     ):
         """
         Convert the xtal to a 1D reprsentation organized as
@@ -3677,9 +3693,11 @@ class pyxtal:
             normalize (bool): whether or not normalize the data to (0, 1)
             N_wp (int): number of maximum wp sites
             perturb (bool): whether or not perturb the variables
-            max_abc (float): maximum a, b, c length (used in normalization)
-            max_angle (float): maximum angle in radian (used in normalization)
-            eps (float): a float number to control the degree of perturbation
+            max_abc (float): maximum abc length for normalization
+            max_angle (float): maximum angle in radian for normalization
+            eps (float): the degree of perturbation
+            discrete (bool): to discretize xyz
+            N_grids (int): number of grids used for discretization
 
         Returns:
             a 1D vector such as (141, 3, 3, 3, pi/2, pi/2, pi/2, wp_id, x, y, z)
@@ -3710,31 +3728,52 @@ class pyxtal:
             rep[4:7] /= max_angle
 
         count = N_cell
+
+        # Convert WP site
         for id, site in zip(ids, self.atom_sites):
+            # Get the index
             rep[count] = site.wp.index
             if normalize:
                 rep[count] /= len(self.group)
+
+            # Convert xyz
             xyz = site.coords[id]  # position
             xyz -= np.floor(xyz)
-            if standardize:
-                free_xyzs = site.wp.get_free_xyzs(
-                    xyz, perturb=perturb, eps=eps)
-                xyz = site.wp.get_position_from_free_xyzs(free_xyzs)
+
+            if discrete:
+                xyz = site.wp.to_discrete_grid(xyz, N_grids)
+            else:
+                if standardize:
+                    free_xyzs = site.wp.get_free_xyzs(
+                        xyz, perturb=perturb, eps=eps)
+                    xyz = site.wp.get_position_from_free_xyzs(free_xyzs)
             rep[count + 1: count + 4] = xyz
             count += 4
         return rep
 
-    def from_tabular_representation(self, rep, max_abc=50.0, max_angle=180, normalize=True, tol=0.1, verbose=False):
+    def from_tabular_representation(
+        self,
+        rep,
+        max_abc=50.0,
+        max_angle=180,
+        normalize=True,
+        tol=0.1,
+        discrete=False,
+        N_grids=50,
+        verbose=False,
+    ):
         """
         Reconstruc xtal from 1d tabular_representation
         Currently assuming the elemental composition like carbon
 
         Args:
             rep: 1D array
-            max_abc (float): maximum a, b, c length (used in normalization)
-            max_angle (float): maximum angle in radian (used in normalization)
+            max_abc (float): maximum abc length for normalization
+            max_angle (float): maximum angle in radian for normalization
             normalize (bool): whether normalize or not?
             tol (float): a tolerance value to assign the Wyckoff site
+            discrete (bool): to discretize xyz
+            N_grids (int): number of grids used for discretization
             verbose (bool): output detailed error
         """
         number = int(np.round(rep[0] * 230)) if normalize else int(rep[0])
@@ -3771,6 +3810,7 @@ class pyxtal:
                 self.valid = False
                 return
 
+            # Convert WP site
             sites_info = np.reshape(rep[7:], (int((len(rep) - 7) / 4), 4))
             sites = []
             numIons = 0
@@ -3779,12 +3819,18 @@ class pyxtal:
                 # exclude data containing negative values
                 if verbose:
                     print("site_info", site_info)
+
                 if min(site_info) > -0.01:
                     wp_id = int(np.round(len(group) * id)
                                 ) if normalize else int(id)
                     if wp_id >= len(group):
                         wp_id = -1
                     wp = group[wp_id]
+
+                    # Conversion from discrete to continuous
+                    if discrete:
+                        [x, y, z] = wp.from_discrete_grid([x, y, z], N_grids)
+
                     # ; print(wp.get_label(), xyz)
                     xyz = wp.search_generator([x, y, z], tol=tol)
                     if xyz is not None:
@@ -3795,7 +3841,7 @@ class pyxtal:
                         numIons += wp.multiplicity
                     else:
                         if verbose:
-                            print("Cannot find generator from the input", x, y, z)
+                            print("Cannot find generator from", x, y, z)
                             print(wp)
             if len(sites) > 0:
                 try:
@@ -3814,7 +3860,7 @@ class pyxtal:
 
     def get_Pearson_Symbol(self):
         """
-        Return the Pearson symbol: https://en.wikipedia.org/wiki/Pearson_symbol
+        Based on https://en.wikipedia.org/wiki/Pearson_symbol
         """
         if self.group.number <= 2:
             l = "a"

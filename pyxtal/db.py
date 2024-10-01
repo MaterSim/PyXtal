@@ -730,7 +730,7 @@ class database_topology:
         for row in self.db.select():
             xtal = self.get_pyxtal(id=row.id)
             if xtal is not None:
-                if include_energy and hasattr('vasp_energy'):
+                if include_energy and hasattr(row, 'vasp_energy'):
                     xtal.energy = row.vasp_energy
                 xtals.append(xtal)
         return xtals
