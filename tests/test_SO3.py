@@ -45,7 +45,7 @@ def get_dPdR_xtal(xtal, nmax, lmax, rc, eps):
 
 # Descriptors Parameters
 eps = 1e-8
-rc = 4.00
+rc = 2.80
 nmax, lmax = 2, 2
 
 # NaCl cluster
@@ -89,6 +89,23 @@ class TestXtal(unittest.TestCase):
         c.from_prototype('graphite')
         get_dPdR_xtal(c.to_ase(), nmax, lmax, rc, eps)
 
+    def test_dPdR_random(self):
+        x = [ 7.952, 2.606, 0.592, 0.926, 0.608, 0.307]
+        c = pyxtal()
+        c.from_spg_wps_rep(179, ['6a', '6a', '6a', '6a'], x)
+        get_dPdR_xtal(c.to_ase(), nmax, lmax, rc, eps)
+
+    def test_dPdR_random_P(self):
+        x = [ 7.952, 2.606, 0.592, 0.926, 0.608, 0.307]
+        c = pyxtal()
+        c.from_spg_wps_rep(179, ['6a', '6a', '6a', '6a'], x)
+        atoms = c.to_ase()
+        f = SO3(nmax=nmax, lmax=lmax, rcut=rc)
+        p0 = f.compute_p(atoms)
+        _, p1 = f.compute_dpdr(atoms)
+        _, p2 = f.compute_dpdr_5d(atoms)
+        assert(np.allclose(p0, p1, atol=1e-3))
+        assert(np.allclose(p0, p2, atol=1e-3))
 
 if __name__ == "__main__":
     unittest.main()

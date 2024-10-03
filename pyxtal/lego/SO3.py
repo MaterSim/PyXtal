@@ -191,48 +191,49 @@ class SO3:
         p_list = np.zeros((self.natoms, self.ncoefs), dtype=np.float64)
         dp_list = np.zeros((self.natoms, self.natoms, self.ncoefs, 3), dtype=np.float64)
 
-        # get expansion coefficients and derivatives
-        cs, dcs = compute_dcs(self.neighborlist, self.nmax, self.lmax, self.rcut, self.alpha, self._cutoff_function)
+        if len(self.neighborlist) > 0:
+            # get expansion coefficients and derivatives
+            cs, dcs = compute_dcs(self.neighborlist, self.nmax, self.lmax, self.rcut, self.alpha, self._cutoff_function)
 
-        # weight cs and dcs
-        cs *= self.atomic_weights[:, np.newaxis, np.newaxis, np.newaxis]
-        dcs *= self.atomic_weights[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
-        cs = np.einsum('inlm,l->inlm', cs, self.norm)
-        dcs = np.einsum('inlmj,l->inlmj', dcs, self.norm)
-        #print('cs, dcs', self.neighbor_indices, cs.shape, dcs.shape)
+            # weight cs and dcs
+            cs *= self.atomic_weights[:, np.newaxis, np.newaxis, np.newaxis]
+            dcs *= self.atomic_weights[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
+            cs = np.einsum('inlm,l->inlm', cs, self.norm)
+            dcs = np.einsum('inlmj,l->inlmj', dcs, self.norm)
+            #print('cs, dcs', self.neighbor_indices, cs.shape, dcs.shape)
 
-        # Assign cs and dcs to P and dP
-        # cs: (N_ij, n, l, m)     => P (N_i, N_des)
-        # dcs: (N_ij, n, l, m, 3) => dP (N_i, N_j, N_des, 3)
-        # (n, l, m) needs to be merged to 1 dimension
+            # Assign cs and dcs to P and dP
+            # cs: (N_ij, n, l, m)     => P (N_i, N_des)
+            # dcs: (N_ij, n, l, m, 3) => dP (N_i, N_j, N_des, 3)
+            # (n, l, m) needs to be merged to 1 dimension
 
-        for i in range(len(atoms)):
-            # find atoms for which i is the center
-            centers = self.neighbor_indices[:, 0] == i
+            for i in range(len(atoms)):
+                # find atoms for which i is the center
+                centers = self.neighbor_indices[:, 0] == i
 
-            if len(self.neighbor_indices[centers]) > 0:
-                # total up the c array for the center atom
-                ctot = cs[centers].sum(axis=0) #(n, l, m)
+                if len(self.neighbor_indices[centers]) > 0:
+                    # total up the c array for the center atom
+                    ctot = cs[centers].sum(axis=0) #(n, l, m)
 
-                # power spectrum P = c*c_conj
-                # eq_3 (n, n', l) eliminate m
-                P = np.einsum('ijk, ljk->ilj', ctot, np.conj(ctot)).real
-                p_list[i] = P[self.tril_indices].flatten()
+                    # power spectrum P = c*c_conj
+                    # eq_3 (n, n', l) eliminate m
+                    P = np.einsum('ijk, ljk->ilj', ctot, np.conj(ctot)).real
+                    p_list[i] += P[self.tril_indices].flatten()
 
-                # gradient of P for each neighbor, eq_26
-                # (N_ijs, n, n', l, 3)
-                # dc * c_conj + c * dc_conj
-                dP = np.einsum('wijkn,ljk->wiljn', dcs[centers], np.conj(ctot))
-                dP += np.conj(np.transpose(dP, axes=[0, 2, 1, 3, 4]))
-                dP = dP.real
+                    # gradient of P for each neighbor, eq_26
+                    # (N_ijs, n, n', l, 3)
+                    # dc * c_conj + c * dc_conj
+                    dP = np.einsum('wijkn,ljk->wiljn', dcs[centers], np.conj(ctot))
+                    dP += np.conj(np.transpose(dP, axes=[0, 2, 1, 3, 4]))
+                    dP = dP.real
 
-                #print("shape of P/dP", P.shape, dP.shape)#; import sys; sys.exit()
+                    #print("shape of P/dP", P.shape, dP.shape)#; import sys; sys.exit()
 
-                # QZ: to check
-                ijs = self.neighbor_indices[centers]
-                for _id, j in enumerate(ijs[:, 1]):
-                    dp_list[i, j, :, :] += dP[_id][self.tril_indices].flatten().reshape(self.ncoefs, 3)
-                    dp_list[i, i, :, :] -= dP[_id][self.tril_indices].flatten().reshape(self.ncoefs, 3)
+                    # QZ: to check
+                    ijs = self.neighbor_indices[centers]
+                    for _id, j in enumerate(ijs[:, 1]):
+                        dp_list[i, j, :, :] += dP[_id][self.tril_indices].flatten().reshape(self.ncoefs, 3)
+                        dp_list[i, i, :, :] -= dP[_id][self.tril_indices].flatten().reshape(self.ncoefs, 3)
 
         return dp_list, p_list
 
@@ -242,7 +243,6 @@ class SO3:
 
         Args:
             atoms: ase atoms object
-            atom_ids: optional list of atomic indices
 
         Returns:
             dpdr array (N, N, M, 3, 27) and p array (N, M)
@@ -270,31 +270,31 @@ class SO3:
         for i in range(len(atoms)):
             # find atoms for which i is the center
             pair_ids = neigh_ids[self.neighbor_indices[:, 0] == i]
-
-            # loop over each pair
-            for pair_id in pair_ids:
-                (_, j, x, y, z) = self.neighbor_indices[pair_id]
-                # map from (x, y, z) to (0, 27)
-                cell_id = (x+1) * 9 + (y+1) * 3 + z + 1
-
+            if len(pair_ids) > 0:
+                ctot = cs[pair_ids].sum(axis=0) #(n, l, m)
                 # power spectrum P = c*c_conj
                 # eq_3 (n, n', l) eliminate m
-                P = np.einsum('ijk, ljk->ilj', cs[pair_id], np.conj(cs[pair_id])).real
-                p_list[i] = P[self.tril_indices].flatten()
+                P = np.einsum('ijk, ljk->ilj', ctot, np.conj(ctot)).real
+                p_list[i] += P[self.tril_indices].flatten()
 
-                # gradient of P for each neighbor, eq_26
-                # (N_ijs, n, n', l, 3)
-                # dc * c_conj + c * dc_conj
-                dP = np.einsum('ijkn, ljk->iljn', dcs[pair_id], np.conj(cs[pair_id]))
-                dP += np.conj(np.transpose(dP, axes=[1, 0, 2, 3]))
-                dP = dP.real[self.tril_indices].flatten().reshape(self.ncoefs, 3)
-                #print(cs[pair_id].shape, dcs[pair_id].shape, dP.shape)
+                # loop over each pair
+                for pair_id in pair_ids:
+                    (_, j, x, y, z) = self.neighbor_indices[pair_id]
+                    # map from (x, y, z) to (0, 27)
+                    cell_id = (x+1) * 9 + (y+1) * 3 + z + 1
 
-                dp_list[i, j, :, :, cell_id] += dP
-                dp_list[i, i, :, :, cell_id] -= dP
+                    # gradient of P for each neighbor, eq_26
+                    # (N_ijs, n, n', l, 3)
+                    # dc * c_conj + c * dc_conj
+                    dP = np.einsum('ijkn, ljk->iljn', dcs[pair_id], np.conj(ctot))
+                    dP += np.conj(np.transpose(dP, axes=[1, 0, 2, 3]))
+                    dP = dP.real[self.tril_indices].flatten().reshape(self.ncoefs, 3)
+                    #print(cs[pair_id].shape, dcs[pair_id].shape, dP.shape)
+
+                    dp_list[i, j, :, :, cell_id] += dP
+                    dp_list[i, i, :, :, cell_id] -= dP
 
         return dp_list, p_list
-
 
 
     def calculate(self, atoms, atom_ids=None, derivative=False):
@@ -696,5 +696,6 @@ if  __name__ == "__main__":
     print(f)
     print('x', x['x'])
     #print('dxdr', x['dxdr'])
-    print('calculation time {}'.format(start2-start1))
-    print(f.compute_p(test))
+    p = f.compute_p(test); print('from P', p)
+    dp, p = f.compute_dpdr(test); print('from dP', p)
+    dp, p = f.compute_dpdr_5d(test); print('from dP5d', p)
