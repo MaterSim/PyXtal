@@ -28,7 +28,7 @@ def get_perturbed_xtal(struc, p0, p1, eps):
     p_struc.set_positions(pos)
     return p_struc
 
-def test_dPdR_xtal(xtal, nmax, lmax, rc, eps):
+def get_dPdR_xtal(xtal, nmax, lmax, rc, eps):
     p0 = SO3(nmax=nmax, lmax=lmax, rcut=rc).calculate(xtal, derivative=True)
     shp = p0['x'].shape
     array1 = p0['dxdr']
@@ -82,12 +82,12 @@ class TestXtal(unittest.TestCase):
     def test_dPdR_diamond(self):
         c = pyxtal()
         c.from_prototype('diamond')
-        test_dPdR_xtal(c.to_ase(), nmax, lmax, rc, eps)
+        get_dPdR_xtal(c.to_ase(), nmax, lmax, rc, eps)
 
     def test_dPdR_graphite(self):
         c = pyxtal()
         c.from_prototype('graphite')
-        test_dPdR_xtal(c.to_ase(), nmax, lmax, rc, eps)
+        get_dPdR_xtal(c.to_ase(), nmax, lmax, rc, eps)
 
 
 if __name__ == "__main__":
