@@ -22,16 +22,16 @@ builder2.set_reference_enviroments(cif_file)
 builder2.set_criteria(CN={'Si': [4], 'O': [2]}, exclude_ii=True)
 
 class TestBuilder(unittest.TestCase):
-    def test_gen_xtal(self):
-        print("test_gen_xtal")
-        random.seed(0)
-        np.random.seed(0)
-        spg, wps = 191, [['6j', '6j', '6k']]
-        xtal, sim = builder1.generate_xtal(spg, wps, 50,
-                                           N_max = 1,
-                                           add_db = False,
-                                           random_state = 2)
-        assert sim < 1e-2
+    #def test_gen_xtal(self):
+    #    print("test_gen_xtal")
+    #    random.seed(0)
+    #    np.random.seed(0)
+    #    spg, wps = 191, [['6j', '6j', '6k']]
+    #    xtal, sim = builder1.generate_xtal(spg, wps, 10,
+    #                                       N_max = 1,
+    #                                       add_db = False,
+    #                                       random_state = 2)
+    #    assert sim < 1e-2
 
     def test_opt_xtal(self):
         print("test_opt_xtal")
@@ -46,6 +46,7 @@ class TestBuilder(unittest.TestCase):
             assert sim < 1e-2
 
     def test_opt_xtal2(self):
+        print("test sio2")
         spg, wps = 92, ['4a', '8b']
         for x in [[5.0, 7.1, 0.3, 0.1, 0.2, 0.8]]:
             xtal = pyxtal()

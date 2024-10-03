@@ -139,7 +139,7 @@ class SO3:
                 delattr(self, attr)
         return
 
-    def init_atoms(self, atoms, atom_ids):
+    def init_atoms(self, atoms, atom_ids=None):
         """
         initilize atoms related attributes
         """
@@ -210,7 +210,7 @@ class SO3:
             # find atoms for which i is the center
             centers = self.neighbor_indices[:, 0] == i
 
-            if len(centers) > 0:
+            if len(self.neighbor_indices[centers]) > 0:
                 # total up the c array for the center atom
                 ctot = cs[centers].sum(axis=0) #(n, l, m)
 
@@ -236,7 +236,68 @@ class SO3:
 
         return dp_list, p_list
 
-    def calculate(self, atoms, derivative=False):
+    def compute_dpdr_5d(self, atoms):
+        """
+        Compute the powerspectrum function with respect to supercell
+
+        Args:
+            atoms: ase atoms object
+            atom_ids: optional list of atomic indices
+
+        Returns:
+            dpdr array (N, N, M, 3, 27) and p array (N, M)
+        """
+
+        self.init_atoms(atoms)
+        p_list = np.zeros((self.natoms, self.ncoefs), dtype=np.float64)
+        dp_list = np.zeros((self.natoms, self.natoms, self.ncoefs, 3, 27), dtype=np.float64)
+
+        # get expansion coefficients and derivatives
+        cs, dcs = compute_dcs(self.neighborlist, self.nmax, self.lmax, self.rcut, self.alpha, self._cutoff_function)
+
+        # weight cs and dcs
+        cs *= self.atomic_weights[:, np.newaxis, np.newaxis, np.newaxis]
+        dcs *= self.atomic_weights[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
+        cs = np.einsum('inlm,l->inlm', cs, self.norm)
+        dcs = np.einsum('inlmj,l->inlmj', dcs, self.norm)
+        #print('cs, dcs', self.neighbor_indices, cs.shape, dcs.shape)
+
+        # Assign cs and dcs to P and dP
+        # cs: (N_ij, n, l, m)     => P (N_i, N_des)
+        # dcs: (N_ij, n, l, m, 3) => dP (N_i, N_j, N_des, 3)
+        # (n, l, m) needs to be merged to 1 dimension
+        neigh_ids = np.arange(len(self.neighbor_indices))
+        for i in range(len(atoms)):
+            # find atoms for which i is the center
+            pair_ids = neigh_ids[self.neighbor_indices[:, 0] == i]
+
+            # loop over each pair
+            for pair_id in pair_ids:
+                (_, j, x, y, z) = self.neighbor_indices[pair_id]
+                # map from (x, y, z) to (0, 27)
+                cell_id = (x+1) * 9 + (y+1) * 3 + z + 1
+
+                # power spectrum P = c*c_conj
+                # eq_3 (n, n', l) eliminate m
+                P = np.einsum('ijk, ljk->ilj', cs[pair_id], np.conj(cs[pair_id])).real
+                p_list[i] = P[self.tril_indices].flatten()
+
+                # gradient of P for each neighbor, eq_26
+                # (N_ijs, n, n', l, 3)
+                # dc * c_conj + c * dc_conj
+                dP = np.einsum('ijkn, ljk->iljn', dcs[pair_id], np.conj(cs[pair_id]))
+                dP += np.conj(np.transpose(dP, axes=[1, 0, 2, 3]))
+                dP = dP.real[self.tril_indices].flatten().reshape(self.ncoefs, 3)
+                #print(cs[pair_id].shape, dcs[pair_id].shape, dP.shape)
+
+                dp_list[i, j, :, :, cell_id] += dP
+                dp_list[i, i, :, :, cell_id] -= dP
+
+        return dp_list, p_list
+
+
+
+    def calculate(self, atoms, atom_ids=None, derivative=False):
         '''
         API for Calculating the SO(3) power spectrum components of the
         smoothened atomic neighbor density function
@@ -249,9 +310,9 @@ class SO3:
         p_list = None
         dp_list = None
         if derivative:
-            dp_list, p_list = self.compute_dpdr(atoms)
+            dp_list, p_list = self.compute_dpdr(atoms, atom_ids)
         else:
-            p_list = self.compute_p(atoms)
+            p_list = self.compute_p(atoms, atom_ids)
 
         x = {'x': p_list,
              'dxdr': dp_list,
@@ -295,7 +356,7 @@ class SO3:
             #print(indices); import sys; sys.exit()
             temp_indices.append(indices)
             for j, offset in zip(indices, offsets):
-                pos = atoms.positions[j] + np.dot(offset,atoms.get_cell()) - center_atom
+                pos = atoms.positions[j] + np.dot(offset, atoms.get_cell()) - center_atom
                 # to prevent division by zero
                 if np.sum(np.abs(pos)) < 1e-3: pos += 0.001
                 center_atoms.append(center_atom)
@@ -305,7 +366,7 @@ class SO3:
                 else:
                     factor = 1
                 atomic_weights.append(factor*atoms[j].number)
-                neighbor_indices.append([i,j])
+                neighbor_indices.append([i, j, *offset])
 
         neighbor_indices = np.array(neighbor_indices, dtype=np.int64)
 
