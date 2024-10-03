@@ -1637,31 +1637,33 @@ class Orientation:
 
     def change_orientation(self, angle="random", flip=False):
         """
-        Allows for specification of an angle (possibly random) to rotate about
-        the constraint axis.
+        Change the orientation of molecule by applying a rotation.
+
+        It allows for specification of an angle (or a random angle) to rotate about
+        the constraint axis. If the system has 2 degrees of rotational freedom,
+        the molecule can also be flipped with a probability
 
         Args:
-            angle: an angle to rotate about the constraint axis.
-            If "random", chooses a random rotation angle.
-            If self.degrees==2, chooses a random rotation matrix.
-            If self.degrees==1, only apply on angle
-            If self.degrees==0, no change
-
+            angle (float or str, optional): The angle to rotate about the constraint axis.
+                                        If "random", a random rotation angle is selected
+            flip (bool, optional): Whether to apply an random flip. This is only applied
+                               if the system has 2 degrees of rotational freedom.
         """
         if self.degrees >= 1:
-            # choose the axis
+            # Choose the axis
             if self.axis is None:
                 axis = self.random_state.random(3) - 0.5
                 self.axis = axis / np.linalg.norm(axis)
 
-            # parse the angle
+            # Parse the angle
             if angle == "random":
                 angle = self.random_state.random() * np.pi * 2
             self.angle = angle
 
-            # update the matrix
+            # Update the matrix
             r1 = Rotation.from_rotvec(self.angle * self.axis)
 
+            # Optionally flip the molecule
             if self.degrees == 2 and flip and self.random_state.random() > 0.5:
                 ax = self.random_state.choice(["x", "y", "z"])
                 angle0 = self.random_state.choice([90, 180, 270])
