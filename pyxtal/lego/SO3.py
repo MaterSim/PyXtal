@@ -272,6 +272,7 @@ class SO3:
             pair_ids = neigh_ids[self.neighbor_indices[:, 0] == i]
             if len(pair_ids) > 0:
                 ctot = cs[pair_ids].sum(axis=0) #(n, l, m)
+                dctot = dcs[pair_ids].sum(axis=0)
                 # power spectrum P = c*c_conj
                 # eq_3 (n, n', l) eliminate m
                 P = np.einsum('ijk, ljk->ilj', ctot, np.conj(ctot)).real
@@ -287,12 +288,16 @@ class SO3:
                     # (N_ijs, n, n', l, 3)
                     # dc * c_conj + c * dc_conj
                     dP = np.einsum('ijkn, ljk->iljn', dcs[pair_id], np.conj(ctot))
-                    dP += np.conj(np.transpose(dP, axes=[1, 0, 2, 3]))
+                    dP += np.einsum('ijkn, ljk->iljn', np.conj(dcs[pair_id]), ctot)
+                    #dP += np.conj(np.transpose(dP, axes=[1, 0, 2, 3]))
+                    #dP += np.einsum('ijkn, ljk->iljn', np.conj(dctot), cs[pair_id])
+                    #dP += np.einsum('ijkn, ljk->iljn', dctot, np.conj(cs[pair_id]))
+
                     dP = dP.real[self.tril_indices].flatten().reshape(self.ncoefs, 3)
                     #print(cs[pair_id].shape, dcs[pair_id].shape, dP.shape)
 
                     dp_list[i, j, :, :, cell_id] += dP
-                    dp_list[i, i, :, :, cell_id] -= dP
+                    dp_list[i, i, :, :, 13] -= dP
 
         return dp_list, p_list
 

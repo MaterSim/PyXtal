@@ -43,6 +43,7 @@ class TestBuilder(unittest.TestCase):
             xtal = pyxtal()
             xtal.from_spg_wps_rep(spg, wps, x, ['C']*len(wps))
             xtal, sim, _ = builder1.optimize_xtal(xtal, add_db=False)
+            #print(xtal.get_1d_rep_x())
             assert sim < 1e-2
 
     def test_opt_xtal2(self):
