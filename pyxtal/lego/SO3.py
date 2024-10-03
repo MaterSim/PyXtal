@@ -28,7 +28,13 @@ class SO3:
         self.cutoff_function = 'cosine'
         self.weight_on = weight_on
         self.neighborcalc = neighborlist
-        #return
+        self.ncoefs = self.nmax*(self.nmax+1)//2*(self.lmax+1)
+        self.tril_indices = np.tril_indices(self.nmax, k=0)
+        self.ls = np.arange(self.lmax+1)
+        self.norm = np.sqrt(2*np.sqrt(2)*np.pi/np.sqrt(2*self.ls+1))
+        self.keys = ['keys', '_nmax', '_lmax', '_rcut', '_alpha',
+                     '_cutoff_function', 'weight_on', 'neighborcalc',
+                     'ncoefs', 'ls', 'norm', 'tril_indices']
 
     def __str__(self):
         s = "SO3 descriptor with Cutoff: {:6.3f}".format(self.rcut)
@@ -69,7 +75,7 @@ class SO3:
             if nmax < 1:
                 raise ValueError('nmax must be greater than or equal to 1')
             if nmax > 11:
-                raise ValueError('nmax > 11 yields complex eigenvalues which will mess up the calculation')
+                raise ValueError('nmax > 11 yields complex eigenvalues')
             self._nmax = nmax
         else:
             raise ValueError('nmax must be an integer')
@@ -84,9 +90,7 @@ class SO3:
             if lmax < 0:
                 raise ValueError('lmax must be greater than or equal to zero')
             elif lmax > 32:
-                raise NotImplementedError('''Currently we only support Wigner-D matrices and spherical harmonics
-                for arguments up to l=32.  If you need higher functionality, raise an issue
-                in our Github and we will expand the set of supported functions''')
+                raise NotImplementedError('support a maxmimum l=32 for spherical harmonics')
             self._lmax = lmax
         else:
             raise ValueError('lmax must be an integer')
@@ -118,17 +122,6 @@ class SO3:
             raise ValueError('alpha must be a float')
 
     @property
-    def derivative(self):
-        return self._derivative
-
-    @derivative.setter
-    def derivative(self, derivative):
-        if isinstance(derivative, bool) is True:
-            self._derivative = derivative
-        else:
-            raise ValueError('derivative must be a boolean value')
-
-    @property
     def cutoff_function(self):
         return self._cutoff_function
 
@@ -142,133 +135,130 @@ class SO3:
         '''
         attrs = list(vars(self).keys())
         for attr in attrs:
-            if attr not in {'_nmax', '_lmax', '_rcut', '_alpha', '_derivative', '_cutoff_function', 'weight_on', 'neighborcalc'}:
+            if attr not in self.keys:
                 delattr(self, attr)
         return
 
-    def calculate(self, atoms, atom_ids=None, derivative=False):
-        '''
-        Calculates the SO(3) power spectrum components of the
-        smoothened atomic neighbor density function
-        for given nmax, lmax, rcut, and alpha.
+    def init_atoms(self, atoms, atom_ids):
+        """
+        initilize atoms related attributes
+        """
+        self._atoms = atoms
+        self.natoms = len(atoms)
+        self.build_neighbor_list(atom_ids)
+
+    def compute_p(self, atoms, atom_ids=None):
+        """
+        Compute the powerspectrum function
 
         Args:
-            atoms: an ASE atoms object corresponding to the desired
-                   atomic arrangement
-            atom_ids:
-            derivative: bool, whether to calculate the gradient of not
-        '''
-        self._atoms = atoms
-        self.build_neighbor_list(atom_ids)
-        self.initialize_arrays()
+            atoms: ase atoms object
+            atom_ids: optional list of atomic indices
 
-        ncoefs = self.nmax*(self.nmax+1)//2*(self.lmax+1)
-        tril_indices = np.tril_indices(self.nmax, k=0)
+        Returns:
+            p array (N, M)
+        """
 
-        ls = np.arange(self.lmax+1)
-        norm = np.sqrt(2*np.sqrt(2)*np.pi/np.sqrt(2*ls+1))
-
-        if derivative:
-            # get expansion coefficients and derivatives
-            cs, dcs = compute_dcs(self.neighborlist, self.nmax, self.lmax, self.rcut, self.alpha, self._cutoff_function)
-
-            # weight cs and dcs
+        self.init_atoms(atoms, atom_ids)
+        plist = np.zeros((len(atoms), self.ncoefs), dtype=np.float64)
+        if len(self.neighborlist) > 0:
+            cs = compute_cs(self.neighborlist, self.nmax, self.lmax, self.rcut, self.alpha, self._cutoff_function)
             cs *= self.atomic_weights[:, np.newaxis, np.newaxis, np.newaxis]
-            dcs *= self.atomic_weights[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
-            cs = np.einsum('inlm,l->inlm', cs, norm)
-            dcs = np.einsum('inlmj,l->inlmj', dcs, norm)
-            #print('cs, dcs', self.neighbor_indices, cs.shape, dcs.shape)
+            cs = np.einsum('inlm,l->inlm', cs, self.norm)
 
-            # Assign cs and dcs to P and dP
-            # cs: (N_ij, n, l, m)     => P (N_i, N_des)
-            # dcs: (N_ij, n, l, m, 3) => dP (N_i, N_j, N_des, 3)
-            # (n, l, m) needs to be merged to 1 dimension
-
+            # Get r_ij and compute C*np.conj(C)
             for i in range(len(atoms)):
-                # find atoms for which i is the center
-                centers = self.neighbor_indices[:, 0] == i
+                centers = self.neighbor_indices[:,0] == i
+                if len(centers) > 0:
+                    ctot = cs[centers].sum(axis=0)
+                    P = np.einsum('ijk,ljk->ilj', ctot, np.conj(ctot)).real
+                    plist[i] = P[self.tril_indices].flatten()
+        return plist
 
+    def compute_dpdr(self, atoms, atom_ids=None):
+        """
+        Compute the powerspectrum function
+
+        Args:
+            atoms: ase atoms object
+            atom_ids: optional list of atomic indices
+
+        Returns:
+            dpdr array (N, N, M, 3) and p array (N, M)
+        """
+
+        self.init_atoms(atoms, atom_ids)
+        p_list = np.zeros((self.natoms, self.ncoefs), dtype=np.float64)
+        dp_list = np.zeros((self.natoms, self.natoms, self.ncoefs, 3), dtype=np.float64)
+
+        # get expansion coefficients and derivatives
+        cs, dcs = compute_dcs(self.neighborlist, self.nmax, self.lmax, self.rcut, self.alpha, self._cutoff_function)
+
+        # weight cs and dcs
+        cs *= self.atomic_weights[:, np.newaxis, np.newaxis, np.newaxis]
+        dcs *= self.atomic_weights[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
+        cs = np.einsum('inlm,l->inlm', cs, self.norm)
+        dcs = np.einsum('inlmj,l->inlmj', dcs, self.norm)
+        #print('cs, dcs', self.neighbor_indices, cs.shape, dcs.shape)
+
+        # Assign cs and dcs to P and dP
+        # cs: (N_ij, n, l, m)     => P (N_i, N_des)
+        # dcs: (N_ij, n, l, m, 3) => dP (N_i, N_j, N_des, 3)
+        # (n, l, m) needs to be merged to 1 dimension
+
+        for i in range(len(atoms)):
+            # find atoms for which i is the center
+            centers = self.neighbor_indices[:, 0] == i
+
+            if len(centers) > 0:
                 # total up the c array for the center atom
                 ctot = cs[centers].sum(axis=0) #(n, l, m)
 
                 # power spectrum P = c*c_conj
                 # eq_3 (n, n', l) eliminate m
                 P = np.einsum('ijk, ljk->ilj', ctot, np.conj(ctot)).real
-
-                # merge (n, n', l) to 1 dimension
-                self._plist[i] = P[tril_indices].flatten()
+                p_list[i] = P[self.tril_indices].flatten()
 
                 # gradient of P for each neighbor, eq_26
                 # (N_ijs, n, n', l, 3)
                 # dc * c_conj + c * dc_conj
                 dP = np.einsum('wijkn,ljk->wiljn', dcs[centers], np.conj(ctot))
-                dP += np.conj(np.transpose(dP, axes=[0,2,1,3,4]))
+                dP += np.conj(np.transpose(dP, axes=[0, 2, 1, 3, 4]))
                 dP = dP.real
 
                 #print("shape of P/dP", P.shape, dP.shape)#; import sys; sys.exit()
 
-                #ijs = self.neighbor_indices[centers]
-                #for _id, j in enumerate(ijs[:, 1]):
-                #    self._dplist[i, j, :, :] += dP[_id][tril_indices].flatten().reshape(ncoefs, 3)
-                #    # QZ: to check
-                #    self._dplist[i, i, :, :] += dP[_id][tril_indices].flatten().reshape(ncoefs, 3)
-
+                # QZ: to check
                 ijs = self.neighbor_indices[centers]
-                for _id, (i_idx, j_idx) in enumerate(ijs):#(ijs[:, 1]):
-                    Rij = atoms.positions[j_idx] - atoms.positions[i_idx]
-                    norm_Rij = np.linalg.norm(Rij)
-                    for m in range(len(atoms)):
-                        if m != i_idx and m != j_idx:
-                           normalization_factor = 0
-                           self._dplist[i, m, :, :] += dP[_id][tril_indices].flatten().reshape(ncoefs, 3) * normalization_factor
-                        elif m == i_idx:
-                           normalization_factor = -1 / norm_Rij
-                           self._dplist[i, m, :, :] += dP[_id][tril_indices].flatten().reshape(ncoefs, 3) * normalization_factor
-                        elif m == j_idx:
-                           normalization_factor = 1 / norm_Rij
-                           self._dplist[i, m, :, :] += dP[_id][tril_indices].flatten().reshape(ncoefs, 3) * normalization_factor
+                for _id, j in enumerate(ijs[:, 1]):
+                    dp_list[i, j, :, :] += dP[_id][self.tril_indices].flatten().reshape(self.ncoefs, 3)
+                    dp_list[i, i, :, :] -= dP[_id][self.tril_indices].flatten().reshape(self.ncoefs, 3)
 
-            x = {'x':self._plist,
-                 'dxdr':self._dplist,
-                 'elements':list(atoms.symbols)}
+        return dp_list, p_list
+
+    def calculate(self, atoms, derivative=False):
+        '''
+        API for Calculating the SO(3) power spectrum components of the
+        smoothened atomic neighbor density function
+
+        Args:
+            atoms: an ASE atoms object corresponding to the desired
+                   atomic arrangement
+            derivative: bool, whether to calculate the gradient of not
+        '''
+        p_list = None
+        dp_list = None
+        if derivative:
+            dp_list, p_list = self.compute_dpdr(atoms)
         else:
-            if len(self.neighborlist) > 0:
-                cs = compute_cs(self.neighborlist, self.nmax, self.lmax, self.rcut, self.alpha, self._cutoff_function)
-                cs *= self.atomic_weights[:,np.newaxis,np.newaxis,np.newaxis]
-                cs = np.einsum('inlm,l->inlm', cs, norm)
-                # everything good up to here
-                for i in range(len(atoms)):
-                    centers = self.neighbor_indices[:,0] == i
-                    ctot = cs[centers].sum(axis=0)
-                    P = np.einsum('ijk,ljk->ilj', ctot, np.conj(ctot)).real
-                    self._plist[i] = P[tril_indices].flatten()
-            x = {'x': self._plist,
-                 'dxdr': None,
-                 'elements': list(atoms.symbols)}
+            p_list = self.compute_p(atoms)
 
+        x = {'x': p_list,
+             'dxdr': dp_list,
+             'elements': list(atoms.symbols)}
         self.clear_memory()
         return x
 
-    def initialize_arrays(self):
-        # number of atoms
-        natoms = len(self._atoms) #self._atoms)
-
-        # degree of spherical harmonic expansion
-        lmax = self.lmax
-
-        # degree of radial expansion
-        nmax = self.nmax
-
-        # number of unique power spectrum components
-        # this is given by the triangular elements of
-        # the radial expansion multiplied by the degree
-        # of spherical harmonic expansion (including 0)
-        ncoefs = nmax*(nmax+1)//2*(lmax+1)
-
-        self._plist = np.zeros((natoms, ncoefs), dtype=np.float64)
-        self._dplist = np.zeros((natoms, natoms, ncoefs, 3), dtype=np.float64)
-
-        return
 
     def build_neighbor_list(self, atom_ids=None):
         '''
@@ -323,11 +313,10 @@ class SO3:
         self.neighborlist = np.array(neighbors, dtype=np.float64)
         self.atomic_weights = np.array(atomic_weights, dtype=np.int64)
         self.neighbor_indices = neighbor_indices
-        return
 
 def Cosine(Rij, Rc, derivative=False):
     # Rij is the norm
-    if derivative is False:
+    if not derivative:
         result = 0.5 * (np.cos(np.pi * Rij / Rc) + 1.)
     else:
         result = -0.5 * np.pi / Rc * np.sin(np.pi * Rij / Rc)
@@ -640,9 +629,11 @@ if  __name__ == "__main__":
     der = options.der
 
     start1 = time.time()
-    f = SO3(nmax=nmax, lmax=lmax, rcut=rcut, alpha=alpha, cutoff_function='cosine')
-    x = f.calculate(test, derivative=True)
+    f = SO3(nmax=nmax, lmax=lmax, rcut=rcut, alpha=alpha)
+    x = f.calculate(test, derivative=der)
     start2 = time.time()
+    print(f)
     print('x', x['x'])
-    print('dxdr', x['dxdr'])
+    #print('dxdr', x['dxdr'])
     print('calculation time {}'.format(start2-start1))
+    print(f.compute_p(test))

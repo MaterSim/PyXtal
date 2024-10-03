@@ -3625,7 +3625,7 @@ class pyxtal:
 
     def get_tabular_representations(
         self,
-        N_max=30,
+        N_max=200,
         N_wp=8,
         normalize=False,
         perturb=False,
@@ -3650,16 +3650,24 @@ class pyxtal:
             a list of equivalent 1D tabular representations
         """
         reps = []
+
         # To prevent the explosion of big multiplicity number
-        min_wp = 20 if len(self.atom_sites) <= 5 else int(
-            np.power(1000000.0, 1 / len(self.atom_sites)))
+        if len(self.atom_sites) <= 1:
+            min_wp = 192
+        elif len(self.atom_sites) <= 2:
+            min_wp = 100
+        elif len(self.atom_sites) <= 4:
+            min_wp = 20
+        else:
+            min_wp = int(np.power(100000.0, 1 / len(self.atom_sites)))
+
         sites_mul = [range(min([min_wp, site.wp.multiplicity]))
                      for site in self.atom_sites]
         ids = list(itertools.product(*sites_mul))
         if len(ids) > N_max:
             ids = self.random_state.choice(ids, N_max)
 
-        print(f"N_reps {len(ids)} from ", self.get_xtal_string())
+        print(f"N_reps {len(ids)}/{N_max}: ", self.get_xtal_string())
         for sites_id in ids:
             rep = self.get_tabular_representation(
                     sites_id, normalize, N_wp, perturb,

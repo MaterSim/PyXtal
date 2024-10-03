@@ -59,6 +59,9 @@ jobs:
       - name: Test_supergroup
         run: pytest tests/test_supergroup.py
 
+      - name: Test_so3
+        run: pytest tests/test_SO3.py
+
       #- name: Test_xrd
       #  run: pytest tests/test_xrd.py
 
