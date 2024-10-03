@@ -126,7 +126,7 @@ class molecular_crystal:
             compat, self.degrees = self.group.check_compatible(self.numMols, self.valid_orientations)
 
         if not compat:
-            msg = f"Compoisition {self.numMols} not compatible with symmetry {self.group.number}"
+            msg = f"Inincompatible compoisition {self.numMols} with symmetry {self.group.number}"
             raise Comp_CompatibilityError(msg)
 
         self.set_volume()
@@ -151,13 +151,24 @@ class molecular_crystal:
 
     def set_sites(self, sites):
         """
-        initialize Wyckoff sites
+        Initialize and store symmetry sites for each molecule.
+
+        This function processes a list of symmetry sites, validates them against the expected
+        number of molecules, and stores them in the `self.sites` dictionary. Each entry in the
+        `sites` list can be either a dictionary or another type (list, etc.), and if no valid
+        site is provided for a molecule, `None` is assigned for that molecule's site.
 
         Args:
-            sites: list
+            sites (list): A list of sites corresponding to `self.molecules`. They can be:
+                      - A dictionary of site information (keys represent Wyckoff letters or
+                        other identifiers, and values are the corresponding information).
+                      - A list or other type representing site information.
+                      - None, if no symmetry site information is available for that molecule.
         """
-        # Symmetry sites
+        # Initialize the self.sites dictionary to store site information
         self.sites = {}
+
+        # Iterate over the molecules and their corresponding sites
         for i, _mol in enumerate(self.molecules):
             if sites is not None and sites[i] is not None and len(sites[i]) > 0:
                 self._check_consistency(sites[i], self.numMols[i])
@@ -172,22 +183,40 @@ class molecular_crystal:
 
     def set_molecules(self, molecules, torsions):
         """
-        Get molecular information
+        Initialize and store molecular information.
+
+        This function processes a list of molecules and initializes each one
+        as a `pyxtal_molecule` object. If torsions are provided, they are
+        applied to the respective molecules during initialization.
+        It stored information in the `self.molecules` attribute.
 
         Args:
-            molecules: list of molecules
-            torsions: list of torsions
+            molecules (list): A list of molecules, where each entry can either be:
+                          - A SMILES string or file path representing a molecule.
+                          - An already-initialized `pyxtal_molecule` object.
+            torsions (list): A list of torsion angles. The length of `torsions`
+                         must be equal to the length of `molecules`, or None
+                         can be provided if no torsions are needed.
         """
+
+        # If no torsions are provided, initialize with None for each molecule
         if torsions is None:
             torsions = [None] * len(molecules)
 
+        # Initialize the molecules list to store processed pyxtal_molecule objects
         self.molecules = []
+
+        # Iterate over the molecules
         for i, mol in enumerate(molecules):
             # already a pyxtal_molecule object
             if isinstance(mol, pyxtal_molecule):
                 p_mol = mol
             else:
-                p_mol = pyxtal_molecule(mol, seed=self.seed, torsions=torsions[i], tm=self.tol_matrix, random_state=self.random_state)
+                p_mol = pyxtal_molecule(mol,
+                                        seed=self.seed,
+                                        torsions=torsions[i],
+                                        tm=self.tol_matrix,
+                                        random_state=self.random_state)
             self.molecules.append(p_mol)
 
     def set_orientations(self):
@@ -427,56 +456,93 @@ class molecular_crystal:
 
     def _set_orientation(self, pyxtal_mol, pt, oris, wp):
         """
-        Generate good orientations
+        Generate valid orientations for a given molecule in a Wyckoff position.
+
+        It tries to generate valid orientations for the molecule by:
+        - Selecting a random orientation from a list of possible orientations.
+        - Flipping the orientation to test different alignments.
+        - Checking the smallest distance between atoms and ensuring it's valid.
+        - Using the bisection method is refine the orientation.
+
+        Args:
+        pyxtal_mol: The pyxtal_molecule object representing the molecule.
+        pt: Position of the molecule.
+        oris: List of potential orientations.
+        wp: Wyckoff position object representing the symmetry of the site.
+
+        Returns:
+        ms0: A valid `mol_site` object if an acceptable orientation is found.
+             returns `None` if no valid orientation is found within the attempts.
         """
-        # Use a Wyckoff_site object for the current site
+
+        # Increment the number of attempts to generate a valid orientation
         self.numattempts += 1
+
         # NOTE removing this copy causes tests to fail -> state not managed well
         ori = self.random_state.choice(oris).copy()
         ori.change_orientation(flip=True)
+
+        # Create a mol_site object with the current orientation
         ms0 = mol_site(pyxtal_mol, pt, ori, wp, self.lattice)
-        # Check distances within the WP
+
+        # Check if the current orientation results in valid distances
         if ms0.short_dist():
             return ms0
         else:
-            # Maximize the smallest distance for the general
-            # positions if needed
+            # Maximize the separation if needed
             if len(pyxtal_mol.mol) > 1 and ori.degrees > 0:
-                # bisection method
+                # Define the distance function for bisection method
                 def fun_dist(angle, ori, mo, pt):
                     # ori0 = ori.copy()
                     ori.change_orientation(angle)
-                    ms0 = mol_site(
-                        mo,
-                        pt,
-                        ori,
-                        wp,
-                        self.lattice,
-                    )
+                    ms0 = mol_site(mo, pt, ori, wp, self.lattice)
                     return ms0.get_min_dist()
 
+                # Set initial bounds for the angle
                 angle_lo = ori.angle
                 angle_hi = angle_lo + np.pi
                 fun_lo = fun_dist(angle_lo, ori, pyxtal_mol, pt)
                 fun_hi = fun_dist(angle_hi, ori, pyxtal_mol, pt)
-                fun = fun_hi
+
+                fun = fun_hi # Set the initial value for the function
+
+                # Refine the orientation using a bisection method
                 for _it in range(self.ori_attempts):
                     self.numattempts += 1
+
+                    # Return as soon as a good orientation is found
                     if (fun > 0.8) & (ms0.short_dist()):
                         return ms0
+
+                    # Compute the midpoint angle for bisection
                     angle = (angle_lo + angle_hi) / 2
                     fun = fun_dist(angle, ori, pyxtal_mol, pt)
-                    # print('Bisection: ', it, fun)
+
+                    # Update based on the function value at the midpoint
                     if fun_lo > fun_hi:
                         angle_hi, fun_hi = angle, fun
                     else:
                         angle_lo, fun_lo = angle, fun
 
-        return None
-
     def _check_consistency(self, site, numMol):
         """
-        Check if the composition is consistent with symmetry
+        Check if N_mol is consistent with the symmetry constraints of the system.
+
+        It verifies if the sum of molecules from the WP matches (`numMol`).
+        Each Wyckoff site string in the `site` list includes a number that
+        represents how many molecules are associated with that site.
+
+        If a inconsistency is found, it raises a ValueError with a detailed message.
+
+        Args:
+            site (list of str): A list of strings for Wyckoff sites. Each string
+                            contains a number (e.g., "3a", "4b") where the number
+                            indicates how many molecules are at that site.
+            numMol (int): The total number of molecules expected in the structure.
+
+        Returns:
+            bool: Returns `True` if the number of molecules matches `numMol`.
+                Raises a ValueError if they do not match.
         """
         num = 0
         for s in site:

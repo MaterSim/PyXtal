@@ -4,7 +4,6 @@ Module for handling Wyckoff sites for both atom and molecule
 
 # Standard Libraries
 from copy import deepcopy
-
 import numpy as np
 
 # External Libraries
@@ -22,8 +21,6 @@ from pyxtal.operations import (
     filtered_coords,
 )
 from pyxtal.symmetry import Group, Wyckoff_position
-
-# PyXtal imports
 from pyxtal.tolerance import Tol_matrix
 
 
@@ -359,17 +356,35 @@ class atom_site:
 class mol_site:
     """
     Class for storing molecular Wyckoff positions and orientations within
-    the molecular_crystal class. Each mol_site object represenents an
+    the `molecular_crystal` class. Each `mol_site` object represents an
     entire Wyckoff position, not necessarily a single molecule.
-    This is the molecular version of Wyckoff_site
+    This is the molecular version of the `Wyckoff_site` class.
+
+    Attributes:
+        mol (pyxtal_molecule): A pyxtal_molecule object representing the molecule at the site.
+        position (list or array): A 3-vector representing the generating molecule's position
+                                  in fractional coordinates.
+        orientation (Orientation): An orientation object that describes the molecule's orientation.
+        wp (Wyckoff_position): A Wyckoff position object that holds symmetry information.
+        lattice (Lattice): A lattice object that defines the crystal structure's unit cell.
+        stype (int): An integer specifying the type of molecule. Default is 0.
+        symbols (list): List of atomic symbols for the atoms in the molecule.
+        numbers (list): List of atomic numbers for the atoms in the molecule.
+        PBC (list): Periodic boundary conditions inherited from the Wyckoff position.
+        radius (float): Radius of the molecule, typically used for collision detection.
+        tols_matrix (numpy array): Tolerance matrix for the molecular structure.
 
     Args:
-        mol: a `pyxtal_molecule <pyxtal.molecule.pyxtal_molecule.html>`_ object
-        position: the 3-vector representing the generating molecule's position
-        orientation: an `Orientation <pyxtal.molecule.Oreintation.html>`_ object
-        wp: a `Wyckoff_position <pyxtal.symmetry.Wyckoff_position.html>`_ object
-        lattice: a `Lattice <pyxtal.lattice.Lattice>`_ object
-        stype: integer number to specify the type of molecule
+        mol (pyxtal_molecule): A `pyxtal_molecule` object that describes the molecule.
+        position (list or array): The 3D fractional coordinates of mol_center in the unit cell.
+        orientation (Orientation): The orientation object describing the molecule's rotation.
+        wp (Wyckoff_position): A `Wyckoff_position` object defining the symmetry of the site.
+        lattice (Lattice, optional): The lattice of the crystal. Can be either a Lattice object
+                                     or a matrix that will be converted into a Lattice object.
+        stype (int, optional): Integer specifying the type of molecule. Default is 0.
+
+    Methods:
+        _get_dof(): Internal method to calculate the degrees of freedom (DoF) for the molecule.
     """
 
     def __init__(self, mol, position, orientation, wp, lattice=None, stype=0):
@@ -605,11 +620,6 @@ class mol_site:
             rot = op2_m.affine_matrix[:3, :3].T
             # NOTE=====the euclidean_generator has wrong translation vectors,
             # but we don't care. This needs to be fixed later
-
-            # if self.diag and self.wp.index > 0:
-            #    tau = op2.translation_vector
-            # else:
-            #    tau = op2_m.translation_vector
             tmp = np.dot(coord0, rot)  # + tau
 
             # Add absolute center to molecule
@@ -887,23 +897,26 @@ class mol_site:
 
     def get_distances(self, coord1, coord2, m2=None, center=True, ignore=False):
         """
-        Compute the distance matrix between the center molecule (m1 length) and
-        neighbors (m2 length) within the PBC consideration (pbc)
+        Compute the distance matrix between the central molecule (coord1) and
+        neighboring molecules (coord2) under the periodic boundary condition.
 
         Args:
-            coord1: fractional coordinates of the center molecule
-            coord2: fractional coordinates of the reference neighbors
-            m2: the length of reference molecule
-            center: whether or not consider the self image for coord2
-            ignore:
+            coord1 (numpy array): Fractional coordinates of the central molecule.
+                                Shape: (m1, 3), where m1 is the number of atoms
+            coord2 (numpy array): Fractional coordinates of the neighboring molecules.
+                                Shape: (N2*m2, 3), where N2 is the number of atoms
+                                and m2 is the number of atoms in each neighboring molecule.
+            m2 (int, optional): N_atoms in each neighboring molecule. If not provided,
+                                it's assumed to be equal m1.
+            center (bool, optional): If `True`, count self-image of the reference molecule
+            ignore (bool, optional): If `True`, ignores some periodic boundary conditions.
 
         Returns:
             distance matrix: [m1*m2*pbc, m1, m2]
             coord2 under PBC: [pbc, m2, 3]
         """
         m1 = len(coord1)
-        if m2 is None:
-            m2 = m1
+        if m2 is None: m2 = m1
         N2 = int(len(coord2) / m2)
 
         # peridoic images
@@ -932,7 +945,7 @@ class mol_site:
 
     def get_dists_WP(self, ignore=False, idx=None):
         """
-        Compute the distances within the WP sites
+        Compute the distances within the WP site
 
         Returns:
             a distance matrix (M, N, N)
@@ -1035,25 +1048,46 @@ class mol_site:
 
     def get_neighbors_auto(self, factor=1.1, max_d=4.0, ignore_E=True, detail=False, etol=-5e-2):
         """
-        Find the neigboring molecules
+        Find neighboring molecules around the central molecule within a given distance threshold.
+
+        The function identifies neighboring molecules within PBC and computes the shortest
+        distances and (optionally) interaction energies. it returns detailed information
+        about neighboring molecule pairs, distances, and energies.
 
         Args:
-            factor: volume factor
-            max_d: maximum intermolecular distance
-            ignore_E:
-            detail: show detailed energies
+            factor (float, optional): Scaling factor for distance tolerances (default is 1.1).
+            max_d (float, optional): Maximum allowed intermolecular distance for neighbors (default is 4.0 Å).
+            ignore_E (bool, optional): If `True`, skips energy calculations (default is `True`).
+            detail (bool, optional): If `True`, returns detailed energy, molecular pairs, and distances
+                                     instead of just the shortest distances.
+            etol (float, optional): Energy tolerance for filtering pairs in detailed mode (default is -5e-2).
 
-        Returns
-            min_ds: list of shortest distances
-            neighs: list of neighboring molecular xyzs
+        Returns:
+            If `detail == True`:
+                engs (list): List of interaction energies for valid molecular pairs.
+                pairs (list): List of tuples containing neighboring molecules and their relative positions.
+                dists (list): List of distances between neighboring molecular pairs.
+            If `detail == False`:
+                min_ds (list): List of shortest distances between the central molecule and neighbors.
+                neighs (list): List of neighboring molecular coordinates (with PBC applied).
+                Ps (list): List of Wyckoff position multiplicities or translations.
+                engs (list): List of interaction energies, or `None` if energy calculation is skipped.
         """
-        mol_center = np.dot(
-            self.position - np.floor(self.position), self.lattice.matrix)
+        # Compute the mol_center in Cartesian coordinate
+        position = self.position - np.floor(self.position)
+        mol_center = np.dot(position, self.lattice.matrix)
+
+        # Atomic numbers for atoms in the central molecule
         numbers = self.molecule.mol.atomic_numbers
+
+        # Get fractional coordinates for the central molecule
         coord1, _ = self._get_coords_and_species(first=True, unitcell=True)
+
+        # Initialize tolerance matrix for intermolecular distances (based on van der Waals radii)
         tm = Tol_matrix(prototype="vdW", factor=factor)
-        len(self.numbers)
         tols_matrix = self.molecule.get_tols_matrix(tm=tm)
+
+        # Initialize coefficient matrix for energy calculations if needed
         coef_matrix = None
         if not ignore_E:
             coef_matrix = self.molecule.get_coefs_matrix()
@@ -1062,6 +1096,7 @@ class mol_site:
                 B = coef_matrix[:, :, 1]
                 C = coef_matrix[:, :, 2]
 
+        # Initialize lists for results
         min_ds = []
         neighs = []
         Ps = []
@@ -1069,19 +1104,16 @@ class mol_site:
         pairs = []
         dists = []
 
-        # Check periodic images
+        # Find neighbors under PBC
         d, coord2 = self.get_dists_auto(ignore=True)
+
+        # Loop through each neighboring molecule
         for i in range(d.shape[0]):
             if np.min(d[i]) < max_d and (d[i] < tols_matrix).any():
                 if coef_matrix is not None:
                     if detail:
                         eng = A * np.exp(-B * d[i]) - C / (d[i] ** 6)
                         ids = np.where(eng < etol)
-                        # for id in zip(*ids):
-                        #    tmp1, tmp2 = coord1[id[0]], coord2[i][id[1]]
-                        #    pairs.append((tmp1+tmp2)/2)
-                        #    engs.append(eng[id])
-                        #    dists.append(d[i][id])
                         for id in range(len(ids[0])):
                             n1, n2 = numbers[ids[0][id]], numbers[ids[1][id]]
                             if 1 not in [n1, n2]:
@@ -1111,6 +1143,7 @@ class mol_site:
                 neighs.append(coord2[i])
                 Ps.append(0)
 
+        # Handle Wyckoff position multiplicities (if applicable)
         if self.wp.multiplicity > 1:
             for idx in range(1, self.wp.multiplicity):
                 P = 0 if self.wp.is_pure_translation(idx) else 1
@@ -1121,11 +1154,6 @@ class mol_site:
                             if detail:
                                 eng = A * np.exp(-B * d[i]) - C / (d[i] ** 6)
                                 ids = np.where(eng < etol)
-                                # for id in zip(*ids):
-                                #    tmp1, tmp2 = coord1[id[0]], coord2[i][id[1]]
-                                #    pairs.append((tmp1+tmp2)/2)
-                                #    engs.append(eng[id])
-                                #    dists.append(d[i][id])
                                 for id in range(len(ids[0])):
                                     n1, n2 = numbers[ids[0][id]
                                                      ], numbers[ids[1][id]]
@@ -1163,6 +1191,8 @@ class mol_site:
                         min_ds.append(min(_d) * factor)
                         neighs.append(coord2[i])
                         Ps.append(P)
+
+        # Return results based on the detail flag
         if detail:
             return engs, pairs, dists
         else:
