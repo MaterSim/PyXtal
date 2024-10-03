@@ -31,18 +31,37 @@ with importlib.resources.as_file(importlib.resources.files("pyxtal") / "database
 molecule_collection = Collection("molecules")
 
 
-# single_smiles = [
-#                 "Cl-", "F-", "Br-", "I-", "Li+", "Na+", "Cs+", "Rb+",
-#                 "[Cl-]", "[F-]", "[Br-]", "[I-]", "[Li+]", "[Na+]", "[Cs+]", "Rb+",
-#                ]
 def find_rotor_from_smile(smile):
     """
-    Find the positions of rotatable bonds in the molecule.
+    Find the positions of rotatable bonds based on a SMILES string.
+
+    Rotatable bonds are those which are not part of rings and which
+    fit specific chemical patterns. These torsions are filtered by
+    rules such as avoiding atoms with only one neighbor and avoiding
+    equivalent torsions.
+
+    Args:
+        smile (str): The SMILES string representing the molecule.
+
+    Returns:
+        list of tuples: Each tuple represents a torsion as (i, j, k, l)
+        where i-j-k-l are atom indices involved in the rotatable bond.
+
     """
 
     def cleaner(list_to_clean, neighbors):
         """
-        Remove duplicate torsion from a list of atom index tuples.
+        Remove duplicate and invalid torsions from a list of atom index tuples.
+
+        Filters torsions based on the neighbors count for the atoms involved in the torsion.
+        This avoids torsions that involve terminal atoms and duplicates.
+
+        Args:
+            list_to_clean (list of tuples): List of torsions (i, j, k, l)
+            neighbors (list of int): List of neighbors for each atom in the molecule.
+
+        Returns:
+            list of tuples: Cleaned list of torsions.
         """
 
         for_remove = []
@@ -54,9 +73,12 @@ def find_rotor_from_smile(smile):
             # for i-j-k-l, we don't want i, l are the ending members
             # C-C-S=O is not a good choice since O is only 1-coordinated
             # C-C-NO2 is a good choice since O is only 1-coordinated
+
+            # Remove torsions that involve terminal atoms with only one neighbor
             if neighbors[ix0] == 1 and neighbors[ix1] == 2 or neighbors[ix3] == 1 and neighbors[ix2] == 2:
                 for_remove.append(x)
             else:
+                # Remove duplicate torsions that are equivalent
                 for y in reversed(range(x)):
                     ix1 = itemgetter(1)(list_to_clean[x])
                     ix2 = itemgetter(2)(list_to_clean[x])
@@ -75,6 +97,7 @@ def find_rotor_from_smile(smile):
     else:
         from rdkit import Chem
 
+        # SMARTS patterns to identify rotatable bonds and double bonds
         smarts_torsion1 = "[*]~[!$(*#*)&!D1]-&!@[!$(*#*)&!D1]~[*]"
         smarts_torsion2 = "[*]~[^2]=[^2]~[*]"  # C=C bonds
         # smarts_torsion2="[*]~[^1]#[^1]~[*]" # C-C triples bonds, to be fixed
@@ -89,7 +112,11 @@ def find_rotor_from_smile(smile):
         torsion1 = cleaner(list(mol.GetSubstructMatches(patn_tor1)), neighbors)
         patn_tor2 = Chem.MolFromSmarts(smarts_torsion2)
         torsion2 = cleaner(list(mol.GetSubstructMatches(patn_tor2)), neighbors)
+
+        # Combine and clean torsions
         tmp = cleaner(torsion1 + torsion2, neighbors)
+
+        # Exclude torsions that are part of rings
         torsions = []
         for t in tmp:
             (i, j, k, l) = t
@@ -103,13 +130,13 @@ def find_rotor_from_smile(smile):
 def has_non_aromatic_ring(smiles):
     """
     Determine if a molecule has a non-aromatic ring.
-    Mainly used to check if a cyclic ring exists.
+    It checks if a cyclic ring system exists that is not aromatic.
 
     Args:
-        smiles: smiles string
+        smiles (str): A SMILES string representing the molecule.
 
     Returns:
-        True or False
+        bool: True if it contains a non-aromatic ring, False otherwise.
     """
     from rdkit import Chem
 
@@ -201,24 +228,33 @@ def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5):
 
 class pyxtal_molecule:
     """
-    Extended molecule class based on pymatgen.core.structure.Molecule
-    The added features include:
-    0, parse the input
-    1, estimate volume/tolerance/radii
-    2, find and store symmetry
-    3, get the principle axis
-    4, re-align the molecule
+    A molecule class to support the descriptin of molecules in a xtal
 
-    The molecule is always centered at (0, 0, 0).
+    Features:
+    0. Parse the input from different formats (SMILES, xyz, gjf, etc.).
+    1. Estimate molecular properties such as volume, tolerance, and radii.
+    2. Find and store symmetry information of the molecule.
+    3. Get the principal axis of the molecule.
+    4. Re-align the molecule to center it at (0, 0, 0).
 
-    If the smile format is used, the center is defined as in
+    SMILES Format:
+    If a SMILES format is used, the molecular center is defined following
+    RDKit's handling of molecular transformations:
     https://www.rdkit.org/docs/source/rdkit.Chem.rdMolTransforms.html
 
     Otherwise, the center is just the mean of atomic positions
 
     Args:
-        mol: a string to reprent the molecule
-        tm: tolerance matrix
+        mol (str or pymatgen.Molecule): The molecule representation, either as a string
+            (SMILES or filename) or as a pymatgen `Molecule` object.
+        tm (Tol_matrix, optional): A tolerance matrix object, used for molecular tolerances.
+        symmetrize (bool, optional): Whether to symmetrize the molecule using its point group.
+        fix (bool, optional): Fix torsions in the molecule.
+        torsions (list, optional): List of torsions to analyze or fix.
+        seed (int, optional): Random seed for internal processes. Defaults to a hex seed.
+        random_state (int or numpy.Generator, optional): Numpy random state for random number generation.
+        symtol (float, optional): Symmetry tolerance. Default is 0.3.
+        active_sites (list, optional): List of active sites within the molecule.
     """
 
     def list_molecules():
@@ -237,7 +273,9 @@ class pyxtal_molecule:
         random_state=None,
         tm=Tol_matrix(prototype="molecular"),
         symtol=0.3,
+        active_sites=None,
     ):
+
         mo = None
         self.smile = None
         self.torsionlist = [] #None
@@ -245,6 +283,9 @@ class pyxtal_molecule:
         if seed is None:
             seed = 0xF00D
         self.seed = seed
+
+        # Active sites is a two list of tuples [(donors), (acceptors)]
+        self.active_sites = active_sites
 
         if isinstance(random_state, Generator):
             self.random_state = random_state.spawn(1)[0]
@@ -297,6 +338,7 @@ class pyxtal_molecule:
         self.mol = mo
         self.get_symmetry()
 
+        # Additional molecular properties
         self.tm = tm
         self.box = self.get_box()
         self.volume = self.box.volume
