@@ -928,7 +928,7 @@ class GlobalOptimize:
                     pmg_s2 = representation(
                         rep[:-1], self.smiles).to_pyxtal().to_pymatgen()
                     pmg_s2.remove_species("H")
-                    if abs(eng1 - eng2) < 1e-2 and sm.StructureMatcher().fit(pmg_s1, pmg_s2):
+                    if abs(eng1 - eng2) < 1e-2 and self.matcher().fit(pmg_s1, pmg_s2):
                         new = False
                         break
                 if new:
@@ -982,7 +982,7 @@ class GlobalOptimize:
         elif self.ncpu == 1:
             return self.local_optimization_serial(xtals, qrs)
         else:
-            print(f"Local optimization by multi-threads {ncpu}")
+            print(f"Local optimization by multi-threads {self.ncpu}")
             return self.local_optimization_mproc(xtals, self.ncpu, qrs=qrs, pool=pool)
 
     def local_optimization_serial(self, xtals, qrs=False):

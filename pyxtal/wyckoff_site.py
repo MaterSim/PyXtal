@@ -161,18 +161,6 @@ class atom_site:
         # print([self.specie, self.wp.index] + list(xyz))
         return [self.specie, self.wp.index, *list(xyz)]
 
-    def swap_axis(self, swap_id, shift=np.zeros(3)):
-        """
-        sometimes space groups like Pmm2 allows one to swap the a,b axes
-        to get an alternative representation
-        """
-        self.position += shift
-        self.position = self.position[swap_id]
-        self.position -= np.floor(self.position)
-        self.wp, _ = self.wp.swap_axis(swap_id)
-        self.site_symm = site_symm(
-            self.wp.symmetry[0], self.wp.number, dim=self.wp.dim)
-        self.update()
 
     def shift_by_swap(self, swap_id):
         """
@@ -198,8 +186,7 @@ class atom_site:
         self.position -= np.floor(self.position)
         self.wp = self.wp.equivalent_set(
             indices[self.wp.index])  # update the wp index
-        self.site_symm = site_symm(
-            self.wp.symmetry_m[0], self.wp.number, dim=self.wp.dim)
+        self.site_symm = self.wp.site_symm  # update the site symmetry
         self.update()
 
     def update(self, pos=None, reset_wp=False):
@@ -418,6 +405,43 @@ class mol_site:
         # QZ: Symmetrize the angle to the compatible orientation first
         self.orientation.r = R.from_euler("zxy", angles, degrees=True)
         self.orientation.matrix = self.orientation.r.as_matrix()
+
+    def optimize_orientation_by_dist(self, ori_attempts):
+        """
+        Optimize the orientation according to the shortest distance
+        """
+        # Set initial fun value and angle bounds
+        ang_lo = self.orientation.angle
+        ang_hi = ang_lo + np.pi
+        fun_lo = self.get_min_dist(ang_lo)
+        fun_hi = self.get_min_dist(ang_hi)
+        fun = fun_hi
+
+        # Refine the orientation using a bisection method
+        for _it in range(ori_attempts):
+
+            # Return as soon as a good orientation is found
+            if (fun > 0.8) & self.no_short_dist():
+                return self
+
+            # Compute the midpoint angle for bisection
+            ang = (ang_lo + ang_hi) / 2
+            fun = self.get_min_dist(ang)
+
+            # Update based on the function value at the midpoint
+            if fun_lo > fun_hi:
+                ang_hi, fun_hi = ang, fun
+            else:
+                ang_lo, fun_lo = ang, fun
+
+            print("optimize_orientation_by_dist", _it, ang, fun)
+
+        return None
+
+    #def optimize_orientation_by_energy(self, ori_attempts):
+
+    #    V = -k*(d(D-A) - r)^2 + [sum_(cutoff*d**2)] when d<2
+
 
     def update_lattice(self, lattice):
         # QZ: Symmetrize the angle to the compatible orientation first
@@ -959,7 +983,7 @@ class mol_site:
 
         return self.get_distances(coord1, coord2, ignore=ignore)
 
-    def get_min_dist(self):
+    def get_min_dist(self, angle=None):
         """
         Compute the minimum interatomic distance within the WP.
 
@@ -967,6 +991,9 @@ class mol_site:
             minimum distance
         """
         # Self image
+        if angle is not None:
+            self.orientation.change_orientation(angle)
+
         ds, _ = self.get_dists_auto()
         min_dist = np.min(ds)
 
@@ -981,7 +1008,7 @@ class mol_site:
                     min_dist = np.min(ds)
             return min_dist
 
-    def short_dist(self):
+    def no_short_dist(self):
         """
         Check if the atoms are too close within the WP.
 
@@ -1048,31 +1075,33 @@ class mol_site:
 
     def get_neighbors_auto(self, factor=1.1, max_d=4.0, ignore_E=True, detail=False, etol=-5e-2):
         """
-        Find neighboring molecules around the central molecule within a given distance threshold.
+        Find neighboring molecules within a given distance threshold.
 
         The function identifies neighboring molecules within PBC and computes the shortest
         distances and (optionally) interaction energies. it returns detailed information
         about neighboring molecule pairs, distances, and energies.
 
         Args:
-            factor (float, optional): Scaling factor for distance tolerances (default is 1.1).
-            max_d (float, optional): Maximum allowed intermolecular distance for neighbors (default is 4.0 Å).
-            ignore_E (bool, optional): If `True`, skips energy calculations (default is `True`).
-            detail (bool, optional): If `True`, returns detailed energy, molecular pairs, and distances
-                                     instead of just the shortest distances.
-            etol (float, optional): Energy tolerance for filtering pairs in detailed mode (default is -5e-2).
+            factor (float, optional): Scaling factor for distance (default is 1.1).
+            max_d (float, optional): Maximum distance for neighbors (default is 4.0 Å).
+            ignore_E (bool, optional): Skips energy calculations (default is `True`).
+            detail (bool, optional): Returns detailed eng, molecular pairs and
+                                     distances instead of only shortest distances.
+            etol (float, optional): Energy tolerance for filtering pairs in detailed
+                                    mode (default is -5e-2).
 
         Returns:
             If `detail == True`:
                 engs (list): List of interaction energies for valid molecular pairs.
-                pairs (list): List of tuples containing neighboring molecules and their relative positions.
+                pairs (list): List of tuples with neighbor molecules and positions.
                 dists (list): List of distances between neighboring molecular pairs.
             If `detail == False`:
-                min_ds (list): List of shortest distances between the central molecule and neighbors.
-                neighs (list): List of neighboring molecular coordinates (with PBC applied).
+                min_ds (list): List of shortest distances between central and neighbors.
+                neighs (list): List of neighboring molecular coordinates with PBC.
                 Ps (list): List of Wyckoff position multiplicities or translations.
-                engs (list): List of interaction energies, or `None` if energy calculation is skipped.
+                engs (list): List of energies, if energy calculation is not skipped.
         """
+
         # Compute the mol_center in Cartesian coordinate
         position = self.position - np.floor(self.position)
         mol_center = np.dot(position, self.lattice.matrix)
@@ -1083,7 +1112,7 @@ class mol_site:
         # Get fractional coordinates for the central molecule
         coord1, _ = self._get_coords_and_species(first=True, unitcell=True)
 
-        # Initialize tolerance matrix for intermolecular distances (based on van der Waals radii)
+        # Initialize tolerance matrix for intermolecular distances
         tm = Tol_matrix(prototype="vdW", factor=factor)
         tols_matrix = self.molecule.get_tols_matrix(tm=tm)
 
@@ -1299,3 +1328,18 @@ class mol_site:
         dicts["hn"] = self.wp.hall_number
         dicts["index"] = self.wp.index
         return atom_site.load_dict(dicts)
+
+
+if __name__ == "__main__":
+
+    from pyxtal.symmetry import Wyckoff_position as WP
+
+    wp = WP.from_group_and_letter(225, 'a')
+    coordinate = [0.25, 0.25, 0.25]
+    specie = 6
+    atom_site_instance = atom_site(wp=wp,
+                                   coordinate=coordinate,
+                                   specie=specie)
+
+    # Print the created instance
+    print(atom_site_instance)

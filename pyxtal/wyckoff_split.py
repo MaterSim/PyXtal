@@ -3,11 +3,9 @@ Module to handle the split of Wyckoff positions
 """
 
 from copy import deepcopy
-
 import numpy as np
 from numpy.random import Generator
 from pymatgen.core.operations import SymmOp
-
 import pyxtal.symmetry as sym
 
 

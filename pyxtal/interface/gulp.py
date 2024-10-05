@@ -583,7 +583,7 @@ class GULP_OC:
 
             # bond type
             if self.bond_type:
-                for bond in mol.molTopol.bonds:
+                for bond in site0.mol.molTopol.bonds:
                     for i in range(len(site.wp)):
                         count = i * len(coords)
                         f.write(f"connect {bond.atoms[0].id + count:4d} {bond.atoms[1].id + count:4d}\n")

@@ -1,5 +1,8 @@
 """
-main pyxtal module to create the pyxtal class
+PyXtal: A Python library for crystal structure generation and manipulation.
+
+This module initializes the pyxtal package, providing essential imports and
+utility functions.
 """
 
 # Standard Libraries
@@ -7,10 +10,12 @@ import itertools
 import json
 from copy import deepcopy
 
+# Third-Party Libraries
 import numpy as np
 from ase import Atoms
 from pymatgen.core.structure import Molecule, Structure
 
+# PyXtal Modules
 from pyxtal.block_crystal import block_crystal
 from pyxtal.crystal import random_crystal
 from pyxtal.io import read_cif, structure_from_ext, write_cif
@@ -20,13 +25,12 @@ from pyxtal.operations import SymmOp, apply_ops, get_inverse
 from pyxtal.representation import representation, representation_atom
 from pyxtal.symmetry import Group, Wyckoff_position
 from pyxtal.tolerance import Tol_matrix
-
-# PyXtal imports #avoid *
 from pyxtal.version import __version__
 from pyxtal.viz import display_atomic, display_cluster, display_molecular
 from pyxtal.wyckoff_site import atom_site, mol_site
 from pyxtal.wyckoff_split import wyckoff_split
 
+# Uncomment the following line to set the package name
 # name = "pyxtal"
 
 
@@ -373,8 +377,8 @@ class pyxtal:
                     self.numMols = struc.numMols
                     self.molecules = struc.molecules
                     self.mol_sites = struc.mol_sites
-                    self.standard_setting = struc.mol_sites[0].wp.is_standard_setting(
-                    )
+                    wp = self.mol_sites[0].wp
+                    self.standard_setting = wp.is_standard_setting()
                 else:
                     self.numIons = struc.numIons
                     self.species = struc.species
@@ -386,6 +390,8 @@ class pyxtal:
                 self._get_formula()
             except:
                 pass
+
+            return struc
 
     def from_seed(
         self,
@@ -3580,7 +3586,7 @@ class pyxtal:
         if "Dimension" in criteria:
             try:
                 # TODO: unclear what is the criteria_cutoff
-                dim1 = self.get_dimensionality(criteria_cutoff)
+                dim1 = self.get_dimensionality(criteria['cutoff'])
             except:
                 dim1 = 3
             dim2 = criteria["Dimension"]

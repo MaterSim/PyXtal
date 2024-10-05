@@ -4,9 +4,8 @@ from __future__ import annotations
 import numpy as np
 from numpy.random import Generator
 
-from pyxtal.constants import deg, ltype_keywords, rad
-
 # PyXtal imports
+from pyxtal.constants import deg, ltype_keywords, rad
 from pyxtal.msg import VolumeError
 from pyxtal.operations import angle, create_matrix
 

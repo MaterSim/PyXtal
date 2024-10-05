@@ -148,7 +148,7 @@ def dftb_opt_single(id, xtal, skf_dir, steps, symmetrize, criteria, kresol=0.05)
             eng /= len(s)
 
         status = process_xtal(id, xtal, eng, criteria)
-        print(xtal.get_xtal_string(header=header, dicts=dicts))
+        print(xtal.get_xtal_string())
 
         return xtal, eng, status
     else:
@@ -614,14 +614,15 @@ class database:
             # not label information, run antechamber
             atom = self.db.get_atoms(id=row.id)
             if "gulp_info" not in row.data:
-                pmg, c_info, g_info = get_parameters(row, atom)
-                row.data = {"charmm_info": c_info, "gulp_info": g_info}
+                # pmg, c_info, g_info = get_parameters(row, atom)
+                # row.data = {"charmm_info": c_info, "gulp_info": g_info}
+                pass
             else:
                 pmg = ase2pymatgen(atom)
 
-            data = compute(row, pmg, work_dir, skf_dir)
-            self.db.update(row.id, data=data)
-            print("updated the data for", row.csd_code)
+            #data = compute(row, pmg, work_dir, skf_dir)
+            #self.db.update(row.id, data=data)
+            #print("updated the data for", row.csd_code)
 
 
 class database_topology:
@@ -1176,6 +1177,7 @@ class database_topology:
         use_relaxed=None,
         cmd=None,
         calc_folder=None,
+        skf_dir=None,
     ):
         """
         Update the row energy in the database for a given calculator.
@@ -1191,8 +1193,9 @@ class database_topology:
             ff_lib (str): Force field to use for GULP ('reaxff' by default).
             steps (int): Number of optimization steps for DFTB (default is 250).
             use_relaxed (str, optional): Use relaxed structures (e.g. 'ff_relaxed')
-            cmd (str, optional): Command for VASP calculations.
+            cmd (str, optional): Command for VASP calculations
             calc_folder (str, optional): calc_folder for GULP/VASP calculations
+            skf_dir (str, optional): Directory for DFTB potential files
 
         Functionality:
             Using the selected calculator, it updates the energy rows of the

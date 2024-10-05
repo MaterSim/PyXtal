@@ -304,7 +304,7 @@ class QRS(GlobalOptimize):
                     if self.early_termination(success_rate):
                         quit = True
 
-                elif ref_pxrd is not None:
+                elif self.ref_pxrd is not None:
                     self.count_pxrd_match(cur_xtals, matches)
 
             if self.use_mpi:

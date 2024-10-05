@@ -1643,6 +1643,7 @@ class Group:
         paths = self.search_subgroup_paths(H)
         if len(paths) > 0:
             path = paths[0]
+            sg0 = path[0]
             pg0 = get_point_group(path[0])
             #pg0 = Group(path[0], quick=True)
             for p in path[1:]:
