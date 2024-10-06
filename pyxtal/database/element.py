@@ -281,7 +281,7 @@ class Element:
             self.covalent_radius = self.elements_list[pos][5]
             self.vdw_radius = self.elements_list[pos][6]
             self.metallic_radius = self.elements_list[pos][7]
-            if pos <= len(self.sf):
+            if pos < len(self.sf):
                 self.scatter = self.sf[pos]
 
     def get_all(self, pos):

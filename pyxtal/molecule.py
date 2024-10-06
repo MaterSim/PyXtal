@@ -1657,7 +1657,7 @@ class Orientation:
 
             # Parse the angle
             if angle == "random":
-                angle = self.random_state.random() * np.pi * 2
+                angle = (self.random_state.random() - 1) * np.pi * 2
             self.angle = angle
 
             # Update the matrix

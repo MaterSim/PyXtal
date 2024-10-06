@@ -7,6 +7,7 @@ import warnings
 from time import time
 
 import numpy as np
+from random import choice
 from ase import units
 
 from pyxtal import pyxtal
@@ -699,7 +700,7 @@ if __name__ == "__main__":
     for rep in reps:
         rep = representation.from_string(rep, [smile])
         xtal1 = rep.to_pyxtal()
-        check_stable(xtal1, c_info, w_dir, skip_ani=True, optimizer=optimizer)
+        check_stable_structure(xtal1, c_info, w_dir, skip_ani=True, optimizer=optimizer)
 """
  81 11.38  6.48 11.24  96.9 1 0 0.23 0.43 0.03  -44.6   25.0   34.4  -76.6   -5.2  171.5 0 -70594.48
  81 11.38  6.48 11.24  96.9 1 0 0.23 0.43 0.03  -44.6   25.0   34.4  -76.6   -5.2  171.5 0 -70594.48

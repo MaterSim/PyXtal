@@ -2,6 +2,8 @@ from __future__ import division
 import numpy as np
 from scipy.special import sph_harm, spherical_in
 from ase import Atoms
+from ase.neighborlist import NeighborList
+
 
 class SO3:
     '''
@@ -18,7 +20,7 @@ class SO3:
     '''
 
     def __init__(self, nmax=3, lmax=3, rcut=3.5, alpha=2.0,
-                 weight_on=False, neighborlist='ase'):
+                 weight_on=False):
         # populate attributes
         self.nmax = nmax
         self.lmax = lmax
@@ -27,7 +29,6 @@ class SO3:
         self._type = "SO3"
         self.cutoff_function = 'cosine'
         self.weight_on = weight_on
-        self.neighborcalc = neighborlist
         self.ncoefs = self.nmax*(self.nmax+1)//2*(self.lmax+1)
         self.tril_indices = np.tril_indices(self.nmax, k=0)
         self.ls = np.arange(self.lmax+1)
@@ -336,14 +337,9 @@ class SO3:
             atom_ids = range(len(atoms))
 
         cutoffs = [self.rcut/2]*len(atoms)
-        if self.neighborcalc == 'ase':
-            from ase.neighborlist import NeighborList
-            nl = NeighborList(cutoffs, self_interaction=False, bothways=True, skin=0.0)
-            nl.update(atoms)
-        else:
-            from neighborlist import NeighborList
-            nl = NeighborList(cutoffs, self_interaction=False, bothways=True, skin=0.0)
-            nl.update(atoms, atom_ids)
+        nl = NeighborList(cutoffs, self_interaction=False, bothways=True, skin=0.0)
+        nl.update(atoms)
+
         #print(atoms, atom_ids)
         #print(atoms.get_scaled_positions())
 

@@ -4,7 +4,6 @@ Module for generating molecular crystals
 
 # Standard Libraries
 from copy import deepcopy
-
 import numpy as np
 
 from pyxtal.lattice import Lattice
@@ -454,6 +453,7 @@ class molecular_crystal:
                                 return mol_sites_tmp
         return None
 
+
     def _set_orientation(self, pyxtal_mol, pt, oris, wp):
         """
         Generate valid orientations for a given molecule in a Wyckoff position.
@@ -465,18 +465,15 @@ class molecular_crystal:
         - Using the bisection method is refine the orientation.
 
         Args:
-        pyxtal_mol: The pyxtal_molecule object representing the molecule.
-        pt: Position of the molecule.
-        oris: List of potential orientations.
-        wp: Wyckoff position object representing the symmetry of the site.
+            pyxtal_mol: The pyxtal_molecule object representing the molecule.
+            pt: Position of the molecule.
+            oris: List of potential orientations.
+            wp: Wyckoff position object representing the symmetry of the site.
 
         Returns:
-        ms0: A valid `mol_site` object if an acceptable orientation is found.
+            ms0: A valid `mol_site` object if an acceptable orientation is found.
              returns `None` if no valid orientation is found within the attempts.
         """
-
-        # Increment the number of attempts to generate a valid orientation
-        self.numattempts += 1
 
         # NOTE removing this copy causes tests to fail -> state not managed well
         ori = self.random_state.choice(oris).copy()
@@ -486,43 +483,12 @@ class molecular_crystal:
         ms0 = mol_site(pyxtal_mol, pt, ori, wp, self.lattice)
 
         # Check if the current orientation results in valid distances
-        if ms0.short_dist():
+        if ms0.no_short_dist():
             return ms0
         else:
             # Maximize the separation if needed
             if len(pyxtal_mol.mol) > 1 and ori.degrees > 0:
-                # Define the distance function for bisection method
-                def fun_dist(angle, ori, mo, pt):
-                    # ori0 = ori.copy()
-                    ori.change_orientation(angle)
-                    ms0 = mol_site(mo, pt, ori, wp, self.lattice)
-                    return ms0.get_min_dist()
-
-                # Set initial bounds for the angle
-                angle_lo = ori.angle
-                angle_hi = angle_lo + np.pi
-                fun_lo = fun_dist(angle_lo, ori, pyxtal_mol, pt)
-                fun_hi = fun_dist(angle_hi, ori, pyxtal_mol, pt)
-
-                fun = fun_hi # Set the initial value for the function
-
-                # Refine the orientation using a bisection method
-                for _it in range(self.ori_attempts):
-                    self.numattempts += 1
-
-                    # Return as soon as a good orientation is found
-                    if (fun > 0.8) & (ms0.short_dist()):
-                        return ms0
-
-                    # Compute the midpoint angle for bisection
-                    angle = (angle_lo + angle_hi) / 2
-                    fun = fun_dist(angle, ori, pyxtal_mol, pt)
-
-                    # Update based on the function value at the midpoint
-                    if fun_lo > fun_hi:
-                        angle_hi, fun_hi = angle, fun
-                    else:
-                        angle_lo, fun_lo = angle, fun
+               return ms0.optimize_orientation_by_dist(self.ori_attempts)
 
     def _check_consistency(self, site, numMol):
         """

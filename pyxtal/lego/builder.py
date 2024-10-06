@@ -514,7 +514,7 @@ def create_trajectory(dumpfile, trjfile, modes=['Init', 'Iter'], dim=3):
 
                 # QZ: to fix
                 xtal = pyxtal()
-                xtal = from_1d_rep(x, wps, numIons, l_type, elements, dim)
+                xtal.from_1d_rep(x, wps, numIons, l_type, elements, dim)
 
                 struc = xtal.to_ase()
                 struc.info = {'time': line_number-line_struc, 'fun': sim}
@@ -617,9 +617,8 @@ class mof_builder(object):
                       'nmax': 2,
                       'rcut': 2.2,
                       'alpha': 1.5,
-                      # 'derivative': False,
                       'weight_on': True,
-                      'neighborlist': 'ase',
+                      #'neighborlist': 'ase',
                       }
             kwargs.update(mykwargs)
 
