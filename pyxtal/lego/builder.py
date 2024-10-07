@@ -795,6 +795,67 @@ class mof_builder(object):
                 xtals_opt.append(xtal)
         return xtals_opt
 
+    def optimize_xtals_mproc(self, xtals, ncpu, args):
+        """
+        Optimization in multiprocess mode.
+
+        Args:
+            xtals: list of xtals
+            ncpu (int): number of parallel python processes
+            args: (opt_type, T, n_iter, early_quit, add_db, symmetrize, minimizers)
+        """
+
+        pool = Pool(processes=ncpu)
+        (opt_type, T, niter, early_quit, add_db, symmetrize, minimizers) = args
+        xtals_opt = deque()
+
+        # Split the input structures to minibatches
+        N_batches = 10 * ncpu
+        for _i, i in enumerate(range(0, len(xtals), N_batches)):
+            start, end = i, min([i+N_batches, len(xtals)])
+            ids = list(range(start, end))
+            print(f"Rank {self.rank} minibatch {start} {end}")
+            self.print_memory_usage()
+
+            def generate_args():
+                """
+                A generator to yield argument lists for minimize_from_x_par.
+                """
+                for j in range(ncpu):
+                    _ids = ids[j::ncpu]
+                    wp_libs = []
+                    for id in _ids:
+                        xtal = xtals[id]
+                        x = xtal.get_1d_rep_x()
+                        spg, wps, _ = self.get_input_from_ref_xtal(xtal)
+                        wp_libs.append((x, xtal.group.number, wps))
+                    yield (self.dim, wp_libs, self.elements, self.calculator,
+                           self.ref_environments, opt_type, T, niter,
+                           early_quit, minimizers)
+
+            # Use the generator to pass args to reduce memory usage
+            _xtal, _xs = None, None
+            for result in pool.imap_unordered(minimize_from_x_par,
+                                              generate_args(),
+                                              chunksize=1):
+                if result is not None:
+                    (_xtals, _xs) = result
+                    valid_xtals = self.process_xtals(
+                        _xtals, _xs, add_db, symmetrize)
+                    xtals_opt.extend(valid_xtals)  # Use deque to reduce memory
+
+            # Remove the duplicate structures
+            self.db.update_row_topology(overwrite=False, prefix=self.prefix)
+            self.db.clean_structures_spg_topology(dim=self.dim)
+
+            # After each minibatch, delete the local variables and run garbage collection
+            del ids, _xtals, _xs
+            gc.collect()  # Explicitly call garbage collector to free memory
+
+        xtals_opt = list(xtals_opt)
+        print(f"Rank {self.rank} finish optimize_xtals_mproc {len(xtals_opt)}")
+        return xtals_opt
+
     def optimize_reps(self, reps, ncpu=1, opt_type='local',
                       T=0.2, niter=20, early_quit=0.02,
                       add_db=True, symmetrize=False,
@@ -808,11 +869,36 @@ class mof_builder(object):
             ncpu (int):
         """
         args = (opt_type, T, niter, early_quit, add_db, symmetrize, minimizers)
-        if ncpu > 1:
-            valid_xtals = self.optimize_reps_mproc(reps, ncpu, args, discrete)
-            return valid_xtals
+        if ncpu == 1:
+            valid_xtals = self.optimize_reps_serial(reps, args, discrete)
         else:
-            raise NotImplementedError("optimize_reps works in parallel mode")
+            valid_xtals = self.optimize_reps_mproc(reps, ncpu, args, discrete)
+        return valid_xtals
+
+    def optimize_reps_serial(self, reps, args, discrete):
+        """
+        Optimization in multiprocess mode.
+
+        Args:
+            reps: list of reps
+            ncpu (int): number of parallel python processes
+            args: (opt_type, T, n_iter, early_quit, add_db, symmetrize, minimizers)
+        """
+        xtals_opt = []
+        for i, rep in enumerate(reps):
+            #print('start', i, rep, len(rep))
+            xtal = pyxtal()
+            xtal.from_tabular_representation(rep,
+                                             normalize=False,
+                                             discrete=discrete)
+            #print(xtal.get_xtal_string())
+            #print(xtal)
+            xtal, sim, _xs = self.optimize_xtal(xtal, i, *args)
+            if xtal is not None:
+                xtals_opt.append(xtal)
+            else:
+                import sys; sys.exit()
+        return xtals_opt
 
     def optimize_reps_mproc(self, reps, ncpu, args, discrete):
         """
@@ -878,67 +964,6 @@ class mof_builder(object):
 
         xtals_opt = list(xtals_opt)
         print(f"Rank {self.rank} finish optimize_reps_mproc {len(xtals_opt)}")
-        return xtals_opt
-
-    def optimize_xtals_mproc(self, xtals, ncpu, args):
-        """
-        Optimization in multiprocess mode.
-
-        Args:
-            xtals: list of xtals
-            ncpu (int): number of parallel python processes
-            args: (opt_type, T, n_iter, early_quit, add_db, symmetrize, minimizers)
-        """
-
-        pool = Pool(processes=ncpu)
-        (opt_type, T, niter, early_quit, add_db, symmetrize, minimizers) = args
-        xtals_opt = deque()
-
-        # Split the input structures to minibatches
-        N_batches = 10 * ncpu
-        for _i, i in enumerate(range(0, len(xtals), N_batches)):
-            start, end = i, min([i+N_batches, len(xtals)])
-            ids = list(range(start, end))
-            print(f"Rank {self.rank} minibatch {start} {end}")
-            self.print_memory_usage()
-
-            def generate_args():
-                """
-                A generator to yield argument lists for minimize_from_x_par.
-                """
-                for j in range(ncpu):
-                    _ids = ids[j::ncpu]
-                    wp_libs = []
-                    for id in _ids:
-                        xtal = xtals[id]
-                        x = xtal.get_1d_rep_x()
-                        spg, wps, _ = self.get_input_from_ref_xtal(xtal)
-                        wp_libs.append((x, xtal.group.number, wps))
-                    yield (self.dim, wp_libs, self.elements, self.calculator,
-                           self.ref_environments, opt_type, T, niter,
-                           early_quit, minimizers)
-
-            # Use the generator to pass args to reduce memory usage
-            _xtal, _xs = None, None
-            for result in pool.imap_unordered(minimize_from_x_par,
-                                              generate_args(),
-                                              chunksize=1):
-                if result is not None:
-                    (_xtals, _xs) = result
-                    valid_xtals = self.process_xtals(
-                        _xtals, _xs, add_db, symmetrize)
-                    xtals_opt.extend(valid_xtals)  # Use deque to reduce memory
-
-            # Remove the duplicate structures
-            self.db.update_row_topology(overwrite=False, prefix=self.prefix)
-            self.db.clean_structures_spg_topology(dim=self.dim)
-
-            # After each minibatch, delete the local variables and run garbage collection
-            del ids, _xtals, _xs
-            gc.collect()  # Explicitly call garbage collector to free memory
-
-        xtals_opt = list(xtals_opt)
-        print(f"Rank {self.rank} finish optimize_xtals_mproc {len(xtals_opt)}")
         return xtals_opt
 
     def optimize_xtal(self, xtal, count=0, opt_type='local',
