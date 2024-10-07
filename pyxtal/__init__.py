@@ -1638,7 +1638,6 @@ class pyxtal:
         #    msg = 'The input lattice needs to be a pyxtal.lattice.Lattice class'
         #    raise ValueError(msg, lattice)
         self.lattice = lattice
-
         self.dim = dim
         self.factor = 1.0
         self.PBC = self.group.PBC
@@ -1667,12 +1666,14 @@ class pyxtal:
                 elif len(wp) == 4:  # tuple:
                     (key, x, y, z) = wp
                     _wp = choose_wyckoff(self.group, site=key, dim=dim)
+                    # print(key, x, y, z, _wp.get_label())
                     if _wp is not False:
                         if _wp.get_dof() == 0:  # fixed pos
                             pt = [0.0, 0.0, 0.0]
                         else:
                             ans = _wp.get_all_positions([x, y, z])
                             pt = ans[0] if ans is not None else None
+                            # print('debug', ans)
                         if pt is not None:
                             _sites.append(atom_site(_wp, pt, sp))
                     else:
@@ -3853,12 +3854,15 @@ class pyxtal:
                         # ; print(x, y, z, label, xyz[0], xyz[1], xyz[2])
                         sites.append((label, xyz[0], xyz[1], xyz[2]))
                         numIons += wp.multiplicity
+                        if verbose:
+                            print('add wp', label, xyz)
                     else:
                         if verbose:
-                            print("Cannot find generator from", x, y, z)
-                            print(wp)
+                            print("Cannot get wp in", x, y, z, wp.get_label())
+
             if len(sites) > 0:
                 try:
+                    # print(sites)
                     self.build(group, ["C"], [numIons], lattice, [sites])
                 except:
                     print("Invalid Build", number, lattice, numIons, sites)

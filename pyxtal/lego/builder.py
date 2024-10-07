@@ -208,7 +208,7 @@ def minimize_from_x(x, dim, spg, wps, elements, calculator, ref_environments,
         except:
             return None
 
-    x0 = x.copy()
+    x0 = np.array(x.copy())
     # Extract variables, call from Pyxtal
     [N_abc, N_ang] = Lattice.get_dofs(xtal.lattice.ltype)
     rep = xtal.get_1D_representation()
@@ -799,7 +799,7 @@ class mof_builder(object):
                       T=0.2, niter=20, early_quit=0.02,
                       add_db=True, symmetrize=False,
                       minimizers=[('Nelder-Mead', 100), ('L-BFGS-B', 100)],
-                       ):
+                      discrete=False):
         """
         Perform optimization for each structure
 
@@ -809,12 +809,12 @@ class mof_builder(object):
         """
         args = (opt_type, T, niter, early_quit, add_db, symmetrize, minimizers)
         if ncpu > 1:
-            valid_xtals = self.optimize_reps_mproc(reps, ncpu, args)
+            valid_xtals = self.optimize_reps_mproc(reps, ncpu, args, discrete)
             return valid_xtals
         else:
             raise NotImplementedError("optimize_reps works in parallel mode")
 
-    def optimize_reps_mproc(self, reps, ncpu, args):
+    def optimize_reps_mproc(self, reps, ncpu, args, discrete):
         """
         Optimization in multiprocess mode.
 
@@ -847,7 +847,9 @@ class mof_builder(object):
                     for id in _ids:
                         rep = reps[id]
                         xtal = pyxtal()
-                        xtal.from_tabular_representation(rep, normalize=False)
+                        xtal.from_tabular_representation(rep,
+                                                         normalize=False,
+                                                         discrete=discrete)
                         x = xtal.get_1d_rep_x()
                         spg, wps, _ = self.get_input_from_ref_xtal(xtal)
                         wp_libs.append((x, spg, wps))
@@ -1295,13 +1297,8 @@ class mof_builder(object):
             'similarity': sim[1],
         }
         if xs is not None:
-            try:
-                kvp['x_init'] = np.array2string(xs[0])
-                kvp['x_opt'] = np.array2string(xs[1])
-            except:
-                print("Error in xs", xs)
-                kvp['x_init'] = 'N/A'
-                kvp['x_opt'] = 'N/A'
+            kvp['x_init'] = np.array2string(xs[0])
+            kvp['x_opt'] = np.array2string(xs[1])
         if energy is not None:
             kvp['ff_energy'] = energy
         if topology is not None:
