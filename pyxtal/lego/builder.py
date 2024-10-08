@@ -39,6 +39,7 @@ import logging
 from time import time
 # np.set_printoptions(precision=3, suppress=True)
 
+VECTORS = np.array([[x1, y1, z1] for x1 in range(-1, 2) for y1 in range(-1, 2) for z1 in range(-1, 2)])
 
 def generate_wp_lib_par(spgs, composition, num_wp, num_fu, num_dof):
     """
@@ -52,7 +53,6 @@ def generate_wp_lib_par(spgs, composition, num_wp, num_fu, num_dof):
             wp_libs.append(wp_lib)
             my_spgs.append(spg)
     return (my_spgs, wp_libs)
-
 
 def generate_xtal_par(wp_libs, niter, dim, elements, calculator, ref_environments,
                       criteria, T, N_max, early_quit):
@@ -69,7 +69,6 @@ def generate_xtal_par(wp_libs, niter, dim, elements, calculator, ref_environment
             sims.append(sim)
 
     return (xtals, sims)
-
 
 def minimize_from_x_par(*args):
     """
@@ -141,7 +140,9 @@ def generate_xtal(dim, spg, wps, niter, elements, calculator,
 def minimize_from_x(x, dim, spg, wps, elements, calculator, ref_environments,
                     T=0.2, niter=20, early_quit=0.02, opt_type='local',
                     minimizers=[('Nelder-Mead', 100), ('L-BFGS-B', 100)],
-                    filename='local_opt_data.txt', random_state=None):
+                    filename='local_opt_data.txt', random_state=None,
+                    #derivative=True):
+                    derivative=False):
     """
     Generate xtal from the 1d representation
 
@@ -151,6 +152,11 @@ def minimize_from_x(x, dim, spg, wps, elements, calculator, ref_environments,
         wps (string): e.g. [['4a', '8b']]
         elements (string): e.g., ['Si', 'O']
     """
+    if derivative:
+        jac = calculate_dSdx
+    else:
+        jac = None
+
     g, wps, dof = get_input_from_letters(spg, wps, dim)
     l_type = g.lattice_type
     sites_wp = []
@@ -278,6 +284,7 @@ def minimize_from_x(x, dim, spg, wps, elements, calculator, ref_environments,
             res = minimize(calculate_S, x,
                            method=method,
                            args=(xtal, ref_envs, calculator),
+                           jac=None if method=='Nelder-Mead' else jac,
                            bounds=bounds,
                            options={'maxiter': step},  # 'disp': True},
                            callback=callback)
@@ -308,11 +315,10 @@ def minimize_from_x(x, dim, spg, wps, elements, calculator, ref_environments,
                                         'fatol': 1e-6,
                                         'ftol': 1e-6}}
 
-        bounded_step = RandomDisplacementBounds(np.array([b[0] for b in bounds]),
-                                                np.array([b[1]
-                                                         for b in bounds]),
-                                                id1=N_abc + N_ang,
-                                                id2=N_abc)
+        bounded_step = RandomDispBounds(np.array([b[0] for b in bounds]),
+                                        np.array([b[1] for b in bounds]),
+                                        id1=N_abc + N_ang,
+                                        id2=N_abc)
 
         # set call back function for debugging
         def print_fun(x, f, accepted):
@@ -358,38 +364,47 @@ def calculate_dSdx(x, xtal, des_ref, f, eps=1e-4, symmetry=True, verbose=False):
         verbose (bool): output more information
     """
     xtal.update_from_1d_rep(x)
-    atoms = xtal.to_ase(resort=False, add_vaccum=False)  # * 2
-    atoms.set_positions(atoms.positions + 1e-3 *
-                        np.random.random([len(atoms), 3]))
-    ref_pos = atoms.positions
+    ids = [0]
+    weights = []
+    for site in xtal.atom_sites:
+        ids.append(site.wp.multiplicity + ids[-1])
+        weights.append(site.wp.multiplicity)
+    ids = ids[:-1]
+    weights = np.array(weights, dtype=float)
 
-    # results = f.calculate(atoms, ids, derivative=True)
-    results = f.calculate(atoms, derivative=True)
-    dPdr = results['dxdr']  # ; print(dpdr>0)
-    P = results['x']
+    atoms = xtal.to_ase()
+    dPdr, P = f.compute_dpdr_5d(atoms, ids)
+    dPdr = np.einsum('i, ijklm -> ijklm', weights, dPdr)
 
-    # Compute dSdr
-    dSdr = np.einsum("ik, ijkl -> jl", 2*(P - des_ref), dPdr)
+    # Compute dSdr [N, M] [N, N, M, 3, 27] => [N, 3, 27]
+    # print(P.shape, des_ref.shape, dPdr.shape)
+    dSdr = np.einsum("ik, ijklm -> jlm", 2*(P - des_ref), dPdr)
+
+    # Get supercell positions
+    ref_pos = np.repeat(atoms.positions[:, :, np.newaxis], 27, axis=2)
+    cell_shifts = np.dot(VECTORS, atoms.cell)
+    ref_pos += cell_shifts.T[np.newaxis, :, :]
 
     # Compute drdx via numerical func
-    drdx = np.zeros([len(atoms), 3, len(x)])
+    drdx = np.zeros([len(atoms), 3, 27, len(x)])
+
     xtal0 = xtal.copy()
     for i in range(len(x)):
         x0 = x.copy()
         x0[i] += eps
+        # Maybe expensive Reduce calls, just need positions
         xtal0.update_from_1d_rep(x0)
-        # print(xtal0)
-        pos = xtal0.to_ase(resort=False, add_vaccum=False).positions
-        drdx[:, :, i] = (pos - ref_pos)/eps
-        # print("drdx", i, x0, '\n', drdx[:, :, i])
+        atoms = xtal0.to_ase()
 
-    # dPdx = np.einsum('ijkl, klm->ijm', dPdr, drdx)
-    # dSdx = np.einsum('ij, ijk->k', 2*(P-des_ref), dPdx)
-    # dSdx = dSdr * drdx
-    dSdx = np.einsum("ij, ijk -> k", dSdr, drdx)
+        # Get supercell positions
+        pos = np.repeat(atoms.positions[:, :, np.newaxis], 27, axis=2)
+        cell_shifts = np.dot(VECTORS, atoms.cell)
+        pos += cell_shifts.T[np.newaxis, :, :]
+        drdx[:, :, :, i] += (pos - ref_pos)/eps
 
-    return dSdx, dSdr, dPdr
-
+    # [N, 3, 27] [N, 3, 27, H] => H
+    dSdx = np.einsum("ijk, ijkl -> l", dSdr, drdx)
+    return dSdx
 
 def calculate_S(x, xtal, des_ref, f, verbose=False):
     """
@@ -415,14 +430,9 @@ def calculate_S(x, xtal, des_ref, f, verbose=False):
                 weights.append(site.wp.multiplicity)
             ids = ids[:-1]
             weights = np.array(weights, dtype=float)
-            # try:
-            if True:
-                atoms = xtal.to_ase(resort=False, add_vaccum=False)
-                des = f.calculate(atoms, ids)['x'][ids]
-            # except:
-            #    #print("bug in xtal2ase or bad structure", xtal.lattice)
-            #    des = np.zeros(des_ref.shape)
-            #    #raise ValueError('Skip the random error')
+            atoms = xtal.to_ase(resort=False)
+            #des = f.calculate(atoms, ids)['x'][ids]
+            des = f.compute_p(atoms, ids)
         else:
             des = np.zeros(des_ref.shape)
             weights = 1
@@ -618,12 +628,10 @@ class mof_builder(object):
                       'rcut': 2.2,
                       'alpha': 1.5,
                       'weight_on': True,
-                      #'neighborlist': 'ase',
                       }
             kwargs.update(mykwargs)
 
             self.calculator = SO3(**kwargs)
-            # print(self.calculator)#; import sys; sys.exit()
 
     def set_reference_enviroments(self, cif_file, substitute=None):
         """
@@ -655,12 +663,12 @@ class mof_builder(object):
         if self.verbose:
             print("ids from Reference xtal", ids)
         atoms = xtal.to_ase(resort=False)
-        self.ref_environments = self.calculator.calculate(atoms, ids)['x'][ids]
+        self.ref_environments = self.calculator.compute_p(atoms, ids)
         if self.verbose:
             print(self.ref_environments)
         self.ref_xtal = xtal
 
-    def set_criteria(self, CN=None, dimension=3, min_density=None, exclude_ii=False):
+    def set_criteria(self, CN=None, dimension=None, min_density=None, exclude_ii=False):
         """
         define the criteria to check if a structure is good
 
@@ -897,7 +905,7 @@ class mof_builder(object):
             if xtal is not None:
                 xtals_opt.append(xtal)
             else:
-                import sys; sys.exit()
+                print("Debug===="); import sys; sys.exit()
         return xtals_opt
 
     def optimize_reps_mproc(self, reps, ncpu, args, discrete):
@@ -1337,7 +1345,7 @@ Custom step-function for basin hopping optimization
 """
 
 
-class RandomDisplacementBounds(object):
+class RandomDispBounds(object):
     """
     random displacement with bounds:
     see: https://stackoverflow.com/a/21967888/2320035
