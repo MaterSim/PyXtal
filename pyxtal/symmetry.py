@@ -2918,7 +2918,7 @@ class Wyckoff_position:
         min_index = np.argmin(distances)
         return pts[min_index], np.min(distances)
 
-    def search_generator(self, pos, ops=None, tol=1e-2):
+    def search_generator(self, pos, ops=None, tol=1e-2, symmetrize=False):
         """
         search generator for a special Wyckoff position
 
@@ -2926,6 +2926,7 @@ class Wyckoff_position:
             pos: initial xyz position
             ops: list of symops
             tol: tolerance
+            symmetrize (bool): apply symmetrization
 
         Return:
             pos1: the position that matchs the standard setting
@@ -2945,6 +2946,8 @@ class Wyckoff_position:
             if diff.sum() < tol:
                 pos1 -= np.floor(pos1)
                 match = True
+                if symmetrize:
+                    pos1 = pos0
                 break
 
         if match:
