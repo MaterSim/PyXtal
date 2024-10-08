@@ -532,6 +532,25 @@ class Lattice:
         except:
             print(a, b, c, alpha, beta, gamma, ltype)
 
+    def update_from_1d_representation(self, v):
+        """
+        Update the cell para and matrix from the 1d rep
+        """
+        if self.ltype == "triclinic":
+            self.a, self.b, self.c, self.alpha, self.beta, self.gamma = v[:6]
+        elif self.ltype == "monoclinic":
+            self.a, self.b, self.c, self.beta = v[:4]
+        elif self.ltype == "orthorhombic":
+            self.a, self.b, self.c = v[:3]
+        elif self.ltype in ["tetragonal", "trigonal", "hexagonal"]:
+            self.a, self.b, self.c = v[0], v[0], v[1]
+        else:
+            self.a, self.b, self.c = v[0], v[0], v[0]
+
+        para = (self.a, self.b, self.c, self.alpha, self.beta, self.gamma)
+        self.set_matrix(para2matrix(para))
+
+
     def mutate(self, degree=0.10, frozen=False):
         """
         Mutate the lattice object
