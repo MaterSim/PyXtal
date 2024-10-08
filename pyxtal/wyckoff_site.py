@@ -434,7 +434,7 @@ class mol_site:
             else:
                 ang_lo, fun_lo = ang, fun
 
-            print("optimize_orientation_by_dist", _it, ang, fun)
+            #print("optimize_orientation_by_dist", _it, ang, fun)
 
         return None
 
