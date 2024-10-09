@@ -548,8 +548,12 @@ class Lattice:
             self.a, self.b, self.c = v[0], v[0], v[0]
 
         para = (self.a, self.b, self.c, self.alpha, self.beta, self.gamma)
-        self.set_matrix(para2matrix(para))
-
+        matrix = para2matrix(para)
+        if matrix is not None:
+            self.set_matrix(matrix)
+        else:
+            msg = f'error input {v} in update_from_1d_representation {self.ltype}'
+            raise ValueError(msg)
 
     def mutate(self, degree=0.10, frozen=False):
         """
@@ -639,7 +643,13 @@ class Lattice:
             m = np.array(matrix)
             if np.shape(m) == (3, 3):
                 self.matrix = m
-                self.inv_matrix = np.linalg.inv(m)
+                try:
+                    self.inv_matrix = np.linalg.inv(m)
+                except:
+                    print(self.para)
+                    print(matrix)
+                    msg = "Error in getting the inv_matrix"
+                    raise ValueError(msg)
             else:
                 print(matrix)
                 msg = "Error: matrix must be a 3x3 numpy array or list"

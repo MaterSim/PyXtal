@@ -3426,8 +3426,12 @@ class pyxtal:
         N = self.lattice.dof
         cell, pos = x[:N], x[N:]
 
-        # update cell
-        self.lattice.update_from_1d_representation(cell)
+        try:
+            # update cell
+            self.lattice.update_from_1d_representation(cell)
+        except:
+            self.lattice = None
+            return
         #l_type = self.lattice.ltype
         #self.lattice = Lattice.from_1d_representation(cell, l_type)
         # print("lattice dof", N, cell, l_type, self.lattice)
