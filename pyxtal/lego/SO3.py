@@ -148,7 +148,7 @@ class SO3:
         self.natoms = len(atoms)
         self.build_neighbor_list(atom_ids)
 
-    def compute_p(self, atoms, atom_ids=None):
+    def compute_p(self, atoms, atom_ids=None, return_CN=False):
         """
         Compute the powerspectrum function
 
@@ -163,6 +163,8 @@ class SO3:
         if atom_ids is None: atom_ids = range(len(atoms))
         self.init_atoms(atoms, atom_ids)
         plist = np.zeros((len(atom_ids), self.ncoefs), dtype=np.float64)
+        dist = np.zeros((len(atom_ids), 2))
+
         if len(self.neighborlist) > 0:
             cs = compute_cs(self.neighborlist, *self.args)
             cs *= self.atomic_weights[:, np.newaxis, np.newaxis, np.newaxis]
@@ -171,11 +173,18 @@ class SO3:
             # Get r_ij and compute C*np.conj(C)
             for _i, i in enumerate(atom_ids):
                 centers = self.neighbor_indices[:, 0] == i
-                if len(centers) > 0:
+                CN = len(self.neighborlist[centers])
+                if CN > 0:
                     ctot = cs[centers].sum(axis=0)
                     P = np.einsum('ijk,ljk->ilj', ctot, np.conj(ctot)).real
                     plist[_i] = P[self.tril_indices].flatten()
-        return plist
+                    dist[_i, 0] += np.linalg.norm(self.neighborlist[centers], axis=1).max()
+                    dist[_i, 1] += CN
+        if return_CN:
+            return plist, dist
+        else:
+            return plist
+
 
     def compute_dpdr(self, atoms, atom_ids=None):
         """
@@ -335,12 +344,13 @@ class SO3:
         neighbor_indices = []
         atomic_weights = []
 
+        #if True: #atom_ids is None:
         if atom_ids is None:
             atom_ids = range(len(atoms))
 
             cutoffs = [self.rcut/2]*len(atoms)
             nl = NeighborList(cutoffs, self_interaction=False, bothways=True, skin=0.0)
-            nl.update(atoms, atom_ids)
+            nl.update(atoms)
 
             for i in atom_ids:
                 # get center atom position vector
@@ -350,17 +360,22 @@ class SO3:
                 #print(indices); import sys; sys.exit()
 
                 for j, offset in zip(indices, offsets):
+                    (x, y, z) = offset
+                    cell_id = (x+1) * 9 + (y+1) * 3 + z + 1
                     pos = atoms.positions[j] + offset@cell_matrix - center_atom
-                    # to prevent division by zero
-                    if np.sum(np.abs(pos)) < 1e-3: pos += 0.001
+                    if np.sum(np.abs(pos)) < 1e-3:
+                        # to skip self
+                        if cell_id == 13:
+                            continue
+                        # to prevent division by zero
+                        else:
+                            pos += 1e-3
                     neighbors.append(pos)
                     if self.weight_on and atoms[j].number != atoms[i].number:
                         factor = -1
                     else:
                         factor = 1
                     atomic_weights.append(factor*atoms[j].number)
-                    (x, y, z) = offset
-                    cell_id = (x+1) * 9 + (y+1) * 3 + z + 1
                     neighbor_indices.append([i, j, cell_id])
         else:
             # A short cut version if we only compute the neighbors for a few atoms
@@ -674,11 +689,11 @@ if  __name__ == "__main__":
                       )
 
     parser.add_option("-l", "--lmax", dest="lmax", default=2, type=int,
-                      help="lmax, default: 1"
+                      help="lmax, default: 2"
                       )
 
-    parser.add_option("-n", "--nmax", dest="nmax", default=1, type=int,
-                      help="nmax, default: 1"
+    parser.add_option("-n", "--nmax", dest="nmax", default=2, type=int,
+                      help="nmax, default: 2"
                       )
 
     parser.add_option("-a", "--alpha", dest="alpha", default=2.0, type=float,
@@ -715,3 +730,15 @@ if  __name__ == "__main__":
     print('x', x['x'])
     dp, p = f.compute_dpdr(test); print('from dP', p)
     dp, p = f.compute_dpdr_5d(test); print('from dP5d', p)
+
+    (x, spg, wps) = ([13.45493847, 0.98, 0.04, 0.86, 0.08, 0.94, 0.14, 0.22, 0.66, 0.22, 0.74, 0.28, 0.2, 0.18, 0.68], 226, ['192j', '192j', '192j', '96i', '192j'])
+
+    from pyxtal import pyxtal
+    xtal = pyxtal()
+    xtal.from_spg_wps_rep(spg, wps, x, ['C']*len(wps))
+    atoms = xtal.to_ase()
+    p1 = f.compute_p(atoms)[0]; print("from ase", p1)
+    p2 = f.compute_p(atoms, atom_ids=[0])[0]; print("from self", p2)
+    print(np.sum((p1-p2)**2))
+    assert(np.sum((p1-p2)**2)<1e-4)
+

@@ -3694,7 +3694,7 @@ class pyxtal:
     def get_tabular_representation(
         self,
         ids=None,
-        normalize=True,
+        normalize=False,
         N_wp=6,
         perturb=False,
         max_abc=50.0,
@@ -3777,7 +3777,7 @@ class pyxtal:
         rep,
         max_abc=50.0,
         max_angle=180,
-        normalize=True,
+        normalize=False,
         tol=0.1,
         discrete=False,
         N_grids=50,
@@ -3857,9 +3857,9 @@ class pyxtal:
                     # ; print(wp.get_label(), xyz)
                     xyz = wp.search_generator([x, y, z], tol=tol, symmetrize=True)
                     if xyz is not None:
-                        xyz, wp, _ = wp.merge(xyz, np.eye(3), 1e-3)
+                        #xyz, wp, _ = wp.merge(xyz, np.eye(3), 1e-3)
                         label = wp.get_label()
-                        # ; print(x, y, z, label, xyz[0], xyz[1], xyz[2])
+                        #print('after merge', x, y, z, label, xyz[0], xyz[1], xyz[2])
                         sites.append((label, xyz[0], xyz[1], xyz[2]))
                         numIons += wp.multiplicity
                         if verbose:
