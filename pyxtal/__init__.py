@@ -842,6 +842,7 @@ class pyxtal:
         min_cell=0,
         mut_lat=True,
         ignore_special=False,
+        verbose=False,
     ):
         """
         Generate a structure with lower symmetry (for atomic crystals only)
@@ -861,8 +862,9 @@ class pyxtal:
         # print("Test subgroup_once", self.group.number, idx, sites)
 
         if idx is None or len(idx) == 0:
-            msg = "Cannot find valid splitter id (likely due to insufficient cellsize)"
-            print(msg)
+            if verbose:
+                msg = "Cannot find valid splitter (likely due to large cellsize)"
+                print(msg)
             return None
 
         # Try 100 times to see if a valid split can be found
@@ -3680,7 +3682,7 @@ class pyxtal:
         if len(ids) > N_max:
             ids = self.random_state.choice(ids, N_max)
 
-        print(f"N_reps {len(ids)}/{N_max}: ", self.get_xtal_string())
+        #print(f"N_reps {len(ids)}/{N_max}: ", self.get_xtal_string())
         for sites_id in ids:
             rep = self.get_tabular_representation(
                     sites_id, normalize, N_wp, perturb,

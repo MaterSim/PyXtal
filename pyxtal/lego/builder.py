@@ -824,7 +824,7 @@ class mof_builder(object):
         xtals_opt = deque()
 
         # Split the input structures to minibatches
-        N_batches = 10 * ncpu
+        N_batches = 20 * ncpu
         for _i, i in enumerate(range(0, len(xtals), N_batches)):
             start, end = i, min([i+N_batches, len(xtals)])
             ids = list(range(start, end))
@@ -928,7 +928,7 @@ class mof_builder(object):
         xtals_opt = deque()
 
         # Split the input structures to minibatches
-        N_batches = 10 * ncpu
+        N_batches = 20 * ncpu
         for _i, i in enumerate(range(0, len(reps), N_batches)):
             start, end = i, min([i+N_batches, len(reps)])
             ids = list(range(start, end))
@@ -1032,10 +1032,12 @@ class mof_builder(object):
                 dicts = {'sim': "{:6.3f} => {:6.3f}".format(sim0, sim1)}
                 print(xtal.get_xtal_string(dicts))
         else:
-            print(xtal.get_xtal_string())
-            print('invalid relaxation', count)
+            if self.verbose:
+                print('invalid relaxation', count)
+                print(xtal.get_xtal_string())
             #import sys; sys.exit()
             #xtal.to_file(f'{count}.cif')
+            xtal = None
 
         return xtal, sim1, xs
 

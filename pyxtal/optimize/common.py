@@ -11,7 +11,7 @@ from random import choice
 from ase import units
 
 from pyxtal import pyxtal
-from pyxtal.interface.ani import ANI_relax
+from pyxtal.interface.ase_opt import ASE_relax
 from pyxtal.interface.charmm import CHARMM
 from pyxtal.optimize.benchmark import benchmark
 from pyxtal.representation import representation
@@ -299,7 +299,7 @@ def optimizer(
             and 0.25 < struc.get_density() < 3.0
         ):
             s = struc.to_ase()
-            s = ANI_relax(s, step=50, fmax=0.1, logfile="ase.log")
+            s = ASE_relax(s, 'ANI', step=50, fmax=0.1, logfile="ase.log")
             eng = s.get_potential_energy()
             stress = max(abs(s.get_stress())) / units.GPa  # print(id, eng, stress)
 
@@ -493,7 +493,7 @@ def optimizer_single(
                 match = True
                 str1 = f"Match {rmsd[0]:6.2f} {rmsd[1]:6.2f} {eng / N:12.3f} "
                 if not skip_ani:
-                    xtal, eng1 = refine_struc(xtal, smiles, ANI_relax)
+                    xtal, eng1 = refine_struc(xtal, smiles, ASE_relax)
                     str1 += f"Full Relax -> {eng1 / N:12.3f}"
                     eng = eng1
                 print(str1)
@@ -521,9 +521,9 @@ def refine_struc(xtal, smiles, calculator):
         - calculator: ANI_relax or MACE_relax
     """
     s = xtal.to_ase()
-    s = calculator(s, step=50, fmax=0.1, logfile="ase.log")
-    s = calculator(s, step=250, opt_cell=True, logfile="ase.log")
-    s = calculator(s, step=50, fmax=0.1, logfile="ase.log")
+    s = calculator(s, 'ANI', step=50, fmax=0.1, logfile="ase.log")
+    s = calculator(s, 'ANI', step=250, opt_cell=True, logfile="ase.log")
+    s = calculator(s, 'ANI', step=50, fmax=0.1, logfile="ase.log")
     eng1 = s.get_potential_energy()  # /sum(xtal.numMols)
 
     xtal = pyxtal(molecular=True)
