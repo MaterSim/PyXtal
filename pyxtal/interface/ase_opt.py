@@ -41,7 +41,7 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile='as
     def handler(signum, frame):
         raise TimeoutError("Optimization timed out")
 
-    step_init = 40
+    step_init = min([30, int(step/2)])
     logger = logging.getLogger()
     max_time *= 60
     timeout = int(max_time)

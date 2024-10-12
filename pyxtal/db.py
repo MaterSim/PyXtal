@@ -229,15 +229,15 @@ def gulp_opt_single(id, xtal, ff_lib, path, criteria):
     return xtal, eng, status
 
 
-def mace_opt_single(id, xtal, criteria, step=250):
+def mace_opt_single(id, xtal, step, criteria):
     """
     Perform a single MACE optimization for a given atomic crystal structure.
 
     Args:
         id (int): Identifier for the current structure.
         xtal: PyXtal instance representing the crystal structure.
-        criteria (dict): Dictionary to check the validity of the optimized structure.
         step (int): Maximum number of relaxation steps. Default is 250.
+        criteria (dict): Dictionary to check the validity of the optimized structure.
 
     Returns:
         tuple:
@@ -1112,26 +1112,30 @@ class database_topology:
                 max_id = row.id + 1
         return max_id
 
-    def select_xtals(self, ids, overwrite=False, attribute=None, use_relaxed=None):
+    def select_xtals(self, ids, N_atoms=(None, None), overwrite=False, attribute=None, use_relaxed=None):
         """
         Extract xtals based on attribute name.
         Mostly called by update_row_energy
 
         Args:
             ids:
+            N_atoms:
             overwrite:
             atttribute:
             use_relaxed (str): 'ff_relaxed' or 'vasp_relaxed'
         """
         (min_id, max_id) = ids
-        if min_id is None:
-            min_id = 1
-        if max_id is None:
-            max_id = self.get_max_id()
+        if min_id is None: min_id = 1
+        if max_id is None: max_id = self.get_max_id()
+
+        (min_atoms, max_atoms) = N_atoms
+        if min_atoms is None: min_atoms = 1
+        if max_atoms is None: max_atoms = 5000
+
         ids, xtals = [], []
         for row in self.db.select():
             if overwrite or attribute is None or not hasattr(row, attribute):
-                if min_id <= row.id <= max_id:
+                if min_id <= row.id <= max_id and min_atoms < natoms <= max_atoms:
                     xtal = self.get_pyxtal(row.id, use_relaxed)
                     ids.append(row.id)
                     xtals.append(xtal)
@@ -1139,27 +1143,33 @@ class database_topology:
                         print("Loading xtals from db", len(xtals))
         return ids, xtals
 
-    def select_xtal(self, ids, overwrite=False, attribute=None, use_relaxed=None):
+    def select_xtal(self, ids, N_atoms=(None, None), overwrite=False, attribute=None, use_relaxed=None):
         """
         Lazy extraction of select xtals
 
         Args:
             ids:
+            N_atoms:
             overwrite:
             atttribute:
             use_relaxed (str): 'ff_relaxed' or 'vasp_relaxed'
         """
         (min_id, max_id) = ids
-        if min_id is None:
-            min_id = 1
-        if max_id is None:
-            max_id = self.get_max_id()
+        if min_id is None: min_id = 1
+        if max_id is None: max_id = self.get_max_id()
+
+        (min_atoms, max_atoms) = N_atoms
+        if min_atoms is None: min_atoms = 1
+        if max_atoms is None: max_atoms = 5000
 
         ids, xtals = [], []
         for row in self.db.select():
             if overwrite or attribute is None or not hasattr(row, attribute):
-                id = row.id
-                if min_id <= id <= max_id and id % self.size== self.rank:
+                id, natoms = row.id, row.natoms
+                if min_id <= id <= max_id and \
+                    min_atoms < natoms <= max_atoms \
+                    and id % self.size== self.rank:
+
                     xtal = self.get_pyxtal(id, use_relaxed)
                     yield id, xtal
 
@@ -1167,6 +1177,7 @@ class database_topology:
         self,
         calculator='GULP',
         ids=(None, None),
+        N_atoms=(None, None),
         ncpu=1,
         criteria=None,
         symmetrize=False,
@@ -1211,13 +1222,13 @@ class database_topology:
         label = calculator.lower() + "_energy"
         if calc_folder is None:
             calc_folder = calculator.lower() + "_calc"
-        # MACE does not need a folder
+
         if calculator != 'MACE':
             #self.logging.info("make new folders", calc_folder, os.getpwd())
             os.makedirs(calc_folder, exist_ok=True)
 
         # Generate structures for calculation
-        generator = self.select_xtal(ids, overwrite, label, use_relaxed)
+        generator = self.select_xtal(ids, N_atoms, overwrite, label, use_relaxed)
 
         # Set up arguments for the chosen calculator
         args_up = []
@@ -1225,7 +1236,7 @@ class database_topology:
             args = [calculator, ff_lib, calc_folder, criteria]
             args_up = [ff_lib]
         elif calculator == 'MACE':
-            args = [calculator, criteria]
+            args = [calculator, steps, criteria]
         elif calculator == 'DFTB':
             args = [calculator, skf_dir, steps, symmetrize, criteria]
         elif calculator == 'VASP':

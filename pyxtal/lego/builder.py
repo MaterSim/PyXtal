@@ -266,19 +266,19 @@ def minimize_from_x(x, dim, spg, wps, elements, calculator, ref_environments,
         # set call back function for debugging
         def print_local_fun(x):
             f = calculate_S(x, xtal, ref_envs, calculator)
-            # if filename is not None:
             print("{:.4f} ".format(f), x)
-            with open(filename, 'a+') as f0:
-                strs = 'Iter: {:9.3f} '.format(f)
-                for x0 in x:
-                    strs += '{:8.4f} '.format(x0)
-                strs += '\n'
-                f0.write(strs)
+            if filename is not None:
+                with open(filename, 'a+') as f0:
+                    strs = 'Iter: {:9.3f} '.format(f)
+                    for x0 in x[:3]:
+                        strs += '{:8.4f} '.format(x0)
+                    strs += '\n'
+                    f0.write(strs)
         callback = print_local_fun if filename is not None else None
 
         for minimizer in minimizers:
-            # print("Starting", xtal.lattice, xtal.lattice.is_valid_lattice())
             (method, step) = minimizer
+            #print("Starting", xtal.lattice, method, step)
             if len(x) != len(bounds):
                 print('debug min', xtal, x, bounds, len(x), len(bounds))
             res = minimize(calculate_S, x,
@@ -286,11 +286,12 @@ def minimize_from_x(x, dim, spg, wps, elements, calculator, ref_environments,
                            args=(xtal, ref_envs, calculator),
                            jac=None if method=='Nelder-Mead' else jac,
                            bounds=bounds,
-                           options={'maxiter': step},  # 'disp': True},
+                           options={'maxiter': step}, #'disp': True},
                            callback=callback)
             x = res.x
             if xtal.lattice is None:
                 return None
+            #import sys; sys.exit()
 
         if filename is not None:
             with open(filename, 'a+') as f0:
@@ -406,7 +407,7 @@ def calculate_dSdx(x, xtal, des_ref, f, eps=1e-4, symmetry=True, verbose=False):
     dSdx = np.einsum("ijk, ijkl -> l", dSdr, drdx)
     return dSdx
 
-def calculate_S(x, xtal, des_ref, f, verbose=False):
+def calculate_S(x, xtal, des_ref, f, ref_CN=None, verbose=False):
     """
     Optimization function used for structure generation
 
@@ -431,16 +432,21 @@ def calculate_S(x, xtal, des_ref, f, verbose=False):
             ids = ids[:-1]
             weights = np.array(weights, dtype=float)
             atoms = xtal.to_ase(resort=False)
-            #des = f.calculate(atoms, ids)['x'][ids]
-            des = f.compute_p(atoms, ids)
+            #des = f.calculate(atoms)['x'][ids]
+            des, CNs = f.compute_p(atoms, ids, return_CN=True)
         else:
             des = np.zeros(des_ref.shape)
             weights = 1
 
     sim = np.sum((des-des_ref)**2, axis=1)  # /des.shape[1]
-    obj = np.sum(sim*weights)
-
-    # print(xtal); import sys; sys.exit()
+    if ref_CN is not None:
+        coefs = CNs[:, 1] - ref_CN
+        coefs[coefs < 0] = 0
+        penalty = coefs * (f.rcut + 0.01 - CNs[:, 0])
+        if penalty.sum() > 0: print('debug', penalty.sum(), x[:3])
+        sim += 5 * coefs * penalty
+    obj = np.sum(sim * weights)
+    #print(des-des_ref); print(sim); print(obj)#; import sys; sys.exit()
     return obj
 
 
@@ -818,7 +824,7 @@ class mof_builder(object):
         xtals_opt = deque()
 
         # Split the input structures to minibatches
-        N_batches = 10 * ncpu
+        N_batches = 20 * ncpu
         for _i, i in enumerate(range(0, len(xtals), N_batches)):
             start, end = i, min([i+N_batches, len(xtals)])
             ids = list(range(start, end))
@@ -899,13 +905,12 @@ class mof_builder(object):
             xtal.from_tabular_representation(rep,
                                              normalize=False,
                                              discrete=discrete)
-            #print(xtal.get_xtal_string())
-            #print(xtal)
+                                             #verbose=True)
             xtal, sim, _xs = self.optimize_xtal(xtal, i, *args)
             if xtal is not None:
                 xtals_opt.append(xtal)
-            else:
-                print("Debug===="); import sys; sys.exit()
+            #else:
+            #    print("Debug===="); import sys; sys.exit()
         return xtals_opt
 
     def optimize_reps_mproc(self, reps, ncpu, args, discrete):
@@ -923,7 +928,7 @@ class mof_builder(object):
         xtals_opt = deque()
 
         # Split the input structures to minibatches
-        N_batches = 10 * ncpu
+        N_batches = 20 * ncpu
         for _i, i in enumerate(range(0, len(reps), N_batches)):
             start, end = i, min([i+N_batches, len(reps)])
             ids = list(range(start, end))
@@ -986,8 +991,9 @@ class mof_builder(object):
             xtal (instance): pyxtal
         """
         # Change the angle to a better rep
-        if xtal.dim == 3 and xtal.lattice.ltype in ['triclinic', 'monoclinic']:
+        if xtal.dim == 3 and xtal.lattice is not None and xtal.lattice.ltype in ['triclinic', 'monoclinic']:
             xtal.optimize_lattice(standard=True)
+        #xtal.to_file(f'init_{count}.cif')#; print(xtal)
         x = xtal.get_1d_rep_x()
         _, wps, _ = self.get_input_from_ref_xtal(xtal)
 
@@ -1005,12 +1011,15 @@ class mof_builder(object):
             xtal, xs = result
             status = xtal.check_validity(self.criteria, verbose=self.verbose)
             sim1 = self.get_similarity(xtal)
+            #print("after optim", sim1, status)
         else:
+            print("Lattice is None", xtal.get_xtal_string())
             xtal = None
             xs = None
             status = False
             sim1 = None
             xs = None
+            #import sys; sys.exit()
 
         if status:
             if symmetrize:
@@ -1022,6 +1031,13 @@ class mof_builder(object):
             else:
                 dicts = {'sim': "{:6.3f} => {:6.3f}".format(sim0, sim1)}
                 print(xtal.get_xtal_string(dicts))
+        else:
+            if self.verbose:
+                print('invalid relaxation', count)
+                print(xtal.get_xtal_string())
+            #import sys; sys.exit()
+            #xtal.to_file(f'{count}.cif')
+            xtal = None
 
         return xtal, sim1, xs
 
