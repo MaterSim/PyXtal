@@ -1009,16 +1009,15 @@ class mof_builder(object):
                                      minimizers=minimizers,
                                      filename=filename)
             xtal, xs = result
-            status = xtal.check_validity(self.criteria, verbose=self.verbose)
-            sim1 = self.get_similarity(xtal)
-            #print("after optim", sim1, status)
+            if result is not None:
+                status = xtal.check_validity(self.criteria, verbose=self.verbose)
+                sim1 = self.get_similarity(xtal)
+                #print("after optim", sim1, status)
+            else:
+                xtal, xs, status, sim1 = None, None, False, None
         else:
-            print("Lattice is None", xtal.get_xtal_string())
-            xtal = None
-            xs = None
-            status = False
-            sim1 = None
-            xs = None
+            print("Lattice is None")#, xtal.get_xtal_string())
+            xtal, xs, status, sim1 = None, None, False, None
             #import sys; sys.exit()
 
         if status:

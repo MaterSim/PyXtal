@@ -48,6 +48,7 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile='as
     signal.signal(signal.SIGALRM, handler)
     signal.alarm(timeout)
     #logger.info(f"{label} start calculation")
+    _fmax = 1e+5
 
     try:
     #if True:
@@ -92,7 +93,7 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile='as
     tag = 'False' if struc is None else 'True'
     logger.info(f"Finishing {label} {tag}")
     #signal.alarm(0)  # Cancel the alarm 
-    return struc
+    return struc #, eng, _fmax
 
 class ASE_optimizer:
     """
