@@ -874,7 +874,7 @@ class mof_builder(object):
                       T=0.2, niter=20, early_quit=0.02,
                       add_db=True, symmetrize=False,
                       minimizers=[('Nelder-Mead', 100), ('L-BFGS-B', 100)],
-                      discrete=False):
+                      N_grids=None):
         """
         Perform optimization for each structure
 
@@ -884,12 +884,12 @@ class mof_builder(object):
         """
         args = (opt_type, T, niter, early_quit, add_db, symmetrize, minimizers)
         if ncpu == 1:
-            valid_xtals = self.optimize_reps_serial(reps, args, discrete)
+            valid_xtals = self.optimize_reps_serial(reps, args, N_grids)
         else:
-            valid_xtals = self.optimize_reps_mproc(reps, ncpu, args, discrete)
+            valid_xtals = self.optimize_reps_mproc(reps, ncpu, args, N_grids)
         return valid_xtals
 
-    def optimize_reps_serial(self, reps, args, discrete):
+    def optimize_reps_serial(self, reps, args, N_grids):
         """
         Optimization in multiprocess mode.
 
@@ -904,7 +904,7 @@ class mof_builder(object):
             xtal = pyxtal()
             xtal.from_tabular_representation(rep,
                                              normalize=False,
-                                             discrete=discrete)
+                                             discrete=N_grids)
                                              #verbose=True)
             xtal, sim, _xs = self.optimize_xtal(xtal, i, *args)
             if xtal is not None:
@@ -913,7 +913,7 @@ class mof_builder(object):
             #    print("Debug===="); import sys; sys.exit()
         return xtals_opt
 
-    def optimize_reps_mproc(self, reps, ncpu, args, discrete):
+    def optimize_reps_mproc(self, reps, ncpu, args, N_grids):
         """
         Optimization in multiprocess mode.
 
@@ -946,9 +946,11 @@ class mof_builder(object):
                     for id in _ids:
                         rep = reps[id]
                         xtal = pyxtal()
+                        discrete = False if N_grids is None else True
                         xtal.from_tabular_representation(rep,
                                                          normalize=False,
-                                                         discrete=discrete)
+                                                         discrete=discrete,
+                                                         N_grids=N_grids)
                         x = xtal.get_1d_rep_x()
                         spg, wps, _ = self.get_input_from_ref_xtal(xtal)
                         wp_libs.append((x, spg, wps))
