@@ -824,7 +824,7 @@ class mof_builder(object):
         xtals_opt = deque()
 
         # Split the input structures to minibatches
-        N_batches = 20 * ncpu
+        N_batches = 50 * ncpu
         for _i, i in enumerate(range(0, len(xtals), N_batches)):
             start, end = i, min([i+N_batches, len(xtals)])
             ids = list(range(start, end))
@@ -928,7 +928,7 @@ class mof_builder(object):
         xtals_opt = deque()
 
         # Split the input structures to minibatches
-        N_batches = 20 * ncpu
+        N_batches = 50 * ncpu
         for _i, i in enumerate(range(0, len(reps), N_batches)):
             start, end = i, min([i+N_batches, len(reps)])
             ids = list(range(start, end))

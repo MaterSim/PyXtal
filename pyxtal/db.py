@@ -1732,7 +1732,7 @@ class database_topology:
             verbose (bool): whether or not print out details
         """
 
-        db_ref = database_topology(reference_db)
+        db_ref = database_topology(reference_db, log_file = self.log_file)
         print(f"\nCurrent   database {self.db_name}: {self.db.count()}")
         print(f"Reference database {db_ref.db_name}: {db_ref.db.count()}")
 
