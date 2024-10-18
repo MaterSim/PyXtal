@@ -1282,6 +1282,8 @@ class database_topology:
                 self._update_db(results, args[0], *args_up)
                 results = []
                 self.print_memory_usage()
+        if len(results) > 0:
+            self._update_db(results, args[0], *args_up)
 
     def update_row_energy_mproc(self, ncpu, generator, args, args_up):
         """
