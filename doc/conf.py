@@ -17,7 +17,7 @@ from unittest.mock import MagicMock
 
 sys.path.insert(0, os.path.abspath("../"))
 # List of modules to mock
-MOCK_MODULES = ['torchani', 'lammps', 'pyshtools', 'mace']
+MOCK_MODULES = ['torchani', 'lammps', 'pyshtools', 'mace', 'mace.calculators']
 
 class Mock(MagicMock):
     @classmethod
