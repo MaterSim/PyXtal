@@ -3,6 +3,7 @@ mof_builder aims to generate crystal structure from the defined
 building blocks (e.g., SiO2 with 4-coordined Si and 2-coordinated O)
 1. Generate all possible wp combinations
 2. For each wp combination,
+
     2.1 generate structure randomly
     2.2 optimize the geomtry
     2.3 parse the coordination

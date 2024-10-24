@@ -430,7 +430,7 @@ class molecular_crystal:
                         pt[-1] = 0.5
 
                     ms0 = self._set_orientation(pyxtal_mol, pt, oris, wp)
-                    if ms0 is not None:
+                    if not ms0.short_dist():
                         # Check current WP against existing WP's
                         passed_wp_check = True
                         # print("Checking", ms0)
@@ -483,12 +483,10 @@ class molecular_crystal:
         ms0 = mol_site(pyxtal_mol, pt, ori, wp, self.lattice)
 
         # Check if the current orientation results in valid distances
-        if ms0.no_short_dist():
-            return ms0
-        else:
-            # Maximize the separation if needed
-            if len(pyxtal_mol.mol) > 1 and ori.degrees > 0:
-               return ms0.optimize_orientation_by_dist(self.ori_attempts)
+        if len(pyxtal_mol.mol) > 1 and ori.degrees > 0:
+            if ms0.short_dist():
+                ms0.optimize_orientation_by_dist(self.ori_attempts)
+        return ms0
 
     def _check_consistency(self, site, numMol):
         """

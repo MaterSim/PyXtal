@@ -13,7 +13,7 @@ Submodules
    :maxdepth: 4
 
    pyxtal.interface.LJ
-   pyxtal.interface.ani
+   pyxtal.interface.ase_opt
    pyxtal.interface.charmm
    pyxtal.interface.dftb
    pyxtal.interface.gulp
