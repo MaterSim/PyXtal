@@ -701,7 +701,7 @@ position, since it has the largest multiplicity and last letter alphabetically.
 Note that for space groups with non-simple lattices (those which begin with a
 letter other than 'P'), the Wyckoff positions also contain fractional translations.
 Take for example the space group ``I4mm (#107)``. The Bilbao entry can be found
-`here <http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-wp-list?gnum=107>`_.
+at the `url <http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-wp-list?gnum=107>`_.
 Each listed Wyckoff position coordinate has a copy which is translated by
 ``(0.5,0.5,0.5)``. It is inconvenient to list each of these translated copies
 for every Wyckoff position, so instead a note is placed at the top. This is why

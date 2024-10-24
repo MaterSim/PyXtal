@@ -260,7 +260,7 @@ pyxtal.lattice.Lattice
 ~~~~~~~~~~~~~~~~~~~~~~
 
 It is possible to supply your own unit cell lattice for a random crystal,
-via the `Lattice <pyxtal.lattice.html>`_ class. You can define a lattice using
+via the `pyxtal.lattice.Lattice <pyxtal.lattice.html>`_ class. You can define a lattice using
 either a :math: `3 \times 3` matrix, or 6
 cell parameters:
 
@@ -284,7 +284,7 @@ pyxtal.tolerance.Tol_matrix
 When generating random crystals, PyXtal performs inter-atomic distances checks
 to make sure the atoms are not too close together. By default, the covalent
 radius is used as a basis. However, the user may also define their own criteria
-using the `Tol_matrix <pyxtal.tolerance.html>`_ class.
+using the `pyxtal.tolerance.Tol_matrix <pyxtal.tolerance.html>`_ class.
 To do this, initialize a ``Tol_matrix`` object using one of the built-in methods.
 
 .. code-block:: Python
@@ -365,9 +365,11 @@ Dimension: 3
 Composition: C4
 Group: P 63/m m c (194)
   2.4600,   2.4600,   6.7000,  90.0000,  90.0000, 120.0000, hexagonal
+
 Wyckoff sites:
 	 C @ [ 0.3333  0.6667  0.2500], WP [2c] Site [-622m2]
 	 C @ [ 0.0000  0.0000  0.2500], WP [2b] Site [-622m2]
+
 
 Note that this function so far only supports `graphite`, `diamond`, `a-cristobalite`, `b-cristobalite`, `a-quartz`, `b-quartz`, `rocksalt`, `B1`, `B2`.
 

@@ -669,14 +669,14 @@ def split_list_by_ratio(nums, ratio):
     satisfies a given ratio and returns all possible ways of combinations
     tracking the indices of the numbers.
 
-    Parameters:
-    nums (list of int): The list of integers to split.
-    ratio (tuple of int): A tuple representing the desired ratio (e.g., (1, 1) for 1:1 ratio).
+    Args:
+        nums (list of int): The list of integers to split.
+        ratio (tuple of int): A tuple of the desired ratio (e.g., (1, 1) for 1:1 ratio).
 
     Returns:
-    list of tuple: A list of tuples where each tuple contains two lists of indices.
-                   Each pair of lists represents one possible way to split the numbers
-                   to satisfy the given ratio.
+        list of tuple: A list of tuples where each contains two lists of indices.
+                       Each pair of lists represents one possible way to split the
+                       numbers to satisfy the given ratio.
     """
 
     def find_splits(i, sum1, sum2, group1, group2):
