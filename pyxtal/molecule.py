@@ -1674,7 +1674,10 @@ class Orientation:
             if update:
                 self.r = r
                 self.matrix = matrix
-        return matrix
+            return matrix
+        else:
+            return self.matrix
+
 
     def set_axis(self):
         if self.degrees == 2:
