@@ -412,10 +412,10 @@ def make_db_from_CSD(dbname, codes):
 
 class database:
     """
-    This is a database class to process crystal data
+    This is a database class to process crystal data.
 
     Args:
-        db_name: *.db format from ase database
+        db_name: `*.db` format from ase database
     """
 
     def __init__(self, db_name):
@@ -630,7 +630,7 @@ class database_topology:
     This is a database class to process atomic crystal data
 
     Args:
-        db_name (str): *.db format from ase database
+        db_name (str): `*.db` format from ase database
         rank (int): default 0
         size (int): default 1
         ltol (float): lattice tolerance
@@ -992,6 +992,7 @@ class database_topology:
         Clean up the db by removing the duplicate structures.
         Here we check the follow criteria same density and pymatgen matcher.
         The criteria should look like the following,
+
         {'CN': {'C': 3},
          'cutoff': 1.8,
          'MAX_energy': -8.00,

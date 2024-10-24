@@ -406,13 +406,31 @@ class mol_site:
         self.orientation.r = R.from_euler("zxy", angles, degrees=True)
         self.orientation.matrix = self.orientation.r.as_matrix()
 
-    def optimize_orientation_by_dist(self, ori_attempts):
+    def get_min_dist(self, angle=None):
+        """
+        Compute the minimum interatomic distance within the WP.
+
+        Returns:
+            minimum distance
+        """
+        if angle is not None:
+            matrix = self.orientation.change_orientation(angle, update=False)
+        else:
+            matrix = self.orientation.matrix
+
+        # Get total distances
+        d0, _ = self.get_dists_auto(matrix=matrix)
+        d1, _ = self.get_dists_WP(matrix=matrix, ignore=True)
+        d_total = np.append(d0, d1, axis=0)
+
+        return d_total.min()
+
+    def optimize_orientation_by_dist(self, ori_attempts=10, verbose=False):
         """
         Optimize the orientation according to the shortest distance
         """
         # Set initial fun value and angle bounds
-        ang_lo = self.orientation.angle
-        ang_hi = ang_lo + np.pi
+        ang_lo, ang_hi = 0, np.pi
         fun_lo = self.get_min_dist(ang_lo)
         fun_hi = self.get_min_dist(ang_hi)
         fun = fun_hi
@@ -421,8 +439,8 @@ class mol_site:
         for _it in range(ori_attempts):
 
             # Return as soon as a good orientation is found
-            if (fun > 0.8) & self.no_short_dist():
-                return self
+            if (fun > 0.8) and not self.short_dist():
+                break
 
             # Compute the midpoint angle for bisection
             ang = (ang_lo + ang_hi) / 2
@@ -434,14 +452,189 @@ class mol_site:
             else:
                 ang_lo, fun_lo = ang, fun
 
-            #print("optimize_orientation_by_dist", _it, ang, fun)
+            if verbose: print("optimize_orientation_by_dist", _it, ang, fun)
 
-        return None
+        # Final adjustment
+        if fun > fun_hi + 1e-4:
+            self.orientation.change_orientation(ang_hi, update=True)
+            fun = fun_hi
+        elif fun > fun_lo + 1e-4:
+            self.orientation.change_orientation(ang_lo, update=True)
+            fun = fun_lo
+        else:
+            self.orientation.change_orientation(ang, update=True)
 
-    #def optimize_orientation_by_energy(self, ori_attempts):
+        return fun
 
-    #    V = -k*(d(D-A) - r)^2 + [sum_(cutoff*d**2)] when d<2
+    def get_repulsion_energy(self, d, k, rmax):
+        eng = k * (d[d < rmax] ** 2).sum()
+        #print("repulsion", eng)
+        return eng
 
+    def get_hbond_energy(self, d, k, r_max, r_eq, ref_donor_ids=None, ref_acceptor_ids=None):
+        """
+        Compute the hbond energy from the distance matrix between two molecules
+
+        Args:
+            d: N*M matrix
+            k: hbond force constant
+            req: target hbond distance
+            ref_donor_ids:
+            ref_acceptor_ids:
+
+        Returns:
+            H bond energy
+        """
+        if ref_donor_ids is None: ref_donor_ids = self.donor_ids
+        if ref_acceptor_ids is None: ref_acceptor_ids = self.acceptor_ids
+
+        eng = 0
+        for id1 in self.donor_ids:
+            for id2 in ref_acceptor_ids:
+                if d[id1, id2] < r_max:
+                    d0 = d[id1, id2]
+                    eng += k * (d0-r_eq) ** 2 * np.cos(d0/r_max*np.pi)
+                    print("h_bond", d[id1, id2], eng)
+        for id1 in self.acceptor_ids:
+            for id2 in ref_donor_ids:
+                if d[id1, id2] < r_max:
+                    d0 = d[id1, id2]
+                    eng += k * (d0-r_eq) ** 2 * np.cos(d0/r_max*np.pi)
+                    print("h_bond", d[id1, id2], eng)
+        return eng
+
+    def get_energy(self, angle=None, k1=1.0, r1=1.0, k2=2.0, k3=1.0, r2=6.0,
+                   req=2.8, r_cut=2.0, verbose=False):
+
+        # Set the orientation and compute the distance
+        donor_ids = [11]
+        acceptor_ids = [12]
+        H_ids = [20]
+        if angle is not None:
+            matrix = self.orientation.change_orientation(angle, update=False)
+        else:
+            matrix = self.orientation.matrix
+
+        #print("matrix in get_energy", matrix.flatten())
+
+        coord_ref, _ = self._get_coords_and_species(first=True, unitcell=True, matrix=matrix)
+        coord_ref = coord_ref @ self.lattice.matrix
+
+        # Get total distances
+        eng = 0
+        d0, coords0 = self.get_dists_auto(matrix=matrix)
+        d1, coords1 = self.get_dists_WP(matrix=matrix, ignore=True)
+        d_total = np.append(d0, d1, axis=0)
+        c_total = np.append(coords0, coords1, axis=0)
+
+        # Count only 1 contribution per Donor
+        for id1 in donor_ids:
+            rA = coord_ref[id1]
+            dAD, angle, dAH = self.get_dist_angle_AD(d_total, c_total, id1, acceptor_ids, H_ids, rA)
+            eng += k2 * (dAD-req) ** 2
+            eng += k3 * (angle-np.pi) ** 2
+            if dAH < r_cut: eng -= k1 * dAH * np.exp(r_cut - dAH) - 1.0
+            if verbose:
+                print('Hbond AD', id1, dAD, dAH, np.degrees(angle), eng)
+
+        # Count only 1 contribution per Acceptor
+        for i, id1 in enumerate(acceptor_ids):
+            rD = coord_ref[id1]
+            rH = coord_ref[H_ids[i]]
+
+            dAD, angle, dAH = self.get_dist_angle_DA(d_total, c_total, id1, acceptor_ids, H_ids, rD, rH)
+            eng += k2 * (dAD-req) ** 2
+            eng += k3 * (angle-np.pi) ** 2
+            if dAH < r_cut: eng -= k1 * dAH * np.exp(r_cut - dAH) - 1.0
+            if verbose:
+                print('Hbond DA', id1, dAD, dAH, np.degrees(angle), eng)
+
+        # Count repulsion
+        ds = d_total[d_total < r_cut]
+        eng += k1 * (ds * np.exp(r_cut - ds) - 1.0).sum()
+        if verbose:
+            print('Repulsion', d_total[d_total < r_cut], eng)
+
+        return eng
+
+    def get_dist_angle_AD(self, d_total, c_total, A_id, D_ids, H_ids, rA):
+
+        arr = d_total[:, A_id, D_ids]
+        myid = np.unravel_index(arr.argmin(), arr.shape)
+        rD = c_total[myid[0], D_ids[myid[1]], :]
+        rH = c_total[myid[0], H_ids[myid[1]], :] #; print(r_O, r0, np.linalg.norm(r_O-r0))
+        r1 = rD - rH
+        r2 = rA - rH
+        d1 = np.linalg.norm(r1)
+        d2 = np.linalg.norm(r2)
+        d_min = arr[myid]
+        if abs(d_min - np.linalg.norm(rD-rA)) > 1e-3:
+            print("bug", d_min, np.linalg.norm(rD-rA))
+            import sys; sys.exit()
+        cos = r1@r2/(d1*d2)
+        angle = np.arccos(np.clip(cos, -1.0, 1.0))
+
+        return d_min, angle, d2
+
+    def get_dist_angle_DA(self, d_total, c_total, D_id, A_ids, H_ids, rD, rH):
+
+        arr = d_total[:, D_id, A_ids]
+        myid = np.unravel_index(arr.argmin(), arr.shape)
+        rA = c_total[myid[0], A_ids[myid[1]], :]
+        r1 = rD - rH
+        r2 = rA - rH
+        d1 = np.linalg.norm(r1)
+        d2 = np.linalg.norm(r2)
+        d_min = arr[myid]
+        if abs(d_min - np.linalg.norm(rD-rA)) > 1e-3:
+            print("bug", d_min, np.linalg.norm(rD-rA))
+            import sys; sys.exit()
+        cos = r1@r2/(d1*d2)
+        angle = np.arccos(np.clip(cos, -1.0, 1.0))
+
+        return d_min, angle, d2
+
+    def optimize_orientation_by_energy(self, max_ax=20, max_ori=5, verbose=False):
+        """
+        Iteratively optimize the orientation with the bisection method
+        """
+        self.donor_ids = [11]
+        self.acceptor_ids = [12]
+
+        for ax_trial in range(max_ax):
+
+            # Select axis and compute the initial fun value and angle bounds
+            self.orientation.set_axis()
+            ang_lo = 0 #self.orientation.angle
+            ang_hi = np.pi #ang_lo + np.pi
+            fun_lo = self.get_energy() #; print("call funlo", fun_lo)
+            fun_hi = self.get_energy(ang_hi) #; print("call funhi", fun_hi)
+            fun = fun_hi
+            if verbose: print("Init", ang_lo, fun_lo)
+
+            # Refine the orientation using a bisection method
+            for ori_trial in range(max_ori):
+
+                # Compute the midpoint angle for bisection
+                ang = (ang_lo + ang_hi) / 2
+                fun = self.get_energy(ang)
+                # Update based on the function value at the midpoint
+                if fun_lo < fun_hi:
+                    ang_hi, fun_hi = ang, fun
+                else:
+                    ang_lo, fun_lo = ang, fun
+                #print("debug", ang_lo, ang_hi, fun_lo, fun_hi)
+            # Finally pick the best one adjustment
+            if fun > fun_hi + 1e-4:
+                self.orientation.change_orientation(ang_hi, update=True)
+                fun = fun_hi
+            elif fun > fun_lo + 1e-4:
+                self.orientation.change_orientation(ang_lo, update=True)
+                fun = fun_lo
+            else:
+                self.orientation.change_orientation(ang, update=True)
+
+            if verbose: print('Final', fun) #, verbose=True))
 
     def update_lattice(self, lattice):
         # QZ: Symmetrize the angle to the compatible orientation first
@@ -612,7 +805,9 @@ class mol_site:
 
         return display_molecular_site(self, id, **kwargs)
 
-    def _get_coords_and_species(self, absolute=False, PBC=False, first=False, unitcell=False):
+    def _get_coords_and_species(self, absolute=False, PBC=False,
+                                first=False, unitcell=False,
+                                matrix=None):
         """
         Used to generate coords and species for get_coords_and_species
 
@@ -621,12 +816,14 @@ class mol_site:
             PBC: whether or not to add coordinates in neighboring unit cells,
             first: whether or not to extract the information from only the first site
             unitcell: whether or not to move the molecular center to the unit cell
+            matrix: orientatin matrix
 
         Returns:
             atomic coords: a numpy array of atomic coordinates in the site
             species: a list of atomic species for the atomic coords
         """
-        coord0 = self.molecule.mol.cart_coords.dot(self.orientation.matrix.T)
+        if matrix is None: matrix = self.orientation.matrix
+        coord0 = self.molecule.mol.cart_coords.dot(matrix.T)
         wp_atomic_sites = []
         wp_atomic_coords = None
 
@@ -946,28 +1143,35 @@ class mol_site:
         # peridoic images
         m = self._create_matrix(center, ignore)  # PBC matrix
         coord2 = np.vstack([coord2 + v for v in m])
+        N = N2 * len(m)
 
         # absolute xyz
-        coord1 = np.dot(coord1, self.lattice.matrix)
-        coord2 = np.dot(coord2, self.lattice.matrix)
+        coord1 = coord1 @ self.lattice.matrix
+        coord2 = coord2 @ self.lattice.matrix
 
         d = cdist(coord1, coord2)
-        d = d.T.reshape([len(m) * N2, m1, m2])
-        return d, coord2.reshape([len(m) * N2, m2, 3])
+        #ID=d[11, 12::21].argmin(); print("d1_min", d[11, 12::21].min(), coord2[ID*21+12])
+        d = d.reshape(m1, N, m2).transpose(1, 0, 2)
+        coord2 = coord2.reshape([N, m2, 3])
+        #ID=d[:, 11, 12].argmin(); print("d2_min", d[ID, 11, 12], coord2[ID, 12, :])
+        return d, coord2
 
-    def get_dists_auto(self, ignore=False):
+    def get_dists_auto(self, matrix=None, ignore=False):
         """
         Compute the distances between the periodic images
+
+        Args:
+            ignore (bool, optional): If `True`, ignores some periodic boundary conditions.
 
         Returns:
             a distance matrix (M, N, N)
             list of molecular xyz (M, N, 3)
         """
-        coord1, _ = self._get_coords_and_species(first=True, unitcell=True)
+        coord1, _ = self._get_coords_and_species(first=True, unitcell=True, matrix=matrix)
 
         return self.get_distances(coord1, coord1, center=False, ignore=ignore)
 
-    def get_dists_WP(self, ignore=False, idx=None):
+    def get_dists_WP(self, matrix=None, ignore=False, idx=None):
         """
         Compute the distances within the WP site
 
@@ -976,39 +1180,15 @@ class mol_site:
             list of molecular xyz (M, N, 3)
         """
         m_length = len(self.symbols)
-        coords, _ = self._get_coords_and_species(unitcell=True)
+        coords, _ = self._get_coords_and_species(unitcell=True, matrix=matrix)
         coord1 = coords[:m_length]  # 1st molecular coords
-        coord2 = coords[m_length:] if idx is None else coords[m_length *
-                                                              (idx): m_length * (idx + 1)]
-
+        if idx is None:
+            coord2 = coords[m_length:]
+        else:
+            coord2 = coords[m_length *(idx): m_length * (idx + 1)]
         return self.get_distances(coord1, coord2, ignore=ignore)
 
-    def get_min_dist(self, angle=None):
-        """
-        Compute the minimum interatomic distance within the WP.
-
-        Returns:
-            minimum distance
-        """
-        # Self image
-        if angle is not None:
-            self.orientation.change_orientation(angle)
-
-        ds, _ = self.get_dists_auto()
-        min_dist = np.min(ds)
-
-        if min_dist < 0.9:
-            # terminate earlier
-            return min_dist
-        else:
-            # Other molecules
-            if self.wp.multiplicity > 1:
-                ds, _ = self.get_dists_WP()
-                if min_dist > np.min(ds):
-                    min_dist = np.min(ds)
-            return min_dist
-
-    def no_short_dist(self):
+    def short_dist(self):
         """
         Check if the atoms are too close within the WP.
 
@@ -1021,16 +1201,16 @@ class mol_site:
         if np.min(d) < np.max(tols_matrix):
             tols = np.min(d, axis=0)
             if (tols < tols_matrix).any():
-                return False
+                return True
 
         if self.wp.multiplicity > 1:
             d, _ = self.get_dists_WP()
             if np.min(d) < np.max(tols_matrix):
                 tols = np.min(d, axis=0)  # N*N matrix
                 if (tols < tols_matrix).any():
-                    return False
+                    return True
 
-        return True
+        return False
 
     def short_dist_with_wp2(self, wp2, tm=Tol_matrix(prototype="molecular")):
         """
@@ -1110,7 +1290,7 @@ class mol_site:
         numbers = self.molecule.mol.atomic_numbers
 
         # Get fractional coordinates for the central molecule
-        coord1, _ = self._get_coords_and_species(first=True, unitcell=True)
+        coord1 = self._get_coords_and_species(first=True, unitcell=True)[0]
 
         # Initialize tolerance matrix for intermolecular distances
         tm = Tol_matrix(prototype="vdW", factor=factor)

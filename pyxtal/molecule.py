@@ -1635,7 +1635,7 @@ class Orientation:
         axis = dicts["axis"]
         return cls(matrix, degrees, axis)
 
-    def change_orientation(self, angle="random", flip=False):
+    def change_orientation(self, angle="random", flip=False, update=True):
         """
         Change the orientation of molecule by applying a rotation.
 
@@ -1652,16 +1652,15 @@ class Orientation:
         if self.degrees >= 1:
             # Choose the axis
             if self.axis is None:
-                axis = self.random_state.random(3) - 0.5
-                self.axis = axis / np.linalg.norm(axis)
+                self.set_axis()
 
             # Parse the angle
             if angle == "random":
                 angle = (self.random_state.random() - 1) * np.pi * 2
-            self.angle = angle
+            #self.angle = angle
 
             # Update the matrix
-            r1 = Rotation.from_rotvec(self.angle * self.axis)
+            r1 = Rotation.from_rotvec(angle * self.axis)
 
             # Optionally flip the molecule
             if self.degrees == 2 and flip and self.random_state.random() > 0.5:
@@ -1669,8 +1668,19 @@ class Orientation:
                 angle0 = self.random_state.choice([90, 180, 270])
                 r2 = Rotation.from_euler(ax, angle0, degrees=True)
                 r1 = r2 * r1
-            self.r = r1 * self.r
-            self.matrix = self.r.as_matrix()
+
+            r = r1 * self.r
+            matrix = r.as_matrix()
+            if update:
+                self.r = r
+                self.matrix = matrix
+        return matrix
+
+    def set_axis(self):
+        if self.degrees == 2:
+            axis = self.random_state.random(3) - 0.5
+            self.axis = axis / np.linalg.norm(axis)
+            self.angle = 0
 
     def rotate_by_matrix(self, matrix, ignore_constraint=True):
         """
