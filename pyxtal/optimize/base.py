@@ -189,6 +189,7 @@ class GlobalOptimize:
 
         # Generation and Optimization
         self.workdir = workdir
+        os.makedirs(self.workdir, exist_ok=True)
         self.log_file = self.workdir + "/loginfo"
         if self.rank > 0: self.log_file += f"-{self.rank}"
 
@@ -224,7 +225,6 @@ class GlobalOptimize:
         else:
             self.ff_parameters = ff_parameters
             self.reference_file = reference_file
-            os.makedirs(self.workdir, exist_ok=True)
             # Only call ForceFieldParameters once
             # No need to broadcast self.parameters?
             # Just broadcast atom_info should be fine
