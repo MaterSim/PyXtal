@@ -427,7 +427,7 @@ class mol_site:
 
     def optimize_orientation_by_dist(self, ori_attempts=10, verbose=False):
         """
-        Optimize the orientation according to the shortest distance
+        Optimize the orientation based on the shortest distance
         """
         # Set initial fun value and angle bounds
         ang_lo, ang_hi = 0, np.pi
@@ -594,7 +594,7 @@ class mol_site:
 
         return d_min, angle, d2
 
-    def optimize_orientation_by_energy(self, max_ax=20, max_ori=5, verbose=False):
+    def optimize_orientation_by_energy(self, max_ax=20, max_ori=5, early_quit=3.0, verbose=False):
         """
         Iteratively optimize the orientation with the bisection method
         """
@@ -604,13 +604,14 @@ class mol_site:
         for ax_trial in range(max_ax):
 
             # Select axis and compute the initial fun value and angle bounds
+            # Select perpendicular????
             self.orientation.set_axis()
             ang_lo = 0 #self.orientation.angle
             ang_hi = np.pi #ang_lo + np.pi
             fun_lo = self.get_energy() #; print("call funlo", fun_lo)
             fun_hi = self.get_energy(ang_hi) #; print("call funhi", fun_hi)
             fun = fun_hi
-            if verbose: print("Init", ang_lo, fun_lo)
+            #if verbose: print("Init", ang_lo, fun_lo)
 
             # Refine the orientation using a bisection method
             for ori_trial in range(max_ori):
@@ -634,7 +635,10 @@ class mol_site:
             else:
                 self.orientation.change_orientation(ang, update=True)
 
-            if verbose: print('Final', fun) #, verbose=True))
+            if verbose: print(f'Final {ax_trial:2d} {fun:.2f}')
+
+            if fun <= early_quit:
+                break
 
     def update_lattice(self, lattice):
         # QZ: Symmetrize the angle to the compatible orientation first

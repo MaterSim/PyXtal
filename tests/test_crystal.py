@@ -102,6 +102,22 @@ class TestAtomic3D(unittest.TestCase):
         xtal.from_tabular_representation(rep, normalize=False)
         assert xtal.valid == True
 
+        rep0 = xtal.get_tabular_representation(discrete_cell=True,
+                                               discrete=True,
+                                               N_grids=100)
+        assert(int(rep0[6]) == 50)
+
+        xtal.from_tabular_representation(rep0,
+                                         discrete_cell=True,
+                                         discrete=True,
+                                         N_grids=100)
+        assert(int(xtal.lattice.get_para(degree=True)[-1]) == 90)
+
+        reps = xtal.get_tabular_representations(N_wp=1,
+                                                discrete_cell=True,
+                                                discrete=True,
+                                                N_grids=100)
+        assert(len(reps)==8)
 
 class TestAtomic2D(unittest.TestCase):
     def test_single_specie(self):

@@ -3267,10 +3267,34 @@ class pyxtal:
         #    #print(self.to_file())
         #    print("Wrong", csd_code); import sys; sys.exit()
 
+    def get_separations(self, hkls=[[1, 0, 0], [0, 1, 0], [0, 0, 1]]):
+        """
+        Compute the separation for the given hkl plane
+        """
+        separations = []
+        if self.molecular:
+            from pyxtal.plane import planes
+            p = planes()
+            p.set_xtal(self)
+            for hkl in hkls:
+                (_, _, sep) = p.get_separation(hkl)
+                separations.append(sep.max())
+
+        return np.array(separations)
+
+    #def cut_cell(self, cutoff=5.0):
+    #    """
+    #    An utility to reduce the empty spacing
+    #    """
+    #    seps = self.get_separations()
+    #    id = seps.argmax()
+    #    if seps[id] >= cutoff:
+    #        pass
+
+
     def get_structure_factor(self, hkl, coeffs=None):
         """
         Compute the structure factor for a given hkl plane
-
 
         Args:
             - hkl: three indices hkl plane
@@ -3646,6 +3670,7 @@ class pyxtal:
         perturb=False,
         eps=0.05,
         discrete=False,
+        discrete_cell=False,
         N_grids=50,
     ):
         """
@@ -3689,6 +3714,7 @@ class pyxtal:
                     eps=eps,
                     standardize=False,
                     discrete=discrete,
+                    discrete_cell=discrete_cell,
                     N_grids=N_grids)
             reps.append(rep)
         return reps
@@ -3704,6 +3730,7 @@ class pyxtal:
         eps=0.05,
         standardize=True,
         discrete=False,
+        discrete_cell=False,
         N_grids=50,
     ):
         """
@@ -3720,6 +3747,7 @@ class pyxtal:
             max_angle (float): maximum angle in radian for normalization
             eps (float): the degree of perturbation
             discrete (bool): to discretize xyz
+            discrete_cell (bool): to discretize cell_para
             N_grids (int): number of grids used for discretization
 
         Returns:
@@ -3749,6 +3777,10 @@ class pyxtal:
             rep[0] /= 230
             rep[1:4] /= max_abc
             rep[4:7] /= max_angle
+
+        if discrete_cell:
+            rep[1:4] = np.round(rep[1:4] / max_abc * N_grids)
+            rep[4:7] = np.round(rep[4:7] / max_angle * N_grids)
 
         count = N_cell
 
@@ -3782,6 +3814,7 @@ class pyxtal:
         normalize=False,
         tol=0.1,
         discrete=False,
+        discrete_cell=False,
         N_grids=50,
         verbose=False,
     ):
@@ -3811,11 +3844,20 @@ class pyxtal:
                     gamma * max_angle,
                 )
             else:
-                alpha, beta, gamma = (
-                    np.degrees(alpha),
-                    np.degrees(beta),
-                    np.degrees(gamma),
-                )
+                if discrete_cell:
+                    a = a / N_grids *  max_abc
+                    b = b / N_grids *  max_abc
+                    c = c / N_grids *  max_abc
+                    alpha = alpha / N_grids * max_angle
+                    beta = beta / N_grids * max_angle
+                    gamma = gamma / N_grids * max_angle
+                    #print(a, b, c, alpha, beta, gamma)
+                else:
+                    alpha, beta, gamma = (
+                        np.degrees(alpha),
+                        np.degrees(beta),
+                        np.degrees(gamma),
+                    )
             try:
                 lattice = Lattice.from_para(
                     a,
@@ -3831,7 +3873,7 @@ class pyxtal:
                 print('Input lattice from rep is incorrect',
                       number, a, b, c, alpha, beta, gamma)
                 self.valid = False
-                return
+                return None
 
             # Convert WP site
             sites_info = np.reshape(rep[7:], (int((len(rep) - 7) / 4), 4))

@@ -238,8 +238,8 @@ class plane:
 
 
 if __name__ == "__main__":
-    import sys
 
+    import sys
     from pyxtal.db import database
 
     try:
@@ -269,7 +269,8 @@ if __name__ == "__main__":
                 splanes = [
                     splane
                     for splane in splanes
-                    if splane.repeat_distance > p.d_min and p.get_cp_factor(list(splane.orientation.hkl)) > p.cp_factor
+                    if splane.repeat_distance > p.d_min and \
+                    p.get_cp_factor(list(splane.orientation.hkl)) > p.cp_factor
                 ]
                 if len(splanes) > len(ps):
                     for splane in splanes:
