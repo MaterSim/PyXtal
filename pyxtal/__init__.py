@@ -3282,14 +3282,21 @@ class pyxtal:
 
         return np.array(separations)
 
-    #def cut_cell(self, cutoff=5.0):
-    #    """
-    #    An utility to reduce the empty spacing
-    #    """
-    #    seps = self.get_separations()
-    #    id = seps.argmax()
-    #    if seps[id] >= cutoff:
-    #        pass
+    def cut_lattice(self, max_separation=3.0, verbose=False):
+        """
+        An utility to reduce the empty spacing
+        """
+        seps = self.get_separations()
+        ax = seps.argmax()
+        if seps[ax] >= max_separation:
+            cut = seps[ax] - max_separation
+            # update coordinates
+            for mol_site in self.mol_sites:
+                mol_site.cut_lattice(ax, cut)
+            self.lattice.update_para(ax, -cut)
+            if verbose:
+                print(f"Found large separation {ax} {seps[ax]:.2f}")
+                print("Update lattice", self.lattice)
 
 
     def get_structure_factor(self, hkl, coeffs=None):

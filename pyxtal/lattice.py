@@ -671,6 +671,11 @@ class Lattice:
         else:
             self.set_matrix()
 
+    def update_para(self, id, change):
+        para = [self.a, self.b, self.c, self.alpha, self.beta, self.gamma]
+        para[id] += change
+        self.set_matrix(para2matrix(para))
+
     def reset_matrix(self, shape="upper"):
         if self.random:
             success = False

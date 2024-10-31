@@ -640,9 +640,25 @@ class mol_site:
             if fun <= early_quit:
                 break
 
-    def update_lattice(self, lattice):
-        # QZ: Symmetrize the angle to the compatible orientation first
-        self.lattice = lattice
+    def cut_lattice(self, ax, cut):
+        """
+        Cut lattice length on the given direction
+
+        Args:
+            ax (int): 0, 1, 2
+            cut (float): the cut
+        """
+        paras = self.lattice.get_para()
+        x0 = self.position[ax]
+        x0 -= np.floor(x0)
+
+        if x0 < 0.25:
+            self.position[ax] = paras[ax] * x0 / (paras[ax]-cut)
+        elif 0.25 <= x0 <= 0.75:
+            self.position[ax] = (paras[ax] * x0 - 0.5 * cut) / (paras[ax]-cut)
+        else:
+            self.position[ax] = (paras[ax] * x0 - cut) / (paras[ax]-cut)
+        #self.lattice.update_para(ax, -cut)
 
     def __str__(self):
         if not hasattr(self.wp, "site_symm"):
