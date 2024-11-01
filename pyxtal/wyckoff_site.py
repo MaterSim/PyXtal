@@ -505,7 +505,7 @@ class mol_site:
                 if wp2.type not in donor_ids.keys():
                     acceptor_ids[wp2.type] = wp2.molecule.active_sites[0]
                     donor_ids[wp2.type] = wp2.molecule.active_sites[1]
-                    H_ids[wp2.type] = wp2.molecule.ctive_sites[2]
+                    H_ids[wp2.type] = wp2.molecule.active_sites[2]
 
         # Count only 1 contribution per acceptor
         for id1 in self.molecule.active_sites[0]:
@@ -1262,7 +1262,7 @@ class mol_site:
         """
         coord1, _ = self._get_coords_and_species(first=True, unitcell=True, matrix=matrix)
         coord2, _ = wp2._get_coords_and_species(unitcell=True)
-        ds, coords = self.get_distances(coord1, coord2, ignore=ignore)
+        ds, coords = self.get_distances(coord1, coord2, len(wp2.numbers), ignore=ignore)
         if cutoff is None:
             return ds, coords
         else:
