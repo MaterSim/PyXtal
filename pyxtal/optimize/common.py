@@ -103,6 +103,9 @@ def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125, random_state=None):
                 x[i][j] *= -1
     try:
         struc = representation(x, smiles).to_pyxtal(composition=comp)
+        for i, molecule in enumerate(xtal.molecules):
+            if hasattr(molecule, 'active_sites'):
+                struc.molecules[i].active_sites = molecule.active_sites
         return struc
     except:
         print(xtal)
@@ -205,6 +208,7 @@ def optimizer(
     calculators = None,
     max_time = 180,
     skip_ani = False,
+    pre_opt = False,
 ):
     """
     Structural relaxation for each individual pyxtal structure.
@@ -217,6 +221,10 @@ def optimizer(
     Returns:
         a dictionary with xtal, energy and time
     """
+    # Perform pre-relaxation
+    if pre_opt:
+        struc.optimize_lattice_and_rotation()
+
     if calculators is None:
         calculators = ["CHARMM"]
 
@@ -427,6 +435,7 @@ def optimizer_single(
     use_hall,
     skip_ani,
     check_stable,
+    pre_opt,
 ):
     """
     A routine used for individual structure optimization
@@ -465,7 +474,7 @@ def optimizer_single(
     if xtal is None:
         res = None
     else:
-        res = optimizer(xtal, atom_info, workdir, job_tag, opt_lat, skip_ani=skip_ani)
+        res = optimizer(xtal, atom_info, workdir, job_tag, opt_lat, skip_ani=skip_ani, pre_opt=pre_opt)
 
     # 3. Check match w.r.t the reference
     match = False

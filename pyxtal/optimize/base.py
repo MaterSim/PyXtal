@@ -101,6 +101,7 @@ class GlobalOptimize:
         E_max (float): maximum energy defined as an invalid structure
         matcher : structurematcher from pymatgen
         early_quit: whether quit the program early when the target is found
+        pre_opt: whether pre_optimize the structure or not
     """
 
     def __init__(
@@ -135,6 +136,7 @@ class GlobalOptimize:
         early_quit: bool = True,
         check_stable: bool = False,
         use_mpi: bool = False,
+        pre_opt: bool = False,
     ):
 
         self.ncpu = N_cpu
@@ -169,6 +171,7 @@ class GlobalOptimize:
                                   ) * int(max([comp, 1]))
 
         # Crystal information
+        self.pre_opt = pre_opt
         self.sg = [sg] if isinstance(sg, (int, np.int64)) else sg
         self.use_hall = use_hall
         self.factor = factor
@@ -966,6 +969,7 @@ class GlobalOptimize:
             self.use_hall,
             self.skip_ani,
             self.check_stable,
+            self.pre_opt,
         ]
         return args
 

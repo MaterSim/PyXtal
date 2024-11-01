@@ -87,6 +87,7 @@ class DFS(GlobalOptimize):
         early_quit: bool = False,
         check_stable: bool = False,
         use_mpi: bool = False,
+        pre_opt: bool = False,
     ):
         if isinstance(random_state, Generator):
             self.random_state = random_state.spawn(1)[0]
@@ -133,6 +134,7 @@ class DFS(GlobalOptimize):
             early_quit,
             check_stable,
             use_mpi,
+            pre_opt,
         )
 
         # Setup the stats [N_gen, Npop, (E, matches)]
