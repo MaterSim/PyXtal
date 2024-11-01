@@ -466,141 +466,163 @@ class mol_site:
 
         return fun
 
-    def get_repulsion_energy(self, d, k, rmax):
-        eng = k * (d[d < rmax] ** 2).sum()
-        #print("repulsion", eng)
-        return eng
-
-    def get_hbond_energy(self, d, k, r_max, r_eq, ref_donor_ids=None, ref_acceptor_ids=None):
+    def get_energy(self, angle=None, wps=[], k1=1.0, r1=1.0, k2=2.0, k3=1.0, r2=6.0,
+                   req=2.8, r_cut=2.0, verbose=False):
         """
-        Compute the hbond energy from the distance matrix between two molecules
+        Compute the virtual energy based on Hbonding and repulsion
 
         Args:
-            d: N*M matrix
-            k: hbond force constant
-            req: target hbond distance
-            ref_donor_ids:
-            ref_acceptor_ids:
-
-        Returns:
-            H bond energy
+            angle (float): rotation along a rotation axis
+            wps (list): list of wps for consideration
         """
-        if ref_donor_ids is None: ref_donor_ids = self.donor_ids
-        if ref_acceptor_ids is None: ref_acceptor_ids = self.acceptor_ids
-
-        eng = 0
-        for id1 in self.donor_ids:
-            for id2 in ref_acceptor_ids:
-                if d[id1, id2] < r_max:
-                    d0 = d[id1, id2]
-                    eng += k * (d0-r_eq) ** 2 * np.cos(d0/r_max*np.pi)
-                    print("h_bond", d[id1, id2], eng)
-        for id1 in self.acceptor_ids:
-            for id2 in ref_donor_ids:
-                if d[id1, id2] < r_max:
-                    d0 = d[id1, id2]
-                    eng += k * (d0-r_eq) ** 2 * np.cos(d0/r_max*np.pi)
-                    print("h_bond", d[id1, id2], eng)
-        return eng
-
-    def get_energy(self, angle=None, k1=1.0, r1=1.0, k2=2.0, k3=1.0, r2=6.0,
-                   req=2.8, r_cut=2.0, verbose=False):
-
         # Set the orientation and compute the distance
-        donor_ids = [11]
-        acceptor_ids = [12]
-        H_ids = [20]
         if angle is not None:
             matrix = self.orientation.change_orientation(angle, update=False)
         else:
             matrix = self.orientation.matrix
-
-        #print("matrix in get_energy", matrix.flatten())
 
         coord_ref, _ = self._get_coords_and_species(first=True, unitcell=True, matrix=matrix)
         coord_ref = coord_ref @ self.lattice.matrix
 
         # Get total distances
         eng = 0
-        d0, coords0 = self.get_dists_auto(matrix=matrix)
-        d1, coords1 = self.get_dists_WP(matrix=matrix, ignore=True)
+        d0, ids_0 = self.get_dists_auto(matrix=matrix, cutoff=8.0)
+        d1, ids_1 = self.get_dists_WP(matrix=matrix, ignore=True, cutoff=8.0)
         d_total = np.append(d0, d1, axis=0)
-        c_total = np.append(coords0, coords1, axis=0)
+        ids_total = np.append(ids_0, ids_1, axis=0)
 
-        # Count only 1 contribution per Donor
-        for id1 in donor_ids:
+        # initialize ids dicts
+        acceptor_ids = {}; acceptor_ids[self.type] = self.molecule.active_sites[0]
+        donor_ids = {}; donor_ids[self.type] = self.molecule.active_sites[1]
+        H_ids = {}; H_ids[self.type] = self.molecule.active_sites[2]
+
+        # Extract short distances ([x, y, z, d], [mol1, mol2, atom_id1, atom_id2])
+        for wp2 in wps:
+            d2, ids_2 = self.get_dists_WP2(wp2, matrix=matrix, ignore=True, cutoff=8.0)
+            if len(d2) > 0:
+                d_total = np.append(d_total, d2, axis=0)
+                ids_total = np.append(ids_total, ids_2, axis=0)
+                if wp2.type not in donor_ids.keys():
+                    acceptor_ids[wp2.type] = wp2.molecule.active_sites[0]
+                    donor_ids[wp2.type] = wp2.molecule.active_sites[1]
+                    H_ids[wp2.type] = wp2.molecule.ctive_sites[2]
+
+        # Count only 1 contribution per acceptor
+        for id1 in self.molecule.active_sites[0]:
             rA = coord_ref[id1]
-            dAD, angle, dAH = self.get_dist_angle_AD(d_total, c_total, id1, acceptor_ids, H_ids, rA)
+            dAD, angle, dAH = self.get_dist_angle_AD(d_total, ids_total, id1, donor_ids, H_ids, rA)
             eng += k2 * (dAD-req) ** 2
             eng += k3 * (angle-np.pi) ** 2
+            #print(dAD, dAH, angle)
             if dAH < r_cut: eng -= k1 * dAH * np.exp(r_cut - dAH) - 1.0
             if verbose:
                 print('Hbond AD', id1, dAD, dAH, np.degrees(angle), eng)
 
-        # Count only 1 contribution per Acceptor
-        for i, id1 in enumerate(acceptor_ids):
+        # Count only 1 contribution per donor
+        for i, id1 in enumerate(self.molecule.active_sites[1]):
             rD = coord_ref[id1]
-            rH = coord_ref[H_ids[i]]
+            rH = coord_ref[self.molecule.active_sites[2][i]]
 
-            dAD, angle, dAH = self.get_dist_angle_DA(d_total, c_total, id1, acceptor_ids, H_ids, rD, rH)
+            dAD, angle, dAH = self.get_dist_angle_DA(d_total, ids_total, id1, acceptor_ids, rD, rH)
             eng += k2 * (dAD-req) ** 2
             eng += k3 * (angle-np.pi) ** 2
             if dAH < r_cut: eng -= k1 * dAH * np.exp(r_cut - dAH) - 1.0
+            #print(dAD, dAH, angle)
             if verbose:
                 print('Hbond DA', id1, dAD, dAH, np.degrees(angle), eng)
 
         # Count repulsion
-        ds = d_total[d_total < r_cut]
+        ds = d_total[:, 3]
+        ds = ds[ds < r_cut]
         eng += k1 * (ds * np.exp(r_cut - ds) - 1.0).sum()
+        #print(ds)
         if verbose:
             print('Repulsion', d_total[d_total < r_cut], eng)
 
         return eng
 
-    def get_dist_angle_AD(self, d_total, c_total, A_id, D_ids, H_ids, rA):
+    def get_dist_angle_AD(self, d_total, ids_total, A_id, D_ids, H_ids, rA):
+        """
+        Args:
+            d_total ():
+            c_total ():
+            A_id (int): index of acceptor atom
+            D_ids ()
+        """
 
-        arr = d_total[:, A_id, D_ids]
-        myid = np.unravel_index(arr.argmin(), arr.shape)
-        rD = c_total[myid[0], D_ids[myid[1]], :]
-        rH = c_total[myid[0], H_ids[myid[1]], :] #; print(r_O, r0, np.linalg.norm(r_O-r0))
-        r1 = rD - rH
-        r2 = rA - rH
-        d1 = np.linalg.norm(r1)
-        d2 = np.linalg.norm(r2)
-        d_min = arr[myid]
-        if abs(d_min - np.linalg.norm(rD-rA)) > 1e-3:
-            print("bug", d_min, np.linalg.norm(rD-rA))
-            import sys; sys.exit()
-        cos = r1@r2/(d1*d2)
-        angle = np.arccos(np.clip(cos, -1.0, 1.0))
+        # Get satisfied
+        rows0 = np.where((ids_total[:, 2]==A_id))[0]
+        rows_D = []
+        rows_H = []
+        for row in rows0:
+            m2 = ids_total[row, 1]
+            if ids_total[row, 3] in D_ids[m2]:
+                rows_D.append(row)
+            elif ids_total[row, 3] in H_ids[m2]:
+                rows_H.append(row)
 
-        return d_min, angle, d2
+        if len(rows_D) == 0:
+            return 10.0, 0, 10.0
+        else:
+            myid = d_total[rows_D][:, 3].argmin()
+            rD = d_total[rows_D][myid, :3]
+            dAD = d_total[rows_D][myid, 3]
 
-    def get_dist_angle_DA(self, d_total, c_total, D_id, A_ids, H_ids, rD, rH):
+            # Find the shortest distance from H
+            if len(rows_H) == 0:
+                rH = rD + np.array([1, 0, 0])
+            else:
+                coords_H = d_total[rows_H]
+                myid_H = coords_H[:, 3].argmin()
+                rH = coords_H[myid_H][:3]
 
-        arr = d_total[:, D_id, A_ids]
-        myid = np.unravel_index(arr.argmin(), arr.shape)
-        rA = c_total[myid[0], A_ids[myid[1]], :]
-        r1 = rD - rH
-        r2 = rA - rH
-        d1 = np.linalg.norm(r1)
-        d2 = np.linalg.norm(r2)
-        d_min = arr[myid]
-        if abs(d_min - np.linalg.norm(rD-rA)) > 1e-3:
-            print("bug", d_min, np.linalg.norm(rD-rA))
-            import sys; sys.exit()
-        cos = r1@r2/(d1*d2)
-        angle = np.arccos(np.clip(cos, -1.0, 1.0))
+            rHD = rD - rH
+            rHA = rA - rH
+            dHD = np.linalg.norm(rHD)
+            dHA = np.linalg.norm(rHA)
+            if abs(dAD - np.linalg.norm(rD-rA)) > 1e-3:
+                print("bug", dAD, rD, rA, np.linalg.norm(rD-rA))
+                import sys; sys.exit()
+            #print('debug dHA, dHD', dHA, dHD)
+            cos = rHD @ rHA / (dHD * dHA)
+            angle = np.arccos(np.clip(cos, -1.0, 1.0))
 
-        return d_min, angle, d2
+            return dAD, angle, dHA
 
-    def optimize_orientation_by_energy(self, max_ax=20, max_ori=5, early_quit=3.0, verbose=False):
+    def get_dist_angle_DA(self, d_total, ids_total, D_id, A_ids, rD, rH):
+
+        # Get satisfied
+        rows0 = np.where((ids_total[:, 2]==D_id))[0]
+        rows_A = []
+        for row in rows0:
+            m2 = ids_total[row, 1]
+            if ids_total[row, 3] in A_ids[m2]:
+                rows_A.append(row)
+
+        if len(rows_A) == 0:
+            return 10.0, 0, 10.0
+        else:
+            myid = d_total[rows_A][:, 3].argmin()
+            rA = d_total[rows_A][myid, :3]
+            dAD = d_total[rows_A][myid, 3]
+            rHD = rD - rH
+            rHA = rA - rH
+            dHA = np.linalg.norm(rHA)
+            dHD = np.linalg.norm(rHD)
+            d_min = d_total[myid, 3]
+            if abs(dAD - np.linalg.norm(rD-rA)) > 1e-3:
+                print("bug", dAD, rD, rA, np.linalg.norm(rD-rA))
+                import sys; sys.exit()
+            #print('debug dHA, dHD', dHA, dHD)
+            cos = rHD @ rHA / (dHD * dHA)
+            angle = np.arccos(np.clip(cos, -1.0, 1.0))
+
+            return dAD, angle, dHA
+
+    def optimize_orientation_by_energy(self, wps=[], max_ax=20, max_ori=5, early_quit=3.0, verbose=False):
         """
         Iteratively optimize the orientation with the bisection method
         """
-        self.donor_ids = [11]
-        self.acceptor_ids = [12]
-
         for ax_trial in range(max_ax):
 
             # Select axis and compute the initial fun value and angle bounds
@@ -608,8 +630,8 @@ class mol_site:
             self.orientation.set_axis()
             ang_lo = 0 #self.orientation.angle
             ang_hi = np.pi #ang_lo + np.pi
-            fun_lo = self.get_energy() #; print("call funlo", fun_lo)
-            fun_hi = self.get_energy(ang_hi) #; print("call funhi", fun_hi)
+            fun_lo = self.get_energy(wps=wps) #; print("call funlo", fun_lo)
+            fun_hi = self.get_energy(ang_hi, wps=wps) #; print("call funhi", fun_hi)
             fun = fun_hi
             #if verbose: print("Init", ang_lo, fun_lo)
 
@@ -618,7 +640,7 @@ class mol_site:
 
                 # Compute the midpoint angle for bisection
                 ang = (ang_lo + ang_hi) / 2
-                fun = self.get_energy(ang)
+                fun = self.get_energy(ang, wps=wps)
                 # Update based on the function value at the midpoint
                 if fun_lo < fun_hi:
                     ang_hi, fun_hi = ang, fun
@@ -980,8 +1002,9 @@ class mol_site:
         Returns:
             a molecule object
         """
-        coord0 = self.molecule.mol.cart_coords.dot(
-            self.orientation.matrix.T)  #
+        coord0 = self.molecule.mol.cart_coords
+        coord0 = coord0 @ self.orientation.matrix.T
+
         # Obtain the center in absolute coords
         if not hasattr(self.wp, "generators"):
             self.wp.set_generators()
@@ -1158,40 +1181,57 @@ class mol_site:
         """
         m1 = len(coord1)
         if m2 is None: m2 = m1
-        N2 = int(len(coord2) / m2)
+        N2 = int(len(coord2) / m2) # Number of molecule 2
 
         # peridoic images
         m = self._create_matrix(center, ignore)  # PBC matrix
         coord2 = np.vstack([coord2 + v for v in m])
-        N = N2 * len(m)
+        N = N2 * len(m) # Number of PBC images
 
         # absolute xyz
         coord1 = coord1 @ self.lattice.matrix
         coord2 = coord2 @ self.lattice.matrix
 
         d = cdist(coord1, coord2)
-        #ID=d[11, 12::21].argmin(); print("d1_min", d[11, 12::21].min(), coord2[ID*21+12])
         d = d.reshape(m1, N, m2).transpose(1, 0, 2)
         coord2 = coord2.reshape([N, m2, 3])
-        #ID=d[:, 11, 12].argmin(); print("d2_min", d[ID, 11, 12], coord2[ID, 12, :])
         return d, coord2
 
-    def get_dists_auto(self, matrix=None, ignore=False):
+    def get_dists_auto(self, matrix=None, ignore=False, cutoff=None):
         """
         Compute the distances between the periodic images
+        N: number of atoms in the molecule
+        M:
 
         Args:
             ignore (bool, optional): If `True`, ignores some periodic boundary conditions.
+            cutoff (): if not None, reduce the distance matrix
 
         Returns:
             a distance matrix (M, N, N)
             list of molecular xyz (M, N, 3)
         """
         coord1, _ = self._get_coords_and_species(first=True, unitcell=True, matrix=matrix)
+        ds, coords = self.get_distances(coord1, coord1, center=False, ignore=ignore)
+        if cutoff is None:
+            return ds, coords
+        else:
+            return self.extract_short_distances(ds, coords, cutoff, self.type, self.type)
 
-        return self.get_distances(coord1, coord1, center=False, ignore=ignore)
+    def extract_short_distances(self, ds, coords, cutoff, label1, label2):
 
-    def get_dists_WP(self, matrix=None, ignore=False, idx=None):
+        indices = np.where( ds < cutoff )
+        d1s = np.zeros((len(indices[0]), 4))
+        ids = np.zeros((len(indices[0]), 4), dtype=int)
+        for i in range(len(indices[0])):
+            m, n1, n2 = indices[0][i], indices[1][i], indices[2][i]
+            d1s[i, :3] = coords[m, n2, :]
+            d1s[i, 3] = ds[m, n1, n2]
+            ids[i] = [label1, label2, n1, n2]
+        return d1s, ids
+
+
+    def get_dists_WP(self, matrix=None, ignore=False, idx=None, cutoff=None):
         """
         Compute the distances within the WP site
 
@@ -1206,7 +1246,27 @@ class mol_site:
             coord2 = coords[m_length:]
         else:
             coord2 = coords[m_length *(idx): m_length * (idx + 1)]
-        return self.get_distances(coord1, coord2, ignore=ignore)
+        ds, coords = self.get_distances(coord1, coord2, ignore=ignore)
+        if cutoff is None:
+            return ds, coords
+        else:
+            return self.extract_short_distances(ds, coords, cutoff, self.type, self.type)
+
+    def get_dists_WP2(self, wp2, matrix=None, ignore=False, cutoff=None):
+        """
+        Compute the distances w.r.t to other WP site
+
+        Returns:
+            a distance matrix (M, N, N)
+            list of molecular xyz (M, N, 3)
+        """
+        coord1, _ = self._get_coords_and_species(first=True, unitcell=True, matrix=matrix)
+        coord2, _ = wp2._get_coords_and_species(unitcell=True)
+        ds, coords = self.get_distances(coord1, coord2, ignore=ignore)
+        if cutoff is None:
+            return ds, coords
+        else:
+            return self.extract_short_distances(ds, coords, cutoff, self.type, wp2.type)
 
     def short_dist(self):
         """
@@ -1291,11 +1351,11 @@ class mol_site:
                                     mode (default is -5e-2).
 
         Returns:
-            If `detail == True`:
+            If `detail is True`:
                 engs (list): List of interaction energies for valid molecular pairs.
                 pairs (list): List of tuples with neighbor molecules and positions.
                 dists (list): List of distances between neighboring molecular pairs.
-            If `detail == False`:
+            If `detail is False`:
                 min_ds (list): List of shortest distances between central and neighbors.
                 neighs (list): List of neighboring molecular coordinates with PBC.
                 Ps (list): List of Wyckoff position multiplicities or translations.

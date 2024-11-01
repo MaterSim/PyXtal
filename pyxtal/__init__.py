@@ -3267,37 +3267,6 @@ class pyxtal:
         #    #print(self.to_file())
         #    print("Wrong", csd_code); import sys; sys.exit()
 
-    def get_separations(self, hkls=[[1, 0, 0], [0, 1, 0], [0, 0, 1]]):
-        """
-        Compute the separation for the given hkl plane
-        """
-        separations = []
-        if self.molecular:
-            from pyxtal.plane import planes
-            p = planes()
-            p.set_xtal(self)
-            for hkl in hkls:
-                (_, _, sep) = p.get_separation(hkl)
-                separations.append(sep.max())
-
-        return np.array(separations)
-
-    def cut_lattice(self, max_separation=3.0, verbose=False):
-        """
-        An utility to reduce the empty spacing
-        """
-        seps = self.get_separations()
-        ax = seps.argmax()
-        if seps[ax] >= max_separation:
-            cut = seps[ax] - max_separation
-            # update coordinates
-            for mol_site in self.mol_sites:
-                mol_site.cut_lattice(ax, cut)
-            self.lattice.update_para(ax, -cut)
-            if verbose:
-                print(f"Found large separation {ax} {seps[ax]:.2f}")
-                print("Update lattice", self.lattice)
-
 
     def get_structure_factor(self, hkl, coeffs=None):
         """
@@ -4027,3 +3996,55 @@ class pyxtal:
                                   ['Cs', 'Cl'])
         else:
             raise ValueError("Cannot support the input prototype", prototype)
+
+    def optimize_orientation_by_energy(self, max_iter=20, verbose=False):
+
+        for i, site in enumerate(self.mol_sites):
+            ms = [self.mol_sites[j] for j in range(len(self.mol_sites)) if j != i]
+            site.optimize_orientation_by_energy(wps=ms, verbose=verbose)
+
+    def get_orientation_energy(self):
+        eng = 0
+        for i, site in enumerate(self.mol_sites):
+            ms = [self.mol_sites[j] for j in range(i+1, len(self.mol_sites))]
+            eng += site.wp.multiplicity * site.get_energy(wps=ms)
+        return eng
+
+    def get_separations(self, hkls=[[1, 0, 0], [0, 1, 0], [0, 0, 1]]):
+        """
+        Compute the separation for the given hkl plane
+        """
+        separations = []
+        if self.molecular:
+            from pyxtal.plane import planes
+            p = planes()
+            p.set_xtal(self)
+            for hkl in hkls:
+                (_, _, sep) = p.get_separation(hkl)
+                separations.append(sep.max())
+
+        return np.array(separations)
+
+    def cut_lattice(self, max_separation=3.0, verbose=False):
+        """
+        An utility to reduce the empty spacing
+        """
+        seps = self.get_separations()
+        ax = seps.argmax()
+        if seps[ax] >= max_separation:
+            cut = seps[ax] - max_separation
+            # update coordinates
+            for mol_site in self.mol_sites:
+                mol_site.cut_lattice(ax, cut)
+            self.lattice.update_para(ax, -cut)
+            if verbose:
+                print(f"Found large separation {ax} {seps[ax]:.2f}")
+                print("Update lattice", self.lattice)
+
+    def optimize_lattice_and_rotation(self, iterations=3, verbose=False):
+        """
+        Iteratively cut lattice and optimize the rotation
+        """
+        for i in range(iterations):
+            self.cut_lattice(2.0, verbose=verbose)
+            self.optimize_orientation_by_energy(20, verbose=verbose)
