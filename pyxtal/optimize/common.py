@@ -368,6 +368,7 @@ def optimizer_par(
     use_hall,
     skip_ani,
     check_stable,
+    pre_opt,
 ):
     """
     A routine used for parallel structure optimization
@@ -406,6 +407,7 @@ def optimizer_par(
             use_hall,
             skip_ani,
             check_stable,
+            pre_opt,
         )
         results.append((id, xtal, match))
     return results

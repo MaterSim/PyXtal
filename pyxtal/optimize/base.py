@@ -50,26 +50,26 @@ def run_optimizer_with_timeout(args, logger):
     # Set the timeout signal
     cwd = os.getcwd()
     timeout = int(args[-1])
-    logger.info(f"Rank-{args[-2]} entering optimizer_with_timeout")
+    #logger.info(f"Rank-{args[-2]} entering optimizer_with_timeout")
     signal.signal(signal.SIGALRM, handler)
     signal.alarm(timeout)
-    logger.info(f"Rank-{args[-2]} after signal")
+    #logger.info(f"Rank-{args[-2]} after signal")
 
     try:
         logger.info(f"Rank-{args[-2]} running optimizer_par for PID {os.getpid()}")
         result = optimizer_par(*args[:-2])
-        logger.info(f"Rank-{args[-2]} finished optimizer_par for PID {os.getpid()} successfully")
+        logger.info(f"Rank-{args[-2]} finished optimizer_par for PID {os.getpid()}")
         signal.alarm(0)  # Disable the alarm
         return result
     except TimeoutError:
-        logger.info(f"Rank-{args[-1]} Process {os.getpid()} timed out after {timeout} seconds.")
+        logger.info(f"Rank-{args[-2]} Process {os.getpid()} timed out after {timeout} seconds.")
         os.chdir(cwd)
         return None  # or some other placeholder for timeout results
 
 # Update process_task to accept a logger
 def process_task(args):
     logger = logging.getLogger()
-    logger.info(f"Rank {args[-2]} start process_task.")
+    #logger.info(f"Rank {args[-2]} start process_task.")
     result = run_optimizer_with_timeout(args, logger)
     return result
 
@@ -786,7 +786,8 @@ class GlobalOptimize:
                 matches = sorted(
                     self.matches, key=lambda x: -x[4])  # similarity
             else:
-                matches = sorted(self.matches, key=lambda x: x[4])  # rmsd
+                print(self.matches)
+                matches = sorted(self.matches, key=lambda x: x[3]) # eng
 
             for match_data in matches:
                 d1, match = None, None
@@ -813,7 +814,7 @@ class GlobalOptimize:
 
                     if e is not None:
                         rank = len(all_engs[all_engs < (e - 1e-3)]) + 1
-                        strs += f"{rank:d}/{self.N_struc:d} {tag:s}"
+                        strs += f" {rank:d}/{self.N_struc:d} {tag:s}"
                         ranks.append(rank)
 
                     print(strs)
@@ -1084,11 +1085,10 @@ class GlobalOptimize:
                             + "-p" + str(id) for id in _ids]
                 _xtals = [xtals[id][0] for id in range(id1, id2)]
                 mutates = [False if qrs else xtal is not None for xtal in _xtals]
-                my_args = [_xtals, _ids, mutates, job_tags, *args, self.timeout]
+                my_args = [_xtals, _ids, mutates, job_tags, *args, self.rank, self.timeout]
                 yield tuple(my_args)  # Yield args instead of appending to a list
 
         gen_results = []
-        #for result in pool.imap_unordered(process_task, args_lists):
         for result in pool.imap_unordered(process_task, generate_args_lists()):
             if result is not None:
                 for _res in result:
