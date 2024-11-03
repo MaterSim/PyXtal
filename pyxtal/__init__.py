@@ -4045,6 +4045,8 @@ class pyxtal:
         """
         Iteratively cut lattice and optimize the rotation
         """
-        for i in range(iterations):
-            self.cut_lattice(2.0, verbose=verbose)
-            self.optimize_orientation_by_energy(20, verbose=verbose)
+        if self.molecular:
+            for i in range(iterations):
+                self.cut_lattice(2.0, verbose=verbose)
+                if self.molecules[0].active_sites is not None:
+                    self.optimize_orientation_by_energy(20, verbose=verbose)

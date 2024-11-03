@@ -226,8 +226,8 @@ class GlobalOptimize:
             self.parameters = None
             self.ff_opt = False
         else:
-            self.ff_parameters = ff_parameters
-            self.reference_file = reference_file
+            self.ff_parameters = self.workdir + "/" + ff_parameters
+            self.reference_file = self.workdir + "/" + reference_file
             # Only call ForceFieldParameters once
             # No need to broadcast self.parameters?
             # Just broadcast atom_info should be fine
@@ -236,7 +236,11 @@ class GlobalOptimize:
             if self.rank == 0:
                 from pyocse.parameters import ForceFieldParameters
                 self.parameters = ForceFieldParameters(
-                    self.smiles, style=ff_style, f_coef=1.0, s_coef=1.0, ncpu=self.ncpu)
+                    self.smiles, style=ff_style,
+                    f_coef=1.0,
+                    s_coef=1.0,
+                    ref_evaluator='mace',
+                    ncpu=self.ncpu)
 
                 # Preload two set for FF parameters 1 for opt and 2 for refinement
                 if isinstance(self.ff_parameters, list):
@@ -267,8 +271,7 @@ class GlobalOptimize:
                             ff_style,
                         )
                         params0 = self.parameters.params_init.copy()
-                        self.parameters.export_parameters(
-                            self.workdir + "/" + self.ff_parameters, params0)
+                        self.parameters.export_parameters(self.ff_parameters, params0)
                     atom_info = self._prepare_chm_info(
                         params0, suffix='pyxtal')
 
@@ -391,7 +394,7 @@ class GlobalOptimize:
         """
         xtals = []
         for id in ids:
-            xtal = ref_xtals[id]
+            (xtal, _) = ref_xtals[id]
             if xtal.energy <= self.E_max and self.new_struc(xtal, xtals):
                 xtals.append(xtal)  # .to_ase(resort=False))
             if len(xtals) == N_max:
