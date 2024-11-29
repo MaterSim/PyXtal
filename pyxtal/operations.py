@@ -725,7 +725,8 @@ class OperationAnalyzer(SymmOp):
                     self.axis = rotvec / self.angle
                     if self.hexagonal:
                         # print('convert hex', self.axis, np.dot(self.axis, hex_cell))
-                        self.axis = np.dot(self.axis, hex_cell)
+                        if np.linalg.norm(self.axis - np.array([1, 0, 0])) > 1e-4:
+                            self.axis = np.dot(self.axis, hex_cell)
                     # parse symmetry direction
                     if self.parse_trans and not self.parse_axis():
                         self.axis *= -1
@@ -758,8 +759,9 @@ class OperationAnalyzer(SymmOp):
                     self.angle = np.linalg.norm(rotvec)
                     self.axis = rotvec / self.angle
                     if self.hexagonal:
-                        # print('convert hex', self.axis, np.dot(self.axis, hex_cell))
-                        self.axis = np.dot(self.axis, hex_cell)
+                        if np.linalg.norm(self.axis - np.array([1, 0, 0])) > 1e-4:
+                            # print('convert hex', self.axis, np.dot(self.axis, hex_cell))
+                            self.axis = np.dot(self.axis, hex_cell)
                 if np.isclose(self.angle, 0):
                     self.symbol = "-1"
                     self.type = "inversion"
