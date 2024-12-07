@@ -29,15 +29,25 @@ class TestWP(unittest.TestCase):
     def test_wp_site_symm(self):
         data = [
             (143, 1, "3.."),
+            (150, 1, ".2."),
+            (152, 1, ".2."),
+            (154, 1, ".2."),
+            (155, 1, ".2"),
             (160, 1, ".m"),
             (160, 2, "3m"),
+            (164, 4, ".2/m."),
+            (165, 1, ".2."),
+            (177, 3, ".2."),
+            (178, 2, ".2."),
+            (180, 3, ".2."),
+            (181, 3, ".2."),
             (230, 6, ".32"),
         ]
         for d in data:
             (sg, i, symbol) = d
             wp = Group(sg)[i]
             wp.get_site_symmetry()
-            # print("\n========", wp.site_symm, symbol, "==========\n")
+            if wp.site_symm != symbol: print("\n========", wp.site_symm, d, "==========\n")
             assert wp.site_symm == symbol
 
     def test_wp_dof(self):

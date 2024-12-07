@@ -518,7 +518,6 @@ class pyxtal:
                 specie = site[0].specie.number
                 # if wp.index>0: print(wp)
                 pos1 = wp.search_generator(pos, self.group[0], tol=tol)
-                # print(pos, pos1, self.group[0])
                 if pos1 is not None:
                     atom_sites.append(atom_site(wp, pos1, specie))
                 else:
@@ -530,9 +529,12 @@ class pyxtal:
                         raise RuntimeError(
                             "Cannot extract the right mapping from spglib")
                         # break
+                    else:
+                        atom_sites.append(atom_site(wp, pos1, specie))
+                        #print(pos, pos1, self.group[0])
 
-            # if len(atom_sites) != len(sym_struc.equivalent_sites):
-            # else:
+            if len(atom_sites) != len(sym_struc.equivalent_sites):
+                raise RuntimeError("Fail to extract the atom site")
             self.atom_sites = atom_sites
             # import pymatgen.analysis.structure_matcher as sm
             # self.dim = 3

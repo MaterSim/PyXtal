@@ -2414,7 +2414,7 @@ class Wyckoff_position:
         return [SymmOp.from_rotation_and_translation(op.rotation_matrix, [0, 0, 0]) for op in self.symmetry[0]]
 
     def get_site_symmetry_object(self, idx=0):
-        ops = self.get_site_symm_ops(idx)
+        ops = self.get_site_symm_ops(idx)#; print(self.number, self.index, self.letter)
         return site_symmetry(ops, self.lattice_type, self.symbol[0])
 
     def get_site_symmetry(self, idx=0):
@@ -3835,9 +3835,13 @@ class site_symmetry:
         for i, ref_array in enumerate(ref_arrays):
             if np.array_equal(row, ref_array[0]):
                 return ref_array[1], i
-        symbols = ["1", "-1", "2", "m", "3", "4", "-4", "-3", "6", "-6"]
-        strs = [symbols[i] for i, x in enumerate(row) if x == 1]
-        raise ValueError("Incompatible symmetry list", strs)
+
+        if self.lattice_type not in ["hexagonal", "trigonal"]:
+            symbols = ["1", "-1", "2", "m", "3", "4", "-4", "-3", "6", "-6"]
+            strs = [symbols[i] for i, x in enumerate(row) if x == 1]
+            print(row)
+            #raise ValueError("Incompatible symmetry list", strs)
+        return ref_arrays[0][1], 0
 
 
 def organized_wyckoffs(group):

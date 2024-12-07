@@ -56,9 +56,11 @@ def run_optimizer_with_timeout(args, logger):
     #logger.info(f"Rank-{args[-2]} after signal")
 
     try:
-        logger.info(f"Rank-{args[-2]} running optimizer_par for PID {os.getpid()}")
+        if args[-2] > 0:
+            logger.info(f"Rank-{args[-2]} running optimizer_par for PID {os.getpid()}")
         result = optimizer_par(*args[:-2])
-        logger.info(f"Rank-{args[-2]} finished optimizer_par for PID {os.getpid()}")
+        if args[-2] > 0:
+            logger.info(f"Rank-{args[-2]} finished optimizer_par for PID {os.getpid()}")
         signal.alarm(0)  # Disable the alarm
         return result
     except TimeoutError:
@@ -291,7 +293,7 @@ class GlobalOptimize:
         self.early_quit = early_quit
         self.N_min_matches = 10  # The min_num_matches for early termination
         self.E_max = E_max
-        self.tag = tag
+        self.tag = tag.lower()
         self.suffix = f"{self.workdir:s}/{self.name:s}-{self.ff_style:s}"
         if self.rank == 0:
             if cif is None:
