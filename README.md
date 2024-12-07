@@ -92,6 +92,23 @@ author = "Scott Fredericks and Kevin Parrish and Dean Sayre and Qiang Zhu",
 }
 ```
 
+### Site Symmetry Representation
+Levy D, Panigrahi S-S, Kaba S-O, Zhu Q, Galkin M, Miret S, Ravanbakhsh S. (2024) 
+[SymmCD: Symmetry-Preserving Crystal Generation with Diffusion Models AI for Accelerated Materials Design](https://openreview.net/forum?id=V7x2KZQn2v)
+NeurIPS 2024, 
+
+```bib
+@inproceedings{
+levy2024symmcd,
+title={Symm{CD}: Symmetry-Preserving Crystal Generation with Diffusion Models},
+author={Daniel Levy and Siba Smarak Panigrahi and S{\'e}kou-Oumar Kaba and Qiang Zhu and Mikhail Galkin and Santiago Miret and Siamak Ravanbakhsh},
+booktitle={AI for Accelerated Materials Design - NeurIPS 2024},
+year={2024},
+url={https://openreview.net/forum?id=V7x2KZQn2v}
+}
+```
+
+
 ### Symmetry relation
 Zhu Q, Kang B, Parrish K (2022). 
 [Symmetry Relation Database and Its Application to Ferroelectric Materials Discovery](https://link.springer.com/article/10.1557/s43579-022-00268-4)

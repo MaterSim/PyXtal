@@ -1300,3 +1300,19 @@ Finally, the both Group and Wyckoff_position classes support the access of the s
     
 
 Note that the space group symmetry has 26 symmetry elements as it includes additional screw axis (`2_1`, `3_1`, `3_2`, `4_1`, `4_2`, `4_3`, `6_1`, `6_2`, `6_3, `6_4`, `6_5`) and glide plane (`a`, `b`, `c`, `d`, `n`) operations.
+
+For the use of this function, please cite the following paper.
+
+::
+
+@inproceedings{
+levy2024symmcd,
+title={Symm{CD}: Symmetry-Preserving Crystal Generation with Diffusion Models},
+author={Daniel Levy and Siba Smarak Panigrahi and S{\'e}kou-Oumar Kaba and Qiang Zhu and Mikhail Galkin and Santiago Miret and Siamak Ravanbakhsh},
+booktitle={AI for Accelerated Materials Design - NeurIPS 2024},
+year={2024},
+url={https://openreview.net/forum?id=V7x2KZQn2v}
+}
+
+
+
