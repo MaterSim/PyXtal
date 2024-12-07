@@ -551,6 +551,7 @@ class GlobalOptimize:
             self.lmp_dat = {}
             ff_engs, ff_fors, ff_strs = [], [], []
             rf_engs, rf_fors, rf_strs = [], [], []
+
             for numMol, xtal in zip(numMols, xtals):
                 struc = reset_lammps_cell(xtal)
                 lmp_struc, lmp_dat = self.parameters.get_lmp_input_from_structure(
@@ -693,11 +694,12 @@ class GlobalOptimize:
 
                 params_opt = self.parameters.set_sub_parameters(
                     values, terms, params_opt)
+
                 opt_dict = self.parameters.get_opt_dict(
                     terms, None, params_opt)
+
                 x, fun, values, it = self.parameters.optimize_local(
-                    ref_dics, opt_dict, params_opt, obj="R2", steps=steps
-                )
+                    ref_dics, opt_dict, params_opt, obj="R2", steps=steps)
 
                 params_opt = self.parameters.set_sub_parameters(
                     values, terms, params_opt)
@@ -705,6 +707,7 @@ class GlobalOptimize:
                     ref_dics, params_opt)
 
                 # To add Early termination
+
             t = (time() - t0) / 60
             print(f"FF optimization {t:.2f} min ", fun)
             # Reset N_added to 0
@@ -718,11 +721,11 @@ class GlobalOptimize:
         else:
             gen_prefix = "gen_" + str(gen)
 
-        performance_fig = f"FF_performance_{gen_prefix:s}.png"
+        performance_fig = f"{self.workdir:s}/FF_performance_{gen_prefix:s}.png"
         errs = self.parameters.plot_ff_results(performance_fig, ref_dics, [
                                                params_opt], labels=gen_prefix)
 
-        param_fig = f"parameters_{gen_prefix:s}.png"
+        param_fig = f"{self.workdir:s}/parameters_{gen_prefix:s}.png"
         self.parameters.plot_ff_parameters(param_fig, [params_opt])
 
         # Save parameters
