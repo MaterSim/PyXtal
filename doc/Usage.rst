@@ -1305,14 +1305,13 @@ For the use of this function, please cite the following paper.
 
 ::
 
-@inproceedings{
-levy2024symmcd,
-title={Symm{CD}: Symmetry-Preserving Crystal Generation with Diffusion Models},
-author={Daniel Levy and Siba Smarak Panigrahi and S{\'e}kou-Oumar Kaba and Qiang Zhu and Mikhail Galkin and Santiago Miret and Siamak Ravanbakhsh},
-booktitle={AI for Accelerated Materials Design - NeurIPS 2024},
-year={2024},
-url={https://openreview.net/forum?id=V7x2KZQn2v}
-}
-
+    @inproceedings{
+    levy2024symmcd,
+    title={Symm{CD}: Symmetry-Preserving Crystal Generation with Diffusion Models},
+    author={Daniel Levy and Siba Smarak Panigrahi and S{\'e}kou-Oumar Kaba and Qiang Zhu and Mikhail Galkin and Santiago Miret and Siamak Ravanbakhsh},
+    booktitle={AI for Accelerated Materials Design - NeurIPS 2024},
+    year={2024},
+    url={https://openreview.net/forum?id=V7x2KZQn2v}
+    }
 
 
