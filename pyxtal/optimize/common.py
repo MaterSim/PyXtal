@@ -236,9 +236,11 @@ def optimizer(
     for i, calculator in enumerate(calculators):
         if calculator == "CHARMM":
             if i == 0:
-                calc = CHARMM(struc, tag, steps=[1000], atom_info=atom_info)
-                calc.run()#clean=False); import sys; sys.exit()
+                calc = CHARMM(struc, tag, steps=[1000], atom_info=atom_info, debug=True)
+                calc.run() #clean=False); import sys; sys.exit()
                 # print("CCCCCC", calc.optimized); import sys; sys.exit()
+                #print(calc.error)
+                #print(calc.struc.lattice, calc.error, calc.structure.energy)
                 if calc.error:
                     os.chdir(cwd)
                     return None
@@ -294,7 +296,7 @@ def optimizer(
         else:
             struc = calc.structure
             struc.resort()
-
+    print(struc.lattice, calc.structure.energy)
     os.chdir(cwd)
 
     # density should not be too small

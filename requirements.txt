@@ -38,7 +38,7 @@ networkx==3.3
     # via
     #   pyxtal (setup.py)
     #   pymatgen
-numpy==1.26.4
+numpy==2.0.0
     # via
     #   pyxtal (setup.py)
     #   ase

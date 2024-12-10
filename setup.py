@@ -66,7 +66,7 @@ setup(
         "networkx>=2.3",
         "ase>=3.23.0",
         "scipy>=1.7.3",
-        "numpy>=1.26,<2",  # prevent the use of numpy2
+        #"numpy>=1.26,<2",  # prevent the use of numpy2
         "vasprun-xml>=1.0.4",  # prevent the use of numpy2
         "importlib_metadata>=1.4",
         "typing-extensions>=4.12",
