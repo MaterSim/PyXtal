@@ -3484,12 +3484,15 @@ class pyxtal:
         group = Group(spg)
         sites = []
         for i, _wp in enumerate(wps):
-            letter = _wp[-1]
-            for wp in group:
-                if wp.letter == letter:
-                    sites.append((elements[i], wp))
-                    break
-        self.from_1d_rep(x, sites)
+            if type(_wp) is int:
+                sites.append((elements[i], group[_wp]))
+            else:
+                letter = _wp[-1]
+                for wp in group:
+                    if wp.letter == letter:
+                        sites.append((elements[i], wp))
+                        break
+        self.from_1d_rep(x, sites, normalize)
 
     def from_1d_rep(self, x, sites, dim=3):
         """
