@@ -3492,7 +3492,7 @@ class pyxtal:
                     if wp.letter == letter:
                         sites.append((elements[i], wp))
                         break
-        self.from_1d_rep(x, sites, normalize)
+        self.from_1d_rep(x, sites)
 
     def from_1d_rep(self, x, sites, dim=3):
         """
