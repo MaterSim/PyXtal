@@ -404,6 +404,9 @@ class random_crystal:
             if isinstance(s, dict):
                 for key in s:
                     num += int(key[:-1])
+            elif isinstance(s, tuple):
+                (letter, x, y, z) = s
+                num += int(letter[:-1])
             else:
                 num += int(s[:-1])
         if numIon == num:
