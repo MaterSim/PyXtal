@@ -238,11 +238,11 @@ class GlobalOptimize:
             if self.rank == 0:
                 from pyocse.parameters import ForceFieldParameters
                 self.parameters = ForceFieldParameters(
-                    self.smiles, style=ff_style,
-                    f_coef=1.0,
-                    s_coef=1.0,
-                    ref_evaluator='mace',
-                    ncpu=self.ncpu)
+                                            self.smiles, 
+                                            style=ff_style, 
+                                            ncpu=self.ncpu)
+                if self.ff_opt:
+                    self.parameters.set_ref_evaluator('mace')
 
                 # Preload two set for FF parameters 1 for opt and 2 for refinement
                 if isinstance(self.ff_parameters, list):
