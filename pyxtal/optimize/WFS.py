@@ -169,7 +169,6 @@ class WFS(GlobalOptimize):
         """
 
         # Related to the FF optimization
-        N_added = 0
         success_rate = 0
         print(f"Rank {self.rank} starts WFS in {self.tag}")
 
@@ -219,7 +218,7 @@ class WFS(GlobalOptimize):
 
             # Update the FF parameters if necessary
             if self.ff_opt:
-                N_added = self.update_ff_paramters(cur_xtals, engs, N_added)
+                self.export_references(cur_xtals, engs)
             else:
                 quit = False
                 if self.rank == 0:

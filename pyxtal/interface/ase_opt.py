@@ -92,7 +92,7 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile=Non
 
     tag = 'False' if struc is None else 'True'
     logger.info(f"Finishing {label} {tag}")
-    #signal.alarm(0)  # Cancel the alarm 
+    #signal.alarm(0)  # Cancel the alarm
     return struc #, eng, _fmax
 
 class ASE_optimizer:

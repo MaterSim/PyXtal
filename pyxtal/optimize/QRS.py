@@ -224,7 +224,6 @@ class QRS(GlobalOptimize):
             success_rate or None
         """
         self.ref_volumes = []
-        N_added = 0
         success_rate = 0
         print(f"Rank {self.rank} starts QRS in {self.tag}")
 

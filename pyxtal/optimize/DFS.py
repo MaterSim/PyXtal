@@ -162,7 +162,6 @@ class DFS(GlobalOptimize):
             success_rate or None
         """
         # Related to the FF optimization
-        N_added = 0
         success_rate = 0
         cur_survivals = [0] * self.N_pop  # track the survivals
         hist_best_xtals = [None] * self.N_pop
@@ -242,7 +241,7 @@ class DFS(GlobalOptimize):
 
             # Update the FF parameters if necessary
             if self.ff_opt:
-                N_added = self.update_ff_paramters(cur_xtals, engs, N_added)
+                self.export_references(cur_xtals, engs)
             else:
                 quit = False
                 if self.rank == 0:
