@@ -296,7 +296,7 @@ def optimizer(
         else:
             struc = calc.structure
             struc.resort()
-    print(struc.lattice, calc.structure.energy)
+    #print(struc.lattice, calc.structure.energy)
     os.chdir(cwd)
 
     # density should not be too small

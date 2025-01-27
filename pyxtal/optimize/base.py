@@ -491,6 +491,7 @@ class GlobalOptimize:
         """
 
         gen = self.generation
+        params, _ = self.parameters.load_parameters(self.ff_parameters)
         N_max = min([int(self.N_pop * 0.6), 50])
         ids = np.argsort(engs)
         _xtals = self.select_xtals(xtals, ids, N_max)
@@ -502,8 +503,10 @@ class GlobalOptimize:
         # Initialize references
         if os.path.exists(self.reference_file):
             ref_dics = self.parameters.load_references(self.reference_file)
-            ref_dics = self.parameters.cut_references_by_error(
-                        ref_dics, params_opt, dE=dE, FMSE=FMSE)
+            ref_dics = self.parameters.cut_references_by_error(ref_dics,
+                                                               params,
+                                                               dE=dE,
+                                                               FMSE=FMSE)
             if self.ref_criteria is not None:
                 ref_dics = self.parameters.clean_ref_dics(
                         ref_dics, self.ref_criteria)
@@ -525,7 +528,7 @@ class GlobalOptimize:
                                                          augment=True,
                                                          steps=20, #50,
                                                          N_vibs=1,
-                                                         logfile="ase.log")
+                                                         logfile=f"{self.workdir}/ase.log")
         ref_dics.extend(_ref_dics)
         t1 = (time() - t0) / 60
         print(f"Add {len(_ref_dics)} references in {t1:.2f} min")
@@ -534,12 +537,14 @@ class GlobalOptimize:
         # Todo: as appending way
         self.parameters.export_references(ref_dics, self.reference_file)
         gen_prefix = self.get_label(gen, 'gen_')
-        performance_fig = f"{self.workdir}/FF_performance_{gen_prefix}.png"
-        params, _ = self.parameters.load_parameters(self.ff_parameters)
+        cwd = os.getcwd()
+        os.chdir(self.workdir)
+        performance_fig = f"FF_performance_{gen_prefix}.png"
         self.parameters.plot_ff_results(performance_fig,
                                         ref_dics,
                                         [params],
                                         labels=gen_prefix)
+        os.chdir(cwd)
 
 
     def _prepare_chm_info(self, params0, params1=None, folder="calc", suffix="pyxtal0"):

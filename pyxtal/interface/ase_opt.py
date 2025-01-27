@@ -4,7 +4,6 @@ import numpy as np
 from ase.constraints import FixSymmetry
 from ase.filters import UnitCellFilter
 from ase.optimize.fire import FIRE
-import torchani
 import logging
 
 import os
@@ -17,6 +16,7 @@ def get_calculator(calculator):
 
     if type(calculator) is str:
         if calculator == 'ANI':
+            import torchani
             calc = torchani.models.ANI2x().ase()
         else:
             if _cached_mace_mp is None:
