@@ -489,7 +489,7 @@ class GlobalOptimize:
             dE (float): the cutoff energy value
             FMSE (float): the cutoff Force MSE value
         """
-
+        cwd = os.getcwd()
         gen = self.generation
         params, _ = self.parameters.load_parameters(self.ff_parameters)
         N_max = min([int(self.N_pop * 0.6), 50])
@@ -503,6 +503,14 @@ class GlobalOptimize:
         # Initialize references
         if os.path.exists(self.reference_file):
             ref_dics = self.parameters.load_references(self.reference_file)
+        else:
+            ref_dics = []
+
+
+        # Add references
+        os.chdir(self.workdir)
+
+        if len(ref_dics) > 0:
             ref_dics = self.parameters.cut_references_by_error(ref_dics,
                                                                params,
                                                                dE=dE,
@@ -510,10 +518,7 @@ class GlobalOptimize:
             if self.ref_criteria is not None:
                 ref_dics = self.parameters.clean_ref_dics(
                         ref_dics, self.ref_criteria)
-        else:
-            ref_dics = []
 
-        # Add references
         t0 = time()
         N_selected = min([N_min, self.ncpu])
         print("Current number of reference structures", len(ref_dics))
@@ -528,23 +533,22 @@ class GlobalOptimize:
                                                          augment=True,
                                                          steps=20, #50,
                                                          N_vibs=1,
-                                                         logfile=f"{self.workdir}/ase.log")
+                                                         logfile="ase.log")
         ref_dics.extend(_ref_dics)
         t1 = (time() - t0) / 60
         print(f"Add {len(_ref_dics)} references in {t1:.2f} min")
 
-        # Export FF performances and references
-        # Todo: as appending way
-        self.parameters.export_references(ref_dics, self.reference_file)
+        # Export FF performances
         gen_prefix = self.get_label(gen, 'gen_')
-        cwd = os.getcwd()
-        os.chdir(self.workdir)
         performance_fig = f"FF_performance_{gen_prefix}.png"
         self.parameters.plot_ff_results(performance_fig,
                                         ref_dics,
                                         [params],
                                         labels=gen_prefix)
         os.chdir(cwd)
+
+        # Todo: as appending way
+        self.parameters.export_references(ref_dics, self.reference_file)
 
 
     def _prepare_chm_info(self, params0, params1=None, folder="calc", suffix="pyxtal0"):
