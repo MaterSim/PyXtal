@@ -237,10 +237,9 @@ class GlobalOptimize:
             atom_info = None
             if self.rank == 0:
                 from pyocse.parameters import ForceFieldParameters
-                self.parameters = ForceFieldParameters(
-                                            self.smiles,
-                                            style=ff_style,
-                                            ncpu=self.ncpu)
+                self.parameters = ForceFieldParameters(self.smiles,
+                                                       style=ff_style,
+                                                       ncpu=self.ncpu)
                 if self.ff_opt:
                     self.parameters.set_ref_evaluator('mace')
 
@@ -374,7 +373,9 @@ class GlobalOptimize:
         self.ref_pxrd = ref_pxrd
 
         if self.ncpu > 1:
-            pool = Pool(processes=self.ncpu, initializer=setup_worker_logger, initargs=(self.log_file,))
+            pool = Pool(processes=self.ncpu,
+                        initializer=setup_worker_logger,
+                        initargs=(self.log_file,))
         else:
             pool = None
 
