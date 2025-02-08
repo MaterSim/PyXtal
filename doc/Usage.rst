@@ -355,20 +355,20 @@ via the ``from_prototype`` function,
 
 .. code-block:: Python
 
->>> from pyxtal import pyxtal
->>> c = pyxtal()
->>> c.from_prototype('graphite')
->>> c
+	>>> from pyxtal import pyxtal
+	>>> c = pyxtal()
+	>>> c.from_prototype('graphite')
+	>>> c
 
-------Crystal from Build------
-Dimension: 3
-Composition: C4
-Group: P 63/m m c (194)
-  2.4600,   2.4600,   6.7000,  90.0000,  90.0000, 120.0000, hexagonal
+	------Crystal from Build------
+	Dimension: 3
+	Composition: C4
+	Group: P 63/m m c (194)
+  	2.4600,   2.4600,   6.7000,  90.0000,  90.0000, 120.0000, hexagonal
 
-Wyckoff sites:
-	 C @ [ 0.3333  0.6667  0.2500], WP [2c] Site [-622m2]
-	 C @ [ 0.0000  0.0000  0.2500], WP [2b] Site [-622m2]
+	Wyckoff sites:
+	C @ [ 0.3333  0.6667  0.2500], WP [2c] Site [-622m2]
+	C @ [ 0.0000  0.0000  0.2500], WP [2b] Site [-622m2]
 
 
 Note that this function so far only supports `graphite`, `diamond`, `a-cristobalite`, `b-cristobalite`, `a-quartz`, `b-quartz`, `rocksalt`, `B1`, `B2`.
@@ -377,28 +377,28 @@ A more general approach is to call the ``build`` function,
 
 .. code-block:: Python
 
-from pyxtal import pyxtal
-from pyxtal.lattice import Lattice
+	from pyxtal import pyxtal
+	from pyxtal.lattice import Lattice
 
-c = pyxtal()
-l = Lattice.from_para(5.62, 5.62, 5.62, 90, 90, 90, ltype='Cubic')
+	c = pyxtal()
+	l = Lattice.from_para(5.62, 5.62, 5.62, 90, 90, 90, ltype='Cubic')
 
-#define the sites as dictionary 
-sites = [{"4a": None}, # Na 
-         {"4b": None}, # Cl
-        ]
-c.build(225, ['Na', 'Cl'], [4, 4], lattice=l, sites=sites)
-print(c)
+	# define the sites as dictionary 
+	sites = [{"4a": None}, # Na 
+         	 {"4b": None}, # Cl
+        	]
+	c.build(225, ['Na', 'Cl'], [4, 4], lattice=l, sites=sites)
+	print(c)
 
 or the ``from_spg_wps_rep`` function
 
 .. code-block:: Python
 
-from pyxtal import pyxtal
-c = pyxtal()
-c.from_spg_wps_rep(194, ['2c', '2b'], [2.46, 6.70])        # graphite
-c.from_spg_wps_rep(227, ['8a'], [3.6])                     # diamond
-c.from_spg_wps_rep(225, ['4a', '4b'], [5.59], ['Na', 'Cl'] # B1-rocksalt
+	from pyxtal import pyxtal
+	c = pyxtal()
+	c.from_spg_wps_rep(194, ['2c', '2b'], [2.46, 6.70])        # graphite
+	c.from_spg_wps_rep(227, ['8a'], [3.6])                     # diamond
+	c.from_spg_wps_rep(225, ['4a', '4b'], [5.59], ['Na', 'Cl'] # B1-rocksalt
 
 
 Random 3D Atomic Crystals
