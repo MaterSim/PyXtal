@@ -513,6 +513,24 @@ space group 14.
 	H8C9O4       @ [ 0.0181  0.6252  0.5789]  WP [4e] Site [1] Euler [-179.0   46.1  -63.9]
 
 
+While the module is called molecular crystal, one can also use it to general MOF-like structures (e.g., `Na(N3)`) by setting molecular blocks as follows 
+
+.. code-block:: Python
+
+	from pyxtal import pyxtal
+	xtal = pyxtal(molecular=True)
+	from pyxtal.molecule import pyxtal_molecule
+	m1 = pyxtal_molecule('Na+.smi')
+	m2 = pyxtal_molecule('[N-]=[N+]=[N-].smi')
+
+	for i, data in enumerate([(14, [4, 4]), 
+                          	  (36, [4, 4]),
+                            ]):
+    	(spg, numIons) = data
+    	xtal.from_random(3, 14, [m1, m2], [4, 4])
+    	xtal.to_file(f"{i}-{spg}.cif")
+
+
 Random sub-periodic crystals
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
