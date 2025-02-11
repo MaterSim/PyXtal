@@ -266,6 +266,27 @@ class DFS(GlobalOptimize):
 
         return success_rate
 
+    @classmethod
+    def load(cls, filename):
+        """
+        Load the status of the WFS object
+        """
+        from pyxtal.optimize.base import load_xml
+
+        # Define the parameter names in the same order as load_xml returns them
+        param_names = [
+        'smiles', 'workdir', 'sg', 'tag', 'info', 'ff_opt', 'ff_style',
+        'ff_parameters', 'reference_file', 'ref_criteria', 'N_gen',
+        'N_pop', 'N_cpu', 'fracs', 'cif', 'block', 'num_block',
+        'composition', 'lattice', 'torsions', 'molecules', 'sites',
+        'use_hall', 'skip_ani', 'factor', 'eng_cutoff', 'E_max',
+        'verbose', 'random_state', 'max_time', 'matcher', 'early_quit',
+        'check_stable', 'use_mpi', 'pre_opt']
+
+        # Convert tuple to dictionary
+        args = dict(zip(param_names, load_xml(filename)))
+        return cls(**args)
+
 
 if __name__ == "__main__":
     import argparse

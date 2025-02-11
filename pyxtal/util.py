@@ -702,6 +702,17 @@ def split_list_by_ratio(nums, ratio):
     find_splits(0, 0, 0, [], [])
     return solutions
 
+def prettify(elem):
+    """
+    Return a pretty-printed XML string for the Element.
+    """
+    import xml.etree.ElementTree as ET
+    from xml.dom import minidom
+
+    rough_string = ET.tostring(elem, 'utf-8')
+    reparsed = minidom.parseString(rough_string)
+    return reparsed.toprettyxml(indent="  ")
+
 
 if __name__ == "__main__":
     from argparse import ArgumentParser

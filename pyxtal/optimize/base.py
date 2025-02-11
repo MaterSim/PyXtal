@@ -199,12 +199,12 @@ class GlobalOptimize:
         if self.rank > 0: self.log_file += f"-{self.rank}"
 
         self.skip_ani = skip_ani
-        # self.randomizer = randomizer
-        # self.optimizer = optimizer
         self.check_stable = check_stable
         if not self.opt_lat:
             self.check_stable = False
+
         # setup timeout for each optimization call
+        self.max_time = max_time
         if max_time is None:
             if not self.skip_ani:
                 max_time = 300.0
@@ -1087,6 +1087,164 @@ class GlobalOptimize:
                     match_txt = self.suffix + "-match.txt"
                     np.savetxt(match_txt, data2, header=header)
 
+    def save(self, filename):
+        """
+        Save the base class
+        """
+        if self.rank == 0:
+            import xml.etree.ElementTree as ET
+            from pyxtal.util import prettify
+
+            root = ET.Element("GO")
+            ET.SubElement(root, "smile").text = self.smile
+            ET.SubElement(root, "tag").text = self.tag
+            ET.SubElement(root, "cif").text = self.cif
+            ET.SubElement(root, "workdir").text = self.workdir
+            ET.SubElement(root, "reference_file").text = self.reference_file
+            ET.SubElement(root, "ff_style").text = self.ff_style
+            ET.SubElement(root, "ff_parameters").text = self.ff_parameters
+
+            ET.SubElement(root, "sg").text = str(self.sg)
+            ET.SubElement(root, "N_pop").text = str(self.N_pop)
+            ET.SubElement(root, "N_gen").text = str(self.N_gen)
+            ET.SubElement(root, "E_max").text = str(self.E_max)
+            ET.SubElement(root, "early_quit").text = str(self.early_quit)
+            ET.SubElement(root, "ff_opt").text = str(self.ff_opt)
+            ET.SubElement(root, "use_mpi").text = str(self.use_mpi)
+            ET.SubElement(root, "verbose").text = str(self.verbose)
+            ET.SubElement(root, "skip_ani").text = str(self.skip_ani)
+            ET.SubElement(root, "check_stable").text = str(self.check_stable)
+            ET.SubElement(root, "pre_opt").text = str(self.pre_opt)
+            ET.SubElement(root, "use_hall").text = str(self.use_hall)
+            ET.SubElement(root, "N_cpu").text = str(self.ncpu)
+            ET.SubElement(root, "factor").text = str(self.factor)
+            ET.SubElement(root, "eng_cutoff").text = str(self.eng_cutoff)
+            ET.SubElement(root, "max_time").text = str(self.max_time)
+            ET.SubElement(root, "fracs").text = str(self.fracs)
+            ET.SubElement(root, "composition").text = str(self.composition)
+            ET.SubElement(root, "lattice").text = arr_to_text(self.lattice)
+            #ET.SubElement(basic, "sites").text = str(self.sites)
+            #ET.SubElement(basic, "torsions").text = self.torsions
+            #ET.SubElement(basic, "ref_criteria").text = str(None) #self.ref_criteria
+
+
+            # Use prettify to get a pretty-printed XML string
+            pretty_xml = prettify(root)
+            with open(filename, "w") as f:
+                f.writelines(pretty_xml)
+
+def load_xml(filename, tag='GO'):
+    """
+    Load the base class
+    """
+    import xml.etree.ElementTree as ET
+
+    if os.path.exists(filename):
+        tree = ET.parse(filename)
+        basic = tree.getroot()
+
+        # Strings
+        smile = basic.find("smile").text
+        tag = basic.find("tag").text
+        early_quit = basic.find("early_quit").text
+        ff_style = basic.find("ff_style").text
+        workdir = basic.find("workdir").text
+        reference_file = basic.find("reference_file").text.split('/')[-1]
+        ff_parameters = basic.find("ff_parameters").text.split('/')[-1]
+        cif = basic.find("cif").text.split('/')[-1]
+
+        # Boolean
+        ff_opt = text_to_bool(basic.find("ff_opt").text)
+        use_mpi = text_to_bool(basic.find("use_mpi").text)
+        verbose = text_to_bool(basic.find("verbose").text)
+        skip_ani = text_to_bool(basic.find("skip_ani").text)
+        check_stable = text_to_bool(basic.find("check_stable").text)
+        pre_opt = text_to_bool(basic.find("pre_opt").text)
+        use_hall = text_to_bool(basic.find("use_hall").text)
+
+        # Numbers
+        N_cpu = int(basic.find("N_cpu").text)
+        N_pop = int(basic.find("N_pop").text)
+        N_gen = int(basic.find("N_gen").text)
+        E_max = float(basic.find("E_max").text)
+        eng_cutoff = float(basic.find("eng_cutoff").text)
+        factor = float(basic.find("factor").text)
+        sg = text_to_list(basic.find("sg").text, int)
+        fracs = text_to_arr(basic.find("fracs").text, float)
+        composition = text_to_arr(basic.find("composition").text, float)
+        lattice = text_to_2darr(basic.find("lattice").text)
+        max_time = text_to_float(basic.find("max_time").text)
+        # sites = basic.find("sites").text
+        # print(smile, tag, cif, workdir, sg, ff_opt, ff_style, ff_parameters, reference_file, N_gen, N_pop, N_cpu, fracs, cif, composition, lattice, use_hall, skip_ani, factor, eng_cutoff, E_max, verbose, max_time, early_quit, check_stable, use_mpi, pre_opt)
+        return (smile, workdir, sg, tag, None, ff_opt, ff_style,
+                ff_parameters, reference_file, None, N_gen,
+                N_pop, N_cpu, fracs, cif, None, None,
+                composition, lattice, None, None, None,
+                use_hall, skip_ani, factor, eng_cutoff, E_max,
+                verbose, None, max_time, None, early_quit,
+                check_stable, use_mpi, pre_opt)
+    else:
+        raise ValueError("No such file", filename, os.getcwd())
+
+def text_to_list(text, dtype=float):
+    """
+    Convert a text to a list
+    In the form of "[1 2 3]"
+    """
+    text = text.replace("[", "").replace("]", "")
+    if text == 'None':
+        return None
+    else:
+        return [dtype(i) for i in text.split()]
+
+def text_to_arr(text, dtype=float):
+    """
+    Convert a text to an array
+    """
+    if text == 'None':
+        return None
+    else:
+        text = text.replace("[", "").replace("]", "")
+        return np.array([dtype(i) for i in text.split()])
+
+def text_to_2darr(text, dtype=float):
+    """
+    Convert a text to an 2D array
+    """
+    if text == 'None':
+        return None
+    else:
+        text = text.replace("[", "").replace("]", "")
+        return np.array([[dtype(j) for j in i.split()] for i in text.splitlines()])
+
+def text_to_float(text):
+    """
+    Convert a text to a float
+    """
+    if text == 'None':
+        return None
+    else:
+        return float(text)
+
+def text_to_bool(text):
+    """Convert text string to boolean value"""
+    if text.lower() == 'true':
+        return True
+    elif text.lower() == 'false':
+        return False
+    else:
+        raise ValueError(f"Invalid boolean string: {text}")
+
+def arr_to_text(arr):
+    """
+    Convert a 2D array to a text
+    """
+    if arr is None:
+        return 'None'
+    elif len(arr.shape) == 1:
+        return ' '.join([str(i) for i in arr])
+    else:
+        return '\n'.join([' '.join([str(j) for j in i]) for i in arr])
 
 if __name__ == "__main__":
     print("test")
