@@ -88,12 +88,14 @@ class DFS(GlobalOptimize):
         check_stable: bool = False,
         use_mpi: bool = False,
         pre_opt: bool = False,
+        check: bool = False,
     ):
         if isinstance(random_state, Generator):
             self.random_state = random_state.spawn(1)[0]
         else:
             self.random_state = np.random.default_rng(random_state)
 
+        self.check = check
         # POPULATION parameters:
         self.N_gen = N_gen
         self.N_pop = N_pop

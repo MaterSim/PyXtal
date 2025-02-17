@@ -90,6 +90,7 @@ class WFS(GlobalOptimize):
         check_stable: bool = False,
         use_mpi: bool = False,
         pre_opt: bool = False,
+        check: bool = True,
     ):
         if isinstance(random_state, Generator):
             self.random_state = random_state.spawn(1)[0]
@@ -99,6 +100,7 @@ class WFS(GlobalOptimize):
         # POPULATION parameters:
         if fracs is None:
             fracs = [0.6, 0.4]
+        self.check = check
         self.N_gen = N_gen
         self.N_pop = N_pop
         self.fracs = np.array(fracs)

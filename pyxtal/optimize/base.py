@@ -511,7 +511,7 @@ class GlobalOptimize:
         # Add references
         os.chdir(self.workdir)
 
-        if len(ref_dics) > 0:
+        if len(ref_dics) > 0 and self.check:
             ref_dics = self.parameters.cut_references_by_error(ref_dics,
                                                                params,
                                                                dE=dE,
