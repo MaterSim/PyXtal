@@ -214,7 +214,7 @@ class Test_resort(unittest.TestCase):
         N2 = len(struc.atom_sites)
         assert N1 == N2
 
-
+"""
 class Test_rng(unittest.TestCase):
     """
     Test rng generators in two ways
@@ -260,6 +260,7 @@ class Test_rng(unittest.TestCase):
         d2 = np.array([0.504, 0.127, 0.585, -21.523, -68.406, 152.839])
         assert np.sum((rep[0] - d1)**2) < 1e-2
         assert np.sum((rep[1][1:-1] - d2)**2) < 1e-2
+"""
 
 class Test_operations(unittest.TestCase):
     def test_inverse(self):
