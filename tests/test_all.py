@@ -214,53 +214,51 @@ class Test_resort(unittest.TestCase):
         N2 = len(struc.atom_sites)
         assert N1 == N2
 
-"""
-class Test_rng(unittest.TestCase):
-    """
-    Test rng generators in two ways
-    1. random_state as a fixed integer
-    2. random_state as a generator
-    """
-    def test_rng_integer(self):
-        xtal = pyxtal(); xtal.from_random(3, 194, ['C'], [8], random_state=0)
-        xs = xtal.get_1d_rep_x()
-        assert np.sum((xs - np.array([4.679, 6.418, 0.943])**2)) < 1e-2
-
-        xtal = pyxtal(molecular=True)
-        xtal.from_random(3, 19, ['aspirin'], [4], random_state=0)
-        rep = xtal.get_1D_representation().x
-        d1 = np.array([115, 17.294, 15.077, 9.018])
-        d2 = np.array([0.677, 0.243, 0.612, 0.057, -1.194, 0.110])
-        assert np.sum((rep[0] - d1)**2) < 1e-2
-        assert np.sum((rep[1][1:-1] - d2)**2) < 1e-2
-
-
-    def test_rng_generator(self):
-        rng = np.random.default_rng(1)
-        xtal = pyxtal()
-        xtal.from_random(3, 194, ['C'], [8], random_state=rng)
-        xs = xtal.get_1d_rep_x()
-        assert np.sum((xs - np.array([7.442, 2.110])**2)) < 1e-2
-
-        xtal.from_random(3, 194, ['C'], [8], random_state=rng)
-        xs = xtal.get_1d_rep_x()
-        assert np.sum((xs - np.array([5.864, 5.809])**2)) < 1e-2
-
-        xtal = pyxtal(molecular=True)
-        xtal.from_random(3, 19, ['aspirin'], [4], random_state=rng)
-        rep = xtal.get_1D_representation().x
-        d1 = np.array([115, 14.207, 18.334, 9.028])
-        d2 = np.array([0.294, 0.627, 0.528, 157.052, -11.968, -171.851])
-        assert np.sum((rep[0] - d1)**2) < 1e-2
-        assert np.sum((rep[1][1:-1] - d2)**2) < 1e-2
-
-        xtal.from_random(3, 19, ['aspirin'], [4], random_state=rng)
-        rep = xtal.get_1D_representation().x
-        d1 = np.array([115, 12.763, 16.639, 11.073])
-        d2 = np.array([0.504, 0.127, 0.585, -21.523, -68.406, 152.839])
-        assert np.sum((rep[0] - d1)**2) < 1e-2
-        assert np.sum((rep[1][1:-1] - d2)**2) < 1e-2
-"""
+#class Test_rng(unittest.TestCase):
+#    """
+#    Test rng generators in two ways
+#    1. random_state as a fixed integer
+#    2. random_state as a generator
+#    """
+#    def test_rng_integer(self):
+#        xtal = pyxtal(); xtal.from_random(3, 194, ['C'], [8], random_state=0)
+#        xs = xtal.get_1d_rep_x()
+#        assert np.sum((xs - np.array([4.679, 6.418, 0.943])**2)) < 1e-2
+#
+#        xtal = pyxtal(molecular=True)
+#        xtal.from_random(3, 19, ['aspirin'], [4], random_state=0)
+#        rep = xtal.get_1D_representation().x
+#        d1 = np.array([115, 17.294, 15.077, 9.018])
+#        d2 = np.array([0.677, 0.243, 0.612, 0.057, -1.194, 0.110])
+#        assert np.sum((rep[0] - d1)**2) < 1e-2
+#        assert np.sum((rep[1][1:-1] - d2)**2) < 1e-2
+#
+#
+#    def test_rng_generator(self):
+#        rng = np.random.default_rng(1)
+#        xtal = pyxtal()
+#        xtal.from_random(3, 194, ['C'], [8], random_state=rng)
+#        xs = xtal.get_1d_rep_x()
+#        assert np.sum((xs - np.array([7.442, 2.110])**2)) < 1e-2
+#
+#        xtal.from_random(3, 194, ['C'], [8], random_state=rng)
+#        xs = xtal.get_1d_rep_x()
+#        assert np.sum((xs - np.array([5.864, 5.809])**2)) < 1e-2
+#
+#        xtal = pyxtal(molecular=True)
+#        xtal.from_random(3, 19, ['aspirin'], [4], random_state=rng)
+#        rep = xtal.get_1D_representation().x
+#        d1 = np.array([115, 14.207, 18.334, 9.028])
+#        d2 = np.array([0.294, 0.627, 0.528, 157.052, -11.968, -171.851])
+#        assert np.sum((rep[0] - d1)**2) < 1e-2
+#        assert np.sum((rep[1][1:-1] - d2)**2) < 1e-2
+#
+#        xtal.from_random(3, 19, ['aspirin'], [4], random_state=rng)
+#        rep = xtal.get_1D_representation().x
+#        d1 = np.array([115, 12.763, 16.639, 11.073])
+#        d2 = np.array([0.504, 0.127, 0.585, -21.523, -68.406, 152.839])
+#        assert np.sum((rep[0] - d1)**2) < 1e-2
+#        assert np.sum((rep[1][1:-1] - d2)**2) < 1e-2
 
 class Test_operations(unittest.TestCase):
     def test_inverse(self):
