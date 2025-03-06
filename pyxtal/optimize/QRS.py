@@ -1,16 +1,12 @@
 """
-Global Optimizer
+Global Optimizer base on Quasi-Random Sampling
 """
-
 from __future__ import annotations
-
 from time import time
 from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.stats import qmc
-
-from numpy.random import Generator
 from pymatgen.analysis.structure_matcher import StructureMatcher
 
 from pyxtal.optimize.base import GlobalOptimize

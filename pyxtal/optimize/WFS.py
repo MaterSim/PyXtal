@@ -1,16 +1,14 @@
 """
-WFS sampler
+Global optimization using the Stochastic Width First Sampling (WFS) algorithm
 """
 
 from __future__ import annotations
-
 from time import time
 from typing import TYPE_CHECKING
 
 import numpy as np
 from numpy.random import Generator
 from pymatgen.analysis.structure_matcher import StructureMatcher
-
 from pyxtal.optimize.base import GlobalOptimize
 
 if TYPE_CHECKING:

@@ -1,13 +1,12 @@
 """
 A base class for global optimization including:
 
-- WFS
-- DFS
-- QRS
+- WFS: Width First Sampling
+- DFS: Depth First Sampling
+- QRS: Quasi Random Sampling
 """
 from __future__ import annotations
 from multiprocessing import Pool
-
 from concurrent.futures import TimeoutError
 import signal
 
@@ -36,7 +35,6 @@ def setup_worker_logger(log_file):
     logging.basicConfig(format="%(asctime)s| %(message)s",
                         filename=log_file,
                         level=logging.INFO)
-
 
 # Update run_optimizer_with_timeout to accept a logger
 def run_optimizer_with_timeout(args, logger):
@@ -481,7 +479,7 @@ class GlobalOptimize:
 
     def export_references(self, xtals, engs, N_min=50, dE=2.5, FMSE=2.5):
         """
-        Add trainning data
+        Add trainning data for FF optimization
 
         Args:
             xtals: a list of pyxtals
@@ -498,19 +496,16 @@ class GlobalOptimize:
         _xtals = self.select_xtals(xtals, ids, N_max)
         print("Select structures for FF optimization", len(_xtals))
 
-        numMols = [xtal.numMols for xtal in _xtals]
-        _xtals = [xtal.to_ase(resort=False) for xtal in _xtals]
-
         # Initialize references
         if os.path.exists(self.reference_file):
             ref_dics = self.parameters.load_references(self.reference_file)
+            ref_ground_states = self.parameters.get_gs_from_ref_dics(ref_dics)
         else:
             ref_dics = []
-
+            ref_ground_states = []
 
         # Add references
         os.chdir(self.workdir)
-
         if len(ref_dics) > 0 and self.check:
             ref_dics = self.parameters.cut_references_by_error(ref_dics,
                                                                params,
@@ -522,20 +517,14 @@ class GlobalOptimize:
 
         t0 = time()
         N_selected = min([N_min, self.ncpu])
-        print("Current number of reference structures", len(ref_dics))
-        print("Create the reference data by augmentation", N_selected)
-        if len(_xtals) >= N_selected:
-            ids = self.random_state.choice(list(range(len(_xtals))), N_selected)
-            _xtals = [_xtals[id] for id in ids]
-            numMols = [numMols[id] for id in ids]
+        _ref_dics = self.parameters.add_references(_xtals, ref_ground_states, N_selected)
+        # print(f"Current number of reference structures: {len(ref_dics)}")
+        # print(f"Pick {len(_ref_dics)} reference data for agumentation")
+        #print(_ref_dics); import sys; sys.exit()
 
-        _ref_dics = self.parameters.add_multi_references(_xtals,
-                                                         numMols,
-                                                         augment=True,
-                                                         steps=20, #50,
-                                                         N_vibs=1,
-                                                         logfile="ase.log")
         ref_dics.extend(_ref_dics)
+        aug_dics = self.parameters.augment_references(_ref_dics)
+        ref_dics.extend(aug_dics)
         t1 = (time() - t0) / 60
         print(f"Add {len(_ref_dics)} references in {t1:.2f} min")
 
@@ -584,7 +573,7 @@ class GlobalOptimize:
             ase_with_ff.write_charmmfiles(base=suffix)
         os.chdir(pwd)
 
-        # Info
+        # Return the atom_info
         return ase_with_ff.get_atom_info()
 
     def get_label(self, i, label='cpu'):
@@ -724,8 +713,7 @@ class GlobalOptimize:
             refernce: [pmg, eng]
             filename: filename
         """
-        if os.path.exists(filename):
-            os.remove(filename)
+        if os.path.exists(filename): os.remove(filename)
 
         if reference is not None:
             [pmg0, eng] = reference
@@ -772,6 +760,9 @@ class GlobalOptimize:
         return False
 
     def _get_local_optimization_args(self):
+        """
+        Get the arguments for the local optimization
+        """
         args = [
             randomizer,
             optimizer,
@@ -891,7 +882,6 @@ class GlobalOptimize:
             qrs (bool): Force mutation or not (related to QRS)
         """
         gen = self.generation
-        t0 = time()
         args = self._get_local_optimization_args()
         if ids is None:
             ids = range(len(xtals))
@@ -1126,8 +1116,6 @@ class GlobalOptimize:
             #ET.SubElement(basic, "sites").text = str(self.sites)
             #ET.SubElement(basic, "torsions").text = self.torsions
             #ET.SubElement(basic, "ref_criteria").text = str(None) #self.ref_criteria
-
-
             # Use prettify to get a pretty-printed XML string
             pretty_xml = prettify(root)
             with open(filename, "w") as f:
