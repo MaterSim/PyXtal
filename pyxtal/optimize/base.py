@@ -528,6 +528,13 @@ class GlobalOptimize:
         t1 = (time() - t0) / 60
         print(f"Add {len(_ref_dics)} references in {t1:.2f} min")
 
+        # Adjust the offset if the current one is 0
+        offset = self.paramters.params_init[-1]
+        if abs(offset) < 1e-3:
+            _, params_opt = self.parameters.optimize_offset(ref_dics)
+            print(f"Updating the offset values {params_opt[-1]}")
+            self.parameters.update_ff_parameters(params_opt)
+
         # Export FF performances
         gen_prefix = self.get_label(gen, 'gen_')
         performance_fig = f"FF_performance_{gen_prefix}.png"
