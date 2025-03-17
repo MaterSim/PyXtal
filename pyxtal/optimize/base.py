@@ -373,7 +373,7 @@ class GlobalOptimize:
         if self.ncpu > 1:
             pool = Pool(processes=self.ncpu,
                         initializer=setup_worker_logger,
-                        initargs=(self.log_file))
+                        initargs=(self.log_file,))
         else:
             pool = None
 
@@ -515,7 +515,7 @@ class GlobalOptimize:
                         ref_dics, self.ref_criteria)
 
         t0 = time()
-        N_selected = min([N_min, self.ncpu])
+        N_selected = min([N_min, self.ncpu, 20])
         _ref_dics = self.parameters.add_references(_xtals,
                                                    ref_ground_states,
                                                    N_selected)
@@ -536,6 +536,8 @@ class GlobalOptimize:
             #print(f"Updating the offset in {os.getcwd()} / {self.ff_parameters}")
             self.parameters.update_ff_parameters(params)
             self.parameters.export_parameters(self.ff_parameters.split('/')[-1])
+            # Get rid of high energy data
+            ref_dics = [ref_dic for ref_dic in ref_dics if ref_dic['tag'] != 'neglected']
 
         # Export FF performances
         gen_prefix = self.get_label(gen, 'gen_')
@@ -543,7 +545,8 @@ class GlobalOptimize:
         self.parameters.plot_ff_results(performance_fig,
                                         ref_dics,
                                         [params],
-                                        labels=gen_prefix)
+                                        labels=gen_prefix,
+                                        max_dE=3.0)
         os.chdir(cwd)
 
         # Todo: as appending way

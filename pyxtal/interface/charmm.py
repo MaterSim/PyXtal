@@ -332,11 +332,11 @@ class CHARMM:
                     print("Cannot retrieve Structure after optimization")
                     print("lattice", self.structure.lattice)
                     self.structure.to_file("1.cif")
-                    print("Check 1.cif in ", os.getcwd())
+                    #print("Check 1.cif in ", os.getcwd())
                     pairs = self.structure.check_short_distances()
-                    if len(pairs) > 0:
-                        print(self.structure.to_file())
-                        print("short distance pair", pairs)
+                    #if len(pairs) > 0:
+                    #    print(self.structure.to_file())
+                    #    print("short distance pair", pairs)
 
         else:
             self.structure.energy = self.errorE
