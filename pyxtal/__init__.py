@@ -52,8 +52,8 @@ def print_logo():
     print("\n")
     print("-------------------(version", __version__, ")--------------------\n")
     print("A Python package for random crystal generation")
-    print("The source code is available at https://github.com/qzhu2017/pyxtal")
-    print("Developed by Zhu's group at University of Nevada Las Vegas\n\n")
+    print("The source code is available at https://github.com/MaterSim/PyXtal")
+    print("by Zhu's group at the University of North Carolina at Charlotte\n\n")
 
 
 class pyxtal:

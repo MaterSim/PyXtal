@@ -517,7 +517,9 @@ class GlobalOptimize:
 
         t0 = time()
         N_selected = min([N_min, self.ncpu])
-        _ref_dics = self.parameters.add_references(_xtals, ref_ground_states, N_selected)
+        _ref_dics = self.parameters.add_references(_xtals,
+                                                   ref_ground_states,
+                                                   N_selected)
         # print(f"Current number of reference structures: {len(ref_dics)}")
         # print(f"Pick {len(_ref_dics)} reference data for agumentation")
         #print(_ref_dics); import sys; sys.exit()
