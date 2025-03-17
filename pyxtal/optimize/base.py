@@ -373,7 +373,7 @@ class GlobalOptimize:
         if self.ncpu > 1:
             pool = Pool(processes=self.ncpu,
                         initializer=setup_worker_logger,
-                        initargs=(self.log_file))
+                        initargs=(self.log_file,))
         else:
             pool = None
 
@@ -488,7 +488,6 @@ class GlobalOptimize:
             FMSE (float): the cutoff Force MSE value
         """
         cwd = os.getcwd()
-        gen = self.generation
         params, _ = self.parameters.load_parameters(self.ff_parameters)
         N_max = min([int(self.N_pop * 0.6), 50])
         ids = np.argsort(engs)
@@ -529,21 +528,19 @@ class GlobalOptimize:
         t1 = (time() - t0) / 60
         print(f"Ref. update usage: {len(_ref_dics)}/{len(aug_dics)} strucs in {t1:.2f} min")
 
-        # Adjust the offset if the current one is 0
-        offset = self.parameters.params_init[-1]
-        if abs(offset) < 1e-3:
-            _, params = self.parameters.optimize_offset(ref_dics)
-            #print(f"Updating the offset in {os.getcwd()} / {self.ff_parameters}")
-            self.parameters.update_ff_parameters(params)
-            self.parameters.export_parameters(self.ff_parameters.split('/')[-1])
+        ff_dics, ref_dics = self.parameters.evaluate_ff_references(ref_dics, params)
+        params = self.parameters.optimize_offset(ref_dics, ff_dics)
+        self.parameters.update_ff_parameters(params)
+        self.parameters.export_parameters(self.ff_parameters.split('/')[-1])
 
         # Export FF performances
-        gen_prefix = self.get_label(gen, 'gen_')
+        gen_prefix = self.get_label(self.generation, 'gen_')
         performance_fig = f"FF_performance_{gen_prefix}.png"
         self.parameters.plot_ff_results(performance_fig,
                                         ref_dics,
                                         [params],
-                                        labels=gen_prefix)
+                                        labels=gen_prefix,
+                                        ff_dics=ff_dics)
         os.chdir(cwd)
 
         # Todo: as appending way
