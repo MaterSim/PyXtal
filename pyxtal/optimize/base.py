@@ -373,7 +373,7 @@ class GlobalOptimize:
         if self.ncpu > 1:
             pool = Pool(processes=self.ncpu,
                         initializer=setup_worker_logger,
-                        initargs=(self.log_file,))
+                        initargs=(self.log_file))
         else:
             pool = None
 
@@ -385,8 +385,7 @@ class GlobalOptimize:
             strs += f"in {t:.1f} mins {self.N_struc:d} strucs."
             print(strs)
 
-        if self.use_mpi:
-            self.comm.Barrier()
+        if self.use_mpi: self.comm.Barrier()
         return results
 
     def select_xtals(self, ref_xtals, ids, N_max):
@@ -528,7 +527,7 @@ class GlobalOptimize:
         aug_dics = self.parameters.augment_references(_ref_dics)
         ref_dics.extend(aug_dics)
         t1 = (time() - t0) / 60
-        print(f"Add {len(_ref_dics)} references in {t1:.2f} min")
+        print(f"Ref. update usage: {len(_ref_dics)}/{len(aug_dics)} strucs in {t1:.2f} min")
 
         # Adjust the offset if the current one is 0
         offset = self.parameters.params_init[-1]

@@ -286,7 +286,6 @@ class DFS(GlobalOptimize):
         args = dict(zip(param_names, load_xml(filename)))
         return cls(**args)
 
-
 if __name__ == "__main__":
     import argparse
     import os
