@@ -529,9 +529,11 @@ class GlobalOptimize:
         print(f"Ref. update usage: {len(_ref_dics)}/{len(aug_dics)} strucs in {t1:.2f} min")
 
         ff_dics, ref_dics = self.parameters.evaluate_ff_references(ref_dics, params)
-        params = self.parameters.optimize_offset(ref_dics, ff_dics)
-        self.parameters.update_ff_parameters(params)
-        self.parameters.export_parameters(self.ff_parameters.split('/')[-1])
+        if abs(params[-1]) < 1e-3:
+            params = self.parameters.optimize_offset(ref_dics, ff_dics)
+            self.parameters.update_ff_parameters(params)
+            self.parameters.export_parameters(self.ff_parameters.split('/')[-1])
+            for ff_dic in ff_dics: ff_dic['energy'] += params[-1]
 
         # Export FF performances
         gen_prefix = self.get_label(self.generation, 'gen_')
@@ -541,6 +543,8 @@ class GlobalOptimize:
                                         [params],
                                         labels=gen_prefix,
                                         ff_dics=ff_dics)
+        t2 = (time() - t0) / 60 - t1
+        print(f"FF performance evaluation usage in {t2:.2f} min")
         os.chdir(cwd)
 
         self.parameters.export_references(ref_dics, self.reference_file)
