@@ -537,9 +537,11 @@ class Lattice:
         Update the cell para and matrix from the 1d rep
         """
         if self.ltype == "triclinic":
-            self.a, self.b, self.c, self.alpha, self.beta, self.gamma = v[:6]
+            self.a, self.b, self.c = v[:3]
+            self.alpha, self.beta, self.gamma = np.radians(v[3:])
         elif self.ltype == "monoclinic":
-            self.a, self.b, self.c, self.beta = v[:4]
+            self.a, self.b, self.c = v[:3]
+            self.beta = np.radians(v[3])
         elif self.ltype == "orthorhombic":
             self.a, self.b, self.c = v[:3]
         elif self.ltype in ["tetragonal", "trigonal", "hexagonal"]:
