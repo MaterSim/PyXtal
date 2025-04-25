@@ -1,6 +1,6 @@
 # python -m unittest pyxtal/test_all.py
 import unittest
-from pyxtal.lego.builder import mof_builder
+from pyxtal.lego.builder import builder
 from pyxtal import pyxtal
 import random
 import numpy as np
@@ -9,14 +9,14 @@ xtal = pyxtal()
 xtal.from_spg_wps_rep(194, ['2c', '2b'], [2.46, 6.70])
 cif_file = xtal.to_pymatgen()
 
-builder1 = mof_builder(['C'], [1], verbose=False)
+builder1 = builder(['C'], [1], verbose=False)
 builder1.set_descriptor_calculator(mykwargs={'rcut': 1.9})
 builder1.set_reference_enviroments(cif_file)
 builder1.set_criteria(CN={'C': [3]})
 
 xtal.from_spg_wps_rep(92, ['4a', '8b'], [5.085, 7.099, 0.294, 0.094, 0.241, 0.826], ['Si', 'O'])
 cif_file = xtal.to_pymatgen()
-builder2 = mof_builder(['Si', 'O'], [1, 2], verbose=False)
+builder2 = builder(['Si', 'O'], [1, 2], verbose=False)
 builder2.set_descriptor_calculator(mykwargs={'rcut': 2.4})
 builder2.set_reference_enviroments(cif_file)
 builder2.set_criteria(CN={'Si': [4], 'O': [2]}, exclude_ii=True)
