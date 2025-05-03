@@ -3438,6 +3438,14 @@ class site_symmetry:
             symbol, id = self.get_highest_symmetry(matrix[i])
             one_hot_matrix[i, id] = 1
         return one_hot_matrix
+    
+    def to_one_hot_spg(self):
+        matrix = self.to_matrix_representation_spg()
+        one_hot_matrix = np.zeros([len(matrix), 26], dtype=int)
+        for i in range(len(all_sym_directions)):
+            id = np.where(matrix[i] == 1)[0][-1]
+            one_hot_matrix[i, id] = 1
+        return one_hot_matrix
 
     def to_matrix_representation_spg(self):
         """
@@ -3802,7 +3810,7 @@ class site_symmetry:
         for row in self.table:
             print(row[0])
 
-    def get_highest_symmetry(self, row):
+    def get_highest_symmetry_spg(self, row):
         # ['1']
         # ['1', '-1']
         # ['1', '2']
@@ -3816,6 +3824,52 @@ class site_symmetry:
         # ['1', 'm', '3', '-6']
         # ['1', '-1', '2', 'm', '4', '-4', '4/m']
         # ['1', '-1', '2', 'm', '3', '-3', '6', '-6', '6/m']
+        # 1 -1 2 m 3 4 -4 -3 6 -6 S-> wp-> sum(wp.multiplicity)
+        ref_arrays = [
+            (np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "1"),
+            (np.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "-1"),
+            (np.array([1, 0, 1, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2"),
+            (np.array([1, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=int), "m"),
+            (np.array([1, 0, 0, 0, 1, 0, 0, 0, 0, 0], dtype=int), "3"),
+            (np.array([1, 1, 1, 1, 0, 0, 0, 0, 0, 0], dtype=int), "2/m"),
+            (np.array([1, 0, 1, 0, 0, 1, 0, 0, 0, 0], dtype=int), "4"),
+            (np.array([1, 0, 1, 0, 0, 0, 1, 0, 0, 0], dtype=int), "-4"),
+            (np.array([1, 1, 0, 0, 1, 0, 0, 1, 0, 0], dtype=int), "-3"),
+            (np.array([1, 0, 1, 0, 1, 0, 0, 0, 1, 0], dtype=int), "6"),
+            (np.array([1, 0, 0, 1, 1, 0, 0, 0, 0, 1], dtype=int), "-6"),
+            (np.array([1, 1, 1, 1, 0, 1, 1, 0, 0, 0], dtype=int), "4/m"),
+            (np.array([1, 1, 1, 1, 1, 0, 0, 1, 1, 1], dtype=int), "6/m"),
+        ]
+
+        for i, ref_array in enumerate(ref_arrays):
+            if np.array_equal(row, ref_array[0]):
+                return ref_array[1], i
+
+        if self.lattice_type not in ["hexagonal", "trigonal"]:
+            symbols = ["1", "-1", "2", "m", "3", "4", "-4", "-3", "6", "-6"]
+            strs = [symbols[i] for i, x in enumerate(row) if x == 1]
+            print(row)
+            #raise ValueError("Incompatible symmetry list", strs)
+        return ref_arrays[0][1], 0
+
+    def get_highest_symmetry(self, row):
+        # site simmetry group: matrix : 13*15 => 10*15
+        # space group: matrix : 26*15
+
+        # ['1']
+        # ['1', '-1']
+        # ['1', '2']
+        # ['1', 'm']
+        # ['1', '3']
+        # ['1', '2', 'm', '2/m']
+        # ['1', '2', '4']
+        # ['1', '2', '-4']
+        # ['1', '-1', '3', '-3']
+        # ['1', '2', '3', '6']
+        # ['1', 'm', '3', '-6']
+        # ['1', '-1', '2', 'm', '4', '-4', '4/m']
+        # ['1', '-1', '2', 'm', '3', '-3', '6', '-6', '6/m']
+        # 1 -1 2 m 3 4 -4 -3 6 -6
         ref_arrays = [
             (np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "1"),
             (np.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "-1"),
