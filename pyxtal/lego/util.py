@@ -186,6 +186,6 @@ def calculate_S(x, xtal, des_ref, f, ref_CN=None, verbose=False):
         penalty = coefs * (f.rcut + 0.01 - CNs[:, 0])
         if penalty.sum() > 0: print('debug', penalty.sum(), x[:3])
         sim += 5 * coefs * penalty
-    obj = np.sum(sim * weights)
+    obj = np.sum(sim * weights) / sum(xtal.numIons)
     #print(des-des_ref); print(sim); print(obj)#; import sys; sys.exit()
     return obj

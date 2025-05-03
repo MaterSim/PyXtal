@@ -3813,6 +3813,7 @@ class pyxtal:
             N_grids (int): number of grids used for discretization
             verbose (bool): output detailed error
         """
+        if not discrete: tol=0.01
         number = int(np.round(rep[0] * 230)) if normalize else int(rep[0])
         if 1 <= number <= 230:
             group = Group(number)
@@ -4055,3 +4056,14 @@ class pyxtal:
                 self.cut_lattice(2.0, verbose=verbose)
                 if self.molecules[0].active_sites is not None:
                     self.optimize_orientation_by_energy(20, verbose=verbose)
+
+    def get_rms_dist(self, xtal1, ltol=0.3, stol=0.3, angle_tol=5.0, scale=True):
+        from pyxtal.util import get_pmg_dist
+        """
+        Compute the RMS distance between two xtals
+        """
+        if not isinstance(xtal1, pyxtal):
+            raise TypeError("The input must be a pyxtal instance")
+        pmg = self.to_pymatgen()
+        pmg1 = xtal1.to_pymatgen()
+        return get_pmg_dist(pmg, pmg1, ltol=ltol, stol=stol, angle_tol=angle_tol, scale=scale)

@@ -530,6 +530,7 @@ if __name__ == "__main__":
     # print(sp)
     for idx in range(4):
         # sp = wyckoff_split(G=210, idx=idx, wp1=['8b'], group_type='k')
-        sp = wyckoff_split(G=224, idx=idx, wp1=["24j"], group_type="k")
-        # print(sp)
+        sp = wyckoff_split(G=227, idx=idx, wp1=["96g"], group_type="t")
+        #print(sp)
+        print(sp.R)
         print(sp.error)
