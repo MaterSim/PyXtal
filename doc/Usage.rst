@@ -523,7 +523,7 @@ While the module is called molecular crystal, one can also use it to general MOF
 	m1 = pyxtal_molecule('Na+.smi')
 	m2 = pyxtal_molecule('[N-]=[N+]=[N-].smi')
 
-	for i, data in enumerate([(14, [4, 4]), 
+	for i, data in enumerate([(14, [4, 4]),
                           	  (36, [4, 4]),
                             ]):
     	(spg, numIons) = data
@@ -720,28 +720,28 @@ This way, you can easily find derivative crystals in the suboptimal representati
     Refind the symmetry with tol 0.2 194
     Refind the symmetry with tol 0.1 164
     Refind the symmetry with tol 0.01 164
-    
+
     Recovered xtal with the supergroup symmetry
-    
+
     ------Crystal from supergroup  0.014------
     Dimension: 3
     Composition: C4
     Group: P 63/m m c (194)
       2.4622,   2.4622,   6.7643,  90.0000,  90.0000, 120.0000, hexagonal
     Wyckoff sites:
-    	 C @ [ 0.0000  0.0000  0.2500], WP [2b] Site [-622m2]
-    	 C @ [ 0.3333  0.6667  0.2500], WP [2c] Site [-622m2]
-    
+    C @ [ 0.0000  0.0000  0.2500], WP [2b] Site [-622m2]
+    C @ [ 0.3333  0.6667  0.2500], WP [2c] Site [-622m2]
+
     The mapping relation between sub/super group symmetries
     [(Wycokff split from 194 to 164
-    
+
     2b -> 2c
-    0, 0, 1/4                      -> 0, 0, 1/4                      -> 0, 0, z                       
-    0, 0, 3/4                      -> 0, 0, 3/4                      -> 0, 0, -z                      
-    
+    0, 0, 1/4           -> 0, 0, 1/4                -> 0, 0, z
+    0, 0, 3/4           -> 0, 0, 3/4                -> 0, 0, -z
+
     2c -> 2d
-    1/3, -1/3, 1/4                 -> 1/3, 2/3, 1/4                  -> 1/3, 2/3, z                   
-    2/3, 1/3, 3/4                  -> 2/3, 1/3, 3/4                  -> 2/3, 1/3, -z                  
+    1/3, -1/3, 1/4      -> 1/3, 2/3, 1/4            -> 1/3, 2/3, z
+    2/3, 1/3, 3/4       -> 2/3, 1/3, 3/4            -> 2/3, 1/3, -z
     , [1, 0], array([0.        , 0.        , 0.00206797]), 0, 0.014137159092037652)]
 
 
@@ -1159,24 +1159,24 @@ class to handle the conversion of site symmetry symbols and operations.
 ::
 
     Na @ [ 0.3333  0.6667  0.0330], WP [2b] Site [3..]
-    Order    Axis        1  -1   2   m   3   4  -4  -3   6  -6   Group
-        0 ( 0  0  1):    1   0   0   0   1   0   0   0   0   0     3
+    Order    Axis    1  -1   2   m   3   4  -4  -3   6  -6   Group
+    0 ( 0  0  1):    1   0   0   0   1   0   0   0   0   0     3
     
     Sb @ [ 0.1163  0.3406  0.4500], WP [6c] Site [1]
-    Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group
+    Order    Axis    1  -1   2   m   3   4  -4  -3   6  -6   Group
  
     F @ [ 0.9650  0.4560  0.4190], WP [6c] Site [1]
-    Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group
+    Order    Axis    1  -1   2   m   3   4  -4  -3   6  -6   Group
  
     F @ [ 0.7960  0.1890  0.7060], WP [6c] Site [1]
-    Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group
+    Order    Axis    1  -1   2   m   3   4  -4  -3   6  -6   Group
  
     F @ [ 0.8890  0.1180  0.3600], WP [6c] Site [1]
-    Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group
+    Order    Axis    1  -1   2   m   3   4  -4  -3   6  -6   Group
  
     F @ [ 0.3333  0.6667  0.4550], WP [2b] Site [3..]
-    Order    Axis       1  -1   2   m   3   4  -4  -3   6  -6   Group
-        0 ( 0  0  1):   1   0   0   0   1   0   0   0   0   0     3
+    Order    Axis    1  -1   2   m   3   4  -4  -3   6  -6   Group
+    0 ( 0  0  1):   1   0   0   0   1   0   0   0   0   0     3
 
 
 One can also access the matrix representation via the `to_matrix_representation <pyxtal.symmetry.html#pyxtal.symmetry.site_symmetry>`_ method.
@@ -1292,31 +1292,31 @@ Finally, the both Group and Wyckoff_position classes support the access of the s
 ::
 
     Space group symmetry table 14 P21/c
-    Order    Axis       1    -1   2    2_1  m    a    b    c    n    d    3    3_1  3_2  4    -4   4_1  4_2  4_3  -3   6    6_1  6_2  6_3  6_4  6_5  -6   
-       0 ( 0  1  0):    1    1    0    1    0    0    0    1    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0 
+    Order    Axis   1   -1  2   2_1  m   a   b   c   n   d   3  3_1  3_2  4  -4  4_1  4_2  4_3  -3  6  6_1  6_2  6_3  6_4  6_5  -6   
+    0 ( 0  1  0):   1   1   0   1    0   0   0   1   0   0   0  0    0    0  0   0    0    0    0   0  0    0    0    0    0    0 
     
     Wp symmetry table 4e
-    Order    Axis       1    -1   2    m    3    4    -4   -3   6    -6   
-       0 ( 0  1  0):    1    0    0    0    0    0    0    0    0    0      1
+    Order    Axis   1   -1  2   m    3   4   -4   -3   6   -6  Group
+    0 ( 0  1  0):   1   0   0   0    0   0   0    0    0   0    1
     
     Wp symmetry table 2d
-    Order    Axis       1    -1   2    m    3    4    -4   -3   6    -6   
-       0 ( 0  1  0):    1    1    0    0    0    0    0    0    0    0     -1
+    Order    Axis   1   -1  2   m    3   4   -4   -3   6   -6  Group
+    0 ( 0  1  0):   1   1   0   0    0   0   0    0    0   0   -1
     
     Wp symmetry table 2c
-    Order    Axis       1    -1   2    m    3    4    -4   -3   6    -6   
-       0 ( 0  1  0):    1    1    0    0    0    0    0    0    0    0     -1
+    Order    Axis   1   -1  2   m    3   4   -4   -3   6   -6  Group
+    0 ( 0  1  0):   1   1   0   0    0   0   0    0    0   0   -1
     
     Wp symmetry table 2b
-    Order    Axis       1    -1   2    m    3    4    -4   -3   6    -6   
-       0 ( 0  1  0):    1    1    0    0    0    0    0    0    0    0     -1
+    Order    Axis   1   -1  2   m    3   4   -4   -3   6   -6  Group
+    0 ( 0  1  0):   1   1   0   0    0   0   0    0    0   0   -1
     
     Wp symmetry table 2a
-    Order    Axis       1    -1   2    m    3    4    -4   -3   6    -6   
-       0 ( 0  1  0):    1    1    0    0    0    0    0    0    0    0     -1
+    Order    Axis   1   -1  2   m    3   4   -4   -3   6   -6  Group
+    0 ( 0  1  0):   1   1   0   0    0   0   0    0    0   0   -1
     
 
-Note that the space group symmetry has 26 symmetry elements as it includes additional screw axis (`2_1`, `3_1`, `3_2`, `4_1`, `4_2`, `4_3`, `6_1`, `6_2`, `6_3, `6_4`, `6_5`) and glide plane (`a`, `b`, `c`, `d`, `n`) operations.
+Note that the space group symmetry has 26 symmetry elements as it includes additional screw axis (`2_1`, `3_1`, `3_2`, `4_1`, `4_2`, `4_3`, `6_1`, `6_2`, `6_3`, `6_4`, `6_5`) and glide plane (`a`, `b`, `c`, `d`, `n`) operations.
 
 .. code-block:: Python
 

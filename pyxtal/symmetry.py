@@ -850,12 +850,13 @@ class Group:
 
     def get_ferroelectric_groups(self):
         """
-        return the list of possible ferroelectric point groups
+        Return the list of possible ferroelectric point groups
         """
         return para2ferro(self.point_group)
 
     def get_site_dof(self, sites):
-        """Compute the degree of freedom for each site.
+        """
+        Compute the degree of freedom for each site.
 
         Args:
             sites (list): List of site labels, e.g. ['4a', '8b'] or ['a', 'b']
@@ -874,7 +875,7 @@ class Group:
 
     def get_lattice_dof(self):
         """
-        compute the degree of freedom for the lattice
+        Compute the degree of freedom for the lattice
         """
         if self.lattice_type in ["triclinic"]:
             dof = 6
@@ -891,7 +892,7 @@ class Group:
 
     def is_valid_combination(self, sites):
         """
-        check if the solutions are valid. A special WP with zero freedom (0,0,0)
+        Check if the solutions are valid. A special WP with zero freedom (0,0,0)
         cannot be occupied twice.
 
         Args:
@@ -1070,7 +1071,7 @@ class Group:
 
     def get_spg_symmetry_object(self):
         """
-        Generate the symmetry table for the given space group
+        Generate the symmetry table for the given space group.
         It only supports space group now!
         """
 
@@ -1608,32 +1609,6 @@ class Group:
             layers[l - 1]["subgroups"] = deepcopy(subgroups)
         return final
 
-    #def path_to_subgroup(self, H):
-    #    """
-    #    For a given a path, extract the
-    #        a list of (g_types, subgroup_id, spg_number, wp_list (optional))
-    #    """
-    #    path_list = []
-    #    paths = self.search_subgroup_paths(H)
-    #    if len(paths) > 0:
-    #        path = paths[0]
-    #        g0 = Group(path[0], quick=True)
-    #        for p in path[1:]:
-    #            #g1 = Group(p, quick=True)
-    #            #pg = get_point_group(p)
-    #            if g0.point_group == get_point_group(p):
-    #                g_type = "k"
-    #                spgs = g0.get_max_k_subgroup()["subgroup"]
-    #            else:
-    #                g_type = "t"
-    #                spgs = g0.get_max_t_subgroup()["subgroup"]
-    #            for spg in spgs:
-    #                if spg == p:
-    #                    break
-    #            path_list.append((g_type, id, p))
-    #            g0 = g1
-    #    return path_list
-
     def path_to_subgroup(self, H):
         """
         For a given a path, extract the
@@ -1729,7 +1704,6 @@ class Group:
         Return:
             a list of (g_types, subgroup_id, spg_number, wp_list (optional))
         """
-        # label = [str(self[index].multiplicity) + self[index].letter]
         k_subgroup = SYMDATA.get_k_subgroup()
         t_subgroup = SYMDATA.get_t_subgroup()
 
@@ -1944,16 +1918,11 @@ class Group:
         Vol. A, Chapter 2.1, pp. 142-174.
         including Primary, secondary and Tertiary
         """
-        # if self.dim == 3:
         return get_symmetry_directions(self.lattice_type, self.symbol[0])
-        # else:
-        #    print("Cannot handle dimension other than 3")
-        #    pass
 
 
-#
+
 # ----------------------- Wyckoff Position class  ------------------------
-
 
 class Wyckoff_position:
     """
@@ -1971,7 +1940,6 @@ class Wyckoff_position:
 
     """
 
-    # =============================Initialization===========================
     @classmethod
     def from_dict(cls, dictionary):
         """
@@ -2066,7 +2034,6 @@ class Wyckoff_position:
             "ops": wyckoffs[index],
             "multiplicity": len(wyckoffs[index]),
             "symmetry": get_wyckoff_symmetry(number, dim=dim)[index],
-            # "generators": get_generators(number, dim=dim)[index],
             "PBC": PBC,
             "dim": dim,
             "number": number,
@@ -2216,7 +2183,6 @@ class Wyckoff_position:
         g = dicts["group"]
         index = dicts["index"]
         dim = dicts["dim"]
-        # , trans=trans)
         return Wyckoff_position.from_group_and_index(g, index, dim)
 
     # =============================Updates===========================
@@ -2315,7 +2281,7 @@ class Wyckoff_position:
 
     def update_index(self):
         """
-        check if needs to update the index due to lattice transformation
+        Check if needs to update the index due to lattice transformation
         """
         wyckoffs = get_wyckoffs(self.number, dim=self.dim)
         wp2 = self.from_index_quick(wyckoffs, self.index)
@@ -2343,7 +2309,7 @@ class Wyckoff_position:
 
     def transform_from_matrix(self, trans=None, reset=True, update=False):
         """
-        Transform the symmetry operation according to cell transformation
+        Transform the symmetry operation according to cell transformation.
         Mostly needed when optimizing the lattice
         """
 
@@ -2434,7 +2400,7 @@ class Wyckoff_position:
 
     def get_hm_symbol(self):
         """
-        get Hermann-Mauguin symbol
+        Get Hermann-Mauguin symbol
         """
         return HALL_TABLE["Symbol"][self.hall_number - 1]
 
@@ -2838,7 +2804,6 @@ class Wyckoff_position:
                 distances = []
                 pts = []
                 for i in possible:
-                    # wp = group[i]
                     p, d = group[i].search_generator_dist(
                         pt.copy(), lattice, group)
                     distances.append(d)
@@ -2892,7 +2857,6 @@ class Wyckoff_position:
         Returns:
             pt: the best matched pt
             diff: numerical difference
-
         """
         if lattice is None:
             lattice = np.eye(3)
@@ -2986,7 +2950,7 @@ class Wyckoff_position:
 
     def apply_ops(self, pt):
         """
-        apply symmetry operation
+        Apply symmetry operation
         """
         return apply_ops(pt, self.ops)
 
@@ -3073,8 +3037,6 @@ class Wyckoff_position:
         return [x, y, z]
 
 # ----------------- Wyckoff Position selection  --------------------------
-
-
 def choose_wyckoff(G, number=None, site=None, dim=3, random_state: int | None | Generator = None):
     """
     Choose a Wyckoff position to fill based on the current number of atoms
@@ -3224,7 +3186,6 @@ def swap_xyz_string(xyzs, permutation):
 
         return new
 
-
 def swap_xyz_ops(ops, permutation):
     """
     change the symmetry operation by swaping the axes
@@ -3251,7 +3212,6 @@ def swap_xyz_ops(ops, permutation):
             new.append(SymmOp(m))
         return new
 
-
 def op_transform(ops, affine_matrix):
     """
     x, y, z -> x+1/2, y+1/2, z
@@ -3267,7 +3227,6 @@ def op_transform(ops, affine_matrix):
     matrix2 = affine_matrix.dot(ops.affine_matrix)
     return SymmOp(matrix2)
 
-
 def op_translation(op, tran):
     m = op.affine_matrix.copy()
     m[:3, 3] += tran
@@ -3277,7 +3236,6 @@ def op_translation(op, tran):
             m[row, 3] = 0
     return SymmOp(m)
 
-
 def are_equivalent_ops(op1, op2, tol=1e-2):
     """
     check if two ops are equivalent, assuming the same ordering
@@ -3286,7 +3244,6 @@ def are_equivalent_ops(op1, op2, tol=1e-2):
     diff[:, 3] -= np.rint(diff[:, 3])
     diff = np.abs(diff.flatten())
     return np.sum(diff) < tol
-
 
 def letter_from_index(index, group, dim=3):
     """
@@ -3312,7 +3269,6 @@ def letter_from_index(index, group, dim=3):
         letters1 = "o" + letters
     length = len(group)
     return letters1[length - 1 - index]
-
 
 def index_from_letter(letter, group, dim=3):
     """
@@ -3434,8 +3390,8 @@ class site_symmetry:
     def to_one_hot(self):
         matrix = self.to_matrix_representation()
         one_hot_matrix = np.zeros([len(matrix), 13], dtype=int)
-        for i, _axis in enumerate(all_sym_directions):
-            symbol, id = self.get_highest_symmetry(matrix[i])
+        for i in range(len(all_sym_directions)):
+            _, id = self.get_highest_symmetry(matrix[i])
             one_hot_matrix[i, id] = 1
         return one_hot_matrix
     
@@ -3452,7 +3408,6 @@ class site_symmetry:
         To create a binary matrix to represent the symmetry elements on each axis
         Translation is alos counted here.
         """
-
         matrix = np.zeros(
             [len(all_sym_directions), len(self.symbols)], dtype=int)
         # every direction must has identity symmetry
@@ -3468,7 +3423,7 @@ class site_symmetry:
 
                 store = False
                 for i, ax in enumerate(all_sym_directions):
-                    # ; print(opa.axis, ax, np.dot(_ax0, ax0))
+                    # print(opa.axis, ax, np.dot(_ax0, ax0))
                     ax0 = ax / np.linalg.norm(ax)
                     if np.isclose(abs(np.dot(_ax0, ax0)), 1):
                         store = True
@@ -3855,7 +3810,6 @@ class site_symmetry:
     def get_highest_symmetry(self, row):
         # site simmetry group: matrix : 13*15 => 10*15
         # space group: matrix : 26*15
-
         # ['1']
         # ['1', '-1']
         # ['1', '2']
@@ -4277,10 +4231,9 @@ def get_symbol_and_number(input_group, dim=3):
     symbol = lists[number - 1]
     return symbol, number
 
-
 def check_symmetry_and_dim(number, dim=3):
     """
-    check if it is a valid number for the given symmetry
+    Check if it is a valid number for the given symmetry
 
     Args:
         number: int
@@ -4300,7 +4253,6 @@ def check_symmetry_and_dim(number, dim=3):
             msg = f"invalid symmetry group {number:d}"
             msg += f" in dimension {dim:d}"
     return valid, msg
-
 
 def get_pbc_and_lattice(number, dim):
     if dim == 3:
@@ -4350,7 +4302,6 @@ def get_pbc_and_lattice(number, dim):
         lattice_type = "spherical" if number in [
             1, 2, 6, 8, 28, 29, 30, 31, 32, 55, 56] else "ellipsoidal"
     return PBC, lattice_type
-
 
 def search_cloest_wp(G, wp, op, pos):
     """
@@ -4409,15 +4360,14 @@ def search_cloest_wp(G, wp, op, pos):
                     return res
             return op.operate(pos)
 
-
 def get_point_group(number):
     """
     Parse the point group symmetry info from space group. According to
-    http://img.chem.ucl.ac.uk/sgp/misc/pointgrp.htm, among 32(230) point(space)
+    http://img.chem.ucl.ac.uk/sgp/misc/pointgrp.htm, among 32 (230) point(space)
     groups, there are
-        - 10(68) polar groups,
-        - 11(92) centrosymmetric groups,
-        - 11(65) enantiomorphic groups
+        - 10 (68) polar groups,
+        - 11 (92) centrosymmetric groups,
+        - 11 (65) enantiomorphic groups
 
     Args:
         number: space group number

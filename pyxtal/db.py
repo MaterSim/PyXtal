@@ -1696,8 +1696,9 @@ class database_topology:
             os.remove(db_name)
 
         unique_props = {}  # Using a dictionary to store unique properties
+        self.update_row_topology()
         for row in self.db.select():
-            if hasattr(row, "topology") and hasattr(row, "ff_energy"):
+            if hasattr(row, "ff_energy"):
                 top, top_detail = row.topology, row.topology_detail
                 dof, ff_energy = row.dof, round(row.ff_energy, prec)
                 prop_key = (top, top_detail, ff_energy)
