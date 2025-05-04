@@ -711,9 +711,13 @@ class builder(object):
         for i, rep in enumerate(reps):
             #print('start', i, rep, len(rep))
             xtal = pyxtal()
+            discrete = False if N_grids is None else True
+            discrete_cell = abs(rep[1] - round(rep[1])) < 1e-5
             xtal.from_tabular_representation(rep,
                                              normalize=False,
-                                             discrete=N_grids)
+                                             discrete=discrete,
+                                             N_grids=N_grids,
+                                             discrete_cell=discrete_cell)
                                              #verbose=True)
             xtal, sim, _xs = self.optimize_xtal(xtal, i, *args)
             if xtal is not None:
@@ -756,9 +760,11 @@ class builder(object):
                         rep = reps[id]
                         xtal = pyxtal()
                         discrete = False if N_grids is None else True
+                        discrete_cell = abs(rep[1] - round(rep[1])) < 1e-5
                         xtal.from_tabular_representation(rep,
                                                          normalize=False,
                                                          discrete=discrete,
+                                                         discrete_cell=discrete_cell,
                                                          N_grids=N_grids)
                         x = xtal.get_1d_rep_x()
                         spg, wps, _ = self.get_input_from_ref_xtal(xtal)
