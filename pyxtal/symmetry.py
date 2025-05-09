@@ -3394,7 +3394,7 @@ class site_symmetry:
             _, id = self.get_highest_symmetry(matrix[i])
             one_hot_matrix[i, id] = 1
         return one_hot_matrix
-    
+
     def to_one_hot_spg(self):
         matrix = self.to_matrix_representation_spg()
         one_hot_matrix = np.zeros([len(matrix), 26], dtype=int)

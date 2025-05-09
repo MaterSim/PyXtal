@@ -1678,7 +1678,7 @@ class database_topology:
             folder = f"cpu0{i}"
         return folder
 
-    def get_db_unique(self, db_name=None, prec=3):
+    def get_db_unique(self, db_name=None, prec=3, update_topology=True):
         """
         Get a db file with only unique structures
         with the following identical attributes:
@@ -1687,6 +1687,7 @@ class database_topology:
         Args:
             db_name (str): filename for the new db
             prec (int): ff_energy precision for the round number
+            update_topology (bool): whether or not update topology
         """
 
         print(f"The {self.db_name:s} has {self.db.count():d} strucs")
@@ -1696,7 +1697,7 @@ class database_topology:
             os.remove(db_name)
 
         unique_props = {}  # Using a dictionary to store unique properties
-        self.update_row_topology()
+        if update_topology: self.update_row_topology()
         for row in self.db.select():
             if hasattr(row, "ff_energy"):
                 top, top_detail = row.topology, row.topology_detail
