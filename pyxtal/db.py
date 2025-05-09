@@ -1678,7 +1678,7 @@ class database_topology:
             folder = f"cpu0{i}"
         return folder
 
-    def get_db_unique(self, db_name=None, prec=3, update_topology=True):
+    def get_db_unique(self, db_name=None, prec=3, update_topology=True, key='ff_energy'):
         """
         Get a db file with only unique structures
         with the following identical attributes:
@@ -1688,6 +1688,7 @@ class database_topology:
             db_name (str): filename for the new db
             prec (int): ff_energy precision for the round number
             update_topology (bool): whether or not update topology
+            key (str): key name for the filter
         """
 
         print(f"The {self.db_name:s} has {self.db.count():d} strucs")
@@ -1699,21 +1700,22 @@ class database_topology:
         unique_props = {}  # Using a dictionary to store unique properties
         if update_topology: self.update_row_topology()
         for row in self.db.select():
-            if hasattr(row, "ff_energy"):
+            if hasattr(row, key) and row.key is not None:
                 top, top_detail = row.topology, row.topology_detail
-                dof, ff_energy = row.dof, round(row.ff_energy, prec)
-                prop_key = (top, top_detail, ff_energy)
+                dof, energy = row.dof, round(getattr(row, key), prec)
+                prop_key = (top, top_detail, energy)
                 # A dictionary lookup
                 if prop_key in unique_props:
                     _id, _dof = unique_props[prop_key]
                     if dof < _dof:
-                        print("Updating", row.id, top, ff_energy)
+                        print("Updating", row.id, top, energy)
                         unique_props[prop_key] = (row.id, dof)
                     else:
-                        print("Duplicate", row.id, top, ff_energy)
+                        print("Duplicate", row.id, top, energy)
                 else:
-                    print("Adding", row.id, top, ff_energy)
+                    print("Adding", row.id, top, energy)
                     unique_props[prop_key] = (row.id, dof)
+
 
         ids = [unique_props[key][0] for key in unique_props.keys()]
         with connect(db_name, serial=True) as db:
