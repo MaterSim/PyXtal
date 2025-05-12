@@ -754,9 +754,9 @@ class Group:
             self.number = HALL_TABLE["Spg_num"][group - 1]
 
         self.PBC, self.lattice_type = get_pbc_and_lattice(self.number, dim)
-        self.lattice_id = self.get_lattice_id()
 
         if dim == 3:
+            self.lattice_id = self.get_lattice_id()
             results = get_point_group(self.number)
             self.point_group, self.pg_number, self.polar, self.inversion, self.chiral = results
 

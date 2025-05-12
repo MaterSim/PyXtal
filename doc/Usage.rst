@@ -1345,39 +1345,45 @@ array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 
 
 In the above example, the lattice id is 13, corresponding to the cubic-F lattice. 
 
-        +--------+-----------------+
-        | ID     | Lattice Type   |
-        +========+=================+
-        | 0      | Triclinic-Primitive    |
-        +--------+-----------------+
-        | 1      | Monoclinic-Primitive   |
-        +--------+-----------------+
-        | 2      | Monoclinic-base centered   |
-        +--------+-----------------+
-        | 3      | Orthorhombic-Primitive |
-        +--------+-----------------+
-        | 4      | Orthorhombic-Base centered  |
-        +--------+-----------------+
-        | 5      | Orthorhombic-Body centered |
-        +--------+-----------------+
-        | 6      | Orthorhombic-Face centered |
-        +--------+-----------------+
-        | 7      | Tetragonal-Primitive   |
-        +--------+-----------------+
-        | 8      | Tetragonal-Body centered   |
-        +--------+-----------------+
-        | 9      | hexagonal-Primitive    |
-        +--------+-----------------+
-        | 10     | hexagonal-Rhombehedral    |
-        +--------+-----------------+
-        | 11     | cubic-Primitive        |
-        +--------+-----------------+
-        | 12     | cubic-Body centered        |
-        +--------+-----------------+
-        | 13     | cubic-Face centered        |
-        +--------+-----------------+
+.. list-table:: Lattice Types and IDs
+    :header-rows: 1
+    :widths: auto
 
-The matrix representation is a 15*26 array, where the 15 rows represent the 15 possible high symmetry crystallographic axes, and the 26 columns represent the presence of 26 symmetry elements.
+    * - ID
+      - Lattice Type 
+    * - 0
+      - Triclinic-Primitive  
+    * - 1 
+      - Monoclinic-Primitive
+    * - 2
+      - Monoclinic-base centered
+    * - 3
+      - Orthorhombic-Primitive
+    * - 4
+      - Orthorhombic-Base centered
+    * - 5
+      - Orthorhombic-Body centered
+    * - 6
+      - Orthorhombic-Face centered
+    * - 7
+      - Tetragonal-Primitive
+    * - 8
+      - Tetragonal-Body centered
+    * - 9
+      - hexagonal-Primitive
+    * - 10
+      - hexagonal-Rhombehedral
+    * - 11
+      - cubic-Primitive
+    * - 12
+      - cubic-Body centered
+    * - 13
+      - cubic-Face centered
+
+
+
+The matrix representation is a 15*26 array, where the 15 rows represent the 15 possible high symmetry crystallographic axes, 
+and the last 26 columns represent the presence of 26 symmetry elements.
 
 
 
