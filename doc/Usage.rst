@@ -1320,11 +1320,14 @@ Note that the space group symmetry has 26 symmetry elements as it includes addit
 
 .. code-block:: Python
 
->>> g = Group(227)
->>> id, matrix = g.get_spg_representation()
->>> id
+g = Group(227)
+id, matrix = g.get_spg_representation()
+print(id)
+print(matrix)
+
+::
+
 13
->>> matrix
 array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -1345,7 +1348,7 @@ array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 
 
 In the above example, the lattice id is 13, corresponding to the cubic-F lattice. 
 
-.. list-table:: Lattice Types and IDs
+.. list-table:: The crystallographic lattice types' classification.
     :header-rows: 1
     :widths: auto
 
@@ -1384,7 +1387,6 @@ In the above example, the lattice id is 13, corresponding to the cubic-F lattice
 
 The matrix representation is a 15*26 array, where the 15 rows represent the 15 possible high symmetry crystallographic axes, 
 and the last 26 columns represent the presence of 26 symmetry elements.
-
 
 
 For the use of this function, please cite the following paper.
