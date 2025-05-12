@@ -155,7 +155,7 @@ In each WP, the symmetry operations are stored as
 symmetry operations can be applied to 3d vectors using ``op.operate``, or can be
 composed together via multiplication: ``op3 = op1 * op2``. Each ``SymmOp``
 consists of a rotation matrix (``op.rotation_matrix``) and a translation vector
-(``op.translation_vector``), and is represented by a :math: `4 \times 4` affine
+(``op.translation_vector``), and is represented by a 4 x 4 affine
 matrix (``op.affine_matrix``).
 
 Alternatively, the WP can be initialized by itself.
@@ -261,8 +261,7 @@ pyxtal.lattice.Lattice
 
 It is possible to supply your own unit cell lattice for a random crystal,
 via the `pyxtal.lattice.Lattice <pyxtal.lattice.html>`_ class. You can define a lattice using
-either a :math: `3 \times 3` matrix, or 6
-cell parameters:
+either a 3 x 3 matrix, or 6 cell parameters:
 
 .. code-block:: Python
 
@@ -271,7 +270,7 @@ cell parameters:
     l2 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
 
 Here, both ``l1`` and ``l2`` describe the same lattice.
-In this case, it is an orthorhombic cell with lengths 4.08, 9.13, and 5.50 :math:`\\AA`,
+In this case, it is an orthorhombic cell with lengths 4.08, 9.13, and 5.50 Å,
 which is the unit cell for common water ice. The lattice parameters are,
 in order: (a, b, c, :math:`\alpha, \beta, \gamma`).
 a, b, and c are the lengths of the lattice vectors;
@@ -545,10 +544,11 @@ would generate a 2d crystal with
 
 - layer group ``P2_122 (20)``,
 - 4 carbon atoms in the conventional cell,
-- a thickness of 2.0 :math:`\\AA`.
+- a thickness of 2.0 Å.
+
 
 The crystal will be periodic in two directions instead of three. PyXtal adds
-10 :math:`\\AA` of vacuum on the z axis (which is non-periodic). Note that the
+10 Å of vacuum on the z axis (which is non-periodic). Note that the
 layer group number is different from the space group number, and ranges between
 1 and 80. By default, PyXtal will automatically generate a value for the
 thickness of the unit cell, based on the volume. By specifying thickness value,
@@ -668,7 +668,7 @@ when calling the ``to_ase()`` function.
 
 Subgroup/supergroup manipulation
 --------------------------------
-Symmetry relation has been playing an important role in crystallography. PyXtal provides several utilities to allow one to conveniently explore the subgroup or supergroup symmetries. (To add)
+Symmetry relation has been playing an important role in crystallography. PyXtal provides several utilities to allow one to conveniently explore the subgroup or supergroup symmetries.
 
 Generating subgroup and supergroup xtals
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -749,9 +749,9 @@ This way, you can easily find derivative crystals in the suboptimal representati
 Chemical Substitution
 ~~~~~~~~~~~~~~~~~~~~~
 
-In many cases, the crystal structures of mutlicompnent systems are strongly related to the structure of simple systems. For instance, the 1: 1 ratio boron nitrides, as an isoelectronic analogue to carbon, exihibit very similar structural behaviors as compared to elemental carbon allotropes. Similarly, many of the known AlPO4 polymorphs are related to SiO2. 
+In many cases, the crystal structures of mutlicompnent systems are strongly related to the structure of simple systems. For instance, the 1:1 ratio boron nitrides, as an isoelectronic analogue to carbon, exihibit very similar structural behaviors as compared to elemental carbon allotropes. Similarly, many of the known AlPO\ :sub:`4` polymorphs are related to SiO\ :sub:`2`. 
 
-Inspired by these known correlation, PyXtal offers the `substitue_1_2 <pyxtal.html#pyxtal.substitue_1_2>`_  function to derive the BC compounds from A via subgroup relation (e.g., from C to BN or from SiO2 to AlPO4). The key idea is to split A's Wyckoff sites to B and C according to the BC composition constraints. Unlike the random substitution, the Wyckoff position splitting strictly follows the group-subgroup relation. As such, the resulting compound retains a high space group symmetry from the parental structure. Below, we illustrate this function via a few examples.
+Inspired by these known correlation, PyXtal offers the `substitue_1_2 <pyxtal.html#pyxtal.substitue_1_2>`_  function to derive the BC compounds from A via subgroup relation (e.g., from C to BN or from SiO\ :sub:`2` to AlPO\ :sub:`4`). The key idea is to split A's Wyckoff sites to B and C according to the BC composition constraints. Unlike the random substitution, the Wyckoff position splitting strictly follows the group-subgroup relation. As such, the resulting compound retains a high space group symmetry from the parental structure. Below, we illustrate this function via a few examples.
 
 Below is a script to make a 1:1 ratio BN compound from the diamond carbon allotrope.
 
@@ -822,7 +822,9 @@ Additionally, you may want to generate a more homogeously substituted BN crystal
     Add substitution *  8   1  216 F-43m          3.53 4a 4d
     Found 1 substitutions in total
 
-Finally, this function is not limited to elemental-binary substitution. You can selectively consider substitution on a given element in any compounds. Below is a case to generate derivative AlPO4 structure from the alpha-cristobalite SiO2.
+Finally, this function is not limited to elemental-binary substitution. For example, 
+below shows a case to convert an α-cristobalite SiO\ :sub:`2` structure to AlPO\ :sub:`4` by 
+selectively substituting Si atoms:
 
 
 .. code-block:: Python
@@ -869,7 +871,7 @@ Constraints on lattice and sites
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sometimes, it is convenient to generate the crystal with partial information.
-Below shows how to create a :math:`Al_2SiO_5` crystal with a pre-assigned unit
+Below shows how to create a Al\ :sub:`2`\ SiO\ :sub:`5`\  crystal with a pre-assigned unit
 cell and sites on ``8Al + 4Si + 4O``, and random coordinates on the 16 remaining
 O atoms.
 
@@ -934,7 +936,7 @@ shown below.
 Random molecular crystal without calling pyxtal_molecule
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you just want to generate a random molecular crystal, Pyxtal will automatically
+If you just want to generate a random molecular crystal, PyXtal will automatically
 interpret the strings. Therefore, it is not necessary to call the
 ``pyxtal_molecule`` class. See a short example below.
 
@@ -949,7 +951,7 @@ interpret the strings. Therefore, it is not necessary to call the
 Random molecular crystal with constraints on torsion
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Using the smile string, one can specify the desired torsions
+Using the smiles string, one can specify the desired torsions
 
 .. code-block:: Python
 
@@ -997,7 +999,7 @@ the function.
                 print(wp.__str__(True))
 
 If you run the above script, it is expected to return all the possible Wyckoff
-sites that can host the H2O molecule.
+sites that can host the H₂O molecule.
 
 ::
 
@@ -1034,7 +1036,7 @@ between Pyxtal and its 1D representation. With this module, one can represent th
 In the 1D string, the data is organized as follows
 
 - Hall number (1-530)
-- cell parameter: a, b, c, alpha, beta, gamma
+- cell parameters: *a*, *b*, *c*, *α*, *β*, *γ*
 - molecular site: center coordinates + orientation + torsions + inversion
 
 Alternatively, one can read the structure from the 1D representation and smile string
@@ -1085,9 +1087,8 @@ To create a new database file (e.g., `test.db`),
 
 To view the database file, 
 
-.. code-block:: Python
-    
-    $ ase db test.db
+
+``$ ase db test.db``
 
 ::
 
@@ -1156,6 +1157,7 @@ class to handle the conversion of site symmetry symbols and operations.
         print(site)
         ss = site.wp.get_site_symmetry_object()
         ss.to_beautiful_matrix_representation()
+
 ::
 
     Na @ [ 0.3333  0.6667  0.0330], WP [2b] Site [3..]
@@ -1186,7 +1188,7 @@ One can also access the matrix representation via the `to_matrix_representation 
     matrix = ss.to_matrix_representation()
 
 
-This will results in a `15*10` array to represent the presence of 10 fundamental symmetry elements in 15 possible high symmetry crystallograph axes.
+This will result in a `15×10` array to represent the presence of 10 fundamental symmetry elements in 15 possible high symmetry crystallograph axes.
 ::
     
     # An example of 3-fold rotation symmetry on the (0 0 1) axis
@@ -1274,7 +1276,7 @@ The one-hot matrix representation `(15, 13)` can also be obtained via
     ]
 
 
-Finally, the both Group and Wyckoff_position classes support the access of the symmetry element analysis via
+Finally, the both ``Group`` and ``Wyckoff_position`` classes support the access of the symmetry element analysis via
 
 .. code-block:: Python
 
@@ -1316,76 +1318,73 @@ Finally, the both Group and Wyckoff_position classes support the access of the s
     0 ( 0  1  0):   1   1   0   0    0   0   0    0    0   0   -1
     
 
-Note that the space group symmetry has 26 symmetry elements as it includes additional screw axis (`2_1`, `3_1`, `3_2`, `4_1`, `4_2`, `4_3`, `6_1`, `6_2`, `6_3`, `6_4`, `6_5`) and glide plane (`a`, `b`, `c`, `d`, `n`) operations.
+Note that the space group symmetry has 26 symmetry elements as it includes additional screw axis (2\ :sub:`1`, 3\ :sub:`1`, 3\ :sub:`2`, 4\ :sub:`1`, 4\ :sub:`2`, 4\ :sub:`3`, 6\ :sub:`1`, 6\ :sub:`2`, 6\ :sub:`3`, 6\ :sub:`4`, 6\ :sub:`5`) and glide plane (`a`, `b`, `c`, `d`, `n`) operations.
 
 .. code-block:: Python
 
-g = Group(227)
-id, matrix = g.get_spg_representation()
-print(id)
-print(matrix)
+    g = Group(227)
+    id, matrix = g.get_spg_representation() 
+    print(id)
+    print(matrix)
 
-::
+    >>> 13
+    >>> array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
 
-13
-array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-       [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-       [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
+In the above example, the ``lattice id`` is 13, corresponding to the ``cubic-F`` lattice.
 
-::
 
-In the above example, the lattice id is 13, corresponding to the cubic-F lattice. 
-
-.. list-table:: The crystallographic lattice types' classification.
+.. list-table:: The lattice types' classification.
     :header-rows: 1
     :widths: auto
 
     * - ID
       - Lattice Type 
     * - 0
-      - Triclinic-Primitive  
+      - Triclinic Primitive  
     * - 1 
-      - Monoclinic-Primitive
+      - Monoclinic Primitive
     * - 2
-      - Monoclinic-base centered
+      - Monoclinic Base Centered
     * - 3
-      - Orthorhombic-Primitive
+      - Orthorhombic Primitive
     * - 4
-      - Orthorhombic-Base centered
+      - Orthorhombic Base Centered
     * - 5
-      - Orthorhombic-Body centered
+      - Orthorhombic Body Centered
     * - 6
-      - Orthorhombic-Face centered
+      - Orthorhombic Face Centered
     * - 7
-      - Tetragonal-Primitive
+      - Tetragonal Primitive
     * - 8
-      - Tetragonal-Body centered
+      - Tetragonal Body Centered
     * - 9
-      - hexagonal-Primitive
+      - Hexagonal Primitive
     * - 10
-      - hexagonal-Rhombehedral
+      - Hexagonal Rhombehedral
     * - 11
-      - cubic-Primitive
+      - Cubic Primitive
     * - 12
-      - cubic-Body centered
+      - Cubic Body Centered
     * - 13
-      - cubic-Face centered
+      - Cubic Face Centered
 
 
 
-The matrix representation is a 15*26 array, where the 15 rows represent the 15 possible high symmetry crystallographic axes, 
+The matrix representation is a 15×26 array, where the 15 rows represent the 15 possible high symmetry crystallographic axes, 
 and the last 26 columns represent the presence of 26 symmetry elements.
 
 
