@@ -754,6 +754,7 @@ class Group:
             self.number = HALL_TABLE["Spg_num"][group - 1]
 
         self.PBC, self.lattice_type = get_pbc_and_lattice(self.number, dim)
+        self.lattice_id = self.get_lattice_id()
 
         if dim == 3:
             results = get_point_group(self.number)
@@ -872,6 +873,70 @@ class Group:
             return len(set(re.sub(r"[^a-z]+", "", xyz_str)))
 
         return np.array([extract_dof(site) for site in sites])
+    
+    def get_spg_representation(self):
+        """
+        Get the one-hot encoding of the space group. 
+        (lattice_id, symmetry_matrix)
+
+        Returns:
+            id: an integer between 0 and 13
+            one_hot: a (15, 26) numpy (0, 1) array
+        """
+        return self.lattice_id, self.get_spg_symmetry_object().to_one_hot_spg()
+    
+    def get_lattice_id(self):
+        """
+        Compute the id for the lattice
+        0: triclinic-P
+        1: monoclinic-P
+        2: monoclinic-C
+        3: orthorhombic-P
+        4: orthorhombic-A/B/C
+        5: orthorhombic-I
+        6: orthorhombic-F
+        7: tetragonal-P
+        8: tetragonal-I
+        9: hexagonal-P
+        10: hexagonal-R
+        11: cubic-P
+        12: cubic-I
+        13: cubic-F
+        """
+        if self.lattice_type in ["triclinic"]:
+            id = 0
+        elif self.lattice_type in ["monoclinic"]:
+            if self.symbol[0] == "P":
+                id = 1
+            else:
+                id = 2
+        elif self.lattice_type in ["orthorhombic"]:
+            if self.symbol[0] == "P":
+                id = 3
+            elif self.symbol[0] in ["A", "B", "C"]:
+                id = 4
+            elif self.symbol[0] == "I":
+                id = 5
+            elif self.symbol[0] == "F":
+                id = 6
+        elif self.lattice_type in ["tetragonal"]:
+            if self.symbol[0] == "P":
+                id = 7
+            elif self.symbol[0] == "I":
+                id = 8
+        elif self.lattice_type in ["hexagonal", "trigonal", "rhombohedral"]:
+            if self.symbol[0] == "P":
+                id = 9
+            elif self.symbol[0] == "R":
+                id = 10
+        else: # cubic
+            if self.symbol[0] == "P":
+                id = 11
+            elif self.symbol[0] == "I":
+                id = 12
+            elif self.symbol[0] == "F":
+                id = 13
+        return id
 
     def get_lattice_dof(self):
         """
