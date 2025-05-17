@@ -1135,13 +1135,9 @@ def youngs_modulus(C, l):
 
 def poisson_ratio(C, l, m):
     """
-    Calculate approximate Poisson ratio \nu_{lm} from 6x6 elastic constant matrix C_{ij}
-
-    This is the response in `m` direction to pulling in `l` direction. Result is dimensionless.
-
-    Notes
-    -----
-
+    Calculate Poisson ratio \nu_{lm} from 6x6 elastic constant C_{ij}.
+    The response in `m` direction to pulling in `l` direction. 
+    Result is dimensionless.
     Formula is from W. Brantley, Calculated elastic constants for stress problems associated
     with semiconductor devices. J. Appl. Phys., 44, 534 (1973).
     """

@@ -159,10 +159,10 @@ class molecular_crystal:
 
         Args:
             sites (list): A list of sites corresponding to `self.molecules`. They can be:
-                      - A dictionary of site information (keys represent Wyckoff letters or
-                        other identifiers, and values are the corresponding information).
-                      - A list or other type representing site information.
-                      - None, if no symmetry site information is available for that molecule.
+            - A dictionary of site information (keys represent Wyckoff letters or
+                other identifiers, and values are the corresponding information).
+            - A list or other type representing site information.
+            - None, if no symmetry site information is available for that molecule.
         """
         # Initialize the self.sites dictionary to store site information
         self.sites = {}
@@ -222,10 +222,10 @@ class molecular_crystal:
         """
         Calculates the valid orientations for each Molecule and Wyckoff
         position. Returns a list with 4 indices:
-            - index 1: the molecular prototype's index within self.molecules
-            - index 2: the WP's 1st index (based on multiplicity)
-            - index 3: the WP's 2nd index (within the group of same multiplicity)
-            - index 4: the index of a valid orientation for the molecule/WP pair
+        - index 1: the molecular prototype's index within self.molecules
+        - index 2: the WP's 1st index (based on multiplicity)
+        - index 3: the WP's 2nd index (within the group of same multiplicity)
+        - index 4: the index of a valid orientation for the molecule/WP pair
 
         For example, self.valid_orientations[i][j][k] would be a list of valid
         orientations for self.molecules[i], in the Wyckoff position

@@ -2,8 +2,7 @@
 Database class
 """
 
-import os, time
-from concurrent.futures import ProcessPoolExecutor
+import os
 import logging
 
 import numpy as np
@@ -755,7 +754,7 @@ class database_topology:
         atoms = xtal.to_ase(resort=False)
         self.db.write(atoms, key_value_pairs=kvp)
 
-    def add_strucs_from_db(self, db_file, check=False, tol=0.1, freq=50):
+    def add_strucs_from_db(self, db_file, check=False, id_min=0, tol=0.1, freq=50, use_relaxed=None):
         """
         Add new structures from the given db_file
 
@@ -763,42 +762,57 @@ class database_topology:
             db_file (str): database path
             tol (float): tolerance in angstrom for symmetry detection
             freq (int): print frequency
+            use_relaxed (str): 'ff_relaxed' or 'vasp_relaxed'
         """
         print(f"\nAdding new strucs from {db_file:s}")
 
         count = 0
         with connect(db_file, serial=True) as db:
             for row in db.select():
-                atoms = row.toatoms()
-                xtal = pyxtal()
-                try:
-                    xtal.from_seed(atoms, tol=tol)
-                except:
-                    xtal = None
-                if xtal is not None and xtal.valid:
-                    add = self.check_new_structure(xtal) if check else True
-                    if add:
-                        kvp = {}
-                        for key in self.keys:
-                            if hasattr(row, key):
-                                kvp[key] = getattr(row, key)
-                            elif key == "space_group_number":
-                                kvp[key] = xtal.group.number
-                            elif key == "density":
-                                kvp[key] = xtal.get_density()
-                            elif key == "dof":
-                                kvp[key] = xtal.get_dof()
-                            elif key == "wps":
-                                kvp[key] == str(s.wp.get_label()
-                                                for s in xtal.atom_sites)
-                            elif key == "pearson_symbol":
-                                kvp[key] = xtal.get_Pearson_Symbol()
+                #xtal = db.get_pyxtal(row.id, use_relaxed)
+                if row.id >= id_min:
+                    xtal = pyxtal()
+                    if use_relaxed is None:
+                        atoms = row.toatoms()
+                        try:
+                            xtal.from_seed(atoms, tol=tol)
+                        except:
+                            xtal = None
+                    else:
+                        with open('my.cif', 'w') as f: f.write(getattr(row, use_relaxed))
+                        try:
+                            xtal.from_seed('my.cif', tol=tol)
+                        except:
+                            xtal = None
+                    #try:
+                    #    xtal.from_seed(atoms, tol=tol)
+                    #except:
+                    #    xtal = None
+                    if xtal is not None and xtal.valid:
+                        atoms = xtal.to_ase()
+                        add = self.check_new_structure(xtal) if check else True
+                        if add:
+                            kvp = {}
+                            for key in self.keys:
+                                if hasattr(row, key):
+                                    kvp[key] = getattr(row, key)
+                                elif key == "space_group_number":
+                                    kvp[key] = xtal.group.number
+                                elif key == "density":
+                                    kvp[key] = xtal.get_density()
+                                elif key == "dof":
+                                    kvp[key] = xtal.get_dof()
+                                elif key == "wps":
+                                    kvp[key] == str(s.wp.get_label()
+                                                    for s in xtal.atom_sites)
+                                elif key == "pearson_symbol":
+                                    kvp[key] = xtal.get_Pearson_Symbol()
 
-                        self.db.write(atoms, key_value_pairs=kvp)
-                        count += 1
+                            self.db.write(atoms, key_value_pairs=kvp)
+                            count += 1
 
-                if count % freq == 0:
-                    print(f"Adding {count:4d} strucs from {db_file:s}")
+                    if count % freq == 0:
+                        print(f"Adding {count:4d} strucs from {db_file:s}")
 
     def check_new_structure(self, xtal, same_group=True):
         """
@@ -821,15 +835,18 @@ class database_topology:
 
     def clean_structures_spg_topology(self, dim=None):
         """
-        Clean up the db by removing the duplicate structures
-        Here we check the follow criteria
-            - same number of atoms
-            - same space group
-            - same topology
-            - same wps
+        Clean up the db by removing duplicate structures based on their properties.
 
         Args:
-            dim (int): wanted dimension
+            dim (int, optional): Filter structures by dimension. Only keep structures with this
+                       dimension if specified. Defaults to None.
+
+        The function removes structures that have identical:
+        - Number of atoms 
+        - Space group
+        - Topology 
+        - Wyckoff positions (wps)
+
         """
 
         unique_rows = []
@@ -989,21 +1006,32 @@ class database_topology:
 
     def clean_structures_pmg(self, ids=(None, None), min_id=None, dtol=5e-2, criteria=None):
         """
-        Clean up the db by removing the duplicate structures.
-        Here we check the follow criteria same density and pymatgen matcher.
-        The criteria should look like the following,
+        Clean up the database by removing duplicate structures based on density and pymatgen matcher.
 
-        {'CN': {'C': 3},
-         'cutoff': 1.8,
-         'MAX_energy': -8.00,
-         #'MAX_similarity': 0.2,
-         'BAD_topology': ['hcb'],
-         'BAD_dimension': [0, 2],
-        }
+        This method checks for duplicates by comparing structure density within a tolerance and using
+        pymatgen's StructureMatcher. It can also filter structures based on various criteria like
+        coordination numbers, energies, topology, etc.
 
-        Args:
-            dtol (float): tolerance of density
-            criteria (dict): including
+            ids (tuple, optional): Range of IDs (min, max) to process. Defaults to (None, None).
+            min_id (int, optional): Minimum ID to consider. Structures with lower IDs won't be deleted.
+                Defaults to None.
+            dtol (float, optional): Density tolerance for comparing structures. Defaults to 5e-2.
+            criteria (dict, optional): Dictionary of filtering criteria. Defaults to None.
+                Supported criteria keys:
+                - 'CN': Dict of required coordination numbers per element
+                - 'cutoff': Float, cutoff distance for connectivity
+                - 'MAX_energy': Float, maximum allowed energy
+                - 'MAX_similarity': Float, maximum allowed similarity value
+                - 'BAD_topology': List of forbidden topology types
+                - 'BAD_dimension': List of forbidden dimensionality values
+                
+                Example criteria:
+                {
+                    'CN': {'C': 3},
+                    'BAD_dimension': [0, 2]
+                }
+        Returns:
+            None. Modifies database in place by deleting duplicate/invalid structures.
         """
 
         unique_rows = []
@@ -1700,7 +1728,7 @@ class database_topology:
         unique_props = {}  # Using a dictionary to store unique properties
         if update_topology: self.update_row_topology()
         for row in self.db.select():
-            if hasattr(row, key) and row.key is not None:
+            if hasattr(row, key) and getattr(row, key) is not None:
                 top, top_detail = row.topology, row.topology_detail
                 dof, energy = row.dof, round(getattr(row, key), prec)
                 prop_key = (top, top_detail, energy)

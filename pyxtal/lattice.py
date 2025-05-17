@@ -12,40 +12,40 @@ from pyxtal.operations import angle, create_matrix
 
 class Lattice:
     """
-    Class for storing and generating crystal lattices. Allows for
-    specification of constraint values. Lattice types include triclinic,
-    monoclinic, orthorhombic, tetragonal, trigonal, hexagonal, cubic,
-    spherical, and ellipsoidal. The last two are used for generating point
-    group structures, and do not actually represent a parallelepiped lattice.
-
+    Class for storing and generating crystal lattices.
+    
     Args:
-        ltype: a string representing the type of lattice (from the above list)
-        volume: the volume, in Angstroms cubed, of the lattice
-        matrix: matrix in 3*3 form
-        PBC: A periodic boundary condition list, where 1 is periodic,
-            Ex: [1, 1, 1] -> 3d periodicity, [0, 0, 1] -> periodic at z axis
-        kwargs: various values which may be defined. If none are defined,
-            random ones will be generated. Values will be passed to
-            generate_lattice. Options include:
-            'area': The cross-sectional area (in Ang^2). Only for 1D crystals
-            'thickness': The cell's thickness (in Angstroms) for 2D crystals
-            'unique_axis': The unique axis for certain symmetry (and especially
-                layer) groups. Because the symmetry operations are not also
-                transformed, you should use the default values for random
-                crystal generation
-            'random': If False, keeps the stored values for the lattice geometry
-                even upon applying reset_matrix. To alter the matrix, use
-                set_matrix() or set_para
-            'unique_axis': the axis ('a', 'b', or 'c') which is not symmetrically
-                equivalent to the other two
-            'min_l': the smallest allowed cell vector. The smallest vector must
-                be larger than this.
-            'mid_l': the second smallest allowed cell vector. The second
-                smallest vector must be larger than this.
-            'max_l': the third smallest allowed cell vector. The largest cell
-                vector must be larger than this.
-            'allow_volume_reset': a bool stating whether or not the volume
-                should be reset during each crystal generation attempt
+    -----
+    ltype : str
+        Type of lattice from the predefined list
+    volume : float
+        Volume of the lattice in Angstroms cubed
+    matrix : ndarray
+        3x3 matrix representing the lattice vectors 
+    PBC : list 
+        Periodic boundary condition list. 1 means periodic, 0 means non-periodic.
+        Example: [1,1,1] is 3D periodic, [0,0,1] is periodic only along z
+    **kwargs : dict
+        Optional parameters for lattice generation:
+        
+        - area : float
+            Cross-sectional area (Å²) for 1D crystals only
+        - thickness : float
+            Cell thickness (Å) for 2D crystals only
+        - unique_axis : str
+            Axis ('a','b' or 'c') that is not symmetrically equivalent to others.
+            Use default values for random crystal generation
+        - random : bool 
+            If False, preserves stored lattice geometry when resetting matrix.
+            Use set_matrix() or set_para to modify
+        - min_l : float
+            Minimum allowed cell vector length
+        - mid_l : float
+            Minimum allowed length for second shortest cell vector
+        - max_l : float
+            Minimum allowed length for longest cell vector
+        - allow_volume_reset : bool
+            Whether to reset volume during crystal generation attempts
     """
 
     def __init__(

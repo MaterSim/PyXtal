@@ -873,18 +873,18 @@ class Group:
             return len(set(re.sub(r"[^a-z]+", "", xyz_str)))
 
         return np.array([extract_dof(site) for site in sites])
-    
+
     def get_spg_representation(self):
         """
-        Get the one-hot encoding of the space group. 
+        Get the one-hot encoding of the space group.
         (lattice_id, symmetry_matrix)
 
         Returns:
             id: an integer between 0 and 13
             one_hot: a (15, 26) numpy (0, 1) array
         """
-        return self.lattice_id, self.get_spg_symmetry_object().to_one_hot_spg()
-    
+        return self.lattice_id, self.get_spg_symmetry_object().to_one_hot()
+
     def get_lattice_id(self):
         """
         Compute the id for the lattice
@@ -3103,21 +3103,22 @@ class Wyckoff_position:
 
 # ----------------- Wyckoff Position selection  --------------------------
 def choose_wyckoff(G, number=None, site=None, dim=3, random_state: int | None | Generator = None):
-    """
-    Choose a Wyckoff position to fill based on the current number of atoms
-    needed to be placed within a unit cell
-    Rules:
-        0) use the pre-assigned list if this is provided
-        1) The new position's multiplicity is equal/less than (number).
-        2) We prefer positions with large multiplicity.
+    """Choose a Wyckoff position based on needed atoms in unit cell.
 
-    Args:
-        G: a pyxtal.symmetry.Group object
-        number: the number of atoms still needed in the unit cell
-        site: the pre-assigned Wyckoff sites (e.g., 4a)
+    Arguments:
+        G: Group object.
+        number: Number of atoms still needed in the unit cell.
+        site: Optional pre-assigned Wyckoff sites (e.g., "4a").
+        dim: Dimension of the space group (default 3).
+        random_state: Random number generator or seed for reproducibility.
+
+    Rules:
+        1. Uses pre-assigned list if provided
+        2. New position multiplicity must be <= number of needed atoms
+        3. Prefers positions with higher multiplicity
 
     Returns:
-        Wyckoff position. If no position is found, returns False
+        Selected Wyckoff_position object or False if none found.
     """
     if isinstance(random_state, Generator):
         random_state = random_state.spawn(1)[0]
@@ -3405,48 +3406,25 @@ class site_symmetry:
     """
 
     def __init__(self, ops, lattice_type, Bravis="P", parse_trans=False):
-        # self.G = G
         hexagonal = lattice_type in ["hexagonal", "trigonal"]
-
         self.parse_trans = parse_trans
         self.opas = [OperationAnalyzer(
             op, parse_trans, hexagonal) for op in ops]
         self.lattice_type = lattice_type
         self.directions = get_symmetry_directions(lattice_type, Bravis)
 
+        # No translation: 7 fundamental / 13 compound symmetries
+        # With translation: 18 fundamental / 37 compound symmetries
         if not parse_trans:
-            self.symbols = ["1", "-1", "2", "m",
-                            "3", "4", "-4", "-3", "6", "-6"]
+            self.symbols = ["1", "-1", "2", "m", "3", "4", "-4"] #, "-3", "6", "-6"]
+            self.num_total_symms = 13
         else:
-            self.symbols = [
-                "1",
-                "-1",
-                "2",
-                "2_1",
-                "m",
-                "a",
-                "b",
-                "c",
-                "n",
-                "d",
-                "3",
-                "3_1",
-                "3_2",
-                "4",
-                "-4",
-                "4_1",
-                "4_2",
-                "4_3",
-                "-3",
-                "6",
-                "6_1",
-                "6_2",
-                "6_3",
-                "6_4",
-                "6_5",
-                "-6",
-            ]
-        self.set_table()
+            self.symbols = ["1", "-1", "2", "2_1", "m", "a", "b", "c", "n", "d",
+                            "3", "3_1", "3_2", "4", "4_1", "4_2", "4_3", "-4"]
+            self.num_total_symms = 48
+        self.num_base_symms = len(self.symbols)
+        self.num_axes = len(all_sym_directions)
+        self.set_table(skip=True)
 
         if not parse_trans:
             self.set_full_hm_symbols(self.table)
@@ -3454,27 +3432,19 @@ class site_symmetry:
 
     def to_one_hot(self):
         matrix = self.to_matrix_representation()
-        one_hot_matrix = np.zeros([len(matrix), 13], dtype=int)
-        for i in range(len(all_sym_directions)):
+        one_hot_matrix = np.zeros([self.num_axes, self.num_total_symms], dtype=int)
+        for i in range(self.num_axes):
             _, id = self.get_highest_symmetry(matrix[i])
+            if self.parse_trans: print("direction", i, all_sym_directions[i], matrix[i], _)
             one_hot_matrix[i, id] = 1
         return one_hot_matrix
 
-    def to_one_hot_spg(self):
-        matrix = self.to_matrix_representation_spg()
-        one_hot_matrix = np.zeros([len(matrix), 26], dtype=int)
-        for i in range(len(all_sym_directions)):
-            id = np.where(matrix[i] == 1)[0][-1]
-            one_hot_matrix[i, id] = 1
-        return one_hot_matrix
-
-    def to_matrix_representation_spg(self):
+    def to_matrix_representation(self):
         """
         To create a binary matrix to represent the symmetry elements on each axis
         Translation is alos counted here.
         """
-        matrix = np.zeros(
-            [len(all_sym_directions), len(self.symbols)], dtype=int)
+        matrix = np.zeros([self.num_axes, self.num_base_symms], dtype=int)
         # every direction must has identity symmetry
         matrix[:, 0] = 1
         self.inversion = False
@@ -3484,8 +3454,8 @@ class site_symmetry:
                 self.inversion = True
 
             elif opa.type != "identity":
+                # Find the axis
                 _ax0 = opa.axis / np.linalg.norm(opa.axis)
-
                 store = False
                 for i, ax in enumerate(all_sym_directions):
                     # print(opa.axis, ax, np.dot(_ax0, ax0))
@@ -3494,86 +3464,24 @@ class site_symmetry:
                         store = True
                         break
 
+                # Find the symmetry element
                 if store:
                     # Pure rotation
-                    # print('add symmetry', i, ax, opa.type, opa.order)
                     if opa.symbol in self.symbols:
                         matrix[i, self.symbols.index(opa.symbol)] = 1
-                    else:
-                        print("To debug", opa.symbol, opa)
-                        import sys
-
-                        sys.exit()
+                        #print('add symmetry', opa.symbol, i, ax, opa.type)
+                        #print(matrix[i])
+                    #else:
+                    #    print("To debug", opa.symbol, opa)
+                    #    import sys; sys.exit()
                 else:
                     raise ValueError("Cannot parse the axis",
                                      opa.axis, all_sym_directions)
 
             if self.inversion:
                 matrix[:, 1] = 1  # if inversion is present
-        return matrix
-
-    def to_matrix_representation(self):
-        """
-        To create a 15 * 10 binary matrix to represent the
-        symmetry elements on each axis
-        #[1, -1, 2, m, 3, 2/m, 4, -3, 6, 4/m, -6, 6/m]
-        [1, -1, 2, m, 3, 4, -3, 6, -6]
-        """
-        symbols = ["1", "-1", "2", "m", "3", "4", "-4", "-3", "6", "-6"]
-        matrix = np.zeros([len(all_sym_directions), len(symbols)], dtype=int)
-        # every direction must has identity symmetry
-        matrix[:, 0] = 1
-        self.inversion = False
-
-        for opa in self.opas:
-            if opa.type == "inversion":
-                self.inversion = True
-
-            elif opa.type != "identity":
-                _ax0 = opa.axis / np.linalg.norm(opa.axis)
-
-                for i, ax in enumerate(all_sym_directions):
-                    store = False
-                    # ; print(opa.axis, ax, np.dot(opa.axis, ax0))
-                    ax0 = ax / np.linalg.norm(ax)
-                    if np.isclose(abs(np.dot(_ax0, ax0)), 1):
-                        store = True
-                        break
-
-                if store:
-                    # Pure rotation
-                    # print('add symmetry', i, ax, opa.type, opa.order)
-                    if opa.type == "rotation":
-                        if opa.order == 2:
-                            matrix[i, 2] = 1
-                        elif opa.order == 3:
-                            matrix[i, 4] = 1
-                        elif opa.order == 4:
-                            matrix[i, 5] = 1
-                        elif opa.order == 6:
-                            matrix[i, 8] = 1
-                        else:
-                            raise RuntimeError(
-                                "Unexpected rotation order", opa.order)
-                    elif opa.type == "rotoinversion":
-                        if opa.rotation_order == 2:
-                            matrix[i, 3] = 1  # -2 is m
-                        elif opa.rotation_order == 3:
-                            matrix[i, 7] = 1  # -3
-                        elif opa.rotation_order == 4:
-                            matrix[i, 6] = 1  # -4
-                        elif opa.rotation_order == 6:
-                            matrix[i, 9] = 1
-                        else:
-                            raise RuntimeError(
-                                "Unexpected rotinversion order", opa.order)
-                else:
-                    raise ValueError("Cannot parse the axis",
-                                     opa.axis, all_sym_directions)
-
-            if self.inversion:
-                matrix[:, 1] = 1  # if inversion is present
-        return matrix
+        #print('matrix 0', matrix[0])
+        return self.correct_matrix(matrix)
 
     def set_table(self, skip=False):
         """
@@ -3586,24 +3494,17 @@ class site_symmetry:
             sorted table with (list of symmetry elements, symbols, order)
         """
         # Complete list of symmetry for one given axis
-        # symbols = ['1', '-1', '2', 'm', '3', '4', '-4', '-3', '6', '-6']
-        if self.lattice_type == "triclinic":
-            skip = False
-
-        matrix = self.to_matrix_representation_spg(
-        ) if self.parse_trans else self.to_matrix_representation()
+        if self.lattice_type == "triclinic": skip = False
+        matrix = self.to_matrix_representation()
 
         tables = []
         for i, axis in enumerate(all_sym_directions):
             direction_id = find_axis_order(axis, self.directions)
             if direction_id is not None:
-                num_symmetries = matrix[i, 2:].sum(
-                ) if skip else matrix[i].sum()
-                if num_symmetries > 0:
-                    strs = "{:4d} ({:2d} {:2d} {:2d}): ".format(
-                        direction_id, *axis)
-                    for sym in matrix[i]:
-                        strs += f"{sym:4d} "
+                num_symms = matrix[i, 1:].sum() if skip else matrix[i].sum()
+                if num_symms > 0:
+                    strs = "{:4d} ({:2d} {:2d} {:2d}): ".format(direction_id, *axis)
+                    for sym in matrix[i]: strs += f"{sym:4d} "
                     # strs += "{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}{:4d}".format(*matrix[i])
                     if not self.parse_trans:
                         symbol, _ = self.get_highest_symmetry(matrix[i])
@@ -3611,8 +3512,6 @@ class site_symmetry:
                         tables.append((strs, symbol, direction_id))
                     else:
                         tables.append((strs, direction_id))
-            # else:
-            #    raise ValueError('Wrong input axis', axis, 'lattice_type', self.lattice_type)
         self.table = sorted(tables, key=lambda x: x[-1])
 
     def set_full_hm_symbols(self, tables):
@@ -3790,131 +3689,120 @@ class site_symmetry:
             skip (bool): whether or not skip 1 or -1 symmetry
         """
         strs = "Order    Axis       "
-        if self.parse_trans:
-            symbols = [
-                "1",
-                "-1",
-                "2",
-                "2_1",
-                "m",
-                "a",
-                "b",
-                "c",
-                "n",
-                "d",
-                "3",
-                "3_1",
-                "3_2",
-                "4",
-                "-4",
-                "4_1",
-                "4_2",
-                "4_3",
-                "-3",
-                "6",
-                "6_1",
-                "6_2",
-                "6_3",
-                "6_4",
-                "6_5",
-                "-6",
-            ]
-        else:
-            symbols = ["1", "-1", "2", "m", "3", "4", "-4", "-3", "6", "-6"]
-
-        for symbol in symbols:
-            strs += f"{symbol:<4s} "
+        for symbol in self.symbols: strs += f"{symbol:<4s} "
         print(strs)
-        if not hasattr(self, "table"):
-            self.set_table(skip)
-        for row in self.table:
-            print(row[0])
-
-    def get_highest_symmetry_spg(self, row):
-        # ['1']
-        # ['1', '-1']
-        # ['1', '2']
-        # ['1', 'm']
-        # ['1', '3']
-        # ['1', '2', 'm', '2/m']
-        # ['1', '2', '4']
-        # ['1', '2', '-4']
-        # ['1', '-1', '3', '-3']
-        # ['1', '2', '3', '6']
-        # ['1', 'm', '3', '-6']
-        # ['1', '-1', '2', 'm', '4', '-4', '4/m']
-        # ['1', '-1', '2', 'm', '3', '-3', '6', '-6', '6/m']
-        # 1 -1 2 m 3 4 -4 -3 6 -6 S-> wp-> sum(wp.multiplicity)
-        ref_arrays = [
-            (np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "1"),
-            (np.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "-1"),
-            (np.array([1, 0, 1, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2"),
-            (np.array([1, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=int), "m"),
-            (np.array([1, 0, 0, 0, 1, 0, 0, 0, 0, 0], dtype=int), "3"),
-            (np.array([1, 1, 1, 1, 0, 0, 0, 0, 0, 0], dtype=int), "2/m"),
-            (np.array([1, 0, 1, 0, 0, 1, 0, 0, 0, 0], dtype=int), "4"),
-            (np.array([1, 0, 1, 0, 0, 0, 1, 0, 0, 0], dtype=int), "-4"),
-            (np.array([1, 1, 0, 0, 1, 0, 0, 1, 0, 0], dtype=int), "-3"),
-            (np.array([1, 0, 1, 0, 1, 0, 0, 0, 1, 0], dtype=int), "6"),
-            (np.array([1, 0, 0, 1, 1, 0, 0, 0, 0, 1], dtype=int), "-6"),
-            (np.array([1, 1, 1, 1, 0, 1, 1, 0, 0, 0], dtype=int), "4/m"),
-            (np.array([1, 1, 1, 1, 1, 0, 0, 1, 1, 1], dtype=int), "6/m"),
-        ]
-
-        for i, ref_array in enumerate(ref_arrays):
-            if np.array_equal(row, ref_array[0]):
-                return ref_array[1], i
-
-        if self.lattice_type not in ["hexagonal", "trigonal"]:
-            symbols = ["1", "-1", "2", "m", "3", "4", "-4", "-3", "6", "-6"]
-            strs = [symbols[i] for i, x in enumerate(row) if x == 1]
-            print(row)
-            #raise ValueError("Incompatible symmetry list", strs)
-        return ref_arrays[0][1], 0
+        if not hasattr(self, "table"): self.set_table(skip)
+        for row in self.table: print(row[0])
 
     def get_highest_symmetry(self, row):
-        # site simmetry group: matrix : 13*15 => 10*15
-        # space group: matrix : 26*15
-        # ['1']
-        # ['1', '-1']
-        # ['1', '2']
-        # ['1', 'm']
-        # ['1', '3']
-        # ['1', '2', 'm', '2/m']
-        # ['1', '2', '4']
-        # ['1', '2', '-4']
-        # ['1', '-1', '3', '-3']
-        # ['1', '2', '3', '6']
-        # ['1', 'm', '3', '-6']
-        # ['1', '-1', '2', 'm', '4', '-4', '4/m']
-        # ['1', '-1', '2', 'm', '3', '-3', '6', '-6', '6/m']
-        # 1 -1 2 m 3 4 -4 -3 6 -6
-        ref_arrays = [
-            (np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "1"),
-            (np.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "-1"),
-            (np.array([1, 0, 1, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2"),
-            (np.array([1, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=int), "m"),
-            (np.array([1, 0, 0, 0, 1, 0, 0, 0, 0, 0], dtype=int), "3"),
-            (np.array([1, 1, 1, 1, 0, 0, 0, 0, 0, 0], dtype=int), "2/m"),
-            (np.array([1, 0, 1, 0, 0, 1, 0, 0, 0, 0], dtype=int), "4"),
-            (np.array([1, 0, 1, 0, 0, 0, 1, 0, 0, 0], dtype=int), "-4"),
-            (np.array([1, 1, 0, 0, 1, 0, 0, 1, 0, 0], dtype=int), "-3"),
-            (np.array([1, 0, 1, 0, 1, 0, 0, 0, 1, 0], dtype=int), "6"),
-            (np.array([1, 0, 0, 1, 1, 0, 0, 0, 0, 1], dtype=int), "-6"),
-            (np.array([1, 1, 1, 1, 0, 1, 1, 0, 0, 0], dtype=int), "4/m"),
-            (np.array([1, 1, 1, 1, 1, 0, 0, 1, 1, 1], dtype=int), "6/m"),
-        ]
-
+        # Symmetry on 15 direction
+        # With translation: 18*15 => 37*15
+        # Without translation: 7*15 => 13*15
+        #print("current", row)
+        if self.parse_trans:
+            ref_arrays = [
+                          #1 -1  2 21  m  a  b  c  n  d  3 31 32  4 41 42 43 -4
+                          #1  1  1  0  0  0  0  0  1  0 0 0 0 0 0 0 0 0]
+                (np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "1"),    # 1
+                (np.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "-1"),   # 1, -1
+                (np.array([1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2"),    # 1, 2
+                (np.array([1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2_1"),  # 1, 2_1
+                (np.array([1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "m"),    # 1, m
+                (np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "a"),    # 1, a
+                (np.array([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "b"),    # 1, b
+                (np.array([1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "c"),    # 1, c
+                (np.array([1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "n"),    # 1, n
+                (np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "d"),    # 1, d
+                (np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], dtype=int), "3"),    # 1, 3
+                (np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=int), "3_1"),  # 1, 3_1
+                (np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], dtype=int), "3_2"),  # 1, 3_2
+                (np.array([1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2/m"),  # 1, -1, 2, m
+                (np.array([1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2/a"),  # 1, -1, 2, m
+                (np.array([1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2/b"),  # 1, -1, 2, m
+                (np.array([1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2/c"),  # 1, -1, 2, c
+                (np.array([1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2/n"),  # 1, -1, 2, c
+                (np.array([1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2/d"),  # 1, -1, 2, c
+                (np.array([1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2_1/m"),# 1, -1, 2_1, m
+                (np.array([1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2_1/a"),# 1, -1, 2_1, m
+                (np.array([1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2_1/b"),# 1, -1, 2_1, m
+                (np.array([1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2_1/c"),# 1, -1, 2_1, c
+                (np.array([1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2_1/n"),# 1, -1, 2_1, m
+                (np.array([1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0], dtype=int), "2_1/d"),# 1, -1, 2_1, m
+                (np.array([1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], dtype=int), "4"),    # 1, 2, 4
+                (np.array([1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], dtype=int), "4_1"),  # 1, 2_1, 4_1
+                (np.array([1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], dtype=int), "4_2"),  # 1, 2, 4_2
+                (np.array([1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0], dtype=int), "4_3"),  # 1, 2_1, 4_3
+                (np.array([1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], dtype=int), "-4"),   # 1, 2, -4
+                (np.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], dtype=int), "-3"),   # 1, -1, 3
+                (np.array([1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], dtype=int), "6"),    # 1, 2, 3
+                (np.array([1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=int), "6_1"),  # 1, 2_1, 3_1
+                (np.array([1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], dtype=int), "6_5"),  # 1, 2_1, 3_2
+                (np.array([1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], dtype=int), "6_2"),  # 1, 2, 3_2
+                (np.array([1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=int), "6_4"),  # 1, 2, 3_1
+                (np.array([1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], dtype=int), "6_3"),  # 1, 2_1, 3
+                (np.array([1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], dtype=int), "-6"),   # 1, m, 3
+                (np.array([1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1], dtype=int), "4/m"),  # 1, -1, 2, m, 4, -4
+                (np.array([1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1], dtype=int), "4/n"),  # 1, -1, 2, n, 4, -4
+                (np.array([1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1], dtype=int), "4_1/a"),# 1, -1, 2_1, a, 4_1, -4
+                (np.array([1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1], dtype=int), "4_1/b"),# 1, -1, 2_1, b, 4_1, -4
+                (np.array([1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1], dtype=int), "4_1/c"),# 1, -1, 2_1, c, 4_1, -4
+                (np.array([1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1], dtype=int), "4_1/d"),# 1, -1, 2_1, d, 4_1, -4
+                (np.array([1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1], dtype=int), "4_2/m"),# 1, -1, 2, m, 4_2, -4
+                (np.array([1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1], dtype=int), "4_2/n"),# 1, -1, 2, m, 4_2, -4
+                (np.array([1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], dtype=int), "6/m"),  # 1, -1, 2, m, 3
+                (np.array([1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], dtype=int), "6_3/m"),# 1, -1, 2_1, m, 3
+            ]
+        else:
+            ref_arrays = [
+                          #1 -1  2  m  3  4 -4
+                (np.array([1, 0, 0, 0, 0, 0, 0], dtype=int), "1"),   # 1
+                (np.array([1, 1, 0, 0, 0, 0, 0], dtype=int), "-1"),  # 1, -1
+                (np.array([1, 0, 1, 0, 0, 0, 0], dtype=int), "2"),   # 1, 2
+                (np.array([1, 0, 0, 1, 0, 0, 0], dtype=int), "m"),   # 1, m
+                (np.array([1, 0, 0, 0, 1, 0, 0], dtype=int), "3"),   # 1, 3
+                (np.array([1, 0, 1, 0, 0, 1, 0], dtype=int), "4"),   # 1, 2, 4
+                (np.array([1, 0, 1, 0, 0, 0, 1], dtype=int), "-4"),  # 1, 2, -4
+                (np.array([1, 1, 1, 1, 0, 0, 0], dtype=int), "2/m"), # 1, 2, m
+                (np.array([1, 1, 0, 0, 1, 0, 0], dtype=int), "-3"),  # 1, -1, 3
+                (np.array([1, 0, 1, 0, 1, 0, 0], dtype=int), "6"),   # 1, 2, 3
+                (np.array([1, 0, 0, 1, 1, 0, 0], dtype=int), "-6"),  # 1, m, 3
+                (np.array([1, 1, 1, 1, 0, 1, 1], dtype=int), "4/m"), # 1, -1, 2, m, 4, -4
+                (np.array([1, 1, 1, 1, 1, 0, 0], dtype=int), "6/m"), # 1, -1, 2, m, 3
+            ]
         for i, ref_array in enumerate(ref_arrays):
             if np.array_equal(row, ref_array[0]):
+                #if self.parse_trans: print(row, ref_array[1])
                 return ref_array[1], i
-
-        if self.lattice_type not in ["hexagonal", "trigonal"]:
-            symbols = ["1", "-1", "2", "m", "3", "4", "-4", "-3", "6", "-6"]
-            strs = [symbols[i] for i, x in enumerate(row) if x == 1]
-            print(row)
-            #raise ValueError("Incompatible symmetry list", strs)
+        print("problem", row, type(row))
+        raise ValueError("Incompatible symmetry list")
         return ref_arrays[0][1], 0
+
+    def correct_matrix(self, matrix):
+        if self.parse_trans:
+            # For hexagonal spg, one sym direction may have both c/m
+            for row in matrix:
+                # I-43d (100) [1, 2_1, -4] => [1, 2, -4]
+                if np.array_equal(row, [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]):
+                    row[2], row[3] = 1, 0
+                # P63cm (100) [1, m, c] => [1, c]
+                elif np.array_equal(row, [1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]):
+                    row[4] = 0
+                # P-6m2 (100) [1, 2, m] => [1, m]
+                elif np.array_equal(row, [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]):
+                #elif np.array_equal(row[:3], [1, 0, 1]) and sum(row[4:8]) > 0: # 2, m
+                    row[2] = 0
+                # P-6c2 (100) [1, 2, c] => [1, c]
+                elif np.array_equal(row, [1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]):
+                    row[2] = 0
+                # P63/mcm [2/c]
+                elif np.array_equal(row, [1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]):
+                    row[4] = 0
+        else:
+            for row in matrix:
+                if np.array_equal(row, [1, 0, 1, 1, 0, 0, 0]):
+                    row[2] = 0
+        return matrix
+
 
 
 def organized_wyckoffs(group):
@@ -4427,21 +4315,26 @@ def search_cloest_wp(G, wp, op, pos):
 
 def get_point_group(number):
     """
-    Parse the point group symmetry info from space group. According to
-    http://img.chem.ucl.ac.uk/sgp/misc/pointgrp.htm, among 32 (230) point(space)
-    groups, there are
-        - 10 (68) polar groups,
-        - 11 (92) centrosymmetric groups,
-        - 11 (65) enantiomorphic groups
+    Parse the point group symmetry info from space group.
+    
+    According to http://img.chem.ucl.ac.uk/sgp/misc/pointgrp.htm, 
+    among 32 point groups and 230 space groups, there are:
+    
+    - 10 polar point groups (68 space groups):
+        1, 2, m, mm2, 3, 3m, 4, 4mm, 6, 6mm
+    
+    - 11 centrosymmetric point groups (92 space groups):  
+        -1, 2/m, mmm, 4/m, 4/mmm, -3, -3m, 6/m, 6/mmm, m-3, m-3m
+        
+    - 11 enantiomorphic point groups (65 space groups):
+        1, 2, 222, 4, 422, 3, 32, 6, 622, 23, 432
 
     Args:
-        number: space group number
+        number (int): Space group number between 1-230
 
-    Return:
-        point group symbol
-        polar: 1, 2, m, mm2, 3, 3m, 4, 4mm, 6, 6mm
-        centrosymmetry: -1, 2/m, mmm, 4/m, 4/mmm, -3, -3m, 6/m, 6/mmm, m-3, m-3m
-        enantiomorphic: 1, 2, 222, 4, 422, 3, 32, 6, 622, 23, 432
+    Returns:
+        tuple: (point_group_symbol, point_group_number, is_polar, 
+               has_inversion, is_enantiomorphic)
     """
 
     if number == 1:

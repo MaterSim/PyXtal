@@ -2,7 +2,7 @@ Background and Theory
 =====================
 This is a pedagogical introduction to crystallography and basic group theory.
 For information about how PyXtal works specifically, see the
-Algorithm <Algorithm.html>`_ page.
+`Algorithm <Algorithm.html>`_ page.
 
 
 Crystals and Structures

@@ -54,6 +54,7 @@ Tutorial
    Background
    Algorithm
    Settings
+   Wyckoff_positions
    :maxdepth: 2
 
 Indices and tables

@@ -29,7 +29,7 @@ class atom_site:
     Class for storing atomic Wyckoff positions with a single coordinate.
 
     Args:
-        wp: a `WP <pyxtal.symmetry.Wyckoff_position.html> object
+        wp: a `WP <pyxtal.symmetry.Wyckoff_position.html>` object
         coordinate (float): a fractional (x, y, z) coordinate
         specie (str): element name or symbol, or atomic number
         search (bool): whether or not search generator for special WP
@@ -164,11 +164,18 @@ class atom_site:
 
     def shift_by_swap(self, swap_id):
         """
-        check if a shift is needed during swap
-        May occur for special WP in the I/A/B/C/F cases
-        e.g., in space group 71 (Immm), the permutation
-        4j(1/2,0,0.2) -> (0.2,0,1/2) -> 4f(0.7,1/2,0)
-        it requires a shift of (0.5,0.5,0.5)
+        Check if a shift is needed during swap.
+
+        This may occur for special WP in the I/A/B/C/F cases.
+        For example, in space group 71 (Immm), the permutation:
+        4j(1/2,0,0.2) -> (0.2,0,1/2) -> 4f(0.7,1/2,0) 
+        requires a shift of (0.5,0.5,0.5)
+
+        Args:
+            swap_id: The index of the swap operation
+
+        Returns:
+            numpy array: The required shift vector
         """
         wp, shift = self.wp.swap_axis(swap_id)
         return shift
@@ -543,11 +550,22 @@ class mol_site:
 
     def get_dist_angle_AD(self, d_total, ids_total, A_id, D_ids, H_ids, rA):
         """
+        Calculates distances/angles for H bonds between acceptor (A), donor (D), and hydrogen (H) atoms.
+
         Args:
-            d_total ():
-            c_total ():
-            A_id (int): index of acceptor atom
-            D_ids ()
+            d_total (numpy.ndarray): Array containing atomic coordinates and distances
+            ids_total (numpy.ndarray): Array containing atom indices and molecule IDs
+            A_id (int): Index of the acceptor atom
+            D_ids (dict): Dictionary mapping molecule IDs to donor atom indices
+            H_ids (dict): Dictionary mapping molecule IDs to hydrogen atom indices
+            rA (numpy.ndarray): Coordinates of the acceptor atom
+
+        Returns:
+            tuple: A tuple containing three float values:
+            - dAD (float): Distance between acceptor and donor atoms
+            - angle (float): Angle between H-D and H-A vectors in radians
+            - dHA (float): Distance between hydrogen and acceptor atoms
+            If no donor atoms are found, returns (10.0, 0, 10.0)
         """
 
         # Get satisfied

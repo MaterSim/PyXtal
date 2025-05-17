@@ -1013,8 +1013,8 @@ sites that can host the H₂O molecule.
     Wyckoff position 4c in space group 63 with site symmetry m2m
 
 
-1D Representation (Experimental)
---------------------------------
+1D Representation
+-----------------
 
 For the molecular crystal, PyXtal also provides a
 `representation <pyxtal.representation.html>`_ class to handle the conversion
@@ -1212,42 +1212,92 @@ This will result in a `15×10` array to represent the presence of 10 fundamental
 The list of 15 possible high symmetry crystallograph axes include
 
 
-::
+    .. list-table::
+        :widths: 15 35
+        :header-rows: 1
 
-    (1, 0, 0), 
-    (0, 1, 0), 
-    (0, 0, 1), 
-    (1, 1, 1), 
-    (1, -1, -1), 
-    (-1, 1, -1), 
-    (-1, -1, 1), 
-    (1, -1, 0), 
-    (1, 1, 0), 
-    (0, 1, -1), 
-    (0, 1, 1), 
-    (-1, 0, 1), 
-    (1, 0, 1), 
-    (1, 2, 0), 
-    (2, 1, 0), 
+        * - Index
+          - Direction
+        * - 0
+          - (1, 0, 0)
+        * - 1
+          - (0, 1, 0)
+        * - 2
+          - (0, 0, 1)
+        * - 3
+          - (1, 1, 1)
+        * - 4
+          - (1, -1, -1)
+        * - 5
+          - (-1, 1, -1)
+        * - 6
+          - (-1, -1, 1)
+        * - 7
+          - (1, -1, 0)
+        * - 8
+          - (1, 1, 0)
+        * - 9
+          - (0, 1, -1)
+        * - 10
+          - (0, 1, 1)
+        * - 11
+          - (-1, 0, 1)
+        * - 12
+          - (1, 0, 1)
+        * - 13
+          - (1, 2, 0)
+        * - 14
+          - (2, 1, 0)
 
-And the 10 fundamental symmetry elements are `1, -1, 2, m, 3, 4, -4, -3, 6, -6`.
-Possible combinations include
+And the 7 fundamental symmetry elements are `1, -1, 2, m, 3, 4, -4`, leading to 13 possible combinations. 
 
-::
+.. list-table:: 
+    :widths: 50 50 50
+    :header-rows: 1
 
-    ['1']
-    ['1', '-1']
-    ['1', '2']
-    ['1', 'm']
-    ['1', '3']
-    ['1', '2', 'm', '2/m']
-    ['1', '2', '4']
-    ['1', '2', '-4']
-    ['1', '-1', '3', '-3']
-    ['1', '2', '3', '6']
-    ['1', 'm', '3', '-6']
-    ['1', '-1', '2', 'm', '4', '-4', '4/m']
-    ['1', '-1', '2', 'm', '3', '-3', '6', '-6', '6/m']
+    * - Index
+      - Symmetry elements  
+      - Symbol
+    * - 0
+      - 1  
+      - 1
+    * - 1
+      - 1, -1
+      - -1 
+    * - 2
+      - 1, 2
+      - 2
+    * - 3
+      - 1, m  
+      - m
+    * - 4
+      - 1, 3
+      - 3  
+    * - 5
+      - 1, 2, 4
+      - 4
+    * - 6
+      - 1, 2, -4 
+      - -4
+    * - 7
+      - 1, 2, m
+      - 2/m
+    * - 8
+      - 1, -1, 3
+      - -3
+    * - 9
+      - 1, 2, 3
+      - 6
+    * - 10
+      - 1, m, 3
+      - -6
+    * - 11
+      - 1, -1, 2, m, 4, -4
+      - 4/m
+    * - 12
+      - 1, -1, 2, m, 3, -3, 6, -6
+      - 6/m
+
 
 
 The one-hot matrix representation `(15, 13)` can also be obtained via 
@@ -1294,31 +1344,31 @@ Finally, the both ``Group`` and ``Wyckoff_position`` classes support the access 
 ::
 
     Space group symmetry table 14 P21/c
-    Order    Axis   1   -1  2   2_1  m   a   b   c   n   d   3  3_1  3_2  4  -4  4_1  4_2  4_3  -3  6  6_1  6_2  6_3  6_4  6_5  -6   
-    0 ( 0  1  0):   1   1   0   1    0   0   0   1   0   0   0  0    0    0  0   0    0    0    0   0  0    0    0    0    0    0 
+    Order    Axis   1   -1  2   2_1  m   a   b   c   n   d   3  3_1  3_2  4  -4   
+    0 ( 0  1  0):   1   1   0   1    0   0   0   1   0   0   0  0    0    0  0 
     
     Wp symmetry table 4e
-    Order    Axis   1   -1  2   m    3   4   -4   -3   6   -6  Group
-    0 ( 0  1  0):   1   0   0   0    0   0   0    0    0   0    1
+    Order    Axis   1   -1  2   m    3   4   -4   Group
+    0 ( 0  1  0):   1   0   0   0    0   0   0    1
     
     Wp symmetry table 2d
-    Order    Axis   1   -1  2   m    3   4   -4   -3   6   -6  Group
-    0 ( 0  1  0):   1   1   0   0    0   0   0    0    0   0   -1
+    Order    Axis   1   -1  2   m    3   4   -4   Group
+    0 ( 0  1  0):   1   1   0   0    0   0   0    -1
     
     Wp symmetry table 2c
-    Order    Axis   1   -1  2   m    3   4   -4   -3   6   -6  Group
-    0 ( 0  1  0):   1   1   0   0    0   0   0    0    0   0   -1
+    Order    Axis   1   -1  2   m    3   4   -4   Group
+    0 ( 0  1  0):   1   1   0   0    0   0   0    -1
     
     Wp symmetry table 2b
-    Order    Axis   1   -1  2   m    3   4   -4   -3   6   -6  Group
-    0 ( 0  1  0):   1   1   0   0    0   0   0    0    0   0   -1
+    Order    Axis   1   -1  2   m    3   4   -4   Group
+    0 ( 0  1  0):   1   1   0   0    0   0   0    -1
     
     Wp symmetry table 2a
-    Order    Axis   1   -1  2   m    3   4   -4   -3   6   -6  Group
-    0 ( 0  1  0):   1   1   0   0    0   0   0    0    0   0   -1
+    Order    Axis   1   -1  2   m    3   4   -4   Group
+    0 ( 0  1  0):   1   1   0   0    0   0   0    -1
     
 
-Note that the space group symmetry has 26 symmetry elements as it includes additional screw axis (2\ :sub:`1`, 3\ :sub:`1`, 3\ :sub:`2`, 4\ :sub:`1`, 4\ :sub:`2`, 4\ :sub:`3`, 6\ :sub:`1`, 6\ :sub:`2`, 6\ :sub:`3`, 6\ :sub:`4`, 6\ :sub:`5`) and glide plane (`a`, `b`, `c`, `d`, `n`) operations.
+Note that the space group symmetry has 18 symmetry elements as it includes additional screw axis (2\ :sub:`1`, 3\ :sub:`1`, 3\ :sub:`2`, 4\ :sub:`1`, 4\ :sub:`2`, 4\ :sub:`3`) and glide plane (`a`, `b`, `c`, `d`, `n`) operations.
 
 .. code-block:: Python
 
@@ -1328,35 +1378,37 @@ Note that the space group symmetry has 26 symmetry elements as it includes addit
     print(matrix)
 
     >>> 13
-    >>> array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
+    >>> array(
+    [[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]])
+ 
 
 In the above example, the ``lattice id`` is 13, corresponding to the ``cubic-F`` lattice.
 
 
-.. list-table:: The lattice types' classification.
+.. list-table:: The 14 Bravais lattices
+    :widths: 15 35
     :header-rows: 1
-    :widths: auto
 
     * - ID
-      - Lattice Type 
-    * - 0
-      - Triclinic Primitive  
-    * - 1 
-      - Monoclinic Primitive
+      - Lattice Type
+    * - 0 
+      - Triclinic Primitive
+    * - 1
+      - Monoclinic Primitive 
     * - 2
       - Monoclinic Base Centered
     * - 3
@@ -1374,7 +1426,7 @@ In the above example, the ``lattice id`` is 13, corresponding to the ``cubic-F``
     * - 9
       - Hexagonal Primitive
     * - 10
-      - Hexagonal Rhombehedral
+      - Hexagonal Rhombehedral 
     * - 11
       - Cubic Primitive
     * - 12
@@ -1383,17 +1435,238 @@ In the above example, the ``lattice id`` is 13, corresponding to the ``cubic-F``
       - Cubic Face Centered
 
 
+The matrix representation is a 15×48 array, where the rows represent the 15 possible high symmetry crystallographic axes, and the columns represent the presence of 48 symmetry elements as described above.
 
-The matrix representation is a 15×26 array, where the 15 rows represent the 15 possible high symmetry crystallographic axes, 
-and the last 26 columns represent the presence of 26 symmetry elements.
+.. list-table:: Symmetry Elements and Symbols in Space Group
+    :widths: 10 20 10
+    :header-rows: 1
+
+    * - Index
+      - Symmetry elements  
+      - Symbol
+    * - 0
+      - 1
+      - 1
+    * - 1  
+      - 1, -1
+      - ̄1
+    * - 2
+      - 1, 2
+      - 2
+    * - 3
+      - 1, 2₁
+      - 2₁
+    * - 4
+      - 1, m
+      - m
+    * - 5
+      - 1, a
+      - a
+    * - 6
+      - 1, b
+      - b
+    * - 7
+      - 1, c
+      - c
+    * - 8
+      - 1, n
+      - n
+    * - 9
+      - 1, d
+      - d
+    * - 10
+      - 1, 3
+      - 3
+    * - 11
+      - 1, 3₁
+      - 3₁
+    * - 12
+      - 1, 3₂
+      - 3₂
+    * - 13
+      - 1, -1, 2, m
+      - 2/m
+    * - 14
+      - 1, -1, 2, a
+      - 2/a
+    * - 15
+      - 1, -1, 2, b
+      - 2/b
+    * - 16
+      - 1, -1, 2, c
+      - 2/c
+    * - 17
+      - 1, -1, 2, n
+      - 2/n
+    * - 18
+      - 1, -1, 2, d
+      - 2/d
+    * - 19
+      - 1, -1, 2₁, m
+      - 2₁/m
+    * - 20
+      - 1, -1, 2₁, a
+      - 2₁/a
+    * - 21
+      - 1, -1, 2₁, b
+      - 2₁/b
+    * - 22
+      - 1, -1, 2₁, c
+      - 2₁/c
+    * - 23
+      - 1, -1, 2₁, n
+      - 2₁/n
+    * - 24
+      - 1, -1, 2₁, d
+      - 2₁/d
+    * - 25
+      - 1, 2, 4
+      - 4
+    * - 26
+      - 1, 2₁, 4₁
+      - 4₁
+    * - 27
+      - 1, 2, 4₂
+      - 4₂
+    * - 28
+      - 1, 2₁, 4₃
+      - 4₃
+    * - 29
+      - 1, 2, -4
+      - -4
+    * - 30
+      - 1, -1, 3
+      - -3
+    * - 31
+      - 1, 2, 3
+      - 6
+    * - 32
+      - 1, 2₁, 3₁
+      - 6₁
+    * - 33
+      - 1, 2₁, 3₂
+      - 6₅
+    * - 34
+      - 1, 2, 3₂
+      - 6₂
+    * - 35
+      - 1, 2, 3₁
+      - 6₄
+    * - 36
+      - 1, 2₁, 3
+      - 6₃
+    * - 37
+      - 1, m, 3
+      - -6
+    * - 38
+      - 1, -1, 2, m, 4, -4
+      - 4/m
+    * - 39
+      - 1, -1, 2, n, 4, -4
+      - 4/n
+    * - 40
+      - 1, -1, 2₁, a, 4₁, -4
+      - 4₁/a
+    * - 41
+      - 1, -1, 2₁, b, 4₁, -4
+      - 4₁/b
+    * - 42
+      - 1, -1, 2₁, c, 4₁, -4
+      - 4₁/c
+    * - 43
+      - 1, -1, 2₁, d, 4₁, -4
+      - 4₁/d
+    * - 44
+      - 1, -1, 2, m, 4₂, -4
+      - 4₂/m
+    * - 45
+      - 1, -1, 2, m, 4₂, -4
+      - 4₂/n
+    * - 46
+      - 1, -1, 2, m, 3
+      - 6/m
+    * - 47
+      - 1, -1, 2₁, m, 3
+      - 6₃/m
+
+
+Below shows an example of the symmetry element analysis of the space group 227 (Fd-3m) on the 15 high symmetry crystallographic axes.
+
+.. list-table:: Symmetry analysis of space group 227 (Fd-3m)
+    :widths: 10 20 30 20
+    :header-rows: 1
+
+    * - Index 
+      - Direction
+      - Symmetry elements
+      - Symbol  
+    * - 0
+      - (1, 0, 0)
+      - 1, -1, 2₁, d, 4₁, -4
+      - 4₁/d
+    * - 1
+      - (0, 1, 0)
+      - 1, -1, 2₁, d, 4₁, -4
+      - 4₁/d
+    * - 2
+      - (0, 0, 1)
+      - 1, -1, 2₁, d, 4₁, -4
+      - 4₁/d
+    * - 3
+      - (1, 1, 1)
+      - 1, -1, 3
+      - -3
+    * - 4
+      - (1, -1, -1)
+      - 1, -1, 3
+      - -3
+    * - 5
+      - (-1, 1, -1)
+      - 1, -1, 3
+      - -3
+    * - 6
+      - (-1, -1, 1)
+      - 1, -1, 3
+      - -3
+    * - 7
+      - (1, -1, 0)
+      - 1, -1, 2, m
+      - 2/m
+    * - 8
+      - (1, 1, 0)
+      - 1, -1, 2, d
+      - 2/d
+    * - 9
+      - (0, 1, -1)
+      - 1, -1, 2, m
+      - 2/m
+    * - 10
+      - (0, 1, 1)
+      - 1, -1, 2, d
+      - 2/d
+    * - 11
+      - (-1, 0, 1)
+      - 1, -1, 2, m
+      - 2/m
+    * - 12
+      - (1, 0, 1)
+      - 1, -1, 2, d
+      - 2/d
+    * - 13
+      - (1, -2, 0)
+      - 1, -1
+      - -1
+    * - 14
+      - (2, -1, 0)
+      - 1, -1
+      - -1
 
 
 For the use of this function, please cite the following paper.
 
 ::
 
-    @inproceedings{
-    levy2024symmcd,
+    @inproceedings{levy2024symmcd,
     title={Symm{CD}: Symmetry-Preserving Crystal Generation with Diffusion Models},
     author={Daniel Levy and Siba Smarak Panigrahi and S{\'e}kou-Oumar Kaba and Qiang Zhu and Mikhail Galkin and Santiago Miret and Siamak Ravanbakhsh},
     booktitle={AI for Accelerated Materials Design - NeurIPS 2024},
