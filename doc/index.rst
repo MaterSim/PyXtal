@@ -54,7 +54,7 @@ Tutorial
    Background
    Algorithm
    Settings
-   Wyckoff_positions
+   Symmetry_representation
    :maxdepth: 2
 
 Indices and tables

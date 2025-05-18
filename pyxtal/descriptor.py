@@ -157,9 +157,15 @@ def fibonacci_sphere(N=1000):
 
 def cart2sph(x, y, z):
     """
-    convert the x, y, z to spherical coordinates (phi, theta, r)
-    phi: [-pi, pi]
-    theta: [-pi/2, pi/2]
+    Convert Cartesian coordinates (x, y, z) to spherical coordinates (phi, theta, r)
+    
+    Args:
+        x, y, z: Cartesian coordinates
+        
+    Returns:
+        phi: azimuthal angle in [-pi, pi]
+        theta: polar angle in [-pi/2, pi/2] 
+        r: radius
     """
     hxy = np.hypot(x, y)
     r = np.hypot(hxy, z)
@@ -170,7 +176,15 @@ def cart2sph(x, y, z):
 
 def sph2cart(phi, theta, r):
     """
-    convert spherical coordinates (phi, theta, r) to Cartesian (x, y, z)
+    Convert spherical coordinates (phi, theta, r) to Cartesian coordinates (x, y, z)
+    
+    Args:
+        phi: azimuthal angle in radians
+        theta: polar angle in radians
+        r: radius
+        
+    Returns:
+        x, y, z: Cartesian coordinates
     """
     rcos_theta = r * np.cos(theta)
     x = rcos_theta * np.cos(phi)
@@ -181,11 +195,14 @@ def sph2cart(phi, theta, r):
 
 def xyz2sph(xyzs, radian=True):
     """
-    convert the vectors (x, y, z) to the sphere representation (theta, phi)
+    Convert vectors (x, y, z) to spherical coordinates (theta, phi)
 
     Args:
-        xyzs: 3D xyz coordinates
-        radian: return in radian (otherwise degree)
+        xyzs: numpy array of 3D Cartesian coordinates 
+        radian: If True, return angles in radians. If False, return in degrees (default True)
+
+    Returns:
+        pts: numpy array of shape (N, 2) containing (theta, phi) angles
     """
     pts = np.zeros([len(xyzs), 2])
     for i, r_vec in enumerate(xyzs):
@@ -561,14 +578,13 @@ class orientation_order:
 
     def get_parameters(self, ls=None):
         """
-        Computes
+        Computes the orientation order parameters q_l for given l values.
+        
         Args:
-            center: center xyz coordinate
-            neighbors: a list of neighboring xyz coordinates
-            weights: a list of weights for each neighbor
+            ls: list of integers, the l values to compute q_l. Default is [4,6]
+            
         Returns:
-             q: numpy array(complex128), the complex vector qlm normalized
-                by the number of nearest neighbors
+            qs: list of float, the computed q_l values
         """
         if ls is None:
             ls = [4, 6]

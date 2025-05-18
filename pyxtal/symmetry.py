@@ -887,21 +887,25 @@ class Group:
 
     def get_lattice_id(self):
         """
-        Compute the id for the lattice
-        0: triclinic-P
-        1: monoclinic-P
-        2: monoclinic-C
-        3: orthorhombic-P
-        4: orthorhombic-A/B/C
-        5: orthorhombic-I
-        6: orthorhombic-F
-        7: tetragonal-P
-        8: tetragonal-I
-        9: hexagonal-P
-        10: hexagonal-R
-        11: cubic-P
-        12: cubic-I
-        13: cubic-F
+        Compute the id for the lattice.
+
+        Returns:
+            id (int): Encoded lattice id: 
+
+                - 0: triclinic-P
+                - 1: monoclinic-P 
+                - 2: monoclinic-C
+                - 3: orthorhombic-P
+                - 4: orthorhombic-A/B/C
+                - 5: orthorhombic-I
+                - 6: orthorhombic-F
+                - 7: tetragonal-P 
+                - 8: tetragonal-I
+                - 9: hexagonal-P
+                - 10: hexagonal-R
+                - 11: cubic-P
+                - 12: cubic-I 
+                - 13: cubic-F
         """
         if self.lattice_type in ["triclinic"]:
             id = 0
@@ -1845,8 +1849,8 @@ class Group:
 
     def get_valid_solutions(self, solutions):
         """
-        check if the solutions are valid
-        a special WP such as (0,0,0) cannot be occupied twice
+        Check if the solutions are valid.
+        A special WP such as (0,0,0) cannot be occupied twice.
 
         Args:
             solutions: list of solutions about the distibution of WP sites
@@ -1964,7 +1968,7 @@ class Group:
 
     def get_index_by_letter(self, letter):
         """
-        get the wp object by the letter
+        Get the wp object by the letter.
         """
         if len(letter) > 1:
             letter = letter[-1]
@@ -1973,7 +1977,7 @@ class Group:
 
     def get_wp_by_letter(self, letter):
         """
-        get the wp object by the letter
+        Get the wp object by the letter.
         """
         return self[self.get_index_by_letter(letter)]
 
@@ -3163,9 +3167,9 @@ def choose_wyckoff_mol(
     needed to be placed within a unit cell.
 
     Rules:
-    1) The new position's multiplicity is equal/less than (number).
-    2) We prefer positions with large multiplicity.
-    3) The site must admit valid orientations for the desired molecule.
+        - The new position's multiplicity is equal/less than (number).
+        - We prefer positions with large multiplicity.
+        - The site must admit valid orientations for the desired molecule.
 
     Args:
         G: A pyxtal.symmetry.Group object.
@@ -3280,20 +3284,47 @@ def swap_xyz_ops(ops, permutation):
 
 def op_transform(ops, affine_matrix):
     """
-    x, y, z -> x+1/2, y+1/2, z
-    0, 1/2, z -> 1/2, 0, z
-
+    Transform a symmetry operation using affine matrix multiplication.
+    
+    Example:
+        >>> x, y, z -> x+1/2, y+1/2, z 
+        >>> 0, 1/2, z -> 1/2, 0, z
+        
     Args:
-        ops: SymmOp object
-        permutation: list, e.g. [0, 1, 2]
-
+        ops: A SymmOp object representing the symmetry operation to transform
+        affine_matrix: 4x4 affine transformation matrix
+        
     Returns:
-        the new SymmOp object
+        SymmOp: The transformed symmetry operation
     """
     matrix2 = affine_matrix.dot(ops.affine_matrix)
     return SymmOp(matrix2)
 
 def op_translation(op, tran):
+    """
+    Modify a symmetry operation by adding a translation vector.
+
+    Parameters
+    ----------
+    op : SymmOp
+        The input symmetry operation to be modified
+    tran : array_like
+        The translation vector to be added (3D vector)
+
+    Returns
+    -------
+    SymmOp
+        A new symmetry operation with the translation added.
+        Note: If a row in the operation matrix has non-zero rotation/mirror components,
+        the translation component for that row will be set to 0.
+
+    Examples
+    --------
+    >>> op = SymmOp([[1,0,0,0], [0,1,0,0.5], [0,0,1,0.5], [0,0,0,1]])
+    >>> tran = [0, 0.5, 0]
+    >>> new_op = op_translation(op, tran)
+
+    """
     m = op.affine_matrix.copy()
     m[:3, 3] += tran
     for row in range(3):
@@ -3364,6 +3395,7 @@ def jk_from_i(i, olist):
     """
     Given an organized list (Wyckoff positions or orientations), determine the
     two indices which correspond to a single index for an unorganized list.
+    
     Used mainly for organized Wyckoff position lists, but can be used for other
     lists organized in a similar way
 
@@ -3925,9 +3957,9 @@ def get_wyckoffs(num, organized=False, dim=3):
 def get_wyckoff_symmetry(num, dim=3):
     """
     Returns a list of site symmetry for a given group.
-    1st index: index of WP in sg (0 is the WP with largest multiplicity)
-    2nd index: a point within the WP
-    3rd index: a site symmetry SymmOp of the point
+        - 1st index: index of WP in sg (0 is the WP with largest multiplicity)
+        - 2nd index: a point within the WP
+        - 3rd index: a site symmetry SymmOp of the point
 
     Args:
         sg: the international spacegroup number
@@ -3965,8 +3997,9 @@ def get_wyckoff_symmetry(num, dim=3):
 def get_generators(num, dim=3):
     """
     Returns a list of Wyckoff generators for a given group.
-    1st index: index of WP in sg (0 is the WP with largest multiplicity)
-    2nd index: a generator for the WP
+        - 1st index: index of WP in sg (0 is the WP with largest multiplicity)
+        - 2nd index: a generator for the WP
+    
     This function is useful for rotating molecules based on Wyckoff position,
     since special Wyckoff positions only encode positional information, but not
     information about the orientation. The generators for each Wyckoff position
@@ -4407,6 +4440,7 @@ def get_point_group(number):
 def get_close_packed_groups(pg):
     """
     List the close packed groups based on the molecular symmetry.
+
     Compiled from AIK Book, Table 2 P34.
 
     Args:
@@ -4532,12 +4566,24 @@ def get_all_polar_space_groups():
 
 def abc2matrix(abc):
     """
-    convert the abc string representation to matrix
+    Convert the ABC string representation to an affine matrix.
+
     Args:
-        abc: string like 'a, b, c' or 'a+c, b, c' or 'a+1/4, b+1/4, c'
+        abc (str): String representation in formats like:
+            - 'a, b, c' 
+            - 'a+c, b, c'
+            - 'a+1/4, b+1/4, c'
 
     Returns:
-        4*4 affine matrix
+        tuple: Contains:
+            - 3x3 rotation matrix 
+            - 3-element translation vector
+
+    Examples:
+        >>> abc2matrix('a+1/4, b+1/4, c')
+        (array([[1., 0., 0.],
+                [0., 1., 0.], 
+                [0., 0., 1.]]), array([0.25, 0.25, 0.  ]))
     """
     rot_matrix = np.zeros((3, 3))
     trans = np.zeros(3)
@@ -4558,9 +4604,7 @@ def abc2matrix(abc):
                 rot_matrix[i, j] = factor
             except:
                 print(abc)
-                import sys
-
-                sys.exit()
+                import sys; sys.exit()
 
         # build the translation vector
         for m in re_trans.finditer(tok):
@@ -4634,15 +4678,15 @@ def transform_ops(ops, P, P1):
 
 def trim_ops(ops):
     """
-    Convert the operation to the simplest form. e.g.,
-        - 'x+1/8, y+1/8, z+1/8' -> 'x, y, z'
-        - '1/8 y+1/8 -y+1/8' -> '1/8, y, -y+1/4'
-
+    Convert the operation to the simplest form. For example:
+        - ``x+1/8, y+1/8, z+1/8`` -> ``x, y, z``
+        - ``1/8, y+1/8, -y+1/8`` -> ``1/8, y, -y+1/4``
+    
     Args:
-        ops: A list of symmetry operations.
-
+        ops (list): List of symmetry operations
+    
     Returns:
-        A list of simplified symmetry operations.
+        list: List of simplified symmetry operations
     """
 
     def in_base(op, base):

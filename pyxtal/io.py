@@ -23,7 +23,16 @@ with importlib.resources.as_file(importlib.resources.files("pyxtal") / "database
 
 def in_merged_coords(wp, pt, pts, cell):
     """
-    Whether or not the pt in within the pts
+    Check if a point is within a set of points.
+
+    Args:
+        wp: Wyckoff position object
+        pt: Tuple of (coordinates, species) for the point to check
+        pts: List of (coordinates, species) tuples to check against
+        cell: Unit cell matrix
+
+    Returns:
+        bool: True if pt matches any point in pts, False otherwise
     """
     (c, s) = pt
     for pt0 in pts:
@@ -35,16 +44,20 @@ def in_merged_coords(wp, pt, pts, cell):
 
 
 def get_cif_str_for_pyxtal(struc, header: str = "", sym_num=None, style: str = "mp"):
-    """Get the cif string for a given structure. The default setting for
-    _atom_site follows the materials project cif
-
-    TODO make this a method of the pyxtal class
+    """
+    Get the cif string for a given structure.
+    
+    The default setting for _atom_site follows the materials project cif format.
+    TODO: make this a method of the pyxtal class
 
     Args:
-        struc: pyxtal structure object
-        header: additional information
-        sym_num: the number of symmetry operations, None means writing all symops
-        style: `icsd` or `mp` (used in pymatgen)
+        struc: PyXtal structure object
+        header: Additional information
+        sym_num: Number of symmetry operations. None means write all symops
+        style: Format type - either 'icsd' or 'mp' (used in pymatgen)
+    
+    Returns:
+        str: CIF format string representation of the structure
     """
     if struc.molecular:
         sites = struc.mol_sites
@@ -164,7 +177,7 @@ def get_cif_str_for_pyxtal(struc, header: str = "", sym_num=None, style: str = "
 
 def write_cif(struc, filename=None, header="", permission="w", sym_num=None, style="mp"):
     """
-    Export the structure in cif format
+    Export the structure in cif format.
     The default setting for _atom_site follows the materials project cif
 
     Args:
@@ -188,14 +201,18 @@ def write_cif(struc, filename=None, header="", permission="w", sym_num=None, sty
 
 def read_cif(filename):
     """
-    read the cif, mainly for pyxtal cif output
-    Be cautious in using it to read other cif files
+    Read a CIF file, primarily designed for PyXtal CIF output format.
+    Warning: Use caution when reading other CIF files.
 
-    Args:
-        filename: path of the structure file
-
-    Return:
-        pyxtal structure
+    Parameters
+    ----------
+    filename : str
+        Path to the CIF structure file
+    
+    Returns
+    -------
+    tuple
+        (Lattice, list of sites) representing the crystal structure
     """
     species = []
     coords = []
@@ -244,15 +261,15 @@ def read_cif(filename):
 class structure_from_ext:
     def __init__(self, struc, ref_mols, tol=0.2, ignore_HH=False, add_H=False, hn=None):
         """
-        extract the mol_site information from the give cif file
-        and reference molecule
+        Extract mol_site information from a CIF file and reference molecule.
 
         Args:
-            struc: cif/poscar file or a Pymatgen Structure object
-            ref_mols: a list of reference molecule (xyz file or Pyxtal molecule)
-            tol: scale factor for covalent bond distance
-            ignore_HH: whether or not ignore short H-H in checking molecule
-            add_H: whether or not add the H atoms
+            struc (str or Structure): CIF/POSCAR file or Pymatgen Structure object
+            ref_mols (list): List of reference molecules (xyz file or Pyxtal molecule) 
+            tol (float): Scale factor for covalent bond distance
+            ignore_HH (bool): Whether to ignore short H-H bonds when checking molecules
+            add_H (bool): Whether to add H atoms
+            hn (int, optional): Hall number. Defaults to None.
         """
 
         for i, ref_mol in enumerate(ref_mols):
@@ -439,7 +456,7 @@ class structure_from_ext:
 
     def make_mol_sites(self):
         """
-        generate the molecular wyckoff sites
+        Generate the molecular wyckoff sites
         """
         ori = Orientation(np.eye(3))
         sites = []
@@ -457,7 +474,7 @@ class structure_from_ext:
 
     def align(self):
         """
-        compute the orientation wrt the reference molecule
+        Compute the orientation wrt the reference molecule
         """
         try:
             from openbabel import openbabel, pybel
@@ -493,18 +510,17 @@ class structure_from_ext:
 
 def search_molecules_in_crystal(struc, tol=0.2, once=False, ignore_HH=True, max_bond_length=None):
     """
-    Function to perform to find the molecule in a Pymatgen structure
+    Find molecules within a crystal structure.
 
     Args:
-        struc: Pymatgen Structure
-        tol: tolerance value to check the connectivity
-        once: search only one molecule or all molecules
-        ignore_HH: whether or not ignore the short H-H in checking molecule
-        max_bond_length: sets maximum bond length if bond length is missing in bond length database
+        struc (Structure): Pymatgen Structure object 
+        tol (float): Bond distance tolerance factor. Default 0.2
+        once (bool): Whether to find only first molecule. Default False
+        ignore_HH (bool): Whether to ignore short H-H bonds. Default True 
+        max_bond_length (float, optional): Maximum allowed bond length for missing entries
 
     Returns:
-        molecules: list of pymatgen molecules
-        positions: list of center positions
+        list[Molecule]: List of pymatgen Molecule objects representing found molecules
     """
 
     def check_one_layer(struc, sites0, visited):

@@ -59,7 +59,14 @@ For example, the space group 227 has a symbol of ``Fd-3m`` or ``F 4₁/d -3 2/m`
 3. a ``-3`` (including ``1, -1, 3``) symmetry in the [111] family directions.
 4. a ``2/m`` (including ``1, -1, 2, m``) symmetry in the [110] family directions.
 
-Below shows the symmetry element analysis of the space group 227 (Fd-3m) on the 15 high symmetry crystallographic axes.
+In most cases, the short Hermann-Mauguin notation is used to describe the symmetry of a crystal structure. For the case of ``F 4₁/d -3 2/m``, it can be simplified to ``Fd-3m`` by removing the redundant information due to the following reasons:
+
+- ``4₁/d`` is reduced to ``d`` since the primary direction must have the 4-fold, 
+- ``2/m`` is reduced to ``m`` since the tertiary direction must have the 2-fold symmetry. 
+
+Similarly, the space group 61 ``P 2₁/b 2₁/c 2₁/a`` can be simplified to ``Pbca`` since the ``2₁`` must be present in that particular setting. However, the full Hermann-Mauguin notation is more informative and can be used to describe the symmetry of a crystal structure in more detail.
+
+Below shows the symmetry element analysis of the space group ``Fd-3m`` on the 15 high symmetry crystallographic axes.
 
 .. list-table:: Symmetry analysis of space group 227 (Fd-3m)
     :widths: 10 20 30 20
@@ -397,6 +404,7 @@ Ant the columns represent 18 symmetry elements. The value of each element in the
 In PyXtal, this representation can be easily obtained via the ``get_spg_representation()`` method. The first element of the output is the lattice index, and the second element is a 15x48 matrix representing the symmetry elements.
 
 .. code-block:: Python
+
     from pyxtal.symmetry import Group
     spg = Group(227)
     id, matrix = spg.get_spg_representation() 

@@ -293,26 +293,35 @@ class pyxtal:
     ):
         """
         The main function to generate random crystals.
-        It calls `block_crysstal` or `random_crystal` internally.
-
+        It calls `block_crystal` or `random_crystal` internally.
 
         Args:
-            dim (int): dimenion (0, 1, 2, 3)
+            dim (int): dimension (0, 1, 2, 3) 
             group (int): the group number (1-56, 1-75, 1-80, 1-230)
-            species (list): a list of atomic symbols for each ion type, e.g., `["Ti", "O"]`
-            numIons (list): a list of the number of each type of atom within the
-                primitive cell (NOT the conventional cell), e.g., `[4, 2]`
-            factor (optional): volume factor used to generate the crystal
-            thickness:
-            area (float):
-            lattice (optional): `Lattice <pyxtal.lattice.Lattice.html>`_ to define the cell
+            species (list): atomic symbols for each ion type, e.g., `["Ti", "O"]`.
+            numIons (list): the number of atoms within the unit cell, e.g., `[4, 8]`.
+            factor (float, optional): volume factor to generate the crystal. Default is 1.1
+            thickness (float, optional): thickness for 2D materials
+            area (float, optional): area for 1D/2D materials.
+            lattice (optional): `Lattice <pyxtal.lattice.Lattice.html>`_ to define the cell.
             sites (optional): pre-assigned wyckoff sites (e.g., `[["4a"], ["2b"]]`)
-            conventional (bool): whether or not use the conventional setting
-            t_factor ():
-            max_count ():
-            tm (optional): `Tol_matrix <pyxtal.tolerance.Tol_matrix.html>`_ object
-                to define the distances
+            conventional (bool): whether use the conventional setting. Default is True
+            t_factor (float): factor applied to tolerance matrix.
+            max_count (int): maximum number of attempts to generate structure.
+            torsions (list, optional): torsion angles for molecular crystals.
+            force_pass (bool, True): whether force accept invalid structure.
+            block (optional): molecular/atomic block for crystal building
+            num_block (optional): number of blocks   
+            seed (int, optional): random seed
+            random_state (optional): numpy random state
+            tm (optional): Tol_matrix define the distances
+            use_hall (bool): whether to use Hall number. Default is False
 
+        Returns:
+            Crystal structure object if successful
+
+        Raises:
+            RuntimeError: If structure generation fails after max_count attempts
         """
         prototype = "molecular" if self.molecular else "atomic"
 
@@ -407,18 +416,19 @@ class pyxtal:
         standard=False,
     ):
         """
-        Load the seed structure from Pymatgen/ASE/POSCAR/CIFs
-        Internally they will be handled by Pymatgen
+        Load the seed structure from pymatgen/ase/POSCAR/cifs.
+        Internally they will be handled by pymatgen.
 
         Args:
-            seed: cif/poscar file or a Pymatgen Structure object
-            molecules: a list of reference molecule (xyz file or Pyxtal molecule)
-            tol: scale factor for covalent bond distance
-            ignore_HH: whether or not ignore short H-H distance in molecules
-            add_H: whether or not add H atoms
-            backend: structure parser, default is pymatgen
-            style: pyxtal for spglib
-            standard: whether or not optimize lattice
+            seed: cif/poscar file or a pymatgen Structure object
+            molecules: a list of reference molecule (xyz file or Pyxtal molecule) 
+            tol (float): scale factor for covalent bond distance
+            ignore_HH (bool): whether ignore short H-H distance in molecules
+            add_H (bool): whether add H atoms
+            backend (str): structure parser, default is pymatgen
+            style (str): ``pyxtal`` or ``spglib``  
+            standard (bool): whether or not optimize lattice
+
         """
 
         if self.molecular:
@@ -850,14 +860,25 @@ class pyxtal:
         Generate a structure with lower symmetry (for atomic crystals only)
 
         Args:
-            perms: e.g., {"Si": "C"}
-            H: space group number (int)
-            idx: list
-            group_type: `t` or `k`
-            max_cell: maximum cell reconstruction (float)
-
+            eps (float): perturbation term on atomic coordinates
+            H (int): target space group number 
+            perms (dict): atomic permutations dictionary, e.g. {"Si": "C"}
+            group_type (str): 't' or 'k' for translationengleiche or klassengleiche transitions
+            max_cell (float): maximum cell enlargement
+            min_cell (float): minimum cell enlargement
+            mut_lat (bool): whether to mutate lattice parameters
+            ignore_special (bool): whether to ignore sites with special positions
+            verbose (bool): whether to print details
+            
         Returns:
-            a pyxtal structure with lower symmetries
+            pyxtal: A new pyxtal structure with lower symmetry
+            
+        Example:
+            >>> xtal = pyxtal()
+            >>> xtal.from_random(3, 230, ['Si'], [8])
+            >>> sub = xta.subgroup_once(H=141)
+            >>> print(sub.group.number)
+            141
         """
         idx, sites, t_types, k_types = self._get_subgroup_ids(
             H, group_type, None, max_cell, min_cell)
@@ -1387,15 +1408,16 @@ class pyxtal:
 
     def optimize_lattice(self, iterations=5, force=False, standard=False):
         """
-        Optimize the lattice if the cell has a bad inclination angles
-        We first optimize the angle to some good-looking range.
-        If standard, force the structure to have the standard setting
-        This only applies to monoclinic systems
+        Optimize the lattice if the cell has bad inclination angles.
+        
+        For monoclinic systems, first optimizes the angles to be within a good range.
+        Can optionally force the structure to have the standard setting.
 
         Args:
-            iterations: maximum number of iterations
-            force: whether or not do the early termination
-            standard: True or False
+            iterations (int): Maximum number of iterations
+            force (bool): Whether to skip early termination
+            standard (bool): Whether to enforce standard setting
+
         """
         for _i in range(iterations):
             lattice, trans, opt = self.lattice.optimize_once()
@@ -1695,12 +1717,17 @@ class pyxtal:
 
     def get_alternatives(self, include_self=True, same_letters=False, ref_lat=None, d_tol=2.0, f_tol=0.15):
         """
-        Get alternative structure representations
+        Get alternative structure representations.
 
         Args:
-            include_self (bool): return the original structure
-        Return:
-            list of structures
+            include_self (bool): Whether to include the original structure in the return.
+            same_letters (bool): Whether to require the same Wyckoff letters for alternatives.
+            ref_lat: Reference lattice for comparison.
+            d_tol (float): Tolerance for lattice mismatch.
+            f_tol (float): Tolerance for fractional coordinate mismatch.
+
+        Returns:
+            list: List of alternative pyxtal structures.
         """
         if include_self:
             self.wyc_set_id = 0
@@ -2788,24 +2815,32 @@ class pyxtal:
         criteria=None,
     ):
         """
-        Derive the BC compounds from A via subgroup relation
-        For example, from C to BN or from SiO2 to AlPO3.
-        The key is to split A's wyckoff site to B and C by w.r.t. composition relation.
-        If the current parent crystal doesn't allow splitting, look for the subgroup
+        Derive the BC compounds from A via subgroup relation.
+
+        For example:
+        - From C to BN
+        - From SiO2 to AlPO3
+
+        The key is to split A's Wyckoff positions to B and C with respect to composition relation.
+        If the current parent crystal doesn't allow splitting, look for the subgroup.
 
         Args:
-            dicts: e.g., {"F": "Cl"}
-            ratio: e.g., [1, 1]
-            group_type (string): `t`, `k` or `t+k`
-            max_cell (float): maximum cell reconstruction
-            min_cell (float): maximum cell reconstruction
-            max_wp (int): maximum number of wp
-            N_groups (int): maximum number of trial subgroups
-            N_max (int): maximum number of structures
-            criteria (dict): dictionary criteria
+            dicts (dict): Substitution dictionary, e.g. {"F": "Cl"} 
+            ratio (list): Composition ratio list, e.g. [1, 1]
+            group_type (str): Type of subgroup:
+                - 't': translationengleiche
+                - 'k': klassengleiche 
+                - 't+k': both
+            max_cell (float): Maximum cell reconstruction allowed
+            min_cell (float): Minimum cell reconstruction allowed
+            max_wp (int): Maximum number of Wyckoff positions
+            N_groups (int): Maximum number of trial subgroups
+            N_max (int): Maximum number of output structures
+            criteria (dict): Dictionary of validity criteria
 
         Returns:
-            A list of pyxtal structures
+            list: List of pyxtal structures after substitution
+
         """
         from pyxtal.util import new_struc_wo_energy
 
@@ -2932,10 +2967,14 @@ class pyxtal:
 
     def substitute(self, dicts):
         """
-        A quick function to apply substitution
+        Substitute atoms of one element with another element.
+        For molecular crystals, the substitution is done in the molecule level.
+
+        Example (toadd)
 
         Args:
-            dicts: e.g., {"F": "Cl"}
+            dicts (dict): Dictionary mapping original elements to substituted elements.
+                 For example: {"F": "Cl"}
         """
         pmg = self.to_pymatgen()
         pmg.replace_species(dicts)
@@ -2978,10 +3017,12 @@ class pyxtal:
 
     def substitute_linear(self, dicts):
         """
-        This is mainly designed for substitution between single atom and the linear block
-        e.g., we want to make Zn(CN)2 from SiO2
+        Linear substitution between a single atom and a linear block.
+        For example, substituting SiO2 with Zn(CN)2.
+
         Args:
-            dicts: e.g., {"Si": ["Zn"], "O": ["C","N"]}
+            dicts (dict): Dictionary mapping original atoms to substituted atoms.
+            For example: {"Si": ["Zn"], "O": ["C", "N"]}
         """
         from ase.neighborlist import neighbor_list
 
@@ -3338,9 +3379,9 @@ class pyxtal:
         need to provide the option to use the conformer from the given molecule
 
         Args:
-            - ff_style: 'gaff' or 'openff'
-            - code: 'lammps' or 'charmm'
-            - charge_method: 'am1bcc', 'am1-mulliken', 'mmff94', 'gasteiger'
+            - ff_style: ``gaff`` or ``openff``
+            - code: ``lammps`` or ``charmm``
+            - charge_method: ``am1bcc``, ``am1-mulliken``, ``mmff94``, ``gasteiger``
             - parameters: 1D-array of user-specified FF parameters
 
         Returns:
@@ -3416,16 +3457,18 @@ class pyxtal:
 
     def update_from_1d_rep(self, x):
         """
-        update the xtal from the 1d representation
-        Group: I 41/a m d:2 (141)
-        2.5019,   2.5019,   8.7534,  90.0000,  90.0000,  90.0000, tetragonal
-        Wyckoff sites:
-        C @ [ 0.0000  0.2500  0.4614], WP [8e] Site [2mm.]
+        Update the crystal from a 1D representation.
+        
+        The 1D representation combines lattice parameters and atomic coordinates into a 
+        single array. For example:
 
-        the above rep is [2.5019, 8.7514, 0.4614]
+        >>> Group I 41/a m d:2 (141) 
+        Lattice: 2.5019, 2.5019, 8.7534, 90.0000, 90.0000, 90.0000
+        Site: C @ [0.0000 0.2500 0.4614], WP [8e], Site [2mm.]
+        Would be represented as: [2.5019, 8.7514, 0.4614]
 
         Args:
-            x (float): input variable array to describe a xtal
+            x (numpy.ndarray): 1D array containing lattice parameters and atomic coordinates
         """
         N = self.lattice.dof
         cell, pos = x[:N], x[N:]
@@ -3452,12 +3495,13 @@ class pyxtal:
     def get_1d_rep_x(self):
         """
         Get a simplified x representation for a crystal
-        Group: I 41/a m d:2 (141)
-        2.5019,   2.5019,   8.7534,  90.0000,  90.0000,  90.0000, tetragonal
-        Wyckoff sites:
-        C @ [ 0.0000  0.2500  0.4614], WP [8e] Site [2mm.]
 
-        The above rep is [2.5019, 8.7514, 0.4614]
+        Example:
+            >>> Group: I 41/a m d:2 (141)
+            2.5019,   2.5019,   8.7534,  90.0000,  90.0000,  90.0000, tetragonal  
+            Wyckoff sites: 
+            C @ [ 0.0000  0.2500  0.4614], WP [8e] Site [2mm.]
+            The above rep would be: [2.5019, 8.7514, 0.4614]
         """
 
         rep = self.get_1D_representation(standard=True)
@@ -3613,13 +3657,21 @@ class pyxtal:
 
     def get_xtal_string(self, dicts=None, header=None):
         """
-        get the xtal string
+        Get a string representation of the crystal structure.
 
         Args:
-            xtal: pyxtal instance
-            sim (float): similarity metric
-            status (bool): whether or not the structure is valid
-            energy (float): the energy value
+            dicts (dict, optional): Dictionary containing additional properties like
+                similarity, energy, status etc
+            header (str, optional): Additional header text to prepend
+
+        Returns:
+            str: Formatted string containing crystal information including:
+                - Number of atoms
+                - Degrees of freedom 
+                - Space group number and symbol
+                - Density
+                - Additional properties from dicts
+                - Wyckoff positions
         """
         spg_num, spg_symbol = self.group.number, self.group.symbol
         density = self.get_density()
@@ -3912,7 +3964,7 @@ class pyxtal:
 
     def get_Pearson_Symbol(self):
         """
-        Based on https://en.wikipedia.org/wiki/Pearson_symbol
+        Based on https://en.wikipedia.org/wiki/Pearson_symbol.
         """
         if self.group.number <= 2:
             l = "a"
@@ -3934,11 +3986,14 @@ class pyxtal:
 
     def resymmetrize(self, tol=1e-3):
         """
-        Recheck the symmetry with a given tolerance value
-        Useful to identify a higher space group symmetry
+        Recheck the symmetry with a given tolerance value.
+        Useful to identify a higher space group symmetry.
 
         Args:
-            tol (float): the tolerance value for symmetry finder
+            tol (float): The tolerance value for symmetry finder
+
+        Returns:
+            pyxtal: A new pyxtal object with resymmetrized structure
         """
 
         xtal0 = pyxtal()
@@ -3951,17 +4006,27 @@ class pyxtal:
         Load a template structure based on a prototype name for quick testing.
 
         Args:
-            prototype (str): Name of the crystal structure prototype to load.
-                Supported ('diamond', 'graphite': 'a-cristobalite', .etc)
+            prototype (str): Name of the crystal prototypes to load, such as 'diamond', 'graphite', etc. 
+            
+                - 'diamond' 
+                - 'graphite'
+                - 'a-cristobalite'
+                - 'b-cristobalite'
+                - 'a-quartz'
+                - 'b-quartz' 
+                - 'rocksalt'
+                - 'B1'
+                - 'B2'
 
         Example:
-            self.from_prototype('diamond')
-            self.from_prototype('graphite')
-
+            >>> xtal = pyxtal()
+            >>> xtal.from_prototype('diamond')  # Creates diamond structure
+            >>> xtal.from_prototype('graphite')  # Creates graphite structure
+            
         Notes:
-            This method acts as a shortcut to quickly generate known crystals
-            by loading the space group, Wyckoff positions, lattice parameters,
-            and atomic species.
+            A convenient shortcut to generate common crystal structures by directly
+            specifying their space groups, Wyckoff positions, lattice parameters 
+            and atomic species. The structures are created with standard settings.
         """
 
         if prototype == 'graphite':
