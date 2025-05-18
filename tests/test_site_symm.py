@@ -6,19 +6,19 @@ def csv_to_rst(csv_path, rst_path):
         # Write RST header
         rstfile.write("Wyckoff Positions\n")
         rstfile.write("=================\n\n")
-        
+
         # Read CSV
         reader = csv.reader(csvfile)
         headers = next(reader)
-        
+
         # Write table header
         rstfile.write(".. list-table::\n")
         rstfile.write("   :header-rows: 1\n")
         rstfile.write("   :widths: auto\n\n")
-        
+
         # Write headers
         rstfile.write("   * - " + "\n     - ".join(headers) + "\n")
-        
+
         # Write data rows
         for row in reader:
             rstfile.write("   * - " + "\n     - ".join(row) + "\n")
@@ -29,10 +29,10 @@ def csv_to_rst(csv_path, rst_path):
 with open('doc/wyckoff_positions.csv', 'w', newline='') as csvfile:
     # Create CSV writer
     csvwriter = csv.writer(csvfile)
-    
+
     # Write header
     csvwriter.writerow(['Space Group Number', 'Space Group Symbol', 'Wyckoff Label', 'Site Symmetry'])
-    
+
     # Iterate through space groups
     for g in range(1, 231):
         spg = Group(g)

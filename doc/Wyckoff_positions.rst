@@ -1,5 +1,516 @@
-Wyckoff Site Symmetry Table
-===========================
+Symmetry Representation
+=======================
+
+Space Group Symmetry
+--------------------
+In crystallography, the short Hermann-Mauguin notation is used to represent the symmetry of a crystal structure. Using this notation, the symmetry of a crystal structure can be described by a space group symbol, which is a combination of letters and numbers that represent the symmetry operations that can be applied to the structure. A full Hermann-Mauguin notation can be broken down into four parts:
+
+1. A single letter (``P, A, B, C, I, R``) indicating the type of lattice
+2. A symbol denoting the symmetry for the primary direction.
+3. A symbol denoting the symmetry for the secondary direction.
+4. A symbol denoting the symmetry for the tertiary direction. 
+
+.. list-table:: Symmetry definitions in the Hermann-Mauguin notation.
+  :header-rows: 1
+  :widths: 7 7 7 7 30
+  :align: left 
+
+  * - System
+    - Primary  
+    - Secondary
+    - Tertiary
+    - Possible Symmetry Elements
+  * - Triclinic
+    - —
+    - —
+    - —
+    - 1, -1.
+  * - Monoclinic
+    - [010]
+    - —
+    - —
+    - 2, 2₁, m, c, 2/m, 2/c, 2₁/c.
+  * - Orthorhombic
+    - [100]
+    - [010]
+    - [001]
+    - 2, 2₁, m, a, b, c, n, d.
+  * - Tetragonal
+    - [001]
+    - [100]/[010]
+    - [110]/[101]/...
+    - 4ₙ(/m) @ [001].
+  * - Tri/Hexagonal
+    - [001]
+    - [100]/[010]
+    - [110]/[101]/..
+    - 3ₙ/6ₙ, -3, -6 @ [001]
+  * - Cubic
+    - [100]/...
+    - [111]/[1̄11]/...
+    - [110]/[101]/...
+    - 4ₙ @ [100], 3ₙ @ [111], 2ₙ @ [110]
+
+
+For example, the space group 227 has a symbol of ``Fd-3m`` or ``F 4₁/d -3 2/m`` in the full Hermann-Mauguin notation. This means it has 
+
+1. a face centered unit cell
+2. a ``4₁/d`` (including ``1, -1, 2₁, d, 4₁, -4``) symmetry in the [100] family direction.
+3. a ``-3`` (including ``1, -1, 3``) symmetry in the [111] family directions.
+4. a ``2/m`` (including ``1, -1, 2, m``) symmetry in the [110] family directions.
+
+Below shows the symmetry element analysis of the space group 227 (Fd-3m) on the 15 high symmetry crystallographic axes.
+
+.. list-table:: Symmetry analysis of space group 227 (Fd-3m)
+    :widths: 10 20 30 20
+    :header-rows: 1
+
+    * - Index 
+      - Direction
+      - Symmetry elements
+      - Symbol  
+    * - 0
+      - (1, 0, 0)
+      - 1, -1, 2₁, d, 4₁, -4
+      - 4₁/d
+    * - 1
+      - (0, 1, 0)
+      - 1, -1, 2₁, d, 4₁, -4
+      - 4₁/d
+    * - 2
+      - (0, 0, 1)
+      - 1, -1, 2₁, d, 4₁, -4
+      - 4₁/d
+    * - 3
+      - (1, 1, 1)
+      - 1, -1, 3
+      - -3
+    * - 4
+      - (1, -1, -1)
+      - 1, -1, 3
+      - -3
+    * - 5
+      - (-1, 1, -1)
+      - 1, -1, 3
+      - -3
+    * - 6
+      - (-1, -1, 1)
+      - 1, -1, 3
+      - -3
+    * - 7
+      - (1, -1, 0)
+      - 1, -1, 2, m
+      - 2/m
+    * - 8
+      - (1, 1, 0)
+      - 1, -1, 2, d
+      - 2/d
+    * - 9
+      - (0, 1, -1)
+      - 1, -1, 2, m
+      - 2/m
+    * - 10
+      - (0, 1, 1)
+      - 1, -1, 2, d
+      - 2/d
+    * - 11
+      - (-1, 0, 1)
+      - 1, -1, 2, m
+      - 2/m
+    * - 12
+      - (1, 0, 1)
+      - 1, -1, 2, d
+      - 2/d
+    * - 13
+      - (1, -2, 0)
+      - 1, -1
+      - -1
+    * - 14
+      - (2, -1, 0)
+      - 1, -1
+      - -1
+
+
+One can easily verify this via PyXtal as follows.
+
+.. code-block:: python
+
+    from pyxtal.symmetry import Group
+    spg = Group(227)
+    ss = spg.get_spg_symmetry_object()
+    ss.to_beautiful_matrix_representation(skip=False)
+
+>>> Order Axis   1  -1 2  2_1 m  a  b  c  n  d  3  3_1 3_2 4  4_1 4_2 4_3 -4   
+  0 ( 1  0  0):  1  1  0  1   0  0  0  0  0  1  0  0   0   0  1   0   0   1  # 4_1/d
+  0 ( 0  1  0):  1  1  0  1   0  0  0  0  0  1  0  0   0   0  1   0   0   1  # 4_1/d
+  0 ( 0  0  1):  1  1  0  1   0  0  0  0  0  1  0  0   0   0  1   0   0   1  # 4_1/d
+  1 ( 1  1  1):  1  1  0  0   0  0  0  0  0  0  1  0   0   0  0   0   0   0  # -3
+  1 ( 1 -1 -1):  1  1  0  0   0  0  0  0  0  0  1  0   0   0  0   0   0   0  # -3
+  1 (-1  1 -1):  1  1  0  0   0  0  0  0  0  0  1  0   0   0  0   0   0   0  # -3
+  1 (-1 -1  1):  1  1  0  0   0  0  0  0  0  0  1  0   0   0  0   0   0   0  # -3
+  2 ( 1 -1  0):  1  1  1  0   1  0  0  0  0  0  0  0   0   0  0   0   0   0  # 2/m
+  2 ( 1  1  0):  1  1  1  0   0  0  0  0  0  1  0  0   0   0  0   0   0   0  # 2/m 
+  2 ( 0  1 -1):  1  1  1  0   1  0  0  0  0  0  0  0   0   0  0   0   0   0  # 2/m
+  2 ( 0  1  1):  1  1  1  0   0  0  0  0  0  1  0  0   0   0  0   0   0   0  # 2/m
+  2 (-1  0  1):  1  1  1  0   1  0  0  0  0  0  0  0   0   0  0   0   0   0  # 2/m
+  2 ( 1  0  1):  1  1  1  0   0  0  0  0  0  1  0  0   0   0  0   0   0   0  # 2/m
+
+In the above output, we use a 1D 18-length array to represent the symmetry elements (``1, -1, 2, 2₁, m, a, b, c, n, d, 3, 3₁, 3₂, 4, 4₁, 4₂, 4₃, -4``). 
+
+Space Group Symmetry's Digital Representation
+---------------------------------------------
+
+For the application of deep learning, the space group symmetry can be represented as a **14 lattice indices** + **15x18 matrix**. 
+
+For the lattice index, we divde it into 14 possible cases (0-13) as shown below:
+
+.. list-table::
+    :widths: 15 35
+    :header-rows: 1
+
+    * - ID
+      - Lattice Type
+    * - 0 
+      - Triclinic Primitive
+    * - 1
+      - Monoclinic Primitive 
+    * - 2
+      - Monoclinic Base Centered
+    * - 3
+      - Orthorhombic Primitive
+    * - 4
+      - Orthorhombic Base Centered
+    * - 5
+      - Orthorhombic Body Centered
+    * - 6
+      - Orthorhombic Face Centered
+    * - 7
+      - Tetragonal Primitive
+    * - 8
+      - Tetragonal Body Centered
+    * - 9
+      - Hexagonal Primitive
+    * - 10
+      - Hexagonal Rhombehedral 
+    * - 11
+      - Cubic Primitive
+    * - 12
+      - Cubic Body Centered
+    * - 13
+      - Cubic Face Centered
+
+For the matrix, the rows represent 15 directions, including
+
+    .. list-table::
+        :widths: 15 35
+        :header-rows: 1
+
+        * - Index
+          - Direction
+        * - 0
+          - (1, 0, 0)
+        * - 1
+          - (0, 1, 0)
+        * - 2
+          - (0, 0, 1)
+        * - 3
+          - (1, 1, 1)
+        * - 4
+          - (1, -1, -1)
+        * - 5
+          - (-1, 1, -1)
+        * - 6
+          - (-1, -1, 1)
+        * - 7
+          - (1, -1, 0)
+        * - 8
+          - (1, 1, 0)
+        * - 9
+          - (0, 1, -1)
+        * - 10
+          - (0, 1, 1)
+        * - 11
+          - (-1, 0, 1)
+        * - 12
+          - (1, 0, 1)
+        * - 13
+          - (1, 2, 0)
+        * - 14
+          - (2, 1, 0)
+
+
+Ant the columns represent 18 symmetry elements. The value of each element in the matrix indicates the presence (1) or absence (0) of a symmetry operation. There exist a total of 48 combinational symmetries, 
+
+.. list-table:: 
+    :widths: 10 20 10
+    :header-rows: 1
+
+    * - Index
+      - Symmetry elements  
+      - Symbol
+    * - 0
+      - 1
+      - 1
+    * - 1  
+      - 1, -1
+      - ̄1
+    * - 2
+      - 1, 2
+      - 2
+    * - 3
+      - 1, 2₁
+      - 2₁
+    * - 4
+      - 1, m
+      - m
+    * - 5
+      - 1, a
+      - a
+    * - 6
+      - 1, b
+      - b
+    * - 7
+      - 1, c
+      - c
+    * - 8
+      - 1, n
+      - n
+    * - 9
+      - 1, d
+      - d
+    * - 10
+      - 1, 3
+      - 3
+    * - 11
+      - 1, 3₁
+      - 3₁
+    * - 12
+      - 1, 3₂
+      - 3₂
+    * - 13
+      - 1, -1, 2, m
+      - 2/m
+    * - 14
+      - 1, -1, 2, a
+      - 2/a
+    * - 15
+      - 1, -1, 2, b
+      - 2/b
+    * - 16
+      - 1, -1, 2, c
+      - 2/c
+    * - 17
+      - 1, -1, 2, n
+      - 2/n
+    * - 18
+      - 1, -1, 2, d
+      - 2/d
+    * - 19
+      - 1, -1, 2₁, m
+      - 2₁/m
+    * - 20
+      - 1, -1, 2₁, a
+      - 2₁/a
+    * - 21
+      - 1, -1, 2₁, b
+      - 2₁/b
+    * - 22
+      - 1, -1, 2₁, c
+      - 2₁/c
+    * - 23
+      - 1, -1, 2₁, n
+      - 2₁/n
+    * - 24
+      - 1, -1, 2₁, d
+      - 2₁/d
+    * - 25
+      - 1, 2, 4
+      - 4
+    * - 26
+      - 1, 2₁, 4₁
+      - 4₁
+    * - 27
+      - 1, 2, 4₂
+      - 4₂
+    * - 28
+      - 1, 2₁, 4₃
+      - 4₃
+    * - 29
+      - 1, 2, -4
+      - -4
+    * - 30
+      - 1, -1, 3
+      - -3
+    * - 31
+      - 1, 2, 3
+      - 6
+    * - 32
+      - 1, 2₁, 3₁
+      - 6₁
+    * - 33
+      - 1, 2₁, 3₂
+      - 6₅
+    * - 34
+      - 1, 2, 3₂
+      - 6₂
+    * - 35
+      - 1, 2, 3₁
+      - 6₄
+    * - 36
+      - 1, 2₁, 3
+      - 6₃
+    * - 37
+      - 1, m, 3
+      - -6
+    * - 38
+      - 1, -1, 2, m, 4, -4
+      - 4/m
+    * - 39
+      - 1, -1, 2, n, 4, -4
+      - 4/n
+    * - 40
+      - 1, -1, 2₁, a, 4₁, -4
+      - 4₁/a
+    * - 41
+      - 1, -1, 2₁, b, 4₁, -4
+      - 4₁/b
+    * - 42
+      - 1, -1, 2₁, c, 4₁, -4
+      - 4₁/c
+    * - 43
+      - 1, -1, 2₁, d, 4₁, -4
+      - 4₁/d
+    * - 44
+      - 1, -1, 2, m, 4₂, -4
+      - 4₂/m
+    * - 45
+      - 1, -1, 2, m, 4₂, -4
+      - 4₂/n
+    * - 46
+      - 1, -1, 2, m, 3
+      - 6/m
+    * - 47
+      - 1, -1, 2₁, m, 3
+      - 6₃/m
+
+
+In PyXtal, this representation can be easily obtained via the ``get_spg_representation()`` method. The first element of the output is the lattice index, and the second element is a 15x48 matrix representing the symmetry elements.
+
+.. code-block:: Python
+    from pyxtal.symmetry import Group
+    spg = Group(227)
+    id, matrix = spg.get_spg_representation() 
+    print(id)
+    print(matrix)
+
+    >>> 13 # lattice id
+    >>> # one-hot encoding of 15*48 matrix to represent the space group Fd-3m
+    [[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    [0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]])
+ 
+
+
+Wyckoff Site Symmetry
+---------------------
+For each space group, the Wyckoff positions are defined by the symmetry of the site. The Wyckoff positions are labeled with a letter and a number, where the letter indicates the type of site and the number indicates the multiplicity of that site. Below, we show the Wyckoff site symmetry for the space group 227 (``Fd-3m``) as an example. 
+
+.. code-block:: python
+
+    from pyxtal.symmetry import Group
+    spg = Group(227)
+    print(spg)
+    wp = spg[-1]   # Get the last Wyckoff position 8a
+    ss.to_beautiful_matrix_representation() # List symmetry elements
+
+>>> -- Spacegroup --# 227 (Fd-3m)--
+192i  site symm: 1
+96h	  site symm: ..2
+96g	  site symm: ..m
+48f	  site symm: 2.mm
+32e	  site symm: .3m
+16d	  site symm: .-3m
+16c	  site symm: .-3m
+8b	  site symm: -43m
+8a	  site symm: -43m
+  
+>>> Order Axis     1    -1   2    m    3    4    -4   -3   6    -6   
+  0 ( 1  0  0):    1    0    1    0    0    0    1    0    0    0     -4
+  0 ( 0  1  0):    1    0    1    0    0    0    1    0    0    0     -4
+  0 ( 0  0  1):    1    0    1    0    0    0    1    0    0    0     -4
+  1 ( 1  1  1):    1    0    0    0    1    0    0    0    0    0      3
+  1 ( 1 -1 -1):    1    0    0    0    1    0    0    0    0    0      3
+  1 (-1  1 -1):    1    0    0    0    1    0    0    0    0    0      3
+  1 (-1 -1  1):    1    0    0    0    1    0    0    0    0    0      3
+  2 ( 1 -1  0):    1    0    0    1    0    0    0    0    0    0      m
+  2 ( 1  1  0):    1    0    0    1    0    0    0    0    0    0      m
+  2 ( 0  1 -1):    1    0    0    1    0    0    0    0    0    0      m
+  2 ( 0  1  1):    1    0    0    1    0    0    0    0    0    0      m
+  2 (-1  0  1):    1    0    0    1    0    0    0    0    0    0      m
+  2 ( 1  0  1):    1    0    0    1    0    0    0    0    0    0      m
+
+In space group 227, the Wyckoff position ``8a`` indicates that there are 8 equivalent sites in the unit cell, with a site symmetry of ``-43m``. Unlike the Hermann-Mauguin notation, the site symmetry does not count the translation symmetry. Hence, it does not include the screw axis (e.g., ``2₁, 3₁, 4₁, 6₁``) or glide plane symmetry (``a, b, c, n, d``). There are 7 fundamental point group symmetries (``1, -1, 2, m, 3, 4, 6, -6``) and 5 additional compound group symmetries (``-3, 6, 2/m, 4/m, 6/m``). For ``8a`` in space group 227, its site symmetry ``-43m`` includes
+
+1. 4-fold rotation axis (``-4``) @ [100] family directions,
+2. 3-fold rotation axis (``3``) @ [111] family directions,
+3. 2-fold rotation axis (``m``) @ [110] family directions.
+
+Site Symmetry's Digital Representation
+---------------------------------------------
+
+For the application of deep learning, the Wyckoff site symmetry can be represented as a 15x7 matrix, where the rows and columns represent the symmetry elements. The value of each element in the matrix indicates the presence or absence of a symmetry operation. For example, a value of 1 indicates that the symmetry operation is present, while a value of 0 indicates that it is absent. Given that there exist a total of 13 site symmetries (``1, -1, 2, m, 3, 4, 6, -6, -3, 6, 2/m, 4/m, 6/m``), it can be further converted to an one-hot encoding format of (15x13) matrix via PyXtal as follows:
+
+.. code-block:: python
+
+    from pyxtal.symmetry import Group
+    spg = Group(227)
+    rep = wp.get_site_symmetry_object().to_one_hot()
+
+>>> # one-hot encoding of the 8a site symmetry of space group 227
+[[1 0 0 0 0 0 0 0 0 0 0 0 0]
+ [1 0 0 0 0 0 0 0 0 0 0 0 0]
+ [1 0 0 0 0 0 0 0 0 0 0 0 0]
+ [0 1 0 0 0 0 0 0 0 0 0 0 0]
+ [0 1 0 0 0 0 0 0 0 0 0 0 0]
+ [0 1 0 0 0 0 0 0 0 0 0 0 0]
+ [0 1 0 0 0 0 0 0 0 0 0 0 0]
+ [0 0 1 0 0 0 0 0 0 0 0 0 0]
+ [0 0 1 0 0 0 0 0 0 0 0 0 0]
+ [0 0 1 0 0 0 0 0 0 0 0 0 0]
+ [0 0 1 0 0 0 0 0 0 0 0 0 0]
+ [0 0 1 0 0 0 0 0 0 0 0 0 0]
+ [0 0 1 0 0 0 0 0 0 0 0 0 0]
+ [1 0 0 0 0 0 0 0 0 0 0 0 0]
+ [1 0 0 0 0 0 0 0 0 0 0 0 0]]
+
+
+Complete list of Wyckoff Site Symmetry Table
+--------------------------------------------
+
+Using PyXtal, you can easily access the Wyckoff site symmetry for all 230 space groups as follows:
+
+.. code-block:: python
+
+    from pyxtal.symmetry import Group
+    for g in range(1, 231):
+        spg = Group(g)
+        for wp in spg:
+            wp.get_site_symmetry()
+            print(spg.number, spg.symbol, wp.get_label(), wp.site_symm)
+
+The following table lists the space group number, symbol, Wyckoff label, and site symmetry for all 230 space groups.
 
 .. list-table::
    :header-rows: 1
@@ -2416,11 +2927,11 @@ Wyckoff Site Symmetry Table
    * - 89
      - P422
      - 2f
-     - 222.
+     - 222.\
    * - 89
      - P422
      - 2e
-     - 222.
+     - 222.\
    * - 89
      - P422
      - 1d
@@ -2540,19 +3051,19 @@ Wyckoff Site Symmetry Table
    * - 93
      - P4222
      - 2d
-     - 222.
+     - 222.\
    * - 93
      - P4222
      - 2c
-     - 222.
+     - 222.\
    * - 93
      - P4222
      - 2b
-     - 222.
+     - 222.\
    * - 93
      - P4222
      - 2a
-     - 222.
+     - 222.\
    * - 94
      - P42212
      - 8g
@@ -2640,7 +3151,7 @@ Wyckoff Site Symmetry Table
    * - 97
      - I422
      - 4c
-     - 222.
+     - 222.\
    * - 97
      - I422
      - 2b
@@ -2916,11 +3427,11 @@ Wyckoff Site Symmetry Table
    * - 111
      - P-42m
      - 2f
-     - 222.
+     - 222.\
    * - 111
      - P-42m
      - 2e
-     - 222.
+     - 222.\
    * - 111
      - P-42m
      - 1d
@@ -2980,19 +3491,19 @@ Wyckoff Site Symmetry Table
    * - 112
      - P-42c
      - 2d
-     - 222.
+     - 222.\
    * - 112
      - P-42c
      - 2c
-     - 222.
+     - 222.\
    * - 112
      - P-42c
      - 2b
-     - 222.
+     - 222.\
    * - 112
      - P-42c
      - 2a
-     - 222.
+     - 222.\
    * - 113
      - P-421m
      - 8f
@@ -3304,7 +3815,7 @@ Wyckoff Site Symmetry Table
    * - 121
      - I-42m
      - 4c
-     - 222.
+     - 222.\
    * - 121
      - I-42m
      - 2b
@@ -3396,11 +3907,11 @@ Wyckoff Site Symmetry Table
    * - 123
      - P4/mmm
      - 2f
-     - mmm.
+     - mmm.\
    * - 123
      - P4/mmm
      - 2e
-     - mmm.
+     - mmm.\
    * - 123
      - P4/mmm
      - 1d
@@ -3452,7 +3963,7 @@ Wyckoff Site Symmetry Table
    * - 124
      - P4/mcc
      - 4f
-     - 222.
+     - 222.\
    * - 124
      - P4/mcc
      - 4e
@@ -3564,7 +4075,7 @@ Wyckoff Site Symmetry Table
    * - 126
      - P4/nnc
      - 4c
-     - 222.
+     - 222.\
    * - 126
      - P4/nnc
      - 2b
@@ -3788,19 +4299,19 @@ Wyckoff Site Symmetry Table
    * - 131
      - P42/mmc
      - 2d
-     - mmm.
+     - mmm.\
    * - 131
      - P42/mmc
      - 2c
-     - mmm.
+     - mmm.\
    * - 131
      - P42/mmc
      - 2b
-     - mmm.
+     - mmm.\
    * - 131
      - P42/mmc
      - 2a
-     - mmm.
+     - mmm.\
    * - 132
      - P42/mcm
      - 16p
@@ -3848,7 +4359,7 @@ Wyckoff Site Symmetry Table
    * - 132
      - P42/mcm
      - 4e
-     - 222.
+     - 222.\
    * - 132
      - P42/mcm
      - 2d
@@ -3904,11 +4415,11 @@ Wyckoff Site Symmetry Table
    * - 133
      - P42/nbc
      - 4b
-     - 222.
+     - 222.\
    * - 133
      - P42/nbc
      - 4a
-     - 222.
+     - 222.\
    * - 134
      - P42/nnm
      - 16n
@@ -3956,7 +4467,7 @@ Wyckoff Site Symmetry Table
    * - 134
      - P42/nnm
      - 4c
-     - 222.
+     - 222.\
    * - 134
      - P42/nnm
      - 2b
@@ -4168,7 +4679,7 @@ Wyckoff Site Symmetry Table
    * - 139
      - I4/mmm
      - 4c
-     - mmm.
+     - mmm.\
    * - 139
      - I4/mmm
      - 2b
@@ -4324,7 +4835,7 @@ Wyckoff Site Symmetry Table
    * - 146
      - R3
      - 3a
-     - 3.
+     - 3.\
    * - 147
      - P-3
      - 6g
@@ -4368,7 +4879,7 @@ Wyckoff Site Symmetry Table
    * - 148
      - R-3
      - 6c
-     - 3.
+     - 3.\
    * - 148
      - R-3
      - 3b
@@ -4448,11 +4959,11 @@ Wyckoff Site Symmetry Table
    * - 150
      - P321
      - 1b
-     - 32.
+     - 32.\
    * - 150
      - P321
      - 1a
-     - 32.
+     - 32.\
    * - 151
      - P3112
      - 6c
@@ -4516,7 +5027,7 @@ Wyckoff Site Symmetry Table
    * - 155
      - R32
      - 6c
-     - 3.
+     - 3.\
    * - 155
      - R32
      - 3b
@@ -4608,7 +5119,7 @@ Wyckoff Site Symmetry Table
    * - 161
      - R3c
      - 6a
-     - 3.
+     - 3.\
    * - 162
      - P-31m
      - 12l
@@ -4760,7 +5271,7 @@ Wyckoff Site Symmetry Table
    * - 165
      - P-3c1
      - 2a
-     - 32.
+     - 32.\
    * - 166
      - R-3m
      - 36i
@@ -4812,7 +5323,7 @@ Wyckoff Site Symmetry Table
    * - 167
      - R-3c
      - 12c
-     - 3.
+     - 3.\
    * - 167
      - R-3c
      - 6b
@@ -5044,11 +5555,11 @@ Wyckoff Site Symmetry Table
    * - 177
      - P622
      - 3g
-     - 22.
+     - 22.\
    * - 177
      - P622
      - 3f
-     - 22.
+     - 22.\
    * - 177
      - P622
      - 2e
@@ -5124,19 +5635,19 @@ Wyckoff Site Symmetry Table
    * - 180
      - P6222
      - 3d
-     - 22.
+     - 22.\
    * - 180
      - P6222
      - 3c
-     - 22.
+     - 22.\
    * - 180
      - P6222
      - 3b
-     - 22.
+     - 22.\
    * - 180
      - P6222
      - 3a
-     - 22.
+     - 22.\
    * - 181
      - P6422
      - 12k
@@ -5168,19 +5679,19 @@ Wyckoff Site Symmetry Table
    * - 181
      - P6422
      - 3d
-     - 22.
+     - 22.\
    * - 181
      - P6422
      - 3c
-     - 22.
+     - 22.\
    * - 181
      - P6422
      - 3b
-     - 22.
+     - 22.\
    * - 181
      - P6422
      - 3a
-     - 22.
+     - 22.\
    * - 182
      - P6322
      - 12i
@@ -5216,7 +5727,7 @@ Wyckoff Site Symmetry Table
    * - 182
      - P6322
      - 2a
-     - 32.
+     - 32.\
    * - 183
      - P6mm
      - 12f
@@ -5480,7 +5991,7 @@ Wyckoff Site Symmetry Table
    * - 190
      - P-62c
      - 2a
-     - 32.
+     - 32.\
    * - 191
      - P6/mmm
      - 24r
@@ -5584,7 +6095,7 @@ Wyckoff Site Symmetry Table
    * - 192
      - P6/mcc
      - 6f
-     - 22.
+     - 22.\
    * - 192
      - P6/mcc
      - 4e
@@ -5736,11 +6247,11 @@ Wyckoff Site Symmetry Table
    * - 195
      - P23
      - 1b
-     - 23.
+     - 23.\ 
    * - 195
      - P23
      - 1a
-     - 23.
+     - 23.\
    * - 196
      - F23
      - 48h
@@ -5760,19 +6271,19 @@ Wyckoff Site Symmetry Table
    * - 196
      - F23
      - 4d
-     - 23.
+     - 23.\
    * - 196
      - F23
      - 4c
-     - 23.
+     - 23.\
    * - 196
      - F23
      - 4b
-     - 23.
+     - 23.\
    * - 196
      - F23
      - 4a
-     - 23.
+     - 23.\
    * - 197
      - I23
      - 24f
@@ -5796,7 +6307,7 @@ Wyckoff Site Symmetry Table
    * - 197
      - I23
      - 2a
-     - 23.
+     - 23.\
    * - 198
      - P213
      - 12b
@@ -5896,7 +6407,7 @@ Wyckoff Site Symmetry Table
    * - 201
      - Pn-3
      - 2a
-     - 23.
+     - 23.\
    * - 202
      - Fm-3
      - 96i
@@ -5924,7 +6435,7 @@ Wyckoff Site Symmetry Table
    * - 202
      - Fm-3
      - 8c
-     - 23.
+     - 23.\
    * - 202
      - Fm-3
      - 4b
@@ -5956,11 +6467,11 @@ Wyckoff Site Symmetry Table
    * - 203
      - Fd-3
      - 8b
-     - 23.
+     - 23.\
    * - 203
      - Fd-3
      - 8a
-     - 23.
+     - 23.\
    * - 204
      - Im-3
      - 48h
@@ -6124,7 +6635,7 @@ Wyckoff Site Symmetry Table
    * - 208
      - P4232
      - 2a
-     - 23.
+     - 23.\
    * - 209
      - F432
      - 96j
@@ -6156,7 +6667,7 @@ Wyckoff Site Symmetry Table
    * - 209
      - F432
      - 8c
-     - 23.
+     - 23.\
    * - 209
      - F432
      - 4b
@@ -6192,11 +6703,11 @@ Wyckoff Site Symmetry Table
    * - 210
      - F4132
      - 8b
-     - 23.
+     - 23.\
    * - 210
      - F4132
      - 8a
-     - 23.
+     - 23.\
    * - 211
      - I432
      - 48j
@@ -6456,7 +6967,7 @@ Wyckoff Site Symmetry Table
    * - 218
      - P-43n
      - 2a
-     - 23.
+     - 23.\
    * - 219
      - F-43c
      - 96h
@@ -6484,11 +6995,11 @@ Wyckoff Site Symmetry Table
    * - 219
      - F-43c
      - 8b
-     - 23.
+     - 23.\
    * - 219
      - F-43c
      - 8a
-     - 23.
+     - 23.\
    * - 220
      - I-43d
      - 48e
@@ -6852,7 +7363,7 @@ Wyckoff Site Symmetry Table
    * - 228
      - Fd-3c
      - 16a
-     - 23.
+     - 23.\
    * - 229
      - Im-3m
      - 96l
@@ -6933,3 +7444,19 @@ Wyckoff Site Symmetry Table
      - Ia-3d
      - 16a
      - .-3.
+
+
+References
+----------
+
+For the use of this function, please cite the following paper.
+
+::
+
+    @inproceedings{levy2024symmcd,
+    title={Symm{CD}: Symmetry-Preserving Crystal Generation with Diffusion Models},
+    author={Daniel Levy and Siba Smarak Panigrahi and S{\'e}kou-Oumar Kaba and Qiang Zhu and Mikhail Galkin and Santiago Miret and Siamak Ravanbakhsh},
+    booktitle={AI for Accelerated Materials Design - NeurIPS 2024},
+    year={2024},
+    url={https://openreview.net/forum?id=V7x2KZQn2v}
+    }

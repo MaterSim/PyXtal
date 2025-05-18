@@ -43,12 +43,12 @@ class TestGroup(unittest.TestCase):
             assert dof == dof_ref
 
     def test_get_spg_symmetry_object(self):
-        spg_list = [14, 36, 62, 99, 143, 160, 225, 230] #182, 191, 
-        ans = [32, 18, 36, 21, 16, 19, 62, 62] # 24, 48
+        spg_list = [14, 36, 62, 99, 143, 160, 225, 230] #182, 191,
+        ans = [32, 18, 36, 21, 16, 19, 58, 58] # 24, 48
         for spg, num in zip(spg_list, ans):
             g = Group(spg)
             ss = g.get_spg_symmetry_object()
-            matrix = ss.to_matrix_representation_spg()
+            matrix = ss.to_matrix_representation()
             assert num == sum(sum(matrix))
 
     def test_short_path(self):

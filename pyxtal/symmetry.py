@@ -3430,12 +3430,12 @@ class site_symmetry:
             self.set_full_hm_symbols(self.table)
             self.set_short_symbols()
 
-    def to_one_hot(self):
+    def to_one_hot(self, verbose=False):
         matrix = self.to_matrix_representation()
         one_hot_matrix = np.zeros([self.num_axes, self.num_total_symms], dtype=int)
         for i in range(self.num_axes):
-            _, id = self.get_highest_symmetry(matrix[i])
-            if self.parse_trans: print("direction", i, all_sym_directions[i], matrix[i], _)
+            symbol, id = self.get_highest_symmetry(matrix[i])
+            if verbose: print(i, all_sym_directions[i], matrix[i], symbol)
             one_hot_matrix[i, id] = 1
         return one_hot_matrix
 
@@ -4316,16 +4316,16 @@ def search_cloest_wp(G, wp, op, pos):
 def get_point_group(number):
     """
     Parse the point group symmetry info from space group.
-    
-    According to http://img.chem.ucl.ac.uk/sgp/misc/pointgrp.htm, 
+
+    According to http://img.chem.ucl.ac.uk/sgp/misc/pointgrp.htm,
     among 32 point groups and 230 space groups, there are:
-    
+
     - 10 polar point groups (68 space groups):
         1, 2, m, mm2, 3, 3m, 4, 4mm, 6, 6mm
-    
-    - 11 centrosymmetric point groups (92 space groups):  
+
+    - 11 centrosymmetric point groups (92 space groups):
         -1, 2/m, mmm, 4/m, 4/mmm, -3, -3m, 6/m, 6/mmm, m-3, m-3m
-        
+
     - 11 enantiomorphic point groups (65 space groups):
         1, 2, 222, 4, 422, 3, 32, 6, 622, 23, 432
 
@@ -4333,7 +4333,7 @@ def get_point_group(number):
         number (int): Space group number between 1-230
 
     Returns:
-        tuple: (point_group_symbol, point_group_number, is_polar, 
+        tuple: (point_group_symbol, point_group_number, is_polar,
                has_inversion, is_enantiomorphic)
     """
 
