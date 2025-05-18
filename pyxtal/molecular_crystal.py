@@ -153,12 +153,12 @@ class molecular_crystal:
         Initialize and store symmetry sites for each molecule.
 
         This function processes a list of symmetry sites, validates them against the expected
-        number of molecules, and stores them in the `self.sites` dictionary. Each entry in the
-        `sites` list can be either a dictionary or another type (list, etc.), and if no valid
+        number of molecules, and stores them in the ``self.sites`` dictionary. Each entry in the
+        ``sites`` list can be either a dictionary or another type (list, etc.), and if no valid
         site is provided for a molecule, `None` is assigned for that molecule's site.
 
         Args:
-            sites (list): A list of sites corresponding to `self.molecules`. They can be:
+            sites (list): A list of sites corresponding to ``self.molecules``. They can be:
             - A dictionary of site information (keys represent Wyckoff letters or
                 other identifiers, and values are the corresponding information).
             - A list or other type representing site information.
@@ -222,14 +222,14 @@ class molecular_crystal:
         """
         Calculates the valid orientations for each Molecule and Wyckoff
         position. Returns a list with 4 indices:
-        - index 1: the molecular prototype's index within self.molecules
-        - index 2: the WP's 1st index (based on multiplicity)
-        - index 3: the WP's 2nd index (within the group of same multiplicity)
-        - index 4: the index of a valid orientation for the molecule/WP pair
+            - 1: the molecular prototype's index within self.molecules
+            - 2: the WP's 1st index (based on multiplicity)
+            - 3: the WP's 2nd index (within the group of same multiplicity)
+            - 4: the index of a valid orientation for the molecule/WP pair
 
-        For example, self.valid_orientations[i][j][k] would be a list of valid
-        orientations for self.molecules[i], in the Wyckoff position
-        self.group.wyckoffs_organized[j][k]
+        For example, ``self.valid_orientations[i][j][k]`` would be a list of valid
+        orientations for ``self.molecules[i]``, in the Wyckoff position
+        ``self.group.wyckoffs_organized[j][k]``.
         """
         valid_ori = False
         self.valid_orientations = []
@@ -259,7 +259,7 @@ class molecular_crystal:
 
     def set_lattice(self, lattice):
         """
-        Generate the initial lattice
+        Generate the initial lattice.
         """
         if lattice is not None:
             # Use the provided lattice
@@ -318,7 +318,7 @@ class molecular_crystal:
     def set_crystal(self):
         """
         The main code to generate a random molecular crystal.
-        If successful, `self.valid` is True
+        If successful, ``self.valid`` is True
         """
         self.numattempts = 0
         if not self.degrees:
@@ -351,7 +351,7 @@ class molecular_crystal:
 
     def _set_coords(self):
         """
-        generate coordinates for random crystal
+        Generate coordinates for random crystal.
         """
 
         mol_sites_total = []
@@ -371,8 +371,8 @@ class molecular_crystal:
 
     def _set_mol_wyckoffs(self, id, numMol, pyxtal_mol, valid_ori, mol_wyks):
         """
-        generates a set of wyckoff positions to accomodate a given number
-        of molecules
+        Generates a set of wyckoff positions to accomodate a given number
+        of molecules.
 
         Args:
             id: molecular id
@@ -459,10 +459,10 @@ class molecular_crystal:
         Generate valid orientations for a given molecule in a Wyckoff position.
 
         It tries to generate valid orientations for the molecule by:
-        - Selecting a random orientation from a list of possible orientations.
-        - Flipping the orientation to test different alignments.
-        - Checking the smallest distance between atoms and ensuring it's valid.
-        - Using the bisection method is refine the orientation.
+            - Selecting a random orientation from a list of possible orientations.
+            - Flipping the orientation to test different alignments.
+            - Checking the smallest distance between atoms and ensuring it's valid.
+            - Using the bisection method is refine the orientation.
 
         Args:
             pyxtal_mol: The pyxtal_molecule object representing the molecule.
@@ -471,7 +471,7 @@ class molecular_crystal:
             wp: Wyckoff position object representing the symmetry of the site.
 
         Returns:
-            ms0: A valid `mol_site` object if an acceptable orientation is found.
+            ms0: A valid ``mol_site`` object if an acceptable orientation is found.
              returns `None` if no valid orientation is found within the attempts.
         """
 

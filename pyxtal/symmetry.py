@@ -670,11 +670,11 @@ class Group:
     4b	site symm: 2/m..
     4a	site symm: 2/m..
 
-    one can access data such as `symbol`, `number` and `Wyckoff_positions`
+    One can access data such as `symbol`, `number` and `Wyckoff_positions`:
 
     >>> g.symbol
     'Cmce'
-    >>> g.number
+    >>> g.number 
     64
     >>> g.Wyckoff_positions[0]
     Wyckoff position 16g in space group 64 with site symmetry 1
@@ -696,7 +696,7 @@ class Group:
     -x+1/2, y+1/2, z
 
     We also provide several utilities functions, e.g.,
-    one can search the possible wyckoff_combinations by a formula
+    one can search the possible wyckoff_combinations by a formula:
 
     >>> g.list_wyckoff_combinations([4, 2])
     ([], [], [])
@@ -714,30 +714,29 @@ class Group:
     [[5], [4]], [[5], [3]], [[5], [2]], [[5], [1]]]
     )
 
-    or search the subgroup information
-
+    Or search the subgroup information:
+    
     >>> g.get_max_t_subgroup()['subgroup']
     [12, 14, 15, 20, 36, 39, 41]
 
-    or check if a given composition is compatible with Wyckoff positions
-
+    Or check if a given composition is compatible with Wyckoff positions:
+    
     >>> g = Group(225)
     >>> g.check_compatible([64, 28, 24])
     (True, True)
 
-    or check the possible transition paths to a given supergroup
+    Or check the possible transition paths to a given supergroup:
 
     >>> g = Group(59)
     >>> g.search_supergroup_paths(139, 2)
     [[71, 139], [129, 139], [137, 139]]
 
-
     Args:
-        group: the group symbol or international number
-        dim (defult: 3): the periodic dimension of the group
-        use_hall (default: False): whether or not use the hall number
-        style (default: `pyxtal`): the choice of hall number ('pyxtal'/'spglib')
-        quick (defaut: False): whether or not ignore the wyckoff information
+        group: The group symbol or international number
+        dim (int, default: 3): The periodic dimension of the group 
+        use_hall (bool, default: False): Whether or not use the hall number
+        style (str, default: ``pyxtal``): The choice of hall number (``pyxtal``/``spglib``)
+        quick (bool, default: False): Whether or not ignore the wyckoff information
     """
 
     def __init__(self, group, dim=3, use_hall=False, style="pyxtal", quick=False):

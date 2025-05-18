@@ -1,12 +1,10 @@
 """
-crystal plane class
+Crystal plane class
 """
 
 import itertools
 from math import gcd
-
 import numpy as np
-
 
 def has_reduction(hkl):
     h, k, l = hkl
@@ -19,7 +17,6 @@ def has_reduction(hkl):
         return True
     return False
 
-
 def reduced_hkl(hkl):
     h, k, l = hkl
     gcf = gcd(h, gcd(k, l))
@@ -27,7 +24,6 @@ def reduced_hkl(hkl):
         return [int(h / gcf), int(k / gcf), int(l / gcf)], gcf
     else:
         return [h, k, l], 1
-
 
 def structure_factor(pos, hkl, total=True):
     coords = np.dot(pos, hkl)
@@ -37,19 +33,21 @@ def structure_factor(pos, hkl, total=True):
     else:
         return F
 
-
 def get_dspacing(inv_matrix, hkl):
     return 1 / np.linalg.norm(inv_matrix.dot(np.array(hkl)))
 
-
 class planes:
     """
-    This is a database class to process crystal data
+    A database class to process crystal data.
 
-    Args:
-        db_name: *.db format from ase database
-        d_min: the minimum layer spacing
-        cp_factor: skip non-close packed plane
+    Parameters
+    ----------
+    db_name : str
+        *.db format from ASE database
+    d_min : float
+        Minimum layer spacing
+    cp_factor : float
+        Threshold to skip non-close packed planes
     """
 
     def __init__(self, extent=6, d_min=1.5, cp_factor=0.5):
@@ -88,7 +86,7 @@ class planes:
 
     def search_close_packing_planes(self, N_max=10):
         """
-        Search for the close-packed molecular plane for a given crystal
+        Search for the close-packed molecular plane for a given crystal.
 
         Args:
             N_max: maximum number of multiples
@@ -118,10 +116,20 @@ class planes:
 
     def get_separation(self, hkl):
         """
-        Compute the separation for the given hkl plane
+        Compute the separation for the given hkl plane.
 
-        Args:
-            - hkl: three indices
+        Parameters
+        ----------
+        hkl : array_like
+            Three Miller indices [h,k,l] defining the crystallographic plane.
+
+        Returns
+        -------
+        tuple
+            Contains (hkl, d_spacing, separations) where:
+                - hkl : original Miller indices
+                - d_spacing : interplanar spacing 
+                - separations : list of unique slab separations
         """
         hkl_reduced, hkl_factor = reduced_hkl(hkl)
         d_spacing = get_dspacing(self.cell_reciprocal, hkl_reduced)

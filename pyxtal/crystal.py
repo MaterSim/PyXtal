@@ -15,7 +15,6 @@ from pyxtal.database.element import Element
 from pyxtal.lattice import Lattice
 from pyxtal.msg import Comp_CompatibilityError, VolumeError
 
-# PyXtal imports #avoid *
 from pyxtal.symmetry import Group, choose_wyckoff
 from pyxtal.tolerance import Tol_matrix
 from pyxtal.wyckoff_site import atom_site
@@ -144,11 +143,12 @@ class random_crystal:
 
     def set_sites(self, sites):
         """
-        initialize Wyckoff sites
-        Update 2023/09, track the wp index instead of letters to
-        avoid many inquiries
-        Args:
-            sites: list
+        Initialize Wyckoff sites.
+
+        Parameters
+        ----------
+        sites : list
+            List of Wyckoff sites for each species.
         """
         # Symmetry sites
         self.sites = {}
@@ -176,7 +176,7 @@ class random_crystal:
 
     def set_elemental_volumes(self):
         """
-        set up the radii for each specie
+        Set up the radii for each specie.
         """
         self.elemental_volumes = []
         for specie in self.species:
@@ -186,15 +186,16 @@ class random_crystal:
 
     def set_volume(self):
         """
-        Estimates the volume of a unit cell based on the number/types of ions.
-        Assumes each atom takes up a sphere with radius equal to its covalent
-        bond radius.
-        0.50 A -> 0.52 A^3
-        0.62 A -> 1.00 A^3
-        0.75 A -> 1.76 A^3
+        Estimate the volume of a unit cell based on the number and types of ions.
 
-        Returns:
-            a float value for the estimated volume
+        The volume is calculated assuming each atom occupies a sphere with radius
+        equal to its covalent bond radius. Example conversions:
+            - 0.50 Å radius → 0.52 Å³
+            - 0.62 Å radius → 1.00 Å³
+            - 0.75 Å radius → 1.76 Å³
+
+        Note:
+            Set the volume attribute used for crystal generation.
         """
         vmin_array = np.array([v[0] for v in self.elemental_volumes])
         vmax_array = np.array([v[1] for v in self.elemental_volumes])
@@ -210,8 +211,29 @@ class random_crystal:
 
     def set_lattice(self, lattice):
         """
-        Generate the initial lattice
+        Generate or set the crystal lattice.
+
+        Args:
+            lattice : Lattice object, optional
+                A pre-defined lattice object to use. If None, a new lattice will be generated
+                based on the crystal's symmetry group and dimensionality.
+
+        Raises
+        ------
+        RuntimeError
+            If a valid lattice cannot be generated after 10 attempts with increasing volume.
+
+
+        Note:
+            When generating a new lattice (lattice=None):
+                - For 2D crystals, unique axis is 'c' for groups 3-7, 'a' otherwise
+                - For 1D crystals, unique axis is 'a' for groups 3-7, 'c' otherwise
+                - For 3D crystals, unique axis is always 'c'
+            If lattice generation fails due to volume constraints, the volume is incrementally
+            increased by 10% for up to 10 attempts.
+            When using a provided lattice, the lattice's periodic boundary conditions (PBC) are adjusted to match the crystal's PBC
         """
+
         if lattice is not None:
             # Use the provided lattice
             self.lattice = lattice
@@ -289,7 +311,7 @@ class random_crystal:
 
     def _set_coords(self):
         """
-        generate coordinates for random crystal
+        Generate coordinates for random crystal.
         """
         wyks = []
         cell = self.lattice.matrix
@@ -308,7 +330,7 @@ class random_crystal:
 
     def _set_ion_wyckoffs(self, numIon, specie, cell, wyks):
         """
-        generates a set of wyckoff positions to accomodate a given number
+        Generate a set of wyckoff positions to accomodate a given number
         of ions
 
         Args:

@@ -231,11 +231,11 @@ class pyxtal_molecule:
     A molecule class to support the descriptin of molecules in a xtal
 
     Features:
-    0. Parse the input from different formats (SMILES, xyz, gjf, etc.).
-    1. Estimate molecular properties such as volume, tolerance, and radii.
-    2. Find and store symmetry information of the molecule.
-    3. Get the principal axis of the molecule.
-    4. Re-align the molecule to center it at (0, 0, 0).
+        - Parse the input from different formats (SMILES, xyz, gjf, etc.).
+        - Estimate molecular properties such as volume, tolerance, and radii.
+        - Find and store symmetry information of the molecule.
+        - Get the principal axis of the molecule.
+        - Re-align the molecule to center it at (0, 0, 0).
 
     SMILES Format:
     If a SMILES format is used, the molecular center is defined following
@@ -422,18 +422,18 @@ class pyxtal_molecule:
 
     def get_box_coordinates(self, xyz, padding=0, resolution=1.0):
         """
-        create the points cloud to describe the molecular box
+        Create points cloud to describe the molecular box.
 
         Args:
-            center: molecular center position
-            orientation: orientation matrix
-            padding: padding of the box
-            resolution: float in angstrom
+            xyz (ndarray): Coordinates of the molecule
+            padding (float, optional): Padding distance around the box. Default is 0.
+            resolution (float): Grid resolution in angstroms. Default is 1.0.
 
-        Return:
-            cell: box axis
-            vertices: [N, 3] array, Cartesian coordinates to describe the box.
-            center: box center
+        Returns:
+            tuple:
+            - cell (ndarray): Box axis vectors
+            - vertices (ndarray): [N,3] array of box vertices in Cartesian coordinates 
+            - center (ndarray): Box center coordinates
         """
         cell = self.get_principle_axes(xyz).T
         center = self.get_center(xyz)  # , geometry=True)
@@ -549,17 +549,17 @@ class pyxtal_molecule:
         """
         Set atom labels for the given molecule for H-bond caculation.
         Needs to identify the following:
-        - (O)N-H
-        - acid-O
-        - amide-O
-        - alcohol-O
-        - N with NH2
-        - N with NH
+            - (O)N-H
+            - acid-O
+            - amide-O
+            - alcohol-O
+            - N with NH2
+            - N with NH
         """
 
         def search_H(pairs, ref, pos_H):
             """
-            quick routine to search for the id of H that is bonded to N/O:
+            Quick routine to search for the id of H that is bonded to N/O:
 
             Args:
                 pairs: list of atomic pairs
@@ -663,17 +663,24 @@ class pyxtal_molecule:
 
     def get_coefs_matrix(self, mol2=None, ignore_error=True):
         """
-        Get the Atom-Atom potential parameters
-        E = A*exp(-B*R) - C*R^(-6)
-        according to Gavezotti, Acc. Chem. Res., 27, 1994
-        in Kcal/mol and angstrom
-
+        Get the Atom-Atom potential parameters between two molecules.
+        
+        Calculates coefficients A, B, C for the potential energy equation:
+        
+            E = A*exp(-B*R) - C*R^(-6)
+            
+        Parameters are from Gavezotti, Acc. Chem. Res., 27, 1994.
+        
         Args:
-            mol2: the 2nd pyxtal_molecule object
-            tm: tolerance class
-
+            mol2 (pyxtal_molecule, optional): Second molecule to calculate interaction with.
+                If None, uses same molecule.
+            ignore_error (bool): Whether to ignore errors for unsupported atoms. 
+                Defaults to True.
+            
         Returns:
-            a 3D matrix for computing the intermolecular energy
+            ndarray: Array of shape (n_atoms1, n_atoms2, 3) containing A, B, C 
+            coefficients for each atom pair. These are used to compute the
+            intermolecular energy. Units are Kcal/mol and angstrom.
         """
         labels1 = self.labels if hasattr(self, "labels") else self.symbols
         numbers1 = self.mol.atomic_numbers
@@ -802,9 +809,9 @@ class pyxtal_molecule:
 
         return display_molecules([self.mol])
 
-    def show_box(self, center=np.zeros(3), orientation=None):
+    def show_box(self):
         """
-        show the molecule
+        Show the molecule.
         """
         from pyxtal.viz import display_molecules
 
@@ -812,7 +819,7 @@ class pyxtal_molecule:
 
     def rdkit_mol(self, N_confs=1):
         """
-        initialize the mol xyz and torsion list
+        Initialize the mol xyz and torsion list
         """
         from rdkit import Chem
 
@@ -825,7 +832,7 @@ class pyxtal_molecule:
 
     def rdkit_mol_init(self, smile, fix, torsions):
         """
-        initialize the mol xyz and torsion list
+        Initialize the mol xyz and torsion list
 
         Args:
             smile: smile string
@@ -985,7 +992,7 @@ class pyxtal_molecule:
 
     def get_principle_axes(self, xyz, rdmt=True):
         """
-        get the principle axis for a rotated xyz, sorted by the moments
+        Get the principle axis for a rotated xyz, sorted by the moments.
         """
         if self.smile is None or len(self.smile) == 1 or not rdmt:
             Inertia = get_inertia_tensor(xyz)
@@ -1004,7 +1011,17 @@ class pyxtal_molecule:
 
     def get_torsion_angles(self, xyz=None, torsionlist=None):
         """
-        get the torsion angles
+        Get the torsion angles for the molecule.
+
+        Args:
+            xyz (ndarray, optional): Coordinates to compute angles for. 
+                If None, uses current molecular coordinates.
+            torsionlist (list, optional): List of torsion definitions.
+                If None, uses molecule's torsionlist.
+
+        Returns:
+            list: List of torsion angles in degrees.
+            Returns empty list if no torsions defined.
         """
         if xyz is None:
             xyz = self.mol.cart_coords
@@ -1029,7 +1046,7 @@ class pyxtal_molecule:
 
     def set_torsion_angles(self, conf, angles, reflect=False, torsionlist=None):
         """
-        reset the torsion angles and update molecular xyz
+        Reset the torsion angles and update molecular xyz
         """
         from rdkit.Chem import rdMolTransforms as rdmt
 
@@ -1069,14 +1086,16 @@ class pyxtal_molecule:
 
     def get_rmsd2(self, xyz0, xyz1):
         """
-        Compute the rmsd with another 3D xyz coordinates
+        Compute the rmsd with another 3D xyz coordinates.
 
         Args:
-            xyz: 3D coordinates
+            xyz0 (ndarray): First set of atomic coordinates
+            xyz1 (ndarray): Second set of atomic coordinates
 
         Returns:
-            rmsd:
-            transition matrix:
+            tuple:
+            - rmsd (float): Root mean square deviation between the coordinates
+            - trans (ndarray): 4x4 transformation matrix that maps xyz0 onto xyz1
         """
 
         from rdkit.Chem import RemoveHs, rdMolAlign
@@ -1150,10 +1169,17 @@ class pyxtal_molecule:
 
     def get_orientation(self, xyz, rtol=0.15):
         """
-        For the given xyz, compute the orientation
+        Get the orientation for the given xyz coordinates.
 
         Args:
-            xyz: molecular xyz
+            xyz (ndarray): Molecular coordinates
+            rtol (float, optional): Relative tolerance. Defaults to 0.15.
+
+        Returns:
+            tuple:
+            - array: Euler angles in degrees [alpha, beta, gamma] 
+            - float: RMSD from reference orientation
+            - bool: Whether reflection was applied
         """
 
         xyz -= self.get_center(xyz)
@@ -1247,12 +1273,16 @@ class pyxtal_molecule:
     def get_symmetry(self, xyz=None, symmetrize=False, rtol=0.30):
         """
         Set the molecule's point symmetry.
-            - pga: pymatgen.symmetry.analyzer.PointGroupAnalyzer object
-            - pg: pyxtal.symmetry.Group object
-            - symops: a list of SymmOp objects
+        
+        Sets the following attributes:
+            - pga: Point group analyzer from pymatgen 
+            - pg: Point group from pyxtal
+            - symops: List of symmetry operations
 
         Args:
-            symmetrize: boolean, whether or not symmetrize the coordinates
+            xyz (ndarray, optional): Coordinates to analyze. Defaults to current coordinates.
+            symmetrize (bool, optional): Whether to symmetrize coordinates. Defaults to False. 
+            rtol (float, optional): Symmetry tolerance. Defaults to 0.30.
         """
         mol = deepcopy(self.mol) if xyz is None else Molecule(self.symbols, xyz)
 
@@ -1566,22 +1596,21 @@ class Box:
 class Orientation:
     """
     Stores orientations for molecules based on vector constraints.
+
     Can be stored to regenerate orientations consistent with a given constraint
     vector, without re-calling orientation_in_wyckoff_position. Allows for
-    generating orientations which differ only in their rotation about a given
-    axis.
+    generating orientations which differ only in their rotation about a given axis.
 
     Args:
-        matrix: a 3x3 rotation matrix describing the orientation (and/or
-            inversion) to store
-        degrees: the number of degrees of freedom...
-            0 - The orientation refers to a single rotation matrix
-            1 - The orientation can be rotated about a single axis
-            2 - The orientation can be any pure rotation matrix
-
-        axis:
-            an optional axis about which the orientation can rotate. Only used
-            if degrees is equal to 1
+        matrix (ndarray): A 3x3 rotation matrix describing the orientation 
+            (and/or inversion) to store
+        degrees (int): The number of degrees of freedom:
+            - 0: The orientation refers to a single rotation matrix
+            - 1: The orientation can be rotated about a single axis 
+            - 2: The orientation can be any pure rotation matrix
+        axis (ndarray, optional): Axis about which the orientation can rotate.
+            Only used if degrees is equal to 1
+        random_state (int or Generator, optional): Random number generator state
     """
 
     def __init__(self, matrix=None, degrees=2, axis=None, random_state=None):
@@ -1802,16 +1831,20 @@ def get_inertia_tensor(coords, weights=None):
     return Inertia
 
 
-def reoriented_molecule(mol):  # , nested=False):
+def reoriented_molecule(mol):
     """
-    Allign a molecule so that its principal axes is the identity matrix.
+    Align a molecule so that its principal axes are aligned with the coordinate axes.
+    
+    Reorients the molecule by computing its inertia tensor and rotating it such that
+    the principal axes align with the x, y, z coordinate axes.
 
     Args:
-        mol: a Molecule object
-
+        mol (Molecule): A pymatgen Molecule object to reorient.
+        
     Returns:
-        new_mol: a reoriented copy of the original molecule.
-        P: the 3x3 rotation matrix used to obtain it.
+        tuple:
+            - mol (Molecule): A reoriented copy of the input molecule
+            - P (ndarray): The 3x3 rotation matrix used to align the molecule
     """
     coords = mol.cart_coords
     numbers = mol.atomic_numbers

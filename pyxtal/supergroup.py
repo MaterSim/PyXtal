@@ -34,27 +34,28 @@ ALL_SHIFTS = np.array(
 
 def write_poscars(H_struc, G_struc, mappings, splitters, wyc_sets, N_images=3):
     """
-    Write the intermediate POSCARs betwee H and G structure. The key is to
-    continuously change G to subgroup represenations with zero displacements.
-    Finally, call `write_poscars_intermediate`.
+    Write the intermediate POSCARs between H and G structure.
+    
+    The key is to continuously change G to subgroup representations with zero 
+    displacements. Finally, call ``write_poscars_intermediate``.
 
     Args:
-        H_struc: PyXtal low symmetry structure
-        G_strucs: a list of PyXtal high symmetry structures
-        mapping: a list of atomic mappings
-        splitter: a list of splitter object
-        wyc_set: a list of wyc_set transformation
-        N_images: number of intermediate structures between H and G
+        H_struc: PyXtal low symmetry structure 
+        G_struc: PyXtal high symmetry structure
+        mappings: List of atomic mappings 
+        splitters: List of splitter objects
+        wyc_sets: List of wyc_set transformations
+        N_images: Number of intermediate structures between H and G. Default is 3.
 
-    Return:
-        a list of POSCARs
+    Returns:
+        List of POSCARs between H and G structure.
     """
     raise NotImplementedError
 
 
 def new_structure(struc, refs):
     """
-    check if struc is already in the reference solutions
+    Check if struc is already in the reference solutions.
     """
     g1 = struc.group.number
     pmg1 = struc.to_pymatgen()
@@ -69,19 +70,18 @@ def new_structure(struc, refs):
 
 def new_path(path, paths):
     """
-    check if it is a new path
+    Check if it is a new path.
     """
     return all(path[: len(ref)] != ref for ref in paths)
 
 
-def find_mapping_per_element(sites1, sites2, max_num=720):
+def find_mapping_per_element(sites1, sites2):
     """
-    search for all mappings for a given splitter
+    Search for all mappings for a given splitter.
 
     Args:
         sites1 (list): e.g., l layer ['4a', '8b', '4c']
         sites2 (list): e.g., 2 layers [['4a'], ['8b', '4c']]
-        max_num (int): maximum number of atomic mapping
 
     Returns:
         unique solutions: e.g. 3 layers: [[[0], [1,2]]]
@@ -116,14 +116,13 @@ def find_mapping_per_element(sites1, sites2, max_num=720):
     return unique_solutions
 
 
-def find_mapping(atom_sites, splitter, max_num=720):
+def find_mapping(atom_sites, splitter):
     """
-    search for all mappings for a given splitter
+    Search for all mappings for a given splitter.
 
     Args:
         atom_sites: list of wp object
         splitter: wp_splitter object
-        max_num (int): maximum number of atomic mapping
 
     Returns:
         unique solutions
@@ -175,18 +174,20 @@ def find_mapping(atom_sites, splitter, max_num=720):
 
 def search_G1(G, rot, tran, pos, wp1, op):
     """
-    search the best matched position in G1 basis
+    Search the best matched position in the G1 basis.
 
     Args:
-        G: the target space group object
-        rot: rotation, 3*3 matrix
-        tran: translation, 1*3 vector
-        pos: starting position
-        wp1: wyckoff symmetry
-        op: one symmetry operation
+        G: Target space group object
+        rot: Rotation matrix (3x3)
+        tran: Translation vector (1x3) 
+        pos: Starting position
+        wp1: Wyckoff position symmetry
+        op: Symmetry operation
 
     Returns:
-        the cloest position and the distance
+        tuple: (closest_position, distance)
+            - closest_position: The best matched position in G1 basis 
+            - distance: Distance between original and matched positions
     """
 
     shifts = ALL_SHIFTS if np.linalg.det(rot) < 1 else np.array([[0, 0, 0]])
@@ -214,18 +215,19 @@ def search_G1(G, rot, tran, pos, wp1, op):
 
 def search_G2(rot, tran, pos1, pos2, cell=None):
     """
-    search the best matched position in G2 basis
+    Search the best matched position in G2 basis.
 
     Args:
-        rot: 3*3 rotation matrix
-        tran: 1*3 translation vector
-        pos1: position in G1
-        pos2: reference position in G2
-        cell: 3*3 matrix
+        rot: Rotation matrix (3x3)
+        tran: Translation vector (1x3)
+        pos1: Position in G1 
+        pos2: Reference position in G2
+        cell: Unit cell matrix (3x3), optional
 
     Returns:
-        pos: matched position in G2
-        dist: relative distance
+        tuple: (pos, dist)
+            - pos: Matched position in G2 basis
+            - dist: Relative distance between matched positions
     """
 
     pos1 -= np.rint(pos1)
@@ -490,7 +492,7 @@ class supergroup:
 
     def get_initial_mask(self, splitter):
         """
-        Get the mask
+        Get the mask.
         """
         for wp2 in splitter.wp2_lists:
             for wp in wp2:
@@ -500,7 +502,7 @@ class supergroup:
 
     def get_coord_H(self, splitter, id, atom_sites_H, mapping):
         """
-        Extract the atomic coordinates
+        Extract the atomic coordinates.
         """
         # number of split sites for a given WP
         n = len(splitter.wp2_lists[id])
@@ -522,20 +524,21 @@ class supergroup:
 
     def symmetrize_dist(self, splitter, mapping, mask, translation=None, d_tol=1.2):
         """
-        For a given solution, search for the possbile supergroup structure
-        based on a given `translation` and `mask`.
+        For a given solution, search for the possbile supergroup structure based on a 
+        given ``translation`` and ``mask``.
 
         Args:
-            splitter: splitter object between G and H
-            mapping: list of sites in H, e.g., ['4a', '8b']
-            mask: if there is a need to freeze the direction
-            translation: an overall shift from H to G, None or 3 vector
-            d_tol: the tolerance in angstrom
+            splitter: Splitter object between G and H
+            mapping: List of sites in H, e.g., ['4a', '8b']
+            mask: If there is a need to freeze the direction
+            translation: An overall shift from H to G, None or 3 vector 
+            d_tol: The tolerance in angstrom
 
         Returns:
-            atomic displacement
-            cell translation vector
-            mask
+            tuple: (max_disp, translation, mask)
+                - max_disp: Maximum atomic displacement
+                - translation: Cell translation vector
+                - mask: Direction mask
         """
 
         max_disps = []
@@ -576,15 +579,16 @@ class supergroup:
         Symmetrize the structure (G) to supergroup symmetry (H)
 
         Args:
-            splitter: splitter object to specify the relation between G and H
-            mapping: atomic mapping between H and G
-            translation: an overall shift from H to G, None or 3 vector
+            splitter: Splitter object to specify the relation between G and H
+            mapping: Atomic mapping between H and G 
+            translation: An overall shift from H to G, None or 3 vector
 
         Returns:
-            coords_G1: coordinates in G
-            coords_G2: coordinates in G under the subgroup setting
-            coords_H1: coordinates in H
-            elements: list of elements
+            tuple: (coords_G1, coords_G2, coords_H, elements, ordered_mapping)
+                - coords_G1: Coordinates in G
+                - coords_G2: Coordinates in G under the subgroup setting 
+                - coords_H1: Coordinates in H
+                - elements: List of elements
         """
         coords_G1 = []  # position in G
         coords_G2 = []  # position in G on the subgroup bais
@@ -636,10 +640,22 @@ class supergroup:
 
         Args:
             splitter: splitter object
-            id: index of splitter
+            id: index of splitter 
             base: atomic position of site in H
             translation: 1*3 translation vector
             run_type: return distance or coordinates
+
+        Returns:
+            Two types of results:
+            run_type=1: (dist, translation, mask)
+                - dist: minimum distance 
+                - translation: optimal translation vector
+                - mask: direction mask
+
+            run_type=0: (coord_G1, [coord_G2], [coord_H]) 
+                - coord_G1: coordinate in G1
+                - coord_G2: coordinate in G2  
+                - coord_H: coordinate in H
         """
         # Some necessary items
         mask = []
@@ -688,14 +704,23 @@ class supergroup:
 
     def symmetrize_site_double_k(self, splitter, id, coord_H, translation, run_type=1):
         """
-        Symmetrize two WPs (wp_h1, wp_h2) to another wp_G with higher symmetry
+        Symmetrize two WPs (wp_h1, wp_h2) to another wp_G with higher symmetry.
 
         Args:
-            splitter: splitter object
-            id: index of splitter
-            coord_H: 2*3 coordinates
-            translation: 1*3 transaltion vector
-            run_type: return distance or coordinates
+            splitter (Splitter): Splitter object between G and H groups
+            id (int): Index of splitter 
+            coord_H (array): Array of shape (2,3) containing coordinates
+            translation (array): Translation vector of shape (3,)
+            run_type (int): Whether to return distance (1) or coordinates (0)
+
+        Returns:
+            run_type=1:
+            float: Maximum atomic displacement
+            run_type=0: 
+            tuple: (coord_G1, coord_G2, coord_H)
+                - coord_G1: coordinate in G1 basis
+                - coord_G2: coordinates in G2 basis
+                - coord_H: original coordinates in H basis
         """
         # For k-type splitting, restore the translation symmetry:
         # e.g. (0.5, 0.5, 0.5), (0.5, 0, 0), .etc
@@ -741,14 +766,23 @@ class supergroup:
 
     def symmetrize_site_double_t(self, splitter, id, coord_H, translation, run_type=1):
         """
-        Symmetrize two WPs (wp_h1, wp_h2) to another wp_G with higher symmetry
+        Symmetrize two WPs (wp_h1, wp_h2) to another wp_G with higher symmetry.
 
         Args:
-            splitter: splitter object
-            id: the id in the splitter
-            coord_H: coordinates to work on
-            translation: 1*3 transaltion vector
-            run_type: return distance or coordinates
+            splitter (Splitter): Splitter object to specify relation between groups
+            id (int): Index in the splitter
+            coord_H (array): Atomic coordinates 
+            translation (array): 1x3 translation vector
+            run_type (int): Whether to return distances (1) or coordinates (0)
+
+        Returns:
+            run_type=1:
+            float: Maximum atomic displacement
+            run_type=0:
+            tuple: (coord_G1, coord_G2, coord_H)
+                - coord_G1: Coordinates in G1 basis
+                - coord_G2: Coordinates in G2 basis 
+                - coord_H: Original coordinates in H basis
         """
 
         if translation is None:
@@ -796,14 +830,23 @@ class supergroup:
 
     def symmetrize_site_multi(self, splitter, id, coord_H, translation, run_type=1):
         """
-        Symmetrize multiple WPs to another with higher symmetry
+        Symmetrize multiple WPs to another with higher symmetry.
 
         Args:
-            splitter: splitter object
-            id: the id in the splitter
-            coord_H: coordinates to work on
-            translation: 1*3 transaltion vector
-            run_type: return distance or coordinates
+            splitter (Splitter): Splitter object between G and H groups
+            id (int): Index in the splitter 
+            coord_H (array): Array of atomic coordinates
+            translation (array): Translation vector of shape (3,)
+            run_type (int): Whether to return distances (1) or coordinates (0)
+
+        Returns:
+            run_type=1:
+            float: Maximum atomic displacement
+            run_type=0:
+            tuple: (coord_G1, coord_G2, coord_H)
+            - coord_G1: Coordinate in G1 basis  
+            - coord_G2: Coordinates in G2 basis
+            - coord_H: Original coordinates in H basis
         """
 
         if translation is None:
@@ -1057,14 +1100,26 @@ class supergroup:
 
 class supergroups:
     """
-    Class to search for the feasible transition to a given super group
+    Class to search for the feasible transition to a given super group.
 
     Args:
-        struc: pyxtal structure
-        G (int): the desired super group number
-        path: the path to connect G and H, e.g, [62, 59, 74]
-        d_tol (float): tolerance for largest atomic displacement
-        show (bool): whether or not show the detailed process
+        struc: PyXtal object
+            Input structure with subgroup symmetry (H)
+        G: int, optional 
+            Target supergroup space group number
+        path: list, optional
+            List of space group numbers defining path from H to G (e.g. [62, 59, 74]) 
+        d_tol: float, default=1.0
+            Maximum allowed atomic displacement during symmetry change
+        max_per_G: int, default=100  
+            Maximum number of symmetry solutions to consider per group
+        max_layer: int, default=5
+            Maximum number of intermediate groups in path
+        show: bool, default=False
+            Whether to show detailed progress
+
+    Note:
+        Either G or path must be provided, but not both None.
     """
 
     def __init__(
@@ -1179,15 +1234,17 @@ class supergroups:
 
     def struc_along_path(self, path):
         """
-        Search for the super group structure along a given path
+        Search for the super group structure along a given path.
 
         Args:
-            path: [59, 71, 139]
+            path (list): List of space group numbers, e.g. [59, 71, 139]
 
         Returns:
-            strucs: list of structures along the path
-            working_path: list of space group path
-            valid: True or False
+            tuple: (strucs, valid_sols, working_path, valid)
+            - strucs: List of structures along the path
+            - valid_sols: List of valid solutions for each transition 
+            - working_path: List of space group numbers along the path
+            - valid: True if successfully reached target group, False otherwise
         """
         strucs = []
         valid_sols = []
@@ -1234,7 +1291,6 @@ class supergroups:
 
 if __name__ == "__main__":
     from time import time
-
     from pyxtal import pyxtal
 
     data = {

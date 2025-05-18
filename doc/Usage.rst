@@ -1141,8 +1141,8 @@ To access the pyxtal structure
 	    H3C4O4       @ [ 0.5328  0.0993  0.0601]  WP [4a] Site [1] Euler [   0.0    0.0    0.0]
 
 
-Space Group and Site Symmetry table
------------------------------------
+Space Group and Site Symmetry
+-----------------------------
 
 PyXtal provides a `site_symmetry <pyxtal.symmetry.html#pyxtal.symmetry.site_symmetry>`_ 
 class to handle the conversion of site symmetry symbols and operations.
