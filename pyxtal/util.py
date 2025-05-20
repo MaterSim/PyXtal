@@ -145,9 +145,7 @@ def extract_ase_db(db_file, id):
     """
 
     import os
-
     from ase.db import connect
-
     from pyxtal import pyxtal
 
     if not os.path.exists("output"):

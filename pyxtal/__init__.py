@@ -296,7 +296,7 @@ class pyxtal:
         It calls `block_crystal` or `random_crystal` internally.
 
         Args:
-            dim (int): dimension (0, 1, 2, 3) 
+            dim (int): dimension (0, 1, 2, 3)
             group (int): the group number (1-56, 1-75, 1-80, 1-230)
             species (list): atomic symbols for each ion type, e.g., `["Ti", "O"]`.
             numIons (list): the number of atoms within the unit cell, e.g., `[4, 8]`.
@@ -311,7 +311,7 @@ class pyxtal:
             torsions (list, optional): torsion angles for molecular crystals.
             force_pass (bool, True): whether force accept invalid structure.
             block (optional): molecular/atomic block for crystal building
-            num_block (optional): number of blocks   
+            num_block (optional): number of blocks
             seed (int, optional): random seed
             random_state (optional): numpy random state
             tm (optional): Tol_matrix define the distances
@@ -421,12 +421,12 @@ class pyxtal:
 
         Args:
             seed: cif/poscar file or a pymatgen Structure object
-            molecules: a list of reference molecule (xyz file or Pyxtal molecule) 
+            molecules: a list of reference molecule (xyz file or Pyxtal molecule)
             tol (float): scale factor for covalent bond distance
             ignore_HH (bool): whether ignore short H-H distance in molecules
             add_H (bool): whether add H atoms
             backend (str): structure parser, default is pymatgen
-            style (str): ``pyxtal`` or ``spglib``  
+            style (str): ``pyxtal`` or ``spglib``
             standard (bool): whether or not optimize lattice
 
         """
@@ -861,7 +861,7 @@ class pyxtal:
 
         Args:
             eps (float): perturbation term on atomic coordinates
-            H (int): target space group number 
+            H (int): target space group number
             perms (dict): atomic permutations dictionary, e.g. {"Si": "C"}
             group_type (str): 't' or 'k' for translationengleiche or klassengleiche transitions
             max_cell (float): maximum cell enlargement
@@ -869,10 +869,10 @@ class pyxtal:
             mut_lat (bool): whether to mutate lattice parameters
             ignore_special (bool): whether to ignore sites with special positions
             verbose (bool): whether to print details
-            
+
         Returns:
             pyxtal: A new pyxtal structure with lower symmetry
-            
+
         Example:
             >>> xtal = pyxtal()
             >>> xtal.from_random(3, 230, ['Si'], [8])
@@ -1196,9 +1196,9 @@ class pyxtal:
         Extract the coordinates and species information.
 
         Args:
-            absolute (bool): Whether to return cartesian coordinates (True) or 
+            absolute (bool): Whether to return cartesian coordinates (True) or
             fractional coordinates (False)
-            unitcell (bool): Whether to include full unit cell coordinates or 
+            unitcell (bool): Whether to include full unit cell coordinates or
             just asymmetric unit coordinates
 
         Returns:
@@ -1303,7 +1303,7 @@ class pyxtal:
 
         Returns:
             ase.Atoms: ASE Atoms object representing the structure
-            
+
         Raises:
             RuntimeError: If structure is not valid
         """
@@ -1390,7 +1390,7 @@ class pyxtal:
 
         Returns:
             pyxtal: New PyXtal object with molecules represented as single atoms at their centers.
-            
+
         Raises:
             RuntimeError: If structure is not a valid molecular crystal.
         """
@@ -1443,15 +1443,15 @@ class pyxtal:
     def optimize_lattice(self, iterations=5, force=False, standard=False):
         """
         Optimize the lattice if the cell has bad inclination angles.
-        
+
         Args:
             iterations (int): Maximum number of iterations for optimization
             force (bool): Whether to continue optimization even if converged
             standard (bool): Whether to enforce standard crystallographic setting
 
         Note:
-            For monoclinic systems, first optimizes the angles to bring them within 
-            acceptable ranges. When standard=True, tries to find a transformation to 
+            For monoclinic systems, first optimizes the angles to bring them within
+            acceptable ranges. When standard=True, tries to find a transformation to
             put the structure into the standard crystallographic setting.
         """
         for _i in range(iterations):
@@ -1856,7 +1856,7 @@ class pyxtal:
         Args:
             wyc_sets (dict): Dictionary containing:
             - 'Coset Representative': Symmetry operation strings
-            - 'Transformed WP': Transformed Wyckoff positions 
+            - 'Transformed WP': Transformed Wyckoff positions
             index (int): Index of target Wyckoff set to transform to
             ref_lat (Lattice, optional): Reference lattice for comparison
             d_tol (float, optional): Tolerance for lattice mismatch. Defaults to 2.0
@@ -1867,7 +1867,7 @@ class pyxtal:
 
         Note:
             Transforms the structure according to the specified Wyckoff set transformation.
-            If a reference lattice is provided, checks that the transformed lattice 
+            If a reference lattice is provided, checks that the transformed lattice
             matches within the given tolerances.
         """
         new_struc = self.copy()
@@ -2652,7 +2652,7 @@ class pyxtal:
 
         Args:
             disps (numpy.ndarray): Nx3 array of atomic displacements in fractional coordinates
-            lattice (numpy.ndarray, optional): 3x3 cell matrix. Defaults to self.lattice.matrix 
+            lattice (numpy.ndarray, optional): 3x3 cell matrix. Defaults to self.lattice.matrix
             translation (numpy.ndarray, optional): Overall translation vector. Defaults to None
             N_images (int): Number of intermediate images to generate
             both (bool): Whether to interpolate on both sides of the path. Defaults to False
@@ -2696,7 +2696,7 @@ class pyxtal:
         atom-atom potentials from:
 
         Reference:
-            A. Gavezzotti and G. Filippini, Journal of Physical Chemistry, 
+            A. Gavezzotti and G. Filippini, Journal of Physical Chemistry,
             vol. 98, no. 18, pp. 4831-4837 (1994)
 
         Args:
@@ -2719,14 +2719,14 @@ class pyxtal:
 
         Args:
             site_id (int): The index of reference molecular site to analyze
-            factor (float): Scaling factor for van der Waals tolerance 
+            factor (float): Scaling factor for van der Waals tolerance
             max_d (float): Maximum distance cutoff for finding neighbors
             ignore_E (bool): Whether to ignore energy calculations
 
         Returns:
             tuple: Five lists containing neighbor information:
             min_ds (list): Shortest distances to neighboring molecules
-            neighs (list): Cartesian coordinates of neighboring molecules 
+            neighs (list): Cartesian coordinates of neighboring molecules
             comps (list): Molecular types of neighbors
             Ps (list): Binary flags indicating if neighbor is same site (0) or different site (1)
             engs (list): Interaction energies with neighboring molecules
@@ -2767,7 +2767,7 @@ class pyxtal:
         Get the spherical image representation of the crystal structure.
 
         Args:
-            **kwargs: 
+            **kwargs:
             model (str): 'molecule' or 'contacts'
             Other arguments passed to spherical_image()
 
@@ -2781,7 +2781,7 @@ class pyxtal:
     def get_neighboring_dists(self, site_id=0, factor=1.5, max_d=5.0):
         """
         Get the neighboring molecules and contact pairs for a given Wyckoff position.
-        
+
         Args:
             site_id (int): Index of reference molecular site. Defaults to 0
             factor (float): Scaling factor for van der Waals tolerance. Defaults to 1.5
@@ -2789,7 +2789,7 @@ class pyxtal:
 
         Returns:
             tuple:
-            - engs (list): Contact energies from atom-atom potentials 
+            - engs (list): Contact energies from atom-atom potentials
             - pairs (list): List of short contact atom pairs
             - dists (list): Corresponding distances for each contact pair
         """
@@ -2896,11 +2896,11 @@ class pyxtal:
         If the current parent crystal doesn't allow splitting, look for the subgroup.
 
         Args:
-            dicts (dict): Substitution dictionary, e.g. {"F": "Cl"} 
+            dicts (dict): Substitution dictionary, e.g. {"F": "Cl"}
             ratio (list): Composition ratio list, e.g. [1, 1]
             group_type (str): Type of subgroup:
                 - 't': translationengleiche
-                - 'k': klassengleiche 
+                - 'k': klassengleiche
                 - 't+k': both
             max_cell (float): Maximum cell reconstruction allowed
             min_cell (float): Minimum cell reconstruction allowed
@@ -3529,11 +3529,11 @@ class pyxtal:
     def update_from_1d_rep(self, x):
         """
         Update the crystal from a 1D representation.
-        
-        The 1D representation combines lattice parameters and atomic coordinates into a 
+
+        The 1D representation combines lattice parameters and atomic coordinates into a
         single array. For example:
 
-        >>> Group I 41/a m d:2 (141) 
+        >>> Group I 41/a m d:2 (141)
         Lattice: 2.5019, 2.5019, 8.7534, 90.0000, 90.0000, 90.0000
         Site: C @ [0.0000 0.2500 0.4614], WP [8e], Site [2mm.]
         Would be represented as: [2.5019, 8.7514, 0.4614]
@@ -3569,8 +3569,8 @@ class pyxtal:
 
         Example:
             >>> Group: I 41/a m d:2 (141)
-            2.5019,   2.5019,   8.7534,  90.0000,  90.0000,  90.0000, tetragonal  
-            Wyckoff sites: 
+            2.5019,   2.5019,   8.7534,  90.0000,  90.0000,  90.0000, tetragonal
+            Wyckoff sites:
             C @ [ 0.0000  0.2500  0.4614], WP [8e] Site [2mm.]
             The above rep would be: [2.5019, 8.7514, 0.4614]
         """
@@ -3632,7 +3632,7 @@ class pyxtal:
 
         Example:
             >>> from pyxtal.symmetry import Wyckoff_position
-            >>> xtal = pyxtal() 
+            >>> xtal = pyxtal()
             >>> x = [2.5, 8.75] # Lattice params and coords
             >>> wp = Wyckoff_position.from_group_and_letter(141, 'a')
             >>> sites = [("C", wp), ("C", wp)] # [C, 4a], [C, 4a]
@@ -3759,7 +3759,7 @@ class pyxtal:
         Returns:
             str: Formatted string containing crystal information including:
                 - Number of atoms
-                - Degrees of freedom 
+                - Degrees of freedom
                 - Space group number and symbol
                 - Density
                 - Additional properties from dicts
@@ -3950,10 +3950,10 @@ class pyxtal:
         Args:
             rep (array): 1D array containing the tabular representation
             max_abc (float): Maximum lattice vector length for normalization
-            max_angle (float): Maximum angle in degrees for normalization 
+            max_angle (float): Maximum angle in degrees for normalization
             normalize (bool): Whether to normalize values between 0-1
             tol (float): Tolerance for Wyckoff position assignment
-            discrete (bool): Whether to discretize atomic coordinates 
+            discrete (bool): Whether to discretize atomic coordinates
             discrete_cell (bool): Whether to discretize cell parameters
             N_grids (int): Number of grid points for discretization
             verbose (bool): Whether to print detailed error messages
@@ -4065,7 +4065,7 @@ class pyxtal:
         Based on https://en.wikipedia.org/wiki/Pearson_symbol, which is a notation that describes crystal structures using:
             - First letter: crystal system (a, m, o, t, h, c)
             - Second letter: centering type (P, I, F, etc.)
-            - Number: number of atoms per unit cell      
+            - Number: number of atoms per unit cell
         """
         if self.group.number <= 2:
             l = "a"
@@ -4107,14 +4107,14 @@ class pyxtal:
         Load a template structure based on a prototype name for quick testing.
 
         Args:
-            prototype (str): Name of the crystal prototypes to load, such as 'diamond', 'graphite', etc. 
-            
-                - 'diamond' 
+            prototype (str): Name of the crystal prototypes to load, such as 'diamond', 'graphite', etc.
+
+                - 'diamond'
                 - 'graphite'
                 - 'a-cristobalite'
                 - 'b-cristobalite'
                 - 'a-quartz'
-                - 'b-quartz' 
+                - 'b-quartz'
                 - 'rocksalt'
                 - 'B1'
                 - 'B2'
@@ -4123,10 +4123,10 @@ class pyxtal:
             >>> xtal = pyxtal()
             >>> xtal.from_prototype('diamond')  # Creates diamond structure
             >>> xtal.from_prototype('graphite')  # Creates graphite structure
-            
+
         Note:
             A convenient shortcut to generate common crystal structures by directly
-            specifying their space groups, Wyckoff positions, lattice parameters 
+            specifying their space groups, Wyckoff positions, lattice parameters
             and atomic species. The structures are created with standard settings.
         """
 
@@ -4234,14 +4234,14 @@ class pyxtal:
         Args:
             xtal1 (pyxtal): Second crystal structure to compare against
             ltol (float): Relative length tolerance for matching unit cells
-            stol (float): Site tolerance for matching atomic positions 
+            stol (float): Site tolerance for matching atomic positions
             angle_tol (float): Tolerance for matching cell angles in degrees
             scale (bool): Whether to scale the structures before comparing
 
         Returns:
             float: Root mean square (RMS) distance between the structures
 
-        Note: 
+        Note:
             Uses pymatgen's structure matcher functionality internally
         """
         from pyxtal.util import get_pmg_dist

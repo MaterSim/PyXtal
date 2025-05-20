@@ -3,7 +3,7 @@ Symmetry Representation
 
 Space Group Symmetry
 --------------------
-In crystallography, the short Hermann-Mauguin notation is used to represent the symmetry of a crystal structure. Using this notation, the symmetry of a crystal structure can be described by a space group symbol, which is a combination of letters and numbers that represent the symmetry operations that can be applied to the structure. A full Hermann-Mauguin notation can be broken down into four parts:
+In crystallography, the Hermann-Mauguin notation is used to represent the symmetry of a crystal structure. Using this notation, the symmetry of a crystal structure can be described by a space group symbol, which is a combination of letters and numbers that represent the symmetry operations that can be applied to the structure. A full Hermann-Mauguin notation can be broken down into four parts:
 
 1. A single letter (``P, A, B, C, I, R``) indicating the type of lattice
 2. A symbol denoting the symmetry for the primary direction.

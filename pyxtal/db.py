@@ -686,7 +686,7 @@ class database_topology:
         self.logging.info(f"Rank {self.rank} memory: {mem:.1f} MB")
         print(f"Rank {self.rank} memory: {mem:.1f} MB")
 
-    def get_pyxtal(self, id, use_relaxed=None):
+    def get_pyxtal(self, id, use_relaxed=None, tol=1e-4):
         """
         Get pyxtal based on row_id, if use_relaxed, get pyxtal from ff_relaxed
 
@@ -697,8 +697,10 @@ class database_topology:
         from pymatgen.core import Structure
         from pyxtal import pyxtal
         from pyxtal.util import ase2pymatgen
+        from pyxtal.symmetry import Group
 
         row = self.db.get(id)  # ; print(id, row.id)
+        print(row.space_group_number, row.topology, row.pearson_symbol, row.wps, row.mace_energy)
         if use_relaxed is not None:
             if hasattr(row, use_relaxed):
                 xtal_str = getattr(row, use_relaxed)
@@ -708,19 +710,26 @@ class database_topology:
                 atom = self.db.get_atoms(id=id)
                 pmg = ase2pymatgen(atom)
         else:
+            #hn = Group(row.space_group_number).hall_number
+            #xtal1 = pyxtal()
+            #atom.write('1.cif', format='cif')#, direct=True, vasp5=True)
+            #xtal1.from_seed('1.cif', tol=tol)#, hn=hn)
             atom = self.db.get_atoms(id=id)
+            xtal1.from_seed(atom, tol=tol)#, hn=hn)
             pmg = ase2pymatgen(atom)
 
         xtal = pyxtal()
-        try:
-            xtal.from_seed(pmg)
+        #try:
+        if True:
+            xtal.from_seed(pmg, tol=tol)
+            #if xtal.group.number != row.space_group_number: print(xtal); import sys; sys.exit()
             if xtal is not None and xtal.valid:
                 for key in self.keys:
                     if hasattr(row, key):
                         setattr(xtal, key, getattr(row, key))
             return xtal
-        except:
-            print("Cannot load the structure")
+        #except:
+        #    print("Cannot load the structure")
 
     def get_all_xtals(self, include_energy=False):
         """
@@ -754,23 +763,30 @@ class database_topology:
         atoms = xtal.to_ase(resort=False)
         self.db.write(atoms, key_value_pairs=kvp)
 
-    def add_strucs_from_db(self, db_file, check=False, id_min=0, tol=0.1, freq=50, use_relaxed=None):
+    def add_strucs_from_db(self, db_file, check=False, id_min=0, id_max=None, tol=1e-3, freq=50, use_relaxed=None):
         """
-        Add new structures from the given db_file
+        Add new structures from another database file.
 
         Args:
-            db_file (str): database path
-            tol (float): tolerance in angstrom for symmetry detection
-            freq (int): print frequency
-            use_relaxed (str): 'ff_relaxed' or 'vasp_relaxed'
+            db_file (str): Path to the source database file
+            check (bool): Whether to check if structure already exists before adding
+            id_min (int): Starting ID to import from source database. Default is 0
+            id_max (int): Ending ID to import from source database. Default is None
+            tol (float): Tolerance in Angstroms for symmetry detection. Default is 1e-3
+            freq (int): Print progress message every N structures. Default is 50
+            use_relaxed (str): Type of relaxed structure to use - 'ff_relaxed' or 'vasp_relaxed'
+                     Default is None to use unrelaxed structures
         """
+        cifname = 'my_add.cif'
         print(f"\nAdding new strucs from {db_file:s}")
 
         count = 0
         with connect(db_file, serial=True) as db:
+            if id_max is None:
+                id_max = db.count
             for row in db.select():
                 #xtal = db.get_pyxtal(row.id, use_relaxed)
-                if row.id >= id_min:
+                if id_min <= row.id <= id_max:
                     xtal = pyxtal()
                     if use_relaxed is None:
                         atoms = row.toatoms()
@@ -778,35 +794,36 @@ class database_topology:
                             xtal.from_seed(atoms, tol=tol)
                         except:
                             xtal = None
+                            print("Faild to load xtal", row.mace_energy, row.pearson_symbol, row.wps)
                     else:
-                        with open('my.cif', 'w') as f: f.write(getattr(row, use_relaxed))
+                        with open(cifname, 'w') as f: f.write(getattr(row, use_relaxed))
                         try:
-                            xtal.from_seed('my.cif', tol=tol)
+                            xtal.from_seed(cifname, tol=tol)
                         except:
                             xtal = None
-                    #try:
-                    #    xtal.from_seed(atoms, tol=tol)
-                    #except:
-                    #    xtal = None
+                            print("Faild to load xtal", row.mace_energy, row.pearson_symbol, row.wps)
+
                     if xtal is not None and xtal.valid:
+                        #print(xtal)
+                        mace_eng = None if not hasattr(row, 'mace_energy') else row.mace_energy
                         atoms = xtal.to_ase()
-                        add = self.check_new_structure(xtal) if check else True
+                        add = self.check_new_structure(xtal, mace_eng) if check else True
                         if add:
                             kvp = {}
                             for key in self.keys:
-                                if hasattr(row, key):
-                                    kvp[key] = getattr(row, key)
-                                elif key == "space_group_number":
+                                if key == "space_group_number":
                                     kvp[key] = xtal.group.number
                                 elif key == "density":
                                     kvp[key] = xtal.get_density()
                                 elif key == "dof":
                                     kvp[key] = xtal.get_dof()
                                 elif key == "wps":
-                                    kvp[key] == str(s.wp.get_label()
-                                                    for s in xtal.atom_sites)
+                                    kvp[key] = str([s.wp.get_label()
+                                                   for s in xtal.atom_sites])
                                 elif key == "pearson_symbol":
                                     kvp[key] = xtal.get_Pearson_Symbol()
+                                elif hasattr(row, key):
+                                    kvp[key] = getattr(row, key)
 
                             self.db.write(atoms, key_value_pairs=kvp)
                             count += 1
@@ -814,22 +831,40 @@ class database_topology:
                     if count % freq == 0:
                         print(f"Adding {count:4d} strucs from {db_file:s}")
 
-    def check_new_structure(self, xtal, same_group=True):
+    def check_new_structure(self, xtal, eng=None, same_group=False, d_tol=8e-2, e_tol=1e-2):
         """
-        Check if the input xtal already exists in the db
+        Check if the input crystal structure already exists in the database.
 
         Args:
-            xtal: pyxtal object
-            same_group (bool): keep the same group or not
-        """
+            xtal: PyXtal object representing the crystal structure to check
+            eng (float, optional): Energy of the structure to compare
+            same_group (bool): Whether to only compare structures with same space group
+            d_tol (float): Tolerance for density comparison
+            e_tol (float): Tolerance for energy comparison
 
+        Returns:
+            bool: True if structure is new/unique, False if it matches an existing structure
+
+        Note:
+            Compares structures based on:
+            - Space group number (if same_group=True)
+            - Density (within d_tol)
+            - Energy (within e_tol if provided)
+            - Structure similarity via pymatgen.analysis.structure_matcher
+        """
         s_pmg = xtal.to_pymatgen()
         for row in self.db.select():
             if same_group and row.space_group_number != xtal.group.number:
                 continue
+            if abs(row.density - xtal.get_density()) > d_tol:
+                continue
+            if eng is not None and abs(eng - row.mace_energy) > e_tol:
+                continue
             ref = self.db.get_atoms(id=row.id)
             ref_pmg = ase2pymatgen(ref)
             if self.matcher.fit(s_pmg, ref_pmg, symmetric=True):
+                print("skip the duplicate", xtal)
+                print(row.id, row.space_group_number, row.wps, row.mace_energy, row.density)
                 return False
         return True
 
@@ -842,9 +877,9 @@ class database_topology:
                        dimension if specified. Defaults to None.
 
         The function removes structures that have identical:
-        - Number of atoms 
+        - Number of atoms
         - Space group
-        - Topology 
+        - Topology
         - Wyckoff positions (wps)
 
         """
@@ -890,13 +925,13 @@ class database_topology:
             print(len(to_delete), "structures were deleted", to_delete)
         self.db.delete(to_delete)
 
-    def clean_structures(self, ids=(None, None), dtol=2e-3, etol=1e-3, criteria=None):
+    def clean_structures(self, ids=(None, None), dtol=2e-3, etol=1e-3, criteria=None, eng_key='mace_energy'):
         """
         Clean up the db by removing the duplicate structures
         Here we check the follow criteria
-        - same number of atoms
-        - same density
-        - same energy
+            - same number of atoms
+            - same density
+            - same energy
 
         Args:
             dtol (float): tolerance of density
@@ -923,13 +958,13 @@ class database_topology:
 
                 if unique and (
                     "MAX_energy" in criteria and hasattr(
-                        row, "ff_energy") and row.ff_energy > criteria["MAX_energy"]
+                        row, eng_key) and getattr(row, key) > criteria["MAX_energy"]
                 ):
                     unique = False
                     print(
                         "Unsatisfied energy",
                         row.id,
-                        row.ff_energy,
+                        getattr(row, eng_key),
                         row.space_group_number,
                         row.wps,
                     )
@@ -975,10 +1010,10 @@ class database_topology:
 
             if unique:
                 for prop in unique_rows:
-                    (natoms, spg, wps, den, ff_energy) = prop
+                    (natoms, spg, wps, den, energy) = prop
                     if natoms == row.natoms and spg == row.space_group_number and wps == row.wps:
-                        if hasattr(row, "ff_energy") and ff_energy is not None:
-                            if abs(row.ff_energy - ff_energy) < etol:
+                        if hasattr(row, eng_key) and energy is not None:
+                            if abs(getattr(row, eng_key) - energy) < etol:
                                 unique = False
                                 break
                         elif abs(den - row.density) < dtol:
@@ -986,7 +1021,7 @@ class database_topology:
                             break
 
             if unique:
-                if hasattr(row, "ff_energy"):
+                if hasattr(row, eng_key):
                     unique_rows.append(
                         (
                             row.natoms,
@@ -1018,13 +1053,13 @@ class database_topology:
             dtol (float, optional): Density tolerance for comparing structures. Defaults to 5e-2.
             criteria (dict, optional): Dictionary of filtering criteria. Defaults to None.
                 Supported criteria keys:
-                - 'CN': Dict of required coordination numbers per element
-                - 'cutoff': Float, cutoff distance for connectivity
-                - 'MAX_energy': Float, maximum allowed energy
-                - 'MAX_similarity': Float, maximum allowed similarity value
-                - 'BAD_topology': List of forbidden topology types
-                - 'BAD_dimension': List of forbidden dimensionality values
-                
+                    - 'CN': Dict of required coordination numbers per element
+                    - 'cutoff': Float, cutoff distance for connectivity
+                    - 'MAX_energy': Float, maximum allowed energy
+                    - 'MAX_similarity': Float, maximum allowed similarity value
+                    - 'BAD_topology': List of forbidden topology types
+                    - 'BAD_dimension': List of forbidden dimensionality values
+
                 Example criteria:
                 {
                     'CN': {'C': 3},
@@ -1144,14 +1179,17 @@ class database_topology:
     def select_xtals(self, ids, N_atoms=(None, None), overwrite=False, attribute=None, use_relaxed=None):
         """
         Extract xtals based on attribute name.
-        Mostly called by update_row_energy
 
         Args:
-            ids:
-            N_atoms:
-            overwrite:
-            atttribute:
-            use_relaxed (str): 'ff_relaxed' or 'vasp_relaxed'
+            ids (tuple): Minimum and maximum row IDs to extract, e.g. (1, 10)
+            N_atoms (tuple): Minimum and maximum number of atoms to extract, e.g. (2, 100)
+            overwrite (bool): Whether to overwrite existing entries
+            attribute (str): Attribute name to check for extraction
+            use_relaxed (str): Type of relaxed structure to use ('ff_relaxed' or 'vasp_relaxed')
+
+        Returns:
+            tuple: (ids, xtals) where ids is a list of row IDs and xtals is a list of
+              corresponding pyxtal objects
         """
         (min_id, max_id) = ids
         if min_id is None: min_id = 1
@@ -1164,7 +1202,7 @@ class database_topology:
         ids, xtals = [], []
         for row in self.db.select():
             if overwrite or attribute is None or not hasattr(row, attribute):
-                if min_id <= row.id <= max_id and min_atoms < natoms <= max_atoms:
+                if min_id <= row.id <= max_id and min_atoms < row.natoms <= max_atoms:
                     xtal = self.get_pyxtal(row.id, use_relaxed)
                     ids.append(row.id)
                     xtals.append(xtal)
@@ -1174,14 +1212,17 @@ class database_topology:
 
     def select_xtal(self, ids, N_atoms=(None, None), overwrite=False, attribute=None, use_relaxed=None):
         """
-        Lazy extraction of select xtals
+        Lazy extraction of selected xtals from the database.
 
         Args:
-            ids:
-            N_atoms:
-            overwrite:
-            atttribute:
-            use_relaxed (str): 'ff_relaxed' or 'vasp_relaxed'
+            ids (tuple): Minimum and maximum row IDs to extract, e.g. (1, 10)
+            N_atoms (tuple): Minimum and maximum number of atoms to extract, e.g. (2, 100)
+            overwrite (bool): Whether to overwrite existing entries
+            attribute (str): Attribute name to check for extraction
+            use_relaxed (str): Type of relaxed structure to use ('ff_relaxed' or 'vasp_relaxed')
+
+        Yields:
+            tuple: (id, xtal) where id is the row ID and xtal is the corresponding pyxtal object
         """
         (min_id, max_id) = ids
         if min_id is None: min_id = 1
@@ -1433,13 +1474,16 @@ class database_topology:
 
     def update_row_topology(self, StructureType="Auto", overwrite=True, prefix=None, ref_dim=3):
         """
-        Update row topology base on the CrystalNets.jl
+        Update row topology base on the CrystalNets.jl.
 
         Args:
-            StructureType (str): 'Zeolite', 'MOF' or 'Auto'
-            overwrite (bool): remove the existing attributes
-            prefix (str): prefix for tmp cif file
-            ref_dim (int): desired dimension
+            StructureType (str): Type of structure to analyze. Options are:
+                - 'Zeolite': For zeolite structures
+                - 'MOF': For metal-organic frameworks
+                - 'Auto': For automatic detection
+            overwrite (bool): Whether to overwrite existing topology attributes.
+            prefix (str): Prefix for temporary CIF files.
+            ref_dim (int): Reference dimensionality to compare against.
         """
         try:
             import juliacall
@@ -1524,8 +1568,19 @@ class database_topology:
 
     def update_db_description(self):
         """
-        update db description based on robocrys
-        Call robocrys: https://github.com/hackingmaterials/robocrystallographer
+        Update database description using robocrys.
+
+        Uses robocrystallographer (https://github.com/hackingmaterials/robocrystallographer)
+        to generate natural language descriptions of crystal structures.
+
+        For each row in the database that doesn't have a description:
+            1. Converts ASE atoms to pymatgen structure
+            2. Uses StructureCondenser to analyze bonding/connectivity
+            3. Uses StructureDescriber to generate text description
+            4. Updates the database row with the description
+
+        Note:
+            Use it with caution, as it may take a long time to run.
         """
         from robocrys import StructureCondenser, StructureDescriber
 
@@ -1558,15 +1613,16 @@ class database_topology:
         use_relaxed=None,
     ):
         """
-        export structures from database according to the given criterion
+        Export structures from database according to given criteria.
 
         Args:
-            fmt (str): 'vasp' or 'cif'
-            folder (str): 'path of output folders'
-            criteria (dict): check the validity with dict
-            sort_by (str): sort by which attribute
-            overwrite (bool): remove the existing folder
-            cutoff (int): the maximum number of structures for export
+            fmt (str): Output format (``vasp`` or ``cif``)
+            folder (str): Path to output folder
+            criteria (dict): Dictionary of validity criteria
+            sort_by (str): Attribute to sort structures by
+            overwrite (bool): Whether to remove existing output folder
+            cutoff (int): Maximum number of structures to export
+            use_relaxed (str, optional): e.g., ``ff_relaxed`` or ``vasp_relaxed``
         """
 
         import shutil
@@ -1708,15 +1764,27 @@ class database_topology:
 
     def get_db_unique(self, db_name=None, prec=3, update_topology=True, key='ff_energy'):
         """
-        Get a db file with only unique structures
-        with the following identical attributes:
-        (topology, ff_energy)
+        Get a database file containing only unique structures based on topology and energy.
 
         Args:
-            db_name (str): filename for the new db
-            prec (int): ff_energy precision for the round number
-            update_topology (bool): whether or not update topology
-            key (str): key name for the filter
+            db_name (str, optional): Filename for the new database.
+            If None, will use original name with '_unique' suffix.
+            prec (int, optional): Precision for rounding energy values. Default is 3.
+            update_topology (bool, optional): Whether to update topology before filtering.
+            Default is True.
+            key (str, optional): Energy attribute name to use for filtering.
+            Default is 'ff_energy'.
+
+        Returns:
+            int: Number of unique structures in the new database.
+
+        Note:
+            Two structures are considered identical if they have:
+            - Same topology
+            - Same topology detail
+            - Same energy value (within precision)
+
+            When duplicates are found, the structure with lower DOF is kept.
         """
 
         print(f"The {self.db_name:s} has {self.db.count():d} strucs")
@@ -1759,12 +1827,24 @@ class database_topology:
 
     def check_overlap(self, reference_db, etol=2e-3, verbose=True):
         """
-        Check the overlap w.r.t the reference database
+        Check the overlap with a reference database.
 
         Args:
-            reference_db (str): path of reference database
-            etol (float): energy tolerence to distinguish the identical structure
-            verbose (bool): whether or not print out details
+            reference_db (str): Path to the reference database file
+            etol (float, optional): Energy tolerance for identifying identical structures.
+                      Default is 2e-3.
+            verbose (bool, optional): Whether to print detailed overlap information.
+                        Default is True.
+
+        Returns:
+            list: List of overlapping structures, where each entry contains:
+            (id, pearson_symbol, dof, topology, ff_energy)
+
+        Note:
+            Two structures are considered overlapping if they have:
+                - Same topology
+                - Same topology detail
+                - Force field energies within etol of each other
         """
 
         db_ref = database_topology(reference_db, log_file = self.log_file)
