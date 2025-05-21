@@ -763,7 +763,7 @@ class database_topology:
         atoms = xtal.to_ase(resort=False)
         self.db.write(atoms, key_value_pairs=kvp)
 
-    def add_strucs_from_db(self, db_file, check=False, id_min=0, id_max=None, tol=1e-3, freq=50, use_relaxed=None):
+    def add_strucs_from_db(self, db_file, check=False, id_min=0, id_max=None, tol=1e-3, freq=50, use_relaxed=None, sort=None, max_count=None):
         """
         Add new structures from another database file.
 
@@ -774,8 +774,12 @@ class database_topology:
             id_max (int): Ending ID to import from source database. Default is None
             tol (float): Tolerance in Angstroms for symmetry detection. Default is 1e-3
             freq (int): Print progress message every N structures. Default is 50
-            use_relaxed (str): Type of relaxed structure to use - 'ff_relaxed' or 'vasp_relaxed'
+            use_relaxed (str): Relaxed structure to use - 'ff_relaxed', 'vasp_relaxed'
                      Default is None to use unrelaxed structures
+            sort (str): key to sort the structure, e.g. 'mace_energy'
+                     Default is None to use row.id
+            max_count (int): Number of maximum structure to add
+                     Default is None to all all structures
         """
         cifname = 'my_add.cif'
         print(f"\nAdding new strucs from {db_file:s}")
@@ -783,9 +787,8 @@ class database_topology:
         count = 0
         with connect(db_file, serial=True) as db:
             if id_max is None:
-                id_max = db.count
-            for row in db.select():
-                #xtal = db.get_pyxtal(row.id, use_relaxed)
+                id_max = db.count()
+            for row in db.select(sort=sort):
                 if id_min <= row.id <= id_max:
                     xtal = pyxtal()
                     if use_relaxed is None:
@@ -794,9 +797,11 @@ class database_topology:
                             xtal.from_seed(atoms, tol=tol)
                         except:
                             xtal = None
-                            print("Faild to load xtal", row.mace_energy, row.pearson_symbol, row.wps)
+                            content = (row.mace_energy, row.pearson_symbol, row.wps)
+                            print("Faild to load xtal", content)
                     else:
-                        with open(cifname, 'w') as f: f.write(getattr(row, use_relaxed))
+                        with open(cifname, 'w') as f:
+                            f.write(getattr(row, use_relaxed))
                         try:
                             xtal.from_seed(cifname, tol=tol)
                         except:
@@ -828,10 +833,13 @@ class database_topology:
                             self.db.write(atoms, key_value_pairs=kvp)
                             count += 1
 
-                    if count % freq == 0:
-                        print(f"Adding {count:4d} strucs from {db_file:s}")
+                            if count % freq == 0:
+                                print(f"Adding {count:4d} strucs from {db_file:s}")
 
-    def check_new_structure(self, xtal, eng=None, same_group=False, d_tol=8e-2, e_tol=1e-2):
+                            if max_count is not None and count == max_count:
+                                break
+
+    def check_new_structure(self, xtal, eng=None, same_group=False, d_tol=1e-1, e_tol=1e-2):
         """
         Check if the input crystal structure already exists in the database.
 
