@@ -228,7 +228,7 @@ def gulp_opt_single(id, xtal, ff_lib, path, criteria):
     return xtal, eng, status
 
 
-def mace_opt_single(id, xtal, step, criteria):
+def mace_opt_single(id, xtal, step, fmax, criteria):
     """
     Perform a single MACE optimization for a given atomic crystal structure.
 
@@ -236,6 +236,7 @@ def mace_opt_single(id, xtal, step, criteria):
         id (int): Identifier for the current structure.
         xtal: PyXtal instance representing the crystal structure.
         step (int): Maximum number of relaxation steps. Default is 250.
+        fmax (float): fmax for relaxation
         criteria (dict): Dictionary to check the validity of the optimized structure.
 
     Returns:
@@ -252,6 +253,7 @@ def mace_opt_single(id, xtal, step, criteria):
                  'MACE',
                  opt_cell=True,
                  step=step,
+                 fmax=fmax,
                  max_time=9.0 * max([1, (len(atoms)/200)]),
                  label=str(id))
     if s is None:
@@ -700,7 +702,7 @@ class database_topology:
         from pyxtal.symmetry import Group
 
         row = self.db.get(id)  # ; print(id, row.id)
-        print(row.space_group_number, row.topology, row.pearson_symbol, row.wps, row.mace_energy)
+        #print(row.space_group_number, row.topology, row.pearson_symbol, row.wps, row.mace_energy)
         if use_relaxed is not None:
             if hasattr(row, use_relaxed):
                 xtal_str = getattr(row, use_relaxed)
@@ -711,7 +713,7 @@ class database_topology:
                 pmg = ase2pymatgen(atom)
         else:
             #hn = Group(row.space_group_number).hall_number
-            #xtal1 = pyxtal()
+            xtal1 = pyxtal()
             #atom.write('1.cif', format='cif')#, direct=True, vasp5=True)
             #xtal1.from_seed('1.cif', tol=tol)#, hn=hn)
             atom = self.db.get_atoms(id=id)
@@ -719,8 +721,7 @@ class database_topology:
             pmg = ase2pymatgen(atom)
 
         xtal = pyxtal()
-        #try:
-        if True:
+        try:
             xtal.from_seed(pmg, tol=tol)
             #if xtal.group.number != row.space_group_number: print(xtal); import sys; sys.exit()
             if xtal is not None and xtal.valid:
@@ -728,8 +729,10 @@ class database_topology:
                     if hasattr(row, key):
                         setattr(xtal, key, getattr(row, key))
             return xtal
-        #except:
-        #    print("Cannot load the structure")
+        except:
+            print(xtal_str)
+            #import sys; sys.exit()
+            print("Cannot load the structure")
 
     def get_all_xtals(self, include_energy=False):
         """
@@ -744,7 +747,7 @@ class database_topology:
                 xtals.append(xtal)
         return xtals
 
-    def add_xtal(self, xtal, kvp):
+    def add_xtal(self, xtal, kvp={}):
         """
         Add new xtal to the given db
         """
@@ -1263,6 +1266,7 @@ class database_topology:
         write_freq=100,
         ff_lib='reaxff',
         steps=250,
+        fmax=0.1,
         use_relaxed=None,
         cmd=None,
         calc_folder=None,
@@ -1281,6 +1285,7 @@ class database_topology:
             write_freq (int): frequency to update db for ncpu=1
             ff_lib (str): Force field to use for GULP ('reaxff' by default).
             steps (int): Number of optimization steps for DFTB (default is 250).
+            fmax (float): force tolerance for mace (defalut is 0.1)
             use_relaxed (str, optional): Use relaxed structures (e.g. 'ff_relaxed')
             cmd (str, optional): Command for VASP calculations
             calc_folder (str, optional): calc_folder for GULP/VASP calculations
@@ -1314,7 +1319,7 @@ class database_topology:
             args = [calculator, ff_lib, calc_folder, criteria]
             args_up = [ff_lib]
         elif calculator == 'MACE':
-            args = [calculator, steps, criteria]
+            args = [calculator, steps, fmax, criteria]
         elif calculator == 'DFTB':
             args = [calculator, skf_dir, steps, symmetrize, criteria]
         elif calculator == 'VASP':
