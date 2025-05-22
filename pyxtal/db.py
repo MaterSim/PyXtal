@@ -1568,6 +1568,8 @@ class database_topology:
                         name,
                         detail[:10],
                     )
+                if name.startswith("FAILED"):
+                    name = '0-dimensional'
                 # Unknown will be labeled as aaa
                 self.db.update(row.id, topology=name,
                                dimension=dim, topology_detail=detail)
