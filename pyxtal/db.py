@@ -701,7 +701,7 @@ class database_topology:
         from pyxtal.util import ase2pymatgen
         from pyxtal.symmetry import Group
 
-        row = self.db.get(id)  # ; print(id, row.id)
+        row = self.db.get(id)
         #print(row.space_group_number, row.topology, row.pearson_symbol, row.wps, row.mace_energy)
         if use_relaxed is not None:
             if hasattr(row, use_relaxed):
@@ -766,7 +766,7 @@ class database_topology:
         atoms = xtal.to_ase(resort=False)
         self.db.write(atoms, key_value_pairs=kvp)
 
-    def add_strucs_from_db(self, db_file, check=False, id_min=0, id_max=None, tol=1e-3, freq=50, use_relaxed=None, sort=None, max_count=None):
+    def add_strucs_from_db(self, db_file, check=False, id_min=0, id_max=None, tol=1e-3, freq=50, use_relaxed=None, sort=None, max_count=None, criteria=None):
         """
         Add new structures from another database file.
 
@@ -783,6 +783,7 @@ class database_topology:
                      Default is None to use row.id
             max_count (int): Number of maximum structure to add
                      Default is None to all all structures
+            criteria (dict): criteria to check if a valid.
         """
         cifname = 'my_add.cif'
         print(f"\nAdding new strucs from {db_file:s}")
@@ -812,6 +813,9 @@ class database_topology:
                             print("Faild to load xtal", row.mace_energy, row.pearson_symbol, row.wps)
 
                     if xtal is not None and xtal.valid:
+                        if criteria is not None and not xtal.check_validity(criteria):
+                            print("hit a invalid structure", xtal)
+                            continue
                         #print(xtal)
                         mace_eng = None if not hasattr(row, 'mace_energy') else row.mace_energy
                         atoms = xtal.to_ase()
@@ -841,6 +845,8 @@ class database_topology:
 
                             if max_count is not None and count == max_count:
                                 break
+                    else:
+                        print("Fail to convert xtal")
 
     def check_new_structure(self, xtal, eng=None, same_group=False, d_tol=1e-1, e_tol=1e-2):
         """
