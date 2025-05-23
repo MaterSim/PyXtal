@@ -848,7 +848,7 @@ class database_topology:
                     else:
                         print("Fail to convert xtal")
 
-    def check_new_structure(self, xtal, eng=None, same_group=False, d_tol=1e-1, e_tol=1e-2):
+    def check_new_structure(self, xtal, eng=None, same_group=False, d_tol=2e-1, e_tol=1e-2, max_atoms=250, min_atoms=0):
         """
         Check if the input crystal structure already exists in the database.
 
@@ -858,6 +858,8 @@ class database_topology:
             same_group (bool): Whether to only compare structures with same space group
             d_tol (float): Tolerance for density comparison
             e_tol (float): Tolerance for energy comparison
+            max_atoms (int): maximum number of atoms for checking
+            min_atoms (int): minimum number of atoms for checking
 
         Returns:
             bool: True if structure is new/unique, False if it matches an existing structure
@@ -869,18 +871,23 @@ class database_topology:
             - Energy (within e_tol if provided)
             - Structure similarity via pymatgen.analysis.structure_matcher
         """
+        if sum(xtal.numIons) > max_atoms or sum(xtal.numIons) < min_atoms:
+            return True
+
         s_pmg = xtal.to_pymatgen()
-        for row in self.db.select():
+        for row in self.db.select(sort='-id'): # Sort by id in descending order
+            if row.natoms > max_atoms or row.natoms < min_atoms:
+                continue
+            if eng is not None and abs(eng - row.mace_energy) > e_tol:
+                continue
             if same_group and row.space_group_number != xtal.group.number:
                 continue
             if abs(row.density - xtal.get_density()) > d_tol:
                 continue
-            if eng is not None and abs(eng - row.mace_energy) > e_tol:
-                continue
             ref = self.db.get_atoms(id=row.id)
             ref_pmg = ase2pymatgen(ref)
             if self.matcher.fit(s_pmg, ref_pmg, symmetric=True):
-                print("skip the duplicate", xtal)
+                print("skip the duplicate", xtal.get_xtal_string())
                 print(row.id, row.space_group_number, row.wps, row.mace_energy, row.density)
                 return False
         return True

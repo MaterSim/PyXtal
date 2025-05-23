@@ -1994,13 +1994,21 @@ class pyxtal:
 
     def to_subgroup(self, path=None, t_only=True, iterate=False, species=None):
         """
-        Transform a crystal with speical sites to subgroup
-        represenatation with general sites
+        Transform a crystal with special sites to a subgroup representation with general sites.
 
         Args:
-            Path: list of path to get the general sites
-            iterate (bool): whether or not do it iteratively
-            species : to add
+            path (list, optional): List of paths to get the general sites. Defaults to None.
+            t_only (bool): Whether to use only translationengleiche (t) transitions. Defaults to True.
+            iterate (bool): Whether to transform iteratively until all sites are general. Defaults to False.
+            species (list, optional): List of atomic species to transform. Defaults to None.
+
+        Returns:
+            pyxtal: A new pyxtal structure in the subgroup setting with general Wyckoff positions
+
+        Note:
+            If path is None, the function will compute the path to the general Wyckoff positions.
+            If iterate is True, the function will keep transforming until all sites are general.
+            Recommended for the use of transforming specical to general sites in molecular crystals.
         """
         if not self.standard_setting:
             self.optimize_lattice(standard=True)
