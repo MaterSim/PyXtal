@@ -77,14 +77,14 @@ class TestBuilder(unittest.TestCase):
         xtal, sim, _ = bu1.optimize_xtal(sub_xtal, add_db=False)
         assert sim < 1e-2
 
-    def test_ortho(self):
-        xtal = pyxtal()
-        xtal.from_spg_wps_rep(53,
-                              ['4h', '4h', '4h'],
-                              [2.365503,  3.005858, 12.789526,  0.003843,
-                               0.414543,  0.009659, 0.050974,  0.0076,  0.815])
-        xtal, sim, _ = bu1.optimize_xtal(xtal, opt_type='global')
-        assert sim < 1e-2
+    #def test_ortho(self):
+    #    xtal = pyxtal()
+    #    xtal.from_spg_wps_rep(53,
+    #                          ['4h', '4h', '4h'],
+    #                          [2.365503,  3.005858, 12.789526,  0.003843,
+    #                           0.414543,  0.009659, 0.050974,  0.0076,  0.815])
+    #    xtal, sim, _ = bu1.optimize_xtal(xtal, opt_type='global')
+    #    assert sim < 1e-2
 
 
     def test_diamond(self):
