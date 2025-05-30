@@ -148,7 +148,7 @@ def calculate_dSdx(x, xtal, des_ref, f, eps=1e-4, symmetry=True, verbose=False):
     dSdx = np.einsum("ijk, ijkl -> l", dSdr, drdx)
     return dSdx
 
-def calculate_S(x, xtal, des_ref, f, ref_CN=None, verbose=False):
+def calculate_S(x, xtal, des_ref, f, return_rdf=False):
     """
     Optimization function used for structure generation
 
@@ -157,7 +157,10 @@ def calculate_S(x, xtal, des_ref, f, ref_CN=None, verbose=False):
         xtal (instance): pyxtal object
         des_ref: reference environment
         f (callable): function to compute the enivronment
-        verbose (boolean): output more information
+        return_rdf (bool): whether to return the radial distribution function
+
+    Returns:
+        obj (float): objective function value
     """
     if xtal.lattice is None:
         des = np.zeros(des_ref.shape)
@@ -174,18 +177,18 @@ def calculate_S(x, xtal, des_ref, f, ref_CN=None, verbose=False):
             weights = np.array(weights, dtype=float)
             atoms = xtal.to_ase(resort=False)
             #des = f.calculate(atoms)['x'][ids]
-            des, CNs = f.compute_p(atoms, ids, return_CN=True)
+            des = f.compute_p(atoms, ids, return_rdf=return_rdf)
         else:
             des = np.zeros(des_ref.shape)
             weights = 1
 
     sim = np.sum((des-des_ref)**2, axis=1)  # /des.shape[1]
-    if ref_CN is not None:
-        coefs = CNs[:, 1] - ref_CN
-        coefs[coefs < 0] = 0
-        penalty = coefs * (f.rcut + 0.01 - CNs[:, 0])
-        if penalty.sum() > 0: print('debug', penalty.sum(), x[:3])
-        sim += 5 * coefs * penalty
+    #if ref_CN is not None:
+    #    coefs = CNs[:, 1] - ref_CN
+    #    coefs[coefs < 0] = 0
+    #    penalty = coefs * (f.rcut + 0.01 - CNs[:, 0])
+    #    if penalty.sum() > 0: print('debug', penalty.sum(), x[:3])
+    #    sim += 5 * coefs * penalty
     obj = np.sum(sim * weights) / sum(xtal.numIons)
     #print(des-des_ref); print(sim); print(obj)#; import sys; sys.exit()
     return obj

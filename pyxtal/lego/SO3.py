@@ -1,7 +1,6 @@
 from __future__ import division
 import numpy as np
 from scipy.special import sph_harm, spherical_in
-from ase import Atoms
 from ase.neighborlist import NeighborList
 
 
@@ -148,22 +147,24 @@ class SO3:
         self.natoms = len(atoms)
         self.build_neighbor_list(atom_ids)
 
-    def compute_p(self, atoms, atom_ids=None, return_CN=False):
+    def compute_p(self, atoms, atom_ids=None, return_rdf=False, CN_max=12, weight=0.5):
         """
         Compute the powerspectrum function
 
         Args:
             atoms: ase atoms object
             atom_ids: optional list of atomic indices
+            return_rdf: bool, whether to return the radial distribution function
+            CN_max: int, maximum coordination number to consider
+            weight: float, weight for the RDF
 
         Returns:
             p array (N, M)
         """
-
         if atom_ids is None: atom_ids = range(len(atoms))
         self.init_atoms(atoms, atom_ids)
         plist = np.zeros((len(atom_ids), self.ncoefs), dtype=np.float64)
-        dist = np.zeros((len(atom_ids), 2))
+        dists = np.zeros((len(atom_ids), CN_max))
 
         if len(self.neighborlist) > 0:
             cs = compute_cs(self.neighborlist, *self.args)
@@ -178,12 +179,49 @@ class SO3:
                     ctot = cs[centers].sum(axis=0)
                     P = np.einsum('ijk,ljk->ilj', ctot, np.conj(ctot)).real
                     plist[_i] = P[self.tril_indices].flatten()
-                    dist[_i, 0] += np.linalg.norm(self.neighborlist[centers], axis=1).max()
-                    dist[_i, 1] += CN
-        if return_CN:
-            return plist, dist
+
+                    if CN > CN_max: CN = CN_max
+                    dists[_i, :CN] += np.linalg.norm(self.neighborlist[centers], axis=1)[:CN]
+
+        if return_rdf:
+            rdf = self.dist2rdf(dists)
+            return np.concatenate((plist, weight * rdf), axis=1)
         else:
             return plist
+
+    def dist2rdf(self, dists, num_bins=20, sigma=0.5):
+        """
+        Convert a 2D distance array to radial distribution function (RDF)
+
+        Args:
+            dists: ndarray of shape (N, m), where each row contains distances
+            rcut: float, cutoff radius
+            num_bins: int, number of histogram bins
+            sigma: float, Gaussian smoothing width (in bins)
+            smooth: bool, whether to apply Gaussian smoothing
+
+        Returns:
+            rdf: ndarray of shape (N, num_bins)
+        """
+        from scipy.ndimage import gaussian_filter1d
+
+        N, m = dists.shape
+        dr = self.rcut / num_bins
+        rdf = np.zeros((N, num_bins))
+
+        # Filter valid distances
+        valid_mask = (dists > 0) & (dists < self.rcut)
+        valid_dists = dists * valid_mask  # Zero-out invalid distances
+        bin_indices = (valid_dists / dr).astype(int)
+
+        # Count distances in each bin for each row
+        for i in range(N):
+            valid_idx = valid_mask[i]
+            bincount = np.bincount(bin_indices[i][valid_idx], minlength=num_bins)
+            rdf[i, :len(bincount)] += bincount
+
+        rdf = gaussian_filter1d(rdf, sigma=sigma, axis=1, mode='nearest')
+        return rdf
 
 
     def compute_dpdr(self, atoms, atom_ids=None):

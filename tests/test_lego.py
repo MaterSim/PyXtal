@@ -6,20 +6,20 @@ import random
 import numpy as np
 
 xtal = pyxtal()
-xtal.from_spg_wps_rep(194, ['2c', '2b'], [2.46, 6.70])
+xtal.from_prototype('graphite')
 cif_file = xtal.to_pymatgen()
 
-builder1 = builder(['C'], [1], verbose=False)
-builder1.set_descriptor_calculator(mykwargs={'rcut': 1.9})
-builder1.set_reference_enviroments(cif_file)
-builder1.set_criteria(CN={'C': [3]})
+bu1 = builder(['C'], [1], verbose=False)
+bu1.set_descriptor_calculator(mykwargs={'rcut': 1.9})
+bu1.set_reference_enviroments(cif_file)
+bu1.set_criteria(CN={'C': [3]})
 
 xtal.from_spg_wps_rep(92, ['4a', '8b'], [5.085, 7.099, 0.294, 0.094, 0.241, 0.826], ['Si', 'O'])
 cif_file = xtal.to_pymatgen()
-builder2 = builder(['Si', 'O'], [1, 2], verbose=False)
-builder2.set_descriptor_calculator(mykwargs={'rcut': 2.4})
-builder2.set_reference_enviroments(cif_file)
-builder2.set_criteria(CN={'Si': [4], 'O': [2]}, exclude_ii=True)
+bu2 = builder(['Si', 'O'], [1, 2], verbose=False)
+bu2.set_descriptor_calculator(mykwargs={'rcut': 2.4})
+bu2.set_reference_enviroments(cif_file)
+bu2.set_criteria(CN={'Si': [4], 'O': [2]}, exclude_ii=True)
 
 class TestBuilder(unittest.TestCase):
     #def test_gen_xtal(self):
@@ -42,7 +42,7 @@ class TestBuilder(unittest.TestCase):
         ]:
             xtal = pyxtal()
             xtal.from_spg_wps_rep(spg, wps, x, ['C']*len(wps))
-            xtal, sim, _ = builder1.optimize_xtal(xtal, add_db=False)
+            xtal, sim, _ = bu1.optimize_xtal(xtal, add_db=False)
             #print(xtal.get_1d_rep_x())
             assert sim < 1e-2
 
@@ -52,7 +52,7 @@ class TestBuilder(unittest.TestCase):
         for x in [[5.0, 7.1, 0.3, 0.1, 0.2, 0.8]]:
             xtal = pyxtal()
             xtal.from_spg_wps_rep(spg, wps, x, ['Si', 'O'])
-            xtal, sim, _ = builder2.optimize_xtal(xtal, add_db=False)
+            xtal, sim, _ = bu2.optimize_xtal(xtal, add_db=False)
             assert sim < 1e-2
 
     def test_opt_xtals(self):
@@ -66,9 +66,26 @@ class TestBuilder(unittest.TestCase):
             xtal = pyxtal()
             xtal.from_spg_wps_rep(spg, wps, x, ['C']*len(wps))
             xtals.append(xtal)
-        xtals = builder1.optimize_xtals(xtals, add_db=False)
+        xtals = bu1.optimize_xtals(xtals, add_db=False)
         assert len(xtals) == 2
         #builder.optimize_xtals(xtals, opt_type='local', ncpu=2)
+
+    def test_opt_diamond(self):
+        xtal = pyxtal()
+        xtal.from_prototype('diamond')
+        sub_xtal = xtal.subgroup_once(H=166, eps=1e-4)
+        xtal, sim, _ = bu1.optimize_xtal(sub_xtal, add_db=False)
+        assert sim < 1e-2
+
+    def test_ortho(self):
+        xtal = pyxtal()
+        xtal.from_spg_wps_rep(53,
+                              ['4h', '4h', '4h'],
+                              [2.365503,  3.005858, 12.789526,  0.003843,
+                               0.414543,  0.009659, 0.050974,  0.0076,  0.815])
+        xtal, sim, _ = bu1.optimize_xtal(xtal, opt_type='global')
+        assert sim < 1e-2
+
 
     def test_diamond(self):
         print("test_diamond")
@@ -88,7 +105,7 @@ class TestBuilder(unittest.TestCase):
                     #header += "{:3d} => ".format(_xtal1.group.number)
                     #header += "{:3d} ".format(final.group.number)
                     #print(final.get_xtal_string(header=header))
-                    builder1.optimize_xtal(final, add_db=False)
+                    bu1.optimize_xtal(final, add_db=False)
 
 if __name__ == "__main__":
     unittest.main()

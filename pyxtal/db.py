@@ -766,7 +766,13 @@ class database_topology:
         atoms = xtal.to_ase(resort=False)
         self.db.write(atoms, key_value_pairs=kvp)
 
-    def add_strucs_from_db(self, db_file, check=False, id_min=0, id_max=None, tol=1e-3, freq=50, use_relaxed=None, sort=None, max_count=None, criteria=None):
+    def add_strucs_from_db(self, db_file, check=False,
+                           id_min=0, id_max=None, tol=1e-3,
+                           freq=50, use_relaxed=None, sort=None,
+                           max_count=None, criteria=None,
+                           min_atoms=0, max_atoms=250,
+                           ignore_check='vasp_energy',
+                           same_number=False):
         """
         Add new structures from another database file.
 
@@ -814,12 +820,20 @@ class database_topology:
 
                     if xtal is not None and xtal.valid:
                         if criteria is not None and not xtal.check_validity(criteria):
-                            print("hit a invalid structure", xtal)
+                            print("hit a invalid structure", row.id, xtal.get_xtal_string())
+                            print(xtal)
                             continue
                         #print(xtal)
                         mace_eng = None if not hasattr(row, 'mace_energy') else row.mace_energy
                         atoms = xtal.to_ase()
-                        add = self.check_new_structure(xtal, mace_eng) if check else True
+                        add = True
+                        if check:
+                            if not hasattr(row, ignore_check):
+                                add = self.check_new_structure(xtal, mace_eng,
+                                                        max_atoms=max_atoms,
+                                                        min_atoms=min_atoms,
+                                                        same_number=same_number)
+
                         if add:
                             kvp = {}
                             for key in self.keys:
@@ -848,7 +862,9 @@ class database_topology:
                     else:
                         print("Fail to convert xtal")
 
-    def check_new_structure(self, xtal, eng=None, same_group=False, d_tol=2e-1, e_tol=1e-2, max_atoms=250, min_atoms=0):
+    def check_new_structure(self, xtal, eng=None, same_group=False,
+                            same_number=False, d_tol=2e-1, e_tol=1e-2,
+                            max_atoms=250, min_atoms=0):
         """
         Check if the input crystal structure already exists in the database.
 
@@ -877,6 +893,8 @@ class database_topology:
         s_pmg = xtal.to_pymatgen()
         for row in self.db.select(sort='-id'): # Sort by id in descending order
             if row.natoms > max_atoms or row.natoms < min_atoms:
+                continue
+            if same_number and row.natoms != len(s_pmg):
                 continue
             if eng is not None and abs(eng - row.mace_energy) > e_tol:
                 continue
@@ -1225,7 +1243,7 @@ class database_topology:
 
         ids, xtals = [], []
         for row in self.db.select():
-            if overwrite or attribute is None or not hasattr(row, attribute):
+            if attribute is None or (overwrite and not hasattr(row, attribute)):
                 if min_id <= row.id <= max_id and min_atoms < row.natoms <= max_atoms:
                     xtal = self.get_pyxtal(row.id, use_relaxed)
                     ids.append(row.id)
@@ -1258,14 +1276,17 @@ class database_topology:
 
         ids, xtals = [], []
         for row in self.db.select():
-            if overwrite or attribute is None or not hasattr(row, attribute):
-                id, natoms = row.id, row.natoms
-                if min_id <= id <= max_id and \
-                    min_atoms < natoms <= max_atoms \
-                    and id % self.size== self.rank:
+            if not overwrite and hasattr(row, attribute):
+                continue
 
-                    xtal = self.get_pyxtal(id, use_relaxed)
-                    yield id, xtal
+            #print(attribute, overwrite, hasattr(row, attribute), getattr(row, attribute))
+            id, natoms = row.id, row.natoms
+            if min_id <= id <= max_id and \
+                min_atoms < natoms <= max_atoms \
+                and id % self.size== self.rank:
+
+                xtal = self.get_pyxtal(id, use_relaxed)
+                yield id, xtal
 
     def update_row_energy(
         self,
@@ -1314,8 +1335,9 @@ class database_topology:
             - 'DFTB': Uses DFTB+ with symmetrization options.
             - 'VASP': Uses VASP, with a specified command (`cmd`).
         """
-
         label = calculator.lower() + "_energy"
+        if calculator == 'GULP':
+            label = 'ff_energy'
         if calc_folder is None:
             calc_folder = calculator.lower() + "_calc"
 
