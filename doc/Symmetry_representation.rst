@@ -169,7 +169,7 @@ Space Group Symmetry's Digital Representation
 
 For the application of deep learning, the space group symmetry can be represented as a **14 lattice indices** + **15x18 matrix**. 
 
-For the lattice index, we divde it into 14 possible cases (0-13) as shown below:
+For the lattice index, we divde it into 16 possible cases (0-15) as shown below:
 
 .. list-table::
     :widths: 15 35
@@ -182,28 +182,32 @@ For the lattice index, we divde it into 14 possible cases (0-13) as shown below:
     * - 1
       - Monoclinic Primitive 
     * - 2
-      - Monoclinic Base Centered
+      - Monoclinic C-Base Centered
     * - 3
       - Orthorhombic Primitive
     * - 4
-      - Orthorhombic Base Centered
+      - Orthorhombic A-base Centered
     * - 5
-      - Orthorhombic Body Centered
+      - Orthorhombic B-base Centered
     * - 6
-      - Orthorhombic Face Centered
+      - Orthorhombic C-base Centered
     * - 7
-      - Tetragonal Primitive
+      - Orthorhombic Body Centered
     * - 8
-      - Tetragonal Body Centered
+      - Orthorhombic Face Centered
     * - 9
-      - Hexagonal Primitive
+      - Tetragonal Primitive
     * - 10
-      - Hexagonal Rhombehedral 
+      - Tetragonal Body Centered
     * - 11
-      - Cubic Primitive
+      - Hexagonal Primitive
     * - 12
-      - Cubic Body Centered
+      - Hexagonal Rhombehedral 
     * - 13
+      - Cubic Primitive
+    * - 14
+      - Cubic Body Centered
+    * - 15
       - Cubic Face Centered
 
 For the matrix, the rows represent 15 directions, including

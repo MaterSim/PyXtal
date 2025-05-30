@@ -4142,7 +4142,7 @@ class pyxtal:
             self.from_spg_wps_rep(194, ['2c', '2b'], [2.46, 6.70])
 
         elif prototype == 'diamond':
-            self.from_spg_wps_rep(227, ['8a'], [3.6])
+            self.from_spg_wps_rep(227, ['8a'], [3.567])
 
         elif prototype == 'a-cristobalite':
             self.from_spg_wps_rep(92,

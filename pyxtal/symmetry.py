@@ -674,7 +674,7 @@ class Group:
 
     >>> g.symbol
     'Cmce'
-    >>> g.number 
+    >>> g.number
     64
     >>> g.Wyckoff_positions[0]
     Wyckoff position 16g in space group 64 with site symmetry 1
@@ -715,12 +715,12 @@ class Group:
     )
 
     Or search the subgroup information:
-    
+
     >>> g.get_max_t_subgroup()['subgroup']
     [12, 14, 15, 20, 36, 39, 41]
 
     Or check if a given composition is compatible with Wyckoff positions:
-    
+
     >>> g = Group(225)
     >>> g.check_compatible([64, 28, 24])
     (True, True)
@@ -733,7 +733,7 @@ class Group:
 
     Args:
         group: The group symbol or international number
-        dim (int, default: 3): The periodic dimension of the group 
+        dim (int, default: 3): The periodic dimension of the group
         use_hall (bool, default: False): Whether or not use the hall number
         style (str, default: ``pyxtal``): The choice of hall number (``pyxtal``/``spglib``)
         quick (bool, default: False): Whether or not ignore the wyckoff information
@@ -889,22 +889,24 @@ class Group:
         Compute the id for the lattice.
 
         Returns:
-            id (int): Encoded lattice id: 
+            id (int): Encoded lattice id
 
                 - 0: triclinic-P
-                - 1: monoclinic-P 
+                - 1: monoclinic-P
                 - 2: monoclinic-C
                 - 3: orthorhombic-P
-                - 4: orthorhombic-A/B/C
-                - 5: orthorhombic-I
-                - 6: orthorhombic-F
-                - 7: tetragonal-P 
-                - 8: tetragonal-I
-                - 9: hexagonal-P
-                - 10: hexagonal-R
-                - 11: cubic-P
-                - 12: cubic-I 
-                - 13: cubic-F
+                - 4: orthorhombic-A
+                - 5: orthorhombic-B
+                - 6: orthorhombic-C
+                - 7: orthorhombic-I
+                - 8: orthorhombic-F
+                - 9: tetragonal-P
+                - 10: tetragonal-I
+                - 11: hexagonal-P
+                - 12: hexagonal-R
+                - 13: cubic-P
+                - 14: cubic-I
+                - 15: cubic-F
         """
         if self.lattice_type in ["triclinic"]:
             id = 0
@@ -916,29 +918,33 @@ class Group:
         elif self.lattice_type in ["orthorhombic"]:
             if self.symbol[0] == "P":
                 id = 3
-            elif self.symbol[0] in ["A", "B", "C"]:
+            elif self.symbol[0] == "A":
                 id = 4
-            elif self.symbol[0] == "I":
+            elif self.symbol[0] == "B":
                 id = 5
-            elif self.symbol[0] == "F":
+            elif self.symbol[0] == "C":
                 id = 6
+            elif self.symbol[0] == "I":
+                id = 7
+            elif self.symbol[0] == "F":
+                id = 8
         elif self.lattice_type in ["tetragonal"]:
             if self.symbol[0] == "P":
-                id = 7
+                id = 9
             elif self.symbol[0] == "I":
-                id = 8
+                id = 10
         elif self.lattice_type in ["hexagonal", "trigonal", "rhombohedral"]:
             if self.symbol[0] == "P":
-                id = 9
+                id = 11
             elif self.symbol[0] == "R":
-                id = 10
+                id = 12
         else: # cubic
             if self.symbol[0] == "P":
-                id = 11
-            elif self.symbol[0] == "I":
-                id = 12
-            elif self.symbol[0] == "F":
                 id = 13
+            elif self.symbol[0] == "I":
+                id = 14
+            elif self.symbol[0] == "F":
+                id = 15
         return id
 
     def get_lattice_dof(self):
@@ -3284,15 +3290,15 @@ def swap_xyz_ops(ops, permutation):
 def op_transform(ops, affine_matrix):
     """
     Transform a symmetry operation using affine matrix multiplication.
-    
+
     Example:
-        >>> x, y, z -> x+1/2, y+1/2, z 
+        >>> x, y, z -> x+1/2, y+1/2, z
         >>> 0, 1/2, z -> 1/2, 0, z
-        
+
     Args:
         ops: A SymmOp object representing the symmetry operation to transform
         affine_matrix: 4x4 affine transformation matrix
-        
+
     Returns:
         SymmOp: The transformed symmetry operation
     """
@@ -3394,7 +3400,7 @@ def jk_from_i(i, olist):
     """
     Given an organized list (Wyckoff positions or orientations), determine the
     two indices which correspond to a single index for an unorganized list.
-    
+
     Used mainly for organized Wyckoff position lists, but can be used for other
     lists organized in a similar way
 
@@ -3998,7 +4004,7 @@ def get_generators(num, dim=3):
     Returns a list of Wyckoff generators for a given group.
         - 1st index: index of WP in sg (0 is the WP with largest multiplicity)
         - 2nd index: a generator for the WP
-    
+
     This function is useful for rotating molecules based on Wyckoff position,
     since special Wyckoff positions only encode positional information, but not
     information about the orientation. The generators for each Wyckoff position
@@ -4569,19 +4575,19 @@ def abc2matrix(abc):
 
     Args:
         abc (str): String representation in formats like:
-            - 'a, b, c' 
+            - 'a, b, c'
             - 'a+c, b, c'
             - 'a+1/4, b+1/4, c'
 
     Returns:
         tuple: Contains:
-            - 3x3 rotation matrix 
+            - 3x3 rotation matrix
             - 3-element translation vector
 
     Examples:
         >>> abc2matrix('a+1/4, b+1/4, c')
         (array([[1., 0., 0.],
-                [0., 1., 0.], 
+                [0., 1., 0.],
                 [0., 0., 1.]]), array([0.25, 0.25, 0.  ]))
     """
     rot_matrix = np.zeros((3, 3))
@@ -4680,10 +4686,10 @@ def trim_ops(ops):
     Convert the operation to the simplest form. For example:
         - ``x+1/8, y+1/8, z+1/8`` -> ``x, y, z``
         - ``1/8, y+1/8, -y+1/8`` -> ``1/8, y, -y+1/4``
-    
+
     Args:
         ops (list): List of symmetry operations
-    
+
     Returns:
         list: List of simplified symmetry operations
     """

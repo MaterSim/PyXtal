@@ -831,7 +831,7 @@ selectively substituting Si atoms:
 
     # load the alpha-cristobalite SiO2
     xtal_sio2 = pyxtal()
-    xtal_sio2.from_spg_wps_rep(92, ['4a', '8b'], [5.0847, 7.0986, 0.2944, 0.0941, 0.2410, 0.8256], ['Si', 'O'])
+    xtal_sio2.from_prototype('a-cristobalite')
     print(xtal_sio2)
 
     xtals_alpo4 = xtal_sio2.substitute_1_2({'Si': ['Al', 'P']})
@@ -903,10 +903,10 @@ O atoms.
     Al @ [ 0.0000  0.0000  0.2418], WP [4e] Site [..2]
     Al @ [ 0.1294  0.6392  0.0000], WP [4g] Site [..m]
     Si @ [ 0.2458  0.2522  0.0000], WP [4g] Site [..m]
-    O @ [ 0.4241  0.3636  0.0000], WP [4g] Site [..m]
-    O @ [ 0.5538  0.2648  0.0000], WP [4g] Site [..m]
-    O @ [ 0.0000  0.5000  0.6057], WP [4f] Site [..2]
-    O @ [ 0.8809  0.5970  0.0786], WP [8h] Site [1]
+    O  @ [ 0.4241  0.3636  0.0000], WP [4g] Site [..m]
+    O  @ [ 0.5538  0.2648  0.0000], WP [4g] Site [..m]
+    O  @ [ 0.0000  0.5000  0.6057], WP [4f] Site [..2]
+    O  @ [ 0.8809  0.5970  0.0786], WP [8h] Site [1]
 
 
 Similarly, PyXtal allows the user to pre-assign the partial information (e.g.,
@@ -1016,6 +1016,49 @@ sites that can host the H₂O molecule.
 1D Representation
 -----------------
 
+Atomic Crystals
+~~~~~~~~~~~~~~~~~~
+
+For the atomic crystal, PyXtal provides a `get_1d_rep_x()` function to convert the crystal into a 1D representation. This function is useful for getting the reduced crystal variables for uniquely describing the crystal structure. 
+
+.. code-block:: Python
+
+    from pyxtal import pyxtal
+    c1 = pyxtal()
+    c1.from_prototype('a-cristobalite')
+    rep = c1.get_1D_rep_x()
+    print(rep)
+
+::
+
+    array([5.085, 7.099, 0.294, 0.094, 0.241, 0.826])
+
+
+The 1D representation is a numpy array that contains continuous variables to describe the unit cell and the Wyckoff sites. Using this representation, one can also build the crystal structure back. For example, the following code snippet shows how to build the crystal structure from the 1D representation.
+
+.. code-block:: Python
+
+    xtal.from_spg_wps_rep(92, 
+                          ["4a", "8b"], 
+                          [5.085, 7.099, 0.294, 0.094, 0.241, 0.826], 
+                          ["Si", "O"])
+    print(xtal)
+
+::
+
+    ------Crystal from 1D rep.------
+    Dimension: 3
+    Composition: Si4O8
+    Group: P 41 21 2 (92)
+    5.0850,   5.0850,   7.0990,  90.0000,  90.0000,  90.0000, tetragonal
+    Wyckoff sites:
+    Si @ [ 0.2940  0.0940  0.2410], WP [4a] Site [..2]
+    O @ [ 0.2410  0.8260  0.0000], WP [8b] Site [1]
+
+
+Molecular Crystals
+~~~~~~~~~~~~~~~~~~
+
 For the molecular crystal, PyXtal also provides a
 `representation <pyxtal.representation.html>`_ class to handle the conversion
 between Pyxtal and its 1D representation. With this module, one can represent the crystal into a 1D array.
@@ -1032,6 +1075,7 @@ between Pyxtal and its 1D representation. With this module, one can represent th
 ::
 
     81 11.23  6.54 11.23  95.9 1 0.23 0.59 0.03   44.1  -25.2   32.5   82.9    2.8 -178.3 1
+
 
 In the 1D string, the data is organized as follows
 
