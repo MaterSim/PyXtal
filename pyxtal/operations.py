@@ -769,6 +769,7 @@ class OperationAnalyzer(SymmOp):
                             #print('convert hex', self.axis, np.dot(self.axis, hex_cell))
                             self.axis = np.dot(self.axis, hex_cell)
                 if np.isclose(self.angle, 0):
+                    #self.axis = None
                     self.symbol = "-1"
                     self.type = "inversion"
                     self.order = 2
@@ -798,7 +799,7 @@ class OperationAnalyzer(SymmOp):
                 elif self.rotation_order == 4:
                     self.symbol = '-4'
                 elif self.rotation_order == 6:
-                    self.symbol = -6
+                    self.symbol = '-6'
             elif self.type == 'rotation':
                 self.symbol = str(self.order)
 
@@ -913,7 +914,7 @@ class OperationAnalyzer(SymmOp):
         """
         parse if the axis follows the standard convention
         """
-        ax = self.axis#; print(ax)
+        ax = self.axis#; print('debug ax', ax)
         ax /= np.linalg.norm(ax)
         for direction in all_sym_directions:
             normed = direction / np.linalg.norm(direction)
@@ -931,11 +932,14 @@ class OperationAnalyzer(SymmOp):
         only prints the real part of the axis.
         """
         # Avoid printing '-0.' instead of '0.'
-        if self.axis is not None and len(self.axis) == 3:
+        #print('type', self.type, self.op.as_xyz_str())
+        if self.type not in ['inversion', 'identity'] and len(self.axis) == 3:
             for i, x in enumerate(self.axis):
                 if np.isclose(x, 0):
                     self.axis[i] = 0.0
-        self.axis = np.real(self.axis)
+            self.axis = np.real(self.axis)
+        #else:
+        #    self.axis = None #np.array([1, 0, 0])
         return (
             f" Operation: {self.symbol:4s} {self.type}"
             + f"\n {self.op.as_xyz_str()} at: {self.axis}"

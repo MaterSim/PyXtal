@@ -26,6 +26,14 @@ class TestWP(unittest.TestCase):
     def test_wp_check_translation(self):
         pass
 
+    def test_wp_site_symm_obj(self):
+        for g in range(1, 231):
+            spg = Group(g)
+            for wp in spg:
+                wp.get_site_symmetry_object().to_one_hot()
+            spg.get_spg_symmetry_object().to_one_hot()
+
+
     def test_wp_site_symm(self):
         data = [
             (143, 1, "3.."),

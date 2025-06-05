@@ -3453,13 +3453,13 @@ class site_symmetry:
         # No translation: 7 fundamental / 13 compound symmetries
         # With translation: 18 fundamental / 37 compound symmetries
         if not parse_trans:
-            self.symbols = ["1", "-1", "2", "m", "3", "4", "-4"] #, "-3", "6", "-6"]
+            self.base_symbols = ["1", "-1", "2", "m", "3", "4", "-4"] #, "-3", "6", "-6"]
             self.num_total_symms = 13
         else:
-            self.symbols = ["1", "-1", "2", "2_1", "m", "a", "b", "c", "n", "d",
+            self.base_symbols = ["1", "-1", "2", "2_1", "m", "a", "b", "c", "n", "d",
                             "3", "3_1", "3_2", "4", "4_1", "4_2", "4_3", "-4"]
             self.num_total_symms = 48
-        self.num_base_symms = len(self.symbols)
+        self.num_base_symms = len(self.base_symbols)
         self.num_axes = len(all_sym_directions)
         self.set_table(skip=True)
 
@@ -3471,6 +3471,7 @@ class site_symmetry:
         matrix = self.to_matrix_representation()
         one_hot_matrix = np.zeros([self.num_axes, self.num_total_symms], dtype=int)
         for i in range(self.num_axes):
+            #if verbose: print(matrix[i])
             symbol, id = self.get_highest_symmetry(matrix[i])
             if verbose: print(i, all_sym_directions[i], matrix[i], symbol)
             one_hot_matrix[i, id] = 1
@@ -3479,7 +3480,7 @@ class site_symmetry:
     def to_matrix_representation(self):
         """
         To create a binary matrix to represent the symmetry elements on each axis
-        Translation is alos counted here.
+        Translation is also counted here.
         """
         matrix = np.zeros([self.num_axes, self.num_base_symms], dtype=int)
         # every direction must has identity symmetry
@@ -3489,6 +3490,7 @@ class site_symmetry:
         for opa in self.opas:
             if opa.type == "inversion":
                 self.inversion = True
+                #print('add inversion'); import sys; sys.exit()
 
             elif opa.type != "identity":
                 # Find the axis
@@ -3504,9 +3506,46 @@ class site_symmetry:
                 # Find the symmetry element
                 if store:
                     # Pure rotation
-                    if opa.symbol in self.symbols:
-                        matrix[i, self.symbols.index(opa.symbol)] = 1
-                        #print('add symmetry', opa.symbol, i, ax, opa.type)
+                    #print('trial opa.symbol', opa.symbol, opa.axis, i)
+                    if opa.symbol in self.base_symbols:
+                        matrix[i, self.base_symbols.index(opa.symbol)] = 1
+                        #print('add', opa.symbol)
+                    else:
+                        if opa.symbol == '-3':
+                            # add (-1, 3)
+                            if not self.parse_trans:
+                                matrix[i, 4] = 1 #np.array([1, 1, 0, 0, 1, 0, 0])
+                            else:
+                                matrix[i, 10] = 1
+                        elif opa.symbol == '6':
+                            # add (1, 2, 3)
+                            if not self.parse_trans:
+                                matrix[i, 2], matrix[i, 4] = 1, 1 # = np.array([1, 0, 1, 0, 1, 0, 0])
+                            else:
+                                matrix[i, 2], matrix[i, 10] = 1, 1 # = np.array([1, 0, 1, 0, 1, 0, 0])
+                        elif opa.symbol == '-6':
+                            # add (1, m, 3)
+                            if not self.parse_trans:
+                                matrix[i, 3], matrix[i, 4] = 1, 1
+                            else:
+                                matrix[i, 4], matrix[i, 10] = 1, 1
+                        elif opa.symbol == '6_1':
+                            # add (2_1, 3_1)
+                            matrix[i, 3], matrix[i, 11] = 1, 1
+                        elif opa.symbol == '6_5':
+                            # add (2_1, 3_2)
+                            matrix[i, 3], matrix[i, 12] = 1, 1
+                        elif opa.symbol == '6_2':
+                            # add (2, 3_2)
+                            matrix[i, 2], matrix[i, 12] = 1, 1
+                        elif opa.symbol == '6_4':
+                            # add (2, 3_1)
+                            matrix[i, 2], matrix[i, 11] = 1, 1
+                        elif opa.symbol == '6_3':
+                            # add (2_1, 3)
+                            matrix[i, 3], matrix[i, 10] = 1, 1
+                        else:
+                            print('bug in symbol', len(opa.symbol), type(opa.symbol), opa.symbol); import sys; sys.exit()
                         #print(matrix[i])
                     #else:
                     #    print("To debug", opa.symbol, opa)
@@ -3517,7 +3556,7 @@ class site_symmetry:
 
             if self.inversion:
                 matrix[:, 1] = 1  # if inversion is present
-        #print('matrix 0', matrix[0])
+        #print('matrix 0', matrix)
         return self.correct_matrix(matrix)
 
     def set_table(self, skip=False):
@@ -3833,6 +3872,12 @@ class site_symmetry:
                     row[2] = 0
                 # P63/mcm [2/c]
                 elif np.array_equal(row, [1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]):
+                    row[4] = 0
+                # P-3 (add m)
+                elif np.array_equal(row, [1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]):
+                    row[4] = 0
+                # P-6
+                elif np.array_equal(row, [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]):
                     row[4] = 0
         else:
             for row in matrix:
