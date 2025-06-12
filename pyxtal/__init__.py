@@ -1992,7 +1992,7 @@ class pyxtal:
                     break
         return special
 
-    def to_subgroup(self, path=None, t_only=True, iterate=False, species=None):
+    def to_subgroup(self, path=None, t_only=True, iterate=False, species=None, verbose=False):
         """
         Transform a crystal with special sites to a subgroup representation with general sites.
 
@@ -2001,6 +2001,7 @@ class pyxtal:
             t_only (bool): Whether to use only translationengleiche (t) transitions. Defaults to True.
             iterate (bool): Whether to transform iteratively until all sites are general. Defaults to False.
             species (list, optional): List of atomic species to transform. Defaults to None.
+            verbose (bool): Whether to print detailed information during transformation. Defaults to False.
 
         Returns:
             pyxtal: A new pyxtal structure in the subgroup setting with general Wyckoff positions
@@ -2025,11 +2026,9 @@ class pyxtal:
                 max_index = max(
                     [site.wp.index for site in sites if site.specie in species])
             # print([site.wp.index for site in sites])
-            if self.molecular:
-                path = self.group.short_path_to_general_wp(max_index, t_only)
-            else:
-                path = self.group.short_path_to_general_wp(max_index, t_only)
-            # print(max_index, path)
+
+            path = self.group.short_path_to_general_wp(max_index, t_only)
+            if verbose: print("Identified path", path)
 
         if path is not None:
             gtypes, ids = [], []

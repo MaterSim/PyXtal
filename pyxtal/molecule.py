@@ -248,11 +248,11 @@ class pyxtal_molecule:
         mol (str or pymatgen.Molecule): The molecule representation, either as a string
             (SMILES or filename) or as a pymatgen `Molecule` object.
         tm (Tol_matrix, optional): A tolerance matrix object, used for molecular tolerances.
-        symmetrize (bool, optional): Whether to symmetrize the molecule using its point group.
+        symmetrize (bool, optional): Whether to symmetrize the molecule by point group.
         fix (bool, optional): Fix torsions in the molecule.
         torsions (list, optional): List of torsions to analyze or fix.
         seed (int, optional): Random seed for internal processes. Defaults to a hex seed.
-        random_state (int or numpy.Generator, optional): Numpy random state for random number generation.
+        random_state (int or numpy.Generator, optional): state for random number generation.
         symtol (float, optional): Symmetry tolerance. Default is 0.3.
         active_sites (list, optional): List of active sites within the molecule.
     """
@@ -432,7 +432,7 @@ class pyxtal_molecule:
         Returns:
             tuple:
             - cell (ndarray): Box axis vectors
-            - vertices (ndarray): [N,3] array of box vertices in Cartesian coordinates 
+            - vertices (ndarray): [N,3] array of box vertices in Cartesian coordinates
             - center (ndarray): Box center coordinates
         """
         cell = self.get_principle_axes(xyz).T
@@ -664,21 +664,21 @@ class pyxtal_molecule:
     def get_coefs_matrix(self, mol2=None, ignore_error=True):
         """
         Get the Atom-Atom potential parameters between two molecules.
-        
+
         Calculates coefficients A, B, C for the potential energy equation:
-        
+
             E = A*exp(-B*R) - C*R^(-6)
-            
+
         Parameters are from Gavezotti, Acc. Chem. Res., 27, 1994.
-        
+
         Args:
             mol2 (pyxtal_molecule, optional): Second molecule to calculate interaction with.
                 If None, uses same molecule.
-            ignore_error (bool): Whether to ignore errors for unsupported atoms. 
+            ignore_error (bool): Whether to ignore errors for unsupported atoms.
                 Defaults to True.
-            
+
         Returns:
-            ndarray: Array of shape (n_atoms1, n_atoms2, 3) containing A, B, C 
+            ndarray: Array of shape (n_atoms1, n_atoms2, 3) containing A, B, C
             coefficients for each atom pair. These are used to compute the
             intermolecular energy. Units are Kcal/mol and angstrom.
         """
@@ -1014,7 +1014,7 @@ class pyxtal_molecule:
         Get the torsion angles for the molecule.
 
         Args:
-            xyz (ndarray, optional): Coordinates to compute angles for. 
+            xyz (ndarray, optional): Coordinates to compute angles for.
                 If None, uses current molecular coordinates.
             torsionlist (list, optional): List of torsion definitions.
                 If None, uses molecule's torsionlist.
@@ -1177,7 +1177,7 @@ class pyxtal_molecule:
 
         Returns:
             tuple:
-            - array: Euler angles in degrees [alpha, beta, gamma] 
+            - array: Euler angles in degrees [alpha, beta, gamma]
             - float: RMSD from reference orientation
             - bool: Whether reflection was applied
         """
@@ -1273,15 +1273,15 @@ class pyxtal_molecule:
     def get_symmetry(self, xyz=None, symmetrize=False, rtol=0.30):
         """
         Set the molecule's point symmetry.
-        
+
         Sets the following attributes:
-            - pga: Point group analyzer from pymatgen 
+            - pga: Point group analyzer from pymatgen
             - pg: Point group from pyxtal
             - symops: List of symmetry operations
 
         Args:
             xyz (ndarray, optional): Coordinates to analyze. Defaults to current coordinates.
-            symmetrize (bool, optional): Whether to symmetrize coordinates. Defaults to False. 
+            symmetrize (bool, optional): Whether to symmetrize coordinates. Defaults to False.
             rtol (float, optional): Symmetry tolerance. Defaults to 0.30.
         """
         mol = deepcopy(self.mol) if xyz is None else Molecule(self.symbols, xyz)
@@ -1602,11 +1602,11 @@ class Orientation:
     generating orientations which differ only in their rotation about a given axis.
 
     Args:
-        matrix (ndarray): A 3x3 rotation matrix describing the orientation 
+        matrix (ndarray): A 3x3 rotation matrix describing the orientation
             (and/or inversion) to store
         degrees (int): The number of degrees of freedom:
             - 0: The orientation refers to a single rotation matrix
-            - 1: The orientation can be rotated about a single axis 
+            - 1: The orientation can be rotated about a single axis
             - 2: The orientation can be any pure rotation matrix
         axis (ndarray, optional): Axis about which the orientation can rotate.
             Only used if degrees is equal to 1
@@ -1834,13 +1834,13 @@ def get_inertia_tensor(coords, weights=None):
 def reoriented_molecule(mol):
     """
     Align a molecule so that its principal axes are aligned with the coordinate axes.
-    
+
     Reorients the molecule by computing its inertia tensor and rotating it such that
     the principal axes align with the x, y, z coordinate axes.
 
     Args:
         mol (Molecule): A pymatgen Molecule object to reorient.
-        
+
     Returns:
         tuple:
             - mol (Molecule): A reoriented copy of the input molecule

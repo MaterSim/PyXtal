@@ -717,7 +717,7 @@ def get_pmg_dist(pmg1, pmg2, ltol=0.3, stol=0.3, angle_tol=5.0, scale=True):
     """
     from pymatgen.analysis.structure_matcher import StructureMatcher
     sm = StructureMatcher(ltol=ltol, stol=stol, angle_tol=angle_tol, scale=scale)
-    are_match = sm.fit(pmg1, pmg2, bool=True)
+    are_match = sm.fit(pmg1, pmg2)#, symmetric==True)
     if are_match:
         return sm.get_rms_dist(pmg1, pmg2)[0]
     else:
