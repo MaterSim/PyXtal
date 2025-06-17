@@ -421,13 +421,16 @@ class pyxtal:
 
         Args:
             seed: cif/poscar file or a pymatgen Structure object
-            molecules: a list of reference molecule (xyz file or Pyxtal molecule)
+            molecules: a list of reference molecule (xyz or Pyxtal molecule)
             tol (float): scale factor for covalent bond distance
             ignore_HH (bool): whether ignore short H-H distance in molecules
             add_H (bool): whether add H atoms
             backend (str): structure parser, default is pymatgen
             style (str): ``pyxtal`` or ``spglib``
             standard (bool): whether or not optimize lattice
+            hn (int, optional): space group hall number
+            a_tol (float): angle tolerance for pymatgen symmetry find.
+            standard (bool): whether to use standard setting
 
         """
 
@@ -438,7 +441,7 @@ class pyxtal:
                     pmols.append(mol)
                 else:
                     pmols.append(pyxtal_molecule(mol, fix=True))
-            # QZ: the default will not work for molecular H2, which is rare!
+            # QZ: the default will not work for molecular H2!
             struc = structure_from_ext(
                 seed, pmols, ignore_HH=ignore_HH, add_H=add_H, hn=hn)
             self.mol_sites = struc.make_mol_sites()
@@ -498,12 +501,9 @@ class pyxtal:
         try:
             sym_struc, number = get_symmetrized_pmg(
                 struc, tol, a_tol, style, hn)
-            # print(sym_struc)
-            # import sys; sys.exit()
+            # print(sym_struc); import sys; sys.exit()
         except TypeError:
             print("Failed to load the Pymatgen structure")
-        #    print(struc)
-        #    self.valid = False
 
         if self.valid:
             d = sym_struc.composition.as_dict()
@@ -537,7 +537,7 @@ class pyxtal:
                         print(wp.symbol, wp.number, wp.letter, wp)
                         print("sym_struc_sites", sym_struc)
                         raise RuntimeError(
-                            "Cannot extract the right mapping from spglib")
+                            "Cannot extract the mapping from spglib")
                         # break
                     else:
                         atom_sites.append(atom_site(wp, pos1, specie))
@@ -568,7 +568,7 @@ class pyxtal:
 
     def check_H_coordination(self, r=1.12):
         """
-        A function to check short if H is connected to more than one atom
+        A function to check if H is connected to more than one atom
         Mainly used for debug, powered by pymatgen
 
         Args:
@@ -584,7 +584,7 @@ class pyxtal:
                 if pmg_struc.sites[i].specie.number == 1 and len(neighs) > 1:
                     return True
         else:
-            raise NotImplementedError("Does not support cluster for now")
+            raise NotImplementedError("Donot support cluster now")
         return False
 
     def check_short_distances(self, r=0.7, exclude_H=True):
@@ -593,8 +593,8 @@ class pyxtal:
         Mainly used for debug, powered by pymatgen
 
         Args:
-            r: the given cutoff distances
-            exclude_H: whether or not exclude the H atoms
+            r (float): the given cutoff distances
+            exclude_H (bool): whether or not exclude the H atoms
 
         Returns:
             list of pairs within the cutoff
@@ -653,15 +653,15 @@ class pyxtal:
         header="from_pyxtal",
     ):
         """
-        Creates a file with the given ame and type to store the structure.
-        By default, creates cif files for crystals and xyz files for clusters.
+        Creates a file with the given name and type. By default,
+        creates cif files for crystals and xyz files for clusters.
         For other formats, Pymatgen is used
 
         Args:
             filename (string): the file path
             fmt (string): the file type (`cif`, `xyz`, etc.)
             permission (string): `w` or `a+`
-            sym_num (int): number of sym_ops, None means writing all symops
+            sym_num (int): number of sym_ops, None will write all symops
             header (string): header
 
         Returns:
@@ -746,6 +746,7 @@ class pyxtal:
             max_cell (float): maximum cell reconstruction
             min_cell (float): maximum cell reconstruction
             max_subgroups (int): maximum number of trial subgroups
+
         Returns:
             a list of pyxtal structures with lower symmetries
         """
@@ -953,7 +954,16 @@ class pyxtal:
 
     def _apply_substitution(self, splitter, perms):
         """
-        Apply the substitution
+        Apply the substitution to the structure based on the splitter
+        This function substitutes the atomic species in the structure
+        with the given permutations.
+
+        Args:
+            splitter: wyckoff_splitter object
+            perms: dictionary of atomic substitutions, e.g., {"Si": "C"}
+
+        Returns:
+            new_struc: a new pyxtal with substituted sites
         """
         try:
             new_struc = self._subgroup_by_splitter(splitter)
@@ -1057,6 +1067,10 @@ class pyxtal:
             splitter: wyckoff splitter object
             eps (float): maximum atomic displacement in Angstrom
             mut_lat (bool): whether or not mutate the lattice
+
+        Returns:
+            new_struc: a new pyxtal structure with lower symmetry
+            or None if the transformation fails
         """
         # print(splitter)
         lat1 = np.dot(splitter.R[:3, :3].T, self.lattice.matrix)
@@ -1080,11 +1094,7 @@ class pyxtal:
                 # self.to_file('bug.cif')
                 # import sys; sys.exit()
                 return None
-            # print(np.linalg.det(lat1))
-            # print(self.lattice)
-            # print(self.lattice.matrix)
-            # print(splitter.R[:3,:3].T)
-            # print(lat1); import sys; sys.exit()
+
         if mut_lat:
             try:
                 lattice = lattice.mutate(degree=eps, frozen=False)  # True)

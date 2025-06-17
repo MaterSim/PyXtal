@@ -156,7 +156,7 @@ def has_non_aromatic_ring(smiles):
     )  # No non-aromatic rings found
 
 
-def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5):
+def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5, use_uff=False):
     """
     generate pyxtal_molecules from smiles codes.
 
@@ -166,6 +166,7 @@ def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5):
         N_iter: rdkit parameter
         N_conf: number of conformers
         tol: rdkit parameter
+        use_uff: whether to use UFF for force field optimization
 
     Returns:
         a list of pyxtal molecules
@@ -199,7 +200,11 @@ def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5):
 
     for i in range(N_iter):
         mol = get_conformers(smile, seed=i)
-        res = AllChem.MMFFOptimizeMoleculeConfs(mol)
+        if use_uff:
+            res = AllChem.UFFOptimizeMoleculeConfs(mol)
+        else:
+            res = AllChem.MMFFOptimizeMoleculeConfs(mol)
+
         for id, conf in enumerate(mol.GetConformers()):
             m = m0.copy()
             xyz = m.align(conf)
@@ -247,14 +252,15 @@ class pyxtal_molecule:
     Args:
         mol (str or pymatgen.Molecule): The molecule representation, either as a string
             (SMILES or filename) or as a pymatgen `Molecule` object.
-        tm (Tol_matrix, optional): A tolerance matrix object, used for molecular tolerances.
+        tm (Tol_matrix, optional): A tolerance matrix object, used for bond checking.
         symmetrize (bool, optional): Whether to symmetrize the molecule by point group.
         fix (bool, optional): Fix torsions in the molecule.
         torsions (list, optional): List of torsions to analyze or fix.
-        seed (int, optional): Random seed for internal processes. Defaults to a hex seed.
-        random_state (int or numpy.Generator, optional): state for random number generation.
+        seed (int, optional): Random seed for internal processes.
+        random_state (int or numpy.Generator, optional): state for random seed.
         symtol (float, optional): Symmetry tolerance. Default is 0.3.
         active_sites (list, optional): List of active sites within the molecule.
+        use_uff (bool, optional): Use UFF for force field. Default is False.
     """
 
     def list_molecules():
@@ -274,6 +280,7 @@ class pyxtal_molecule:
         tm=Tol_matrix(prototype="molecular"),
         symtol=0.3,
         active_sites=None,
+        use_uff=False,
     ):
 
         mo = None
@@ -283,6 +290,7 @@ class pyxtal_molecule:
         if seed is None:
             seed = 0xF00D
         self.seed = seed
+        self.use_uff = use_uff
 
         # Active sites is a two list of tuples [(donors), (acceptors)]
         self.active_sites = active_sites
@@ -305,6 +313,9 @@ class pyxtal_molecule:
                         raise NameError(f"{mol:s} is not a valid path")
                 elif tmp[-1] == "smi":
                     self.smile = tmp[0]
+                    # force the use of UFF for SMILES containing P or p
+                    if 'P' in self.smile or 'p' in self.smile:
+                        self.use_uff = True
                     res = self.rdkit_mol_init(tmp[0], fix, torsions)
                     (symbols, xyz, self.torsionlist) = res
                     mo = Molecule(symbols, xyz)
@@ -858,8 +869,10 @@ class pyxtal_molecule:
                 AllChem.EmbedMultipleConfs(mol, 1, ps)
                 if mol.GetNumConformers() == 0:
                     AllChem.EmbedMultipleConfs(mol, 3, ps)
-
-            res = AllChem.MMFFOptimizeMoleculeConfs(mol)
+            if self.use_uff:
+                res = AllChem.UFFOptimizeMoleculeConfs(mol)
+            else:
+                res = AllChem.MMFFOptimizeMoleculeConfs(mol)
             engs = [c[1] for c in res]
             cid = engs.index(min(engs))
             self.rdkit_mb = Chem.MolToMolBlock(mol)
@@ -1080,7 +1093,10 @@ class pyxtal_molecule:
         for i in range(len(self.mol)):
             x, y, z = xyz[i]
             conf0.SetAtomPosition(i, Point3D(x, y, z))
-        res = AllChem.MMFFOptimizeMoleculeConfs(mol)
+        if self.use_uff:
+            res = AllChem.UFFOptimizeMoleculeConfs(mol)
+        else:
+            res = AllChem.MMFFOptimizeMoleculeConfs(mol)
         xyz = self.align(conf0) if align else mol.GetConformer(0).GetPositions()
         return xyz, res[0][1]
 
