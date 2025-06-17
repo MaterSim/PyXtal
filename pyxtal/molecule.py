@@ -180,7 +180,7 @@ def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5, use_uff=Fa
         if has_non_aromatic_ring(smile):
             Num = 10
     else:
-        Num = len(tor)
+        Num = len(torsionlist)
 
     def get_conformers(smile, seed):
         mol = Chem.MolFromSmiles(smile)

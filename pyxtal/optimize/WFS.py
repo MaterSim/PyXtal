@@ -36,7 +36,7 @@ class WFS(GlobalOptimize):
         cif (str): cif file name to store all structure information
         block: block mode
         num_block: list of blocks
-        compositions: list of composition, (default is [1]*Num_mol)
+        composition: list of composition, (default is [1]*Num_mol)
         lattice (bool): whether or not supply the lattice
         torsions: list of torsion angle
         molecules (list): list of pyxtal_molecule objects
