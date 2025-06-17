@@ -186,7 +186,7 @@ def randomizer(
             use_hall=True,
             #random_state=random_state,
         )
-        if xtal.valid:
+        if xtal.valid and len(xtal.check_short_distances(exclude_H=True))==0:
             break
 
     if xtal.has_special_site():
