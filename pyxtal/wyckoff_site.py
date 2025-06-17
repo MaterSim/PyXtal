@@ -1097,9 +1097,9 @@ class mol_site:
         center = self.molecule.get_center(coords)
         mol = Molecule(self.symbols, coords - center)
 
-        # match, _ = compare_mol_connectivity(mol, self.mol, True)
         # Update the orientation matrix
-        match, _ = compare_mol_connectivity(mol, self.molecule.mol)
+        match, _ = compare_mol_connectivity(mol, self.molecule.mol,
+                                            ignore_HH=True)
         if match:
             # position = np.mean(coords, axis=0).dot(self.lattice.inv_matrix)
             position = center.dot(self.lattice.inv_matrix)
@@ -1125,12 +1125,11 @@ class mol_site:
                     else:
                         raise ValueError("rotation matrix is wrong")
         else:
-            import pickle
-
-            with open("wrong.pkl", "wb") as f:
-                pickle.dump([mol, self.molecule.mol], f)
-                mol.to(filename="Wrong.xyz", fmt="xyz")
-                self.molecule.mol.to(filename="Ref.xyz", fmt="xyz")
+            #import pickle
+            #with open("wrong.pkl", "wb") as f:
+            #    pickle.dump([mol, self.molecule.mol], f)
+            mol.to(filename="Wrong.xyz", fmt="xyz")
+            self.molecule.mol.to(filename="Ref.xyz", fmt="xyz")
             raise ValueError("molecular connectivity changes! Exit")
         # todo check if connectivty changed
 
