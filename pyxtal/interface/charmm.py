@@ -136,6 +136,9 @@ class CHARMM:
                 return result.returncode  # Or handle the result as needed
             except subprocess.CalledProcessError as e:
                 print(f"Command '{cmd}' failed with return code {e.returncode}.")
+                os.system(f'cp {self.input} err-{self.input}')
+                os.system(f'cp {self.crd} err-{self.crd}')
+                os.system(f'cp {self.psf} err-{self.psf}')
                 return None
             except subprocess.TimeoutExpired:
                 print(f"External command {cmd} timed out.")
