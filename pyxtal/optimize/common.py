@@ -70,7 +70,10 @@ def check_stable_structure(xtal, c_info, w_dir, job_tag, skip_ani, optimizer, di
 
 
 def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125, random_state=None):
-    """A random mutation."""
+    """
+    A random mutation.
+    """
+
     rng = np.random.default_rng(random_state)
     # perturb cell
     comp = xtal.get_1D_comp()
@@ -78,14 +81,23 @@ def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125, random_state=None):
     if opt_lat:
         if ref_pxrd is None:
             sg = x[0][0]
-            disp_cell = rng.uniform(-1.0, 1.0, len(x[0]) - 1)
-            if sg <= 2:  # no change in angles to prevent some bad angles
-                disp_cell[3:] = 0
-            x[0][1:] *= 1 + dr * disp_cell
+            if rng.random() > 0.5:
+                disp_cell = rng.uniform(-1.0, 1.0, len(x[0]) - 1)
+                if sg <= 2: disp_cell[3:] = 0 # prevent some bad angles
+                x[0][1:] *= 1 + dr * disp_cell
 
-            # flip the inclination angle
-            if 3 <= sg <= 15 and rng.random() > 0.7 and abs(90 - x[0][-1]) < 15:
-                x[0][-1] = 180 - x[0][-1]
+                # flip the inclination angle
+                if 3 <= sg <= 15 and rng.random() > 0.7 and abs(90 - x[0][-1]) < 15:
+                    x[0][-1] = 180 - x[0][-1]
+            else:
+                # pure tension 15-25%
+                if sg <= 74: # pick a, b, c
+                    axis = rng.choice([0, 1, 2])
+                elif sg <= 194: # a, c
+                    axis = rng.choice([0, 1])
+                else: # c
+                    axis = 0
+                x[0][axis] *= 1.15 + 0.1 * rng.random()
         else:
             thetas = [ref_pxrd[0][0], min([35, ref_pxrd[0][-1]])]
             _, x[0][1:], _ = pxrd_refine(xtal, ref_pxrd, thetas)
@@ -108,12 +120,13 @@ def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125, random_state=None):
                 struc.molecules[i].active_sites = molecule.active_sites
         return struc
     except:
+        print("Trouble to get the representation")
         print(xtal)
         print("x", x)
         print("smiles", smiles)
         print("comp", comp)
         xtal.to_file("bug.cif")
-        print("is_valid_matrix\n", xtal.lattice.get_matrix())
+        #print("is_valid_matrix\n", xtal.lattice.get_matrix())
         print("cell_para", xtal.lattice.get_para(degree=True))
         print(x[0])
         #raise RuntimeError("Problem occurs in mutation_lattice")
