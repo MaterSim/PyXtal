@@ -790,7 +790,7 @@ class builder(object):
 
             # After each minibatch, delete the local variables and run garbage collection
             del ids, _xtals, _xs
-            gc.collect()  # Explicitly call garbage collector to free memory
+            #gc.collect()  # Explicitly call garbage collector to free memory
 
         xtals_opt = list(xtals_opt)
         print(f"Rank {self.rank} finish optimize_reps_mproc {len(xtals_opt)}")

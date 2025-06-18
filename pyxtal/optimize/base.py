@@ -1017,7 +1017,7 @@ class GlobalOptimize:
             sns.set_context("talk", font_scale=0.9)
 
             if figname is None:
-                figname = self.suffix + "-results.pdf"
+                figname = self.suffix + "-results.png"
 
             data1 = []
             data2 = []
