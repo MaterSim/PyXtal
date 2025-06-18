@@ -72,12 +72,12 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile=Non
             _fmax = np.sqrt((forces ** 2).sum(axis=1).max())
             eng = struc.get_potential_energy() / len(struc)
             if _fmax > 100:
-                logger.info(f"Warning {label} big stress {eng:.2f} / {_fmax:.2f}, skip")
+                #logger.info(f"Warning {label} big stress {eng:.2f} / {_fmax:.2f}, skip")
                 struc = None
-            else:
-                logger.info(f"{label} Success  {eng:.2f} / {_fmax:.2f}")
+            #else:
+            #    logger.info(f"{label} Success  {eng:.2f} / {_fmax:.2f}")
         else:
-            logger.info(f"Warning {label} big stress {_fmax:.2f} for 20 steps, skip")
+            #logger.info(f"Warning {label} big stress {_fmax:.2f} for 20 steps, skip")
             struc = None
         signal.alarm(0)  # Cancel the alarm if finished within time
 
@@ -91,7 +91,7 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile=Non
         signal.alarm(0)  # Cancel the alarm if finished within time
 
     tag = 'False' if struc is None else 'True'
-    logger.info(f"Finishing {label} {tag}")
+    #logger.info(f"Finishing {label} {tag}")
     #signal.alarm(0)  # Cancel the alarm
     return struc #, eng, _fmax
 
