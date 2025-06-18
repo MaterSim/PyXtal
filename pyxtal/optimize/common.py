@@ -305,7 +305,7 @@ def optimizer(
         if (
             struc.energy < 9999
             and struc.lattice.is_valid_matrix()
-            and struc.check_distance()
+            # and struc.check_distance()
             and 0.25 < struc.get_density() < 3.0
         ):
             s = struc.to_ase()
