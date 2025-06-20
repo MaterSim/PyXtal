@@ -323,6 +323,7 @@ def optimizer(
         ):
             s = struc.to_ase()
             s = ASE_relax(s, 'ANI', step=50, fmax=0.1, logfile="ase.log")
+            if s is None: return None
             eng = s.get_potential_energy()
             stress = max(abs(s.get_stress())) / units.GPa  # print(id, eng, stress)
 

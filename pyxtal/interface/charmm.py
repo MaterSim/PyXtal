@@ -219,8 +219,7 @@ class CHARMM:
                         print("Unexpectedly large input coordinates, stop and debug")
                         print(self.structure)
                         self.structure.to_file('bug.cif')
-                        import sys
-                        sys.exit()
+                        import sys; sys.exit()
 
             f.write(f"write psf card name {self.psf:s}\n")
             f.write(f"write coor crd card name {self.crd:s}\n")
