@@ -226,7 +226,6 @@ class QRS(GlobalOptimize):
         for gen in range(self.N_gen):
             self.generation = gen
             cur_xtals = None
-            self.logging.info(f"Gen {gen} starts in Rank {self.rank}")
 
             if self.rank == 0:
                 print(f"\nGeneration {gen:d} starts")
