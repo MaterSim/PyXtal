@@ -301,6 +301,9 @@ class GlobalOptimize:
             self.best_reps = []
             self.reps = []
             self.engs = []
+            # Setup the stats [N_gen, Npop, (E, matches, stable)]
+            self.stats = np.zeros([self.N_gen, self.N_pop, 3])
+            self.stats[:, :, 0] = self.E_max
 
     def print(self, *args, **kwargs):
         """Utility method to print only from rank 0."""
@@ -826,10 +829,16 @@ class GlobalOptimize:
         for pop in range(len(xtals)):
             xtal = xtals[pop][0]
             job_tag = self.tag + "-g" + str(gen) + "-p" + str(pop)
-            mutated = False if qrs else xtal is not None
+            if qrs:
+                mutated = False
+            else:
+                if xtals[pop][1] == "Mutation":
+                    mutated = True
+                else:
+                    mutated = False
             my_args = [xtal, pop, mutated, job_tag, *args]
-            xtal, match = optimizer_single(*tuple(my_args))
-            gen_results[pop] = (pop, xtal, match)
+            xtal, match, stable = optimizer_single(*tuple(my_args))
+            gen_results[pop] = (pop, xtal, match, stable)
         return gen_results
 
     def local_optimization_mpi(self, xtals, qrs, pool):
@@ -871,8 +880,8 @@ class GlobalOptimize:
             gen_results = [(None, None, None)] * len(xtals)
             for result_set in all_results:
                 for res in result_set:
-                    (id, xtal, match) = res
-                    gen_results[id] = (id, xtal, match)
+                    (id, xtal, match, stable) = res
+                    gen_results[id] = (id, xtal, match, stable)
 
         # Broadcast
         self.logging.info(f"Rank {self.rank} MPI_bcast at gen {gen}")
@@ -905,7 +914,16 @@ class GlobalOptimize:
                 job_tags = [self.tag + "-g" + str(gen)
                             + "-p" + str(id) for id in _ids]
                 _xtals = [xtals[id][0] for id in range(id1, id2)]
-                mutates = [False if qrs else xtal is not None for xtal in _xtals]
+                mutates = []
+                for i in range(len(_xtals)):
+                    if qrs:
+                        mutates.append(False)
+                    else:
+                        if _xtals[i][1] == "Mutation":
+                            mutates.append(True)
+                        else:
+                            mutates.append(False)
+                #mutates = [False if qrs else xtal is not None for xtal in _xtals]
                 my_args = [_xtals, _ids, mutates, job_tags, *args, self.rank, self.timeout]
                 yield tuple(my_args)  # Yield args instead of appending to a list
 
@@ -923,11 +941,12 @@ class GlobalOptimize:
 
         Args:
             t0 (float): time stamp
-            gen_results: list of results (id, xtal, match)
+            gen_results: list of results (id, xtal, match, stable)
             xtals: list of (xtal, tag) tuples
         """
         matches = [False] if self.ref_pxrd is None else [0.0]
         matches *= self.N_pop
+        stables = [False] * self.N_pop
 
         eng0s = [self.E_max] * self.N_pop
         reps = [None] * self.N_pop
@@ -935,13 +954,14 @@ class GlobalOptimize:
         gen = self.generation
 
         for res in gen_results:
-            (id, xtal, match) = res
+            (id, xtal, match, stable) = res
 
             if xtal is not None:
                 new_xtals[id] = (xtal, xtals[id][1])
                 eng0s[id] = xtal.energy / sum(xtal.numMols)
                 reps[id] = xtal.get_1D_representation()
                 matches[id] = match
+                stables[id] = stable
 
                 # Don't write bad structure
                 if self.cif is not None and xtal.energy < 9999:
@@ -953,6 +973,7 @@ class GlobalOptimize:
                 self.engs.append(xtal.energy / sum(xtal.numMols))
                 self.stats[gen][id][0] = xtal.energy / sum(xtal.numMols)
                 self.stats[gen][id][1] = match
+                self.stats[gen][id][2] = stable
 
         self.min_energy = np.min(np.array(self.engs))
         self.N_struc = len(self.engs)

@@ -20,7 +20,7 @@ from pyxtal.XRD import Similarity, pxrd_refine
 
 warnings.filterwarnings("ignore")
 
-def sweep(xtal, comp, c_info, w_dir, job_tag, skip_ani, optimizer):
+def sweep(xtal, comp, c_info, w_dir, job_tag, skip_ani, optimizer, eps=[0.05, -0.02]):
     """
     Check the stability of input xtal based on 5% tension
 
@@ -32,44 +32,45 @@ def sweep(xtal, comp, c_info, w_dir, job_tag, skip_ani, optimizer):
         job_tag: job tag for CHARMM
         skip_ani: skip ANI relaxation
         optimizer: the optimizer function to use
+        eps: list of tension and compression factors
 
     Returns:
         xtal0: the relaxed structure
         eng0: the energy of the relaxed structure
+        stable: whether the structure was updated
     """
     N = sum(xtal.numMols)
     comp = xtal.get_1D_comp()
     res = optimizer(xtal, c_info, w_dir, job_tag, skip_ani=skip_ani)
-    smiles = [m.smile for m in xtal.molecules]
-    sg = xtal.group.number
-    if sg <= 74:
-        abc = 3
-    elif sg <= 194:
-        abc = 2
-    else:
-        abc = 1
-
     if res is None: return None
+
     xtal0, eng0 = res["xtal"], res["energy"]
-    rep0 = xtal0.get_1D_representation()
     cell0 = np.array(xtal.lattice.encode())
     wps = [site.encode() for site in xtal0.mol_sites]
+    smiles = [m.smile for m in xtal.molecules]
+
+    # Check if the structure is stable w.r.t. 5% tension/compression
+    stable = True
+    sg = xtal.group.number
+    abc = 3 if sg <= 74 else (2 if sg <= 194 else 1)
     for id in range(abc):
         cell = cell0.copy()
-        cell[id] *= 1.05
-        x = [[xtal0.group.hall_number] + cell.tolist()]
-        x.extend(wps)
-        rep1 = representation(x, smiles)
-        print("Init", rep1.to_string())
-        xtal1 = rep1.to_pyxtal(composition=comp)
-        res = optimizer(xtal1, c_info, w_dir, job_tag, skip_ani=skip_ani)
-        if res is not None:
-            xtal2, eng = res["xtal"], res["energy"]
-            if eng < eng0 + 1e-4:
-                xtal0, eng0 = xtal2, eng
-                rep2 = xtal0.get_1D_representation()
-                print("Update", rep2.to_string(eng0/N))
-    return xtal0, eng0
+        for eps_i in eps:
+            cell[id] *= (1 + eps_i) #1.05
+            x = [[xtal0.group.hall_number] + cell.tolist()]
+            x.extend(wps)
+            rep1 = representation(x, smiles)
+            # print("Init", rep1.to_string())
+            xtal1 = rep1.to_pyxtal(composition=comp)
+            res = optimizer(xtal1, c_info, w_dir, job_tag, skip_ani=skip_ani)
+            if res is not None:
+                xtal2, eng = res["xtal"], res["energy"]
+                if eng < eng0 - 1e-2:
+                    rep2 = xtal0.get_1D_representation()
+                    print(rep2.to_string(eng/N), f"<- {eng0/N:.2f} ({id}@{eps_i:.2f})")
+                    xtal0, eng0 = xtal2, eng
+                    stable = False
+    return xtal0, eng0, stable
 
 
 def check_stable_structure(xtal, c_info, w_dir, job_tag, skip_ani, optimizer, disps=[0.5, 5.0], random=False):
@@ -83,7 +84,6 @@ def check_stable_structure(xtal, c_info, w_dir, job_tag, skip_ani, optimizer, di
     smiles = [m.smile for m in xtal.molecules]#; print(smiles)
     if res is not None:
         xtal0, eng0 = res["xtal"], res["energy"]
-        rep0 = xtal0.get_1D_representation()
         cell0 = np.array(xtal.lattice.encode())
 
         for i, c in enumerate(cell0):
@@ -543,10 +543,10 @@ def optimizer_single(
         tag = "Random  "
     else:
         if mutate:
-            tag = "Mutation"
             xtal = mutator(xtal, smiles, opt_lat, None)
+            tag = "Mutation "
         else:
-            tag = "QRandom "
+            tag = "Kept "
 
     # 2. Optimization
     if xtal is None:
@@ -555,16 +555,24 @@ def optimizer_single(
         res = optimizer(xtal, atom_info, workdir, job_tag, opt_lat,
                         skip_ani=skip_ani, pre_opt=pre_opt)
 
-    # 3. Check match w.r.t the reference
-    match = False
+    match = False # used for matching with reference
+    stable = True # used for tagging if the structure is stable
     if res is not None:
         xtal, eng = res["xtal"], res["energy"]
         N = sum(xtal.numMols)
         if check_stable and eng < 9999.:
             res = sweep(xtal, comp, atom_info, workdir, job_tag,
                         skip_ani, optimizer)
-            if res is not None: xtal, eng = res
+            if res is not None:
+                xtal, eng, stable = res
+                if stable:
+                    tag += 'Stable'
+                else:
+                    tag += 'Shallow'
+        rep = xtal.get_1D_representation()
+        strs = rep.to_string(None, eng / N, tag)
 
+        # 3. Check match w.r.t the reference
         if ref_pmg is not None:
             pmg_s1 = xtal.to_pymatgen()
             pmg_s1.remove_species("H")
@@ -592,9 +600,9 @@ def optimizer_single(
 
         xtal.energy = eng
         print(f"{id:3d} " + strs)#; import sys; sys.exit()
-        return xtal, match
+        return xtal, match, stable
     else:
-        return None, match
+        return None, match, stable
 
 def refine_struc(xtal, smiles, calculator):
     """

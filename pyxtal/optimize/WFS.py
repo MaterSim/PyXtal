@@ -140,10 +140,6 @@ class WFS(GlobalOptimize):
             pre_opt,
         )
 
-        # Setup the stats [N_gen, Npop, (E, matches)]
-        self.stats = np.zeros([self.N_gen, self.N_pop, 2])
-        self.stats[:, :, 0] = self.E_max
-
         if self.rank == 0:
             strs = self.full_str()
             self.logging.info(strs)
@@ -176,7 +172,7 @@ class WFS(GlobalOptimize):
 
             if self.rank == 0:
                 print(f"\nGeneration {gen:d} starts")
-                self.logging.info(f"Generation {gen:d} starts")
+                self.logging.info(f"Generation {gen} starts")
                 t0 = time()
 
                 # Initialize
@@ -184,12 +180,19 @@ class WFS(GlobalOptimize):
 
                 # WFS update
                 if gen > 0:
-                    N_pops = [int(self.N_pop * i) for i in self.fracs]
-                    count = N_pops[0]
-                    for _sub_pop in range(N_pops[1]):
-                        id = self._selTournament(engs)
-                        cur_xtals[count] = (prev_xtals[id][0], "Mutation")
-                        count += 1
+                    for i in range(self.N_pop):
+                        if self.check_stable and not self.stats[gen-1][i, -1]:
+                            cur_xtals[i] = (prev_xtals[i][0], "Kept")
+                            # If the previously kept structure has no improvement,
+                            # reset it to Mutation
+                            if gen >= 2 and not self.stats[gen-2][i, -1] and \
+                            self.stats[gen-1][i, 0] + 1e-3 > self.stats[gen-2][i, 0]:
+                                cur_xtals[i][0] = "Mutation"
+                        else:
+                            if self.random_state.random() > self.fracs[0]:
+                                # Mutation
+                                id = self._selTournament(engs)
+                                cur_xtals[i] = (prev_xtals[id][0], "Mutation")
 
             # broadcast
             if self.use_mpi: cur_xtals = self.comm.bcast(cur_xtals, root=0)

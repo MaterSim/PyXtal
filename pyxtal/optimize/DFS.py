@@ -137,10 +137,6 @@ class DFS(GlobalOptimize):
             pre_opt,
         )
 
-        # Setup the stats [N_gen, Npop, (E, matches)]
-        self.stats = np.zeros([self.N_gen, self.N_pop, 2])
-        self.stats[:, :, 0] = self.E_max
-
         if self.rank == 0:
             strs = self.full_str()
             self.logging.info(strs)
@@ -185,18 +181,21 @@ class DFS(GlobalOptimize):
                     mid_E = np.median(engs)
 
                     for id in range(self.N_pop):
-
                         # select the structures for further mutation
                         min_E = min([engs[id], hist_best_engs[id]])
                         if min_E < mid_E and cur_survivals[id] < self.N_survival:
-
-                            if self.random_state.random() < 0.7:
+                            # if check_stable and the structure is not stable
+                            if self.check_stable and not self.stats[gen-1][id, -1]:
                                 source = prev_xtals[id][0]
+                                cur_xtals[id] = (source, "Kept")
                             else:
-                                source = hist_best_xtals[id]
+                                if self.random_state.random() < 0.7:
+                                    source = prev_xtals[id][0]
+                                else:
+                                    source = hist_best_xtals[id]
+                                cur_xtals[id] = (source, "Mutation")
 
                             if source is not None:
-                                cur_xtals[id] = (source, "Mutation")
                                 cur_survivals[id] += 1
                                 # Forget about the local best
                                 if cur_survivals[id] == self.N_survival:
@@ -204,9 +203,8 @@ class DFS(GlobalOptimize):
                                     hist_best_xtals[id] = prev_xtals[id][0]
                                 count += 1
 
-                        # Reset it to 0
-                        if cur_xtals[id][1] == "Random":
-                            cur_survivals[id] = 0
+                        # Reset it to 0 for random generation
+                        if cur_xtals[id][1] == "Random": cur_survivals[id] = 0
 
             # broadcast
             if self.use_mpi: cur_xtals = self.comm.bcast(cur_xtals, root=0)

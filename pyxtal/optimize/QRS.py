@@ -191,11 +191,6 @@ class QRS(GlobalOptimize):
             use_mpi,
         )
 
-        # Setup the stats [N_gen, Npop, (E, matches)]
-        self.stats = np.zeros([self.N_gen, self.N_pop, 2])
-        self.stats[:, :, 0] = self.E_max
-
-
         if self.rank == 0:
             strs = self.full_str()
             self.logging.info(strs)
