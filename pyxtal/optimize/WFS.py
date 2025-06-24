@@ -182,12 +182,13 @@ class WFS(GlobalOptimize):
                 if gen > 0:
                     for i in range(self.N_pop):
                         if self.check_stable and not self.stats[gen-1][i, -1]:
-                            cur_xtals[i] = (prev_xtals[i][0], "Kept")
                             # If the previously kept structure has no improvement,
                             # reset it to Mutation
                             if gen >= 2 and not self.stats[gen-2][i, -1] and \
                             self.stats[gen-1][i, 0] + 1e-3 > self.stats[gen-2][i, 0]:
-                                cur_xtals[i][0] = "Mutation"
+                                cur_xtals[i] = (prev_xtals[i][0], "Mutation")
+                            else:
+                                cur_xtals[i] = (prev_xtals[i][0], "Kept")
                         else:
                             if self.random_state.random() > self.fracs[0]:
                                 # Mutation
