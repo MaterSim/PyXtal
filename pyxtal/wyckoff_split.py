@@ -1,13 +1,11 @@
 """
 Module to handle the split of Wyckoff positions
 """
-
 from copy import deepcopy
 import numpy as np
 from numpy.random import Generator
 from pymatgen.core.operations import SymmOp
 import pyxtal.symmetry as sym
-
 
 class wyckoff_split:
     """
@@ -24,7 +22,9 @@ class wyckoff_split:
         elements: corresponding chemical species for each wp
     """
 
-    def __init__(self, G=197, idx=None, wp1=None, group_type="t", elements=None, random_state=None):
+    def __init__(self, G=197, idx=None, wp1=None, group_type="t",
+                 elements=None, random_state=None):
+
         if isinstance(random_state, Generator):
             self.random_state = random_state.spawn(1)[0]
         else:
@@ -529,7 +529,7 @@ if __name__ == "__main__":
     # sp = wyckoff_split(G=14, idx=1, wp1=['2c', '4e'], group_type='t')
     # print(sp)
     for idx in range(4):
-        # sp = wyckoff_split(G=210, idx=idx, wp1=['8b'], group_type='k')
+        sp = wyckoff_split(G=210, idx=idx, wp1=['8b'], group_type='k')
         sp = wyckoff_split(G=227, idx=idx, wp1=["96g"], group_type="t")
         #print(sp)
         print(sp.R)

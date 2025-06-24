@@ -62,7 +62,7 @@ def run_optimizer_with_timeout(args, logger):
         signal.alarm(0)  # Disable the alarm
         return result
     except TimeoutError:
-        logger.info(f"Rank-{args[-2]} Process {os.getpid()} timed out after {timeout} seconds.")
+        logger.info(f"Rank-{args[-2]} Proc-{os.getpid()} timed out after {timeout} seconds.")
         os.chdir(cwd)
         return None  # or some other placeholder for timeout results
 
@@ -211,7 +211,6 @@ class GlobalOptimize:
             else:
                 max_time = 60.0
         self.timeout = max_time * self.N_pop / self.ncpu
-
         self.ff_opt = ff_opt
         self.ff_style = ff_style
 
@@ -229,7 +228,6 @@ class GlobalOptimize:
             self.ff_parameters = self.workdir + "/" + ff_parameters
             self.reference_file = self.workdir + "/" + reference_file
             # Only call ForceFieldParameters once
-            # No need to broadcast self.parameters?
             # Just broadcast atom_info should be fine
             # parameters = None
             atom_info = None
@@ -251,13 +249,11 @@ class GlobalOptimize:
                         self.ff_parameters[0])
                     if "ff_style" in dic:
                         assert dic["ff_style"] == self.ff_style
-                    # print(params0)
                     params1, dic = self.parameters.load_parameters(
                         self.ff_parameters[1])
                     if "ff_style" in dic:
                         assert dic["ff_style"] == self.ff_style
-                    # print(params1)
-                    atom_info = self._prepare_chm_info(params0, params1)
+                    atom_info = self._prep_chm_info(params0, params1)
                 else:
                     if os.path.exists(self.ff_parameters):
                         self.print("Preload the existing FF parameters from",
@@ -265,14 +261,11 @@ class GlobalOptimize:
                         params0, _ = self.parameters.load_parameters(
                             self.ff_parameters)
                     else:
-                        self.print(
-                            "No FF parameter file exists, using the default setting",
-                            ff_style,
-                        )
+                        self.print("No FF file exists, using the default",
+                                   ff_style)
                         params0 = self.parameters.params_init.copy()
                         self.parameters.export_parameters(self.ff_parameters, params0)
-                    atom_info = self._prepare_chm_info(
-                        params0, suffix='pyxtal')
+                    atom_info = self._prep_chm_info(params0, suffix='pyxtal')
 
             if self.use_mpi:
                 # self.parameters = self.comm.bcast(parameters, root=0)
@@ -282,7 +275,7 @@ class GlobalOptimize:
 
         # Structure matcher
         if matcher is None:
-            self.matcher = StructureMatcher(ltol=0.3, stol=0.3, angle_tol=5)
+            self.matcher = StructureMatcher(ltol=0.3, stol=0.3, angle_tol=5.0)
         else:
             self.matcher = matcher
 
@@ -291,7 +284,7 @@ class GlobalOptimize:
         self.N_min_matches = 10  # The min_num_matches for early termination
         self.E_max = E_max
         self.tag = tag.lower()
-        self.suffix = f"{self.workdir:s}/{self.name:s}-{self.ff_style:s}"
+        self.suffix = f"{self.workdir}/{self.name}-{self.ff_style}"
         if self.rank == 0:
             if cif is None:
                 self.cif = self.suffix + '.cif'
@@ -365,8 +358,7 @@ class GlobalOptimize:
         """
         t0 = time()
 
-        if ref_pmg is not None:
-            ref_pmg.remove_species("H")
+        if ref_pmg is not None: ref_pmg.remove_species("H")
         self.ref_pmg = ref_pmg
         self.ref_pxrd = ref_pxrd
 
@@ -461,6 +453,7 @@ class GlobalOptimize:
     def early_termination(self, success_rate):
         """
         Check if the calculation can be terminated early.
+        It is based on the success rate and number of matches.
         """
         if success_rate > 0:
             if self.early_quit:
@@ -518,9 +511,9 @@ class GlobalOptimize:
         _ref_dics = self.parameters.add_references(_xtals,
                                                    ref_ground_states,
                                                    N_selected)
-        # print(f"Current number of reference structures: {len(ref_dics)}")
-        # print(f"Pick {len(_ref_dics)} reference data for agumentation")
-        #print(_ref_dics); import sys; sys.exit()
+        # print(f"Current number of ref. structures: {len(ref_dics)}")
+        # print(f"Pick {len(_ref_dics)} ref. data for agumentation")
+        # print(_ref_dics); import sys; sys.exit()
 
         ref_dics.extend(_ref_dics)
         aug_dics = self.parameters.augment_references(_ref_dics)
@@ -544,15 +537,15 @@ class GlobalOptimize:
                                         labels=gen_prefix,
                                         ff_dics=ff_dics)
         t2 = (time() - t0) / 60 - t1
-        print(f"FF performance evaluation usage in {t2:.2f} min")
+        print(f"FF performance eval. usage in {t2:.2f} min")
         os.chdir(cwd)
 
         self.parameters.export_references(ref_dics, self.reference_file)
 
 
-    def _prepare_chm_info(self, params0, params1=None, folder="calc", suffix="pyxtal0"):
+    def _prep_chm_info(self, params0, params1=None, folder="calc", suffix="pyxtal0"):
         """
-        Prepar_chm_info with from the given params.
+        Prepare charmm_info from the given params.
 
         Args:
             params0 (array or list): FF parameters array
@@ -596,7 +589,7 @@ class GlobalOptimize:
 
     def print_matches(self, header=None):
         """
-        Formatted output for the matched structures with xtal rep and eng rank
+        Formatted output for the matched structures with xtal rep.
         """
         if self.rank == 0:
             all_engs = np.sort(np.array(self.engs))
@@ -647,8 +640,7 @@ class GlobalOptimize:
         Print the matched structure
 
         Args:
-            rep: 1d rep
-            eng: energy
+            xtal: pyxtal object
             ref_pmg: reference pmg structure
         """
 
@@ -668,6 +660,14 @@ class GlobalOptimize:
         """
         Apply Gaussian to discourage the sampling of already visited configs.
         Consider both lattice abc and torsion
+
+        Args:
+            reps: list of representations
+            engs: list of energies
+            h1 (float): height of Gaussian for lattice
+            h2 (float): height of Gaussian for torsion
+            w1 (float): width of Gaussian for lattice
+            w2 (float): width of Gaussian for torsion
         """
         from copy import deepcopy
 
@@ -956,7 +956,7 @@ class GlobalOptimize:
 
         self.min_energy = np.min(np.array(self.engs))
         self.N_struc = len(self.engs)
-        strs = f"Generation {gen:d} finishes: {len(self.engs):d} strucs"
+        strs = f"Generation-{gen} finishes {self.N_pop}/{len(self.engs)} strucs"
         print(strs)
         self.logging.info(strs)
 

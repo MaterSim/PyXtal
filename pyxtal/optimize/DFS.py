@@ -93,6 +93,7 @@ class DFS(GlobalOptimize):
             self.random_state = np.random.default_rng(random_state)
 
         self.check = check
+
         # POPULATION parameters:
         self.N_gen = N_gen
         self.N_pop = N_pop
@@ -208,12 +209,10 @@ class DFS(GlobalOptimize):
                             cur_survivals[id] = 0
 
             # broadcast
-            if self.use_mpi:
-                cur_xtals = self.comm.bcast(cur_xtals, root=0)
+            if self.use_mpi: cur_xtals = self.comm.bcast(cur_xtals, root=0)
 
             # Local optimization
             gen_results = self.local_optimization(cur_xtals, pool=pool)
-            self.logging.info(f"Rank {self.rank} finishes local_opt.")
 
             prev_xtals = None
             if self.rank == 0:
@@ -288,27 +287,14 @@ class DFS(GlobalOptimize):
 if __name__ == "__main__":
     import argparse
     import os
-
     from pyxtal.db import database
 
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-g",
-        "--gen",
-        dest="gen",
-        type=int,
-        default=10,
-        help="Number of generation, optional",
-    )
-    parser.add_argument(
-        "-p",
-        "--pop",
-        dest="pop",
-        type=int,
-        default=10,
-        help="Population size, optional",
-    )
-    parser.add_argument("-n", "--ncpu", dest="ncpu", type=int,
+    parser.add_argument("--gen", dest="gen", type=int, default=10,
+                        help="Number of generation, optional")
+    parser.add_argument("--pop", dest="pop", type=int, default=10,
+                        help="Population size, optional")
+    parser.add_argument("--ncpu", dest="ncpu", type=int,
                         default=1, help="cpu number, optional")
     parser.add_argument("--ffopt", action="store_true",
                         help="enable ff optimization")
@@ -326,8 +312,8 @@ if __name__ == "__main__":
     db = database(db_name)
     row = db.get_row(name)
     xtal = db.get_pyxtal(name)
-    smile, wt, spg = row.mol_smi, row.mol_weight, row.space_group.replace(
-        " ", "")
+    smile, wt = row.mol_smi, row.mol_weight
+    spg = row.space_group.replace(" ", "")
     chm_info = None
     if not ffopt:
         if "charmm_info" in row.data:
@@ -338,13 +324,11 @@ if __name__ == "__main__":
             with open(wdir + "/calc/pyxtal.rtf", "w") as rtf:
                 rtf.write(chm_info["rtf"])
         else:
-            # Make sure we generate the initial guess from ambertools
             if os.path.exists("parameters.xml"):
                 os.remove("parameters.xml")
     # load reference xtal
     pmg0 = xtal.to_pymatgen()
-    if xtal.has_special_site():
-        xtal = xtal.to_subgroup()
+    if xtal.has_special_site(): xtal = xtal.to_subgroup()
     N_torsion = xtal.get_num_torsions()
 
     # GO run
@@ -355,7 +339,7 @@ if __name__ == "__main__":
         xtal.group.number,
         name.lower(),
         info=chm_info,
-        ff_style="openff",  # 'gaff',
+        ff_style="openff", #'gaff',
         ff_opt=ffopt,
         N_gen=gen,
         N_pop=pop,
@@ -364,13 +348,13 @@ if __name__ == "__main__":
     )
 
     suc_rate = go.run(pmg0)
-    print(f"CSD {name:s} in Gen {go.generation:d}")
+    print(f"CSD {name:s} in Gen {go.generation}")
 
     if len(go.matches) > 0:
         best_rank = go.print_matches()
-        mytag = f"True {best_rank:d}/{go.N_struc:d} Succ_rate: {suc_rate:7.4f}%"
+        mytag = f"True {best_rank}/{go.N_struc} Succ_rate: {suc_rate:.4f}%"
     else:
-        mytag = f"False 0/{go.N_struc:d}"
+        mytag = f"False 0/{go.N_struc}"
 
     eng = go.min_energy
     t1 = int((time() - t0)/60)

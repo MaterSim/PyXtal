@@ -689,7 +689,6 @@ def single_optimize(
     steps=1000,
     pstress=None,
     opt="conp",
-    exe="gulp",
     path="tmp",
     label="_",
     clean=True,

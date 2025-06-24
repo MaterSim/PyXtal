@@ -20,21 +20,27 @@ def get_calculator(calculator):
             calc = torchani.models.ANI2x().ase()
         else:
             if _cached_mace_mp is None:
-                _cached_mace_mp = mace_mp(model='small', dispersion=True, device='cpu')
+                _cached_mace_mp = mace_mp(model='small',
+                                          dispersion=True,
+                                          device='cpu')
             calc = _cached_mace_mp
     else:
         calc = calculator
 
     return calc
 
-def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile=None, max_time=10.0, label='ase'):
-#def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile='ase.log', max_time=10.0, label='ase'):
+def ASE_relax(struc, calculator, opt_cell=False, step=500,
+              fmax=0.1, logfile=None, max_time=10.0,
+              label='ase'):
     """
     ASE optimizer
     Args:
         struc: ase atoms object
         calculator (str): 'ANI', 'MACE'
-        step: optimization steps (int)
+        opt_cell (bool): optimize cell or not
+        step (int): optimization steps
+        fmax: float (eV/Angstrom), force convergence criteria
+        logfile: str, output file
         max_time: float (minutes)
     """
 
@@ -70,8 +76,8 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile=Non
             dyn.run(fmax=fmax, steps=step-step_init)
             forces = dyn.optimizable.get_forces()
             _fmax = np.sqrt((forces ** 2).sum(axis=1).max())
-            eng = struc.get_potential_energy() / len(struc)
             if _fmax > 100:
+                #eng = struc.get_potential_energy() / len(struc)
                 #logger.info(f"Warning {label} big stress {eng:.2f} / {_fmax:.2f}, skip")
                 struc = None
             #else:
@@ -90,15 +96,15 @@ def ASE_relax(struc, calculator, opt_cell=False, step=500, fmax=0.1, logfile=Non
         struc = None
         signal.alarm(0)  # Cancel the alarm if finished within time
 
-    tag = 'False' if struc is None else 'True'
-    #logger.info(f"Finishing {label} {tag}")
-    #signal.alarm(0)  # Cancel the alarm
+    # tag = 'False' if struc is None else 'True'
+    # logger.info(f"Finishing {label} {tag}")
+    # signal.alarm(0)  # Cancel the alarm
     return struc #, eng, _fmax
 
 class ASE_optimizer:
     """
     This is a ASE optimizer to perform oragnic crystal structure optimization.
-    We assume that the geometry has been well optimized by classical FF
+    We assume that the geometry has been well optimized by classical FF.
 
     Args:
         struc: pyxtal object

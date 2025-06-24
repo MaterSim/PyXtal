@@ -1,20 +1,17 @@
 """
 Module for generating crystals based on building blocks
 """
-
 # Standard Libraries
 import numpy as np
 
 # External Libraries
 from pymatgen.core import Molecule
 
-from pyxtal.io import search_molecules_in_crystal
-
 # PyXtal imports
 from pyxtal.molecular_crystal import molecular_crystal as mol_xtal
 from pyxtal.molecule import Orientation, compare_mol_connectivity, pyxtal_molecule
 from pyxtal.wyckoff_site import mol_site
-
+from pyxtal.io import search_molecules_in_crystal
 
 def block_crystal(
     dim,
@@ -178,6 +175,4 @@ if __name__ == "__main__":
                 print("S2", s1.check_short_distances())
                 s.to_file("1.cif")
                 s1.to_file("2.cif")
-                import sys
-
-                sys.exit()
+                import sys; sys.exit()

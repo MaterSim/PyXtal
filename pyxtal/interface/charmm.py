@@ -9,20 +9,20 @@ class CHARMM:
     A calculator to perform oragnic crystal structure optimization in CHARMM.
 
     Args:
-        - struc: pyxtal.molecular_crystal.molecular_crystal object
-        - label (str): label for this calculation
-        - algo (str): "abnr"
-        - lat_mut (bool): mutate lattice or not
-        - rotate (bool): rotate lattice or not
-        - prefix (str): prefix of this calculation
-        - atom_info (dict): atom_labels
-        - folder (str): folder name
-        - opt (str): 'conv', 'conp', 'single'
-        - steps (int): optimization steps
-        - exe (str): charmm executable
-        - input (str): charmm input file
-        - output (str): charmm output file
-        - dump (str): charmm dump structure
+        struc: pyxtal.molecular_crystal.molecular_crystal object
+        label (str): label for this calculation
+        algo (str): "abnr"
+        lat_mut (bool): mutate lattice or not
+        rotate (bool): rotate lattice or not
+        prefix (str): prefix of this calculation
+        atom_info (dict): atom_labels
+        folder (str): folder name
+        opt (str): 'conv', 'conp', 'single'
+        steps (int): optimization steps
+        exe (str): charmm executable
+        input (str): charmm input file
+        output (str): charmm output file
+        dump (str): charmm dump structure
     """
 
     def __init__(
@@ -97,7 +97,6 @@ class CHARMM:
             print(self.structure)
             print(self.structure.lattice)
             print(self.structure.lattice.matrix)
-            #raise ValueError("Problem in Lattice")
             self.error = True
         # print("\nbeginining lattice: ", struc.lattice)
 
@@ -120,8 +119,7 @@ class CHARMM:
             else:
                 self.structure.energy = self.errorE
                 self.error = True
-            if clean:
-                self.clean()
+            if clean: self.clean()
 
             os.chdir(cwd)
 
@@ -135,13 +133,13 @@ class CHARMM:
                     cmd, shell=True, timeout=self.timeout, check=True, stderr=devnull)
                 return result.returncode  # Or handle the result as needed
             except subprocess.CalledProcessError as e:
-                print(f"Command '{cmd}' failed with return code {e.returncode}.")
+                print(f"Cmd '{cmd}' failed with return code {e.returncode}.")
                 os.system(f'cp {self.input} err-{self.input}')
                 os.system(f'cp {self.crd} err-{self.crd}')
                 os.system(f'cp {self.psf} err-{self.psf}')
                 return None
             except subprocess.TimeoutExpired:
-                print(f"External command {cmd} timed out.")
+                print(f"External cmd {cmd} timed out.")
                 return None
 
     def clean(self):
@@ -156,8 +154,7 @@ class CHARMM:
         setup the necessary files for charmm calculation
         """
         lat = self.structure.lattice
-        if self.lat_mut:
-            lat = lat.mutate()
+        if self.lat_mut: lat = lat.mutate()
 
         a, b, c, alpha, beta, gamma = lat.get_para(degree=True)
         ltype = lat.ltype
@@ -216,7 +213,7 @@ class CHARMM:
                     )
                     # quickly check if
                     if abs(coord).max() > 500.0:
-                        print("Unexpectedly large input coordinates, stop and debug")
+                        print("Unexpected large input coordinates, stop and debug")
                         print(self.structure)
                         self.structure.to_file('bug.cif')
                         import sys; sys.exit()
@@ -269,9 +266,7 @@ class CHARMM:
             f.write(f"*Z = {len(site0.wp):d}\n")
             f.write("*Energy(kcal): ?ener\n")
             f.write("stop\n")
-        # print("STOP")
-        # import sys
-        # sys.exit()
+        # print("STOP"); import sys; sys.exit()
 
     def read(self):
         with open(self.output) as f:
@@ -322,10 +317,10 @@ class CHARMM:
                     coords = positions[count: count + len(site.molecule.mol)]
                     site.update(coords, self.structure.lattice)
                     count += len(site.molecule.mol)
-                # print("after relaxation  : ", self.structure.lattice, "iter: ", self.structure.iter)
+                # print("after relax:", self.structure.lattice, "iter: ", self.structure.iter)
                 self.structure.optimize_lattice()
                 self.structure.update_wyckoffs()
-                # print("after latticeopt  : ", self.structure.lattice, self.structure.check_distance()); import sys; sys.exit()
+                # print("after latopt:", self.structure.lattice, self.structure.check_distance()); import sys; sys.exit()
             except:
                 # molecular connectivity or lattice optimization
                 self.structure.energy = self.errorE
@@ -335,7 +330,7 @@ class CHARMM:
                     print("lattice", self.structure.lattice)
                     self.structure.to_file("1.cif")
                     #print("Check 1.cif in ", os.getcwd())
-                    pairs = self.structure.check_short_distances()
+                    #pairs = self.structure.check_short_distances()
                     #if len(pairs) > 0:
                     #    print(self.structure.to_file())
                     #    print("short distance pair", pairs)
@@ -344,8 +339,7 @@ class CHARMM:
             self.structure.energy = self.errorE
             self.error = True
             if self.debug:
-                print(self.structure)
-                import sys; sys.exit()
+                print(self.structure); import sys; sys.exit()
 
     def FFTGrid(self, ABC):
         """
@@ -580,20 +574,15 @@ class RTF:
             # print(res)
             strs += "\nRESI {:3s} {:5.3f}\n".format(res["NAME"], res["CHARGE"])
             strs += "GROUP\n"
-            for a in res["ATOM"]:
-                strs += f"{a:s}\n"
+            for a in res["ATOM"]: strs += f"{a:s}\n"
             strs += "\n"
-            for b in res["BOND"]:
-                strs += f"{b:s}\n"
+            for b in res["BOND"]: strs += f"{b:s}\n"
             strs += "\n"
-            for a in res["ANGL"]:
-                strs += f"{a:s}\n"
+            for a in res["ANGL"]: strs += f"{a:s}\n"
             strs += "\n"
-            for d in res["DIHE"]:
-                strs += f"{d:s}\n"
+            for d in res["DIHE"]: strs += f"{d:s}\n"
             strs += "\n"
-            for i in res["IMPH"]:
-                strs += f"{i:s}\n"
+            for i in res["IMPH"]: strs += f"{i:s}\n"
 
         return strs
 

@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from pyxtal.lattice import Lattice
     from pyxtal.molecule import pyxtal_molecule
 
-
 class WFS(GlobalOptimize):
     """
     Standard Population algorithm
@@ -157,7 +156,6 @@ class WFS(GlobalOptimize):
         s += f"\nGeneration: {self.N_gen:4d}"
         s += f"\nPopulation: {self.N_pop:4d}"
         s += "\nFraction  : {:4.2f} {:4.2f}".format(*self.fracs)
-        # The rest base information from now on
         return s
 
     def _run(self, pool=None):
@@ -194,12 +192,10 @@ class WFS(GlobalOptimize):
                         count += 1
 
             # broadcast
-            if self.use_mpi:
-                cur_xtals = self.comm.bcast(cur_xtals, root=0)
+            if self.use_mpi: cur_xtals = self.comm.bcast(cur_xtals, root=0)
 
             # Local optimization
             gen_results = self.local_optimization(cur_xtals, pool=pool)
-            self.logging.info(f"Rank {self.rank} finishes local_opt {len(gen_results)}")
 
             prev_xtals = None
             if self.rank == 0:
@@ -277,28 +273,15 @@ class WFS(GlobalOptimize):
 if __name__ == "__main__":
     import argparse
     import os
-
     from pyxtal.db import database
 
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-g",
-        "--gen",
-        dest="gen",
-        type=int,
-        default=10,
-        help="Number of generation, optional",
-    )
-    parser.add_argument(
-        "-p",
-        "--pop",
-        dest="pop",
-        type=int,
-        default=10,
-        help="Population size, optional",
-    )
-    parser.add_argument("-n", "--ncpu", dest="ncpu", type=int,
-                        default=1, help="cpu number, optional")
+    parser.add_argument("--gen", dest="gen", type=int,
+                        default=10, help="Generation size")
+    parser.add_argument("--pop", dest="pop", type=int,
+                        default=10, help="Population size")
+    parser.add_argument("--ncpu", dest="ncpu", type=int,
+                        default=1, help="cpu number")
     parser.add_argument("--ffopt", action="store_true",
                         help="enable ff optimization")
 
@@ -315,8 +298,8 @@ if __name__ == "__main__":
     db = database(db_name)
     row = db.get_row(name)
     xtal = db.get_pyxtal(name)
-    smile, wt, spg = row.mol_smi, row.mol_weight, row.space_group.replace(
-        " ", "")
+    smile, wt = row.mol_smi, row.mol_weight
+    spg = row.space_group.replace(" ", "")
     chm_info = None
     if not ffopt:
         if "charmm_info" in row.data:
@@ -327,7 +310,6 @@ if __name__ == "__main__":
             with open(wdir + "/calc/pyxtal.rtf", "w") as rtf:
                 rtf.write(chm_info["rtf"])
         else:
-            # Make sure we generate the initial guess from ambertools
             if os.path.exists("parameters.xml"):
                 os.remove("parameters.xml")
     # load reference xtal
@@ -353,13 +335,13 @@ if __name__ == "__main__":
     )
 
     suc_rate = go.run(pmg0)
-    print(f"CSD {name:s} in Gen {go.generation:d}")
+    print(f"CSD {name} in Gen {go.generation}")
 
     if len(go.matches) > 0:
         best_rank = go.print_matches()
-        mytag = f"True {best_rank:d}/{go.N_struc:d} Succ_rate: {suc_rate:7.4f}%"
+        mytag = f"True {best_rank}/{go.N_struc} Succ_rate: {suc_rate:.4f}%"
     else:
-        mytag = f"False 0/{go.N_struc:d}"
+        mytag = f"False 0/{go.N_struc}"
 
     eng = go.min_energy
     t1 = int((time() - t0)/60)

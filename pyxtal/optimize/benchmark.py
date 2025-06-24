@@ -1,8 +1,6 @@
 import os
 from time import time
-
 import pymatgen.analysis.structure_matcher as sm
-
 from pyxtal import pyxtal
 from pyxtal.interface.charmm import CHARMM
 from pyxtal.interface.dftb import DFTB, DFTB_relax
@@ -91,7 +89,7 @@ class benchmark:
 
     def calc(self, calculator, show=True):
         """
-        execute calculation
+        Execute calculation
         """
 
         cwd = os.getcwd()
@@ -109,7 +107,7 @@ class benchmark:
         elif calculator == "gulp":
             self.gulp(show)
         else:
-            raise KeyError("unknow calculator", calculator)
+            raise KeyError("unknown calculator", calculator)
 
         os.chdir(cwd)
 
@@ -118,13 +116,16 @@ class benchmark:
         DFTB calculation
         """
         if not hasattr(self, "skf_dir"):
-            raise KeyError("skf_dir is not defined for DFTB calculation")
+            raise KeyError("no skf_dir for DFTB calculation")
         t0 = time()
         ase = self.ase["reference"].copy()
         # ase = dftb_relax(ase, self.skf_dir, kresol=0.08, logfile=logfile)
-        ase, _ = DFTB(ase, self.skf_dir, mode="relax", kresol=0.08, disp=disp)
-        ase, _ = DFTB(ase, self.skf_dir, mode="vc-relax", step=300, kresol=0.06, disp=disp)
-        ase = DFTB_relax(ase, self.skf_dir, opt_cell=True, kresol=0.06, disp=disp, logfile=logfile)
+        ase, _ = DFTB(ase, self.skf_dir, mode="relax",
+                      kresol=0.08, disp=disp)
+        ase, _ = DFTB(ase, self.skf_dir, mode="vc-relax",
+                      step=300, kresol=0.06, disp=disp)
+        ase = DFTB_relax(ase, self.skf_dir, opt_cell=True,
+                         kresol=0.06, disp=disp, logfile=logfile)
         xtal = pyxtal(molecular=True)
         pmg = ase2pymatgen(ase)
         xtal.from_seed(pmg, molecules=self.smiles)
@@ -137,14 +138,12 @@ class benchmark:
         self.energy[calc] = ase.get_potential_energy()
         self.rep[calc] = representation.from_pyxtal(xtal).x
         self.time[calc] = time() - t0
-        if show:
-            self.summary(calc)
+        if show: self.summary(calc)
 
     def vasp(self, show=True):
         """
         VASP calculation
         """
-
         t0 = time()
         ase, energy = vasp_relax(self.ase["reference"].copy())
         ase, energy = vasp_relax(ase, opt_cell=True)
@@ -185,9 +184,7 @@ class benchmark:
             self.rep["ani"] = representation.from_pyxtal(xtal).x
             self.energy["ani"] = ase.get_potential_energy()
             self.time["ani"] = time() - t0
-            if show:
-                self.summary("ani")
-            # print(xtal); xtal.to_file("test.cif"); import sys; sys.exit()
+            if show: self.summary("ani")
         except ReadSeedError:
             print("Molecular form is broken after relaxation")
 
@@ -200,8 +197,10 @@ class benchmark:
         struc = self.xtal["reference"].copy()
 
         t0 = time()
-        calc = CHARMM(struc, "ben", steps=steps, atom_info=self.charmm_info, debug=True)
-        calc.run(clean=self.clean)  # clean=False); import sys; sys.exit()
+        calc = CHARMM(struc, "ben", steps=steps,
+                      atom_info=self.charmm_info,
+                      debug=True)
+        calc.run(clean=self.clean)  #False); import sys; sys.exit()
         struc = calc.structure
 
         pmg = struc.to_pymatgen()
@@ -225,7 +224,8 @@ class benchmark:
         struc = self.xtal["reference"].copy()
         g_info = self.gulp_info
         t0 = time()
-        calc = GULP_relax(struc, "ben", opt="conv", steps=step[0], stepmx=stepmx[0], atom_info=g_info)
+        calc = GULP_relax(struc, "ben", opt="conv", steps=step[0],
+                          stepmx=stepmx[0], atom_info=g_info)
         calc.run(clean=self.clean)  # ; print(os.getcwd()); import sys; sys.exit()
         if not calc.optimized:
             raise RuntimeError("GULP calculation is wrong")
@@ -243,9 +243,10 @@ class benchmark:
         if not calc.optimized:
             raise RuntimeError("GULP calculation is wrong")
         struc = calc.structure
-        calc = GULP_relax(struc, "ben", opt="conp", steps=step[2], stepmx=stepmx[2], atom_info=g_info)
+        calc = GULP_relax(struc, "ben", opt="conp", steps=step[2],
+                          stepmx=stepmx[2], atom_info=g_info)
         # print(struc)
-        calc.run(clean=self.clean)  # , pause=True); import sys; sys.exit()
+        calc.run(clean=self.clean) #, pause=True); import sys; sys.exit()
         struc = calc.structure
         if not calc.optimized:
             raise RuntimeError("GULP calculation is wrong")
@@ -285,9 +286,7 @@ class benchmark:
 
 if __name__ == "__main__":
     import warnings
-
     from pyxtal.db import database
-
     warnings.filterwarnings("ignore")
 
     work_dir = "tmp"
@@ -334,11 +333,12 @@ if __name__ == "__main__":
         ben.calc(calc, show=True)
     print("=========================================")
 """
+Note: The results are outdated and the codes are obsolete.
 qzhu@cms-2:~/GitHub/HT-OCSP$ python htocsp/benchmark.py
- 29 0  9.20  7.29  6.69 1 0.00 0.75 0.00  111.8  -43.7   19.4 1  reference
- 29 0  9.20  7.44  6.68 1 0.00 0.75 1.00  -72.0  -42.7   20.6 0      -1.444 charmm     0.15  0.019 0.030 0.032
- 61 0  6.63  7.42  9.36 1 1.00 0.00 1.00   -7.5   42.5 -108.3 0   -6318.357 ani        0.24  0.027 0.008 0.010
- 29 0  9.24  7.35  6.64 1 0.00 0.75 1.00  -70.6  -43.2   19.4 0      -0.305 gulp       0.60  0.006 0.024 0.028
- 61 0  6.56  7.12  9.11 1 0.00 1.00 0.00   -7.8   43.2 -109.0 0    -341.479 dftb_D3    2.31 -0.051 0.017 0.022
- 61 0  6.70  7.24  9.20 1 0.00 0.00 0.00 -142.9   43.3  -70.8 0    -341.147 dftb_TS    0.82 -0.005 0.011 0.013
+29 0 9.20 7.29 6.69 1 0.00 0.75 0.00  111.8 -43.7   19.4 1 reference
+29 0 9.20 7.44 6.68 1 0.00 0.75 1.00  -72.0 -42.7   20.6 0     -1.444 charmm  0.15  0.019 0.030 0.032
+61 0 6.63 7.42 9.36 1 1.00 0.00 1.00   -7.5  42.5 -108.3 0  -6318.357 ani     0.24  0.027 0.008 0.010
+29 0 9.24 7.35 6.64 1 0.00 0.75 1.00  -70.6 -43.2   19.4 0     -0.305 gulp    0.60  0.006 0.024 0.028
+61 0 6.56 7.12 9.11 1 0.00 1.00 0.00   -7.8  43.2 -109.0 0   -341.479 dftb_D3 2.31 -0.051 0.017 0.022
+61 0 6.70 7.24 9.20 1 0.00 0.00 0.00 -142.9  43.3  -70.8 0   -341.147 dftb_TS 0.82 -0.005 0.011 0.013
 """

@@ -1,9 +1,6 @@
 import os
-
 import numpy as np
-
 from pyxtal.database.element import Element
-
 
 class Tol_matrix:
     """
@@ -145,7 +142,7 @@ class Tol_matrix:
         Returns:
             a Tol_matrix object
         """
-        np.array(matrix)
+        matrix = np.array(matrix)
         tups = []
         for i, row in enumerate(matrix):
             for j, _value in enumerate(row):
@@ -233,8 +230,7 @@ class Tol_matrix:
         Returns:
             Nothing. Creates a file at the specified path
         """
-        if filename is None:
-            filename = "custom_tol_matrix"
+        if filename is None: filename = "custom_tol_matrix"
         # Check if filename already exists
         # If it does, add a new number to end of filename
         if os.path.exists(filename):
@@ -263,7 +259,7 @@ class Tol_matrix:
             else:
                 raise RuntimeError("invalid file for Tol_matrix: ", filename)
         except Exception as err:
-            raise RuntimeError("Could not load Tol_matrix from file: ", filename) from err
+            raise RuntimeError("Cannot load Tol_matrix from", filename) from err
 
 
 if __name__ == "__main__":

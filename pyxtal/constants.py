@@ -3,7 +3,6 @@ Module to store the constants
 """
 
 import numpy as np
-
 from pyxtal.version import __version__
 
 # Constants

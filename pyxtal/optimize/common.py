@@ -1,7 +1,6 @@
 """
 Common utlities for global search
 """
-
 import os
 import warnings
 from time import time
@@ -24,6 +23,19 @@ warnings.filterwarnings("ignore")
 def sweep(xtal, comp, c_info, w_dir, job_tag, skip_ani, optimizer):
     """
     Check the stability of input xtal based on 5% tension
+
+    Args:
+        xtal: pyxtal structure
+        comp: composition
+        c_info: CHARMM info
+        w_dir: working directory
+        job_tag: job tag for CHARMM
+        skip_ani: skip ANI relaxation
+        optimizer: the optimizer function to use
+
+    Returns:
+        xtal0: the relaxed structure
+        eng0: the energy of the relaxed structure
     """
     N = sum(xtal.numMols)
     comp = xtal.get_1D_comp()
@@ -94,7 +106,7 @@ def check_stable_structure(xtal, c_info, w_dir, job_tag, skip_ani, optimizer, di
                 xtal1 = rep1.to_pyxtal(composition=comp)#; print(xtal1.lattice)
                 res = optimizer(xtal1, c_info, w_dir, job_tag, skip_ani=skip_ani)
                 if res is not None:
-                    xtal2, eng = res["xtal"], res["energy"] 
+                    xtal2, eng = res["xtal"], res["energy"]
                     if eng < eng0 + 1e-4:
                         xtal0, eng0 = xtal2, eng
         return xtal0, eng0
@@ -106,6 +118,17 @@ def check_stable_structure(xtal, c_info, w_dir, job_tag, skip_ani, optimizer, di
 def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125, random_state=None):
     """
     A random mutation.
+
+    Args:
+        xtal: pyxtal structure
+        smiles: list of smiles
+        opt_lat: whether to optimize the lattice
+        ref_pxrd: reference PXRD pattern for lattice optimization
+        dr: perturbation ratio for the lattice and molecules
+        random_state: random state for reproducibility
+
+    Returns:
+        a new pyxtal structure with perturbed lattice and molecules
     """
 
     rng = np.random.default_rng(random_state)
@@ -188,10 +211,14 @@ def randomizer(
         sgs: e.g. `[2, 4, 14]`
         comp: e.g. `[0.5, 0.5]`
         lattice: pyxtal.Lattice object
-        block:
-        num_block:
-        torsions:
+        block: a list of block sizes, e.g. `[2, 2, 2]`
+        num_block: number of blocks, e.g. `2`
+        torsions: a list of torsion angles, e.g. `[0, 90, 180]`
         molecules: pre-specified pyxtal_molecule object
+        sites: a list of sites, e.g. `[['1a', '1b'], ['2c']]`
+        use_hall: whether to use Hall notation
+        factor: factor to scale the lattice
+        random_state: random state for reproducibility
 
     Returns:
         PyXtal object
@@ -262,8 +289,14 @@ def optimizer(
 
     Args:
         struc: pyxtal
+        atom_info: atom information for CHARMM
         workdir: working directory
+        tag: job tag for CHARMM
+        opt_lat: whether to optimize the lattice
         calculators: e.g., `['CHARMM', 'GULP']`
+        max_time: maximum time for the optimization
+        skip_ani: whether to skip ANI relaxation
+        pre_opt: whether to perform pre-relaxation
 
     Returns:
         a dictionary with xtal, energy and time
@@ -283,16 +316,13 @@ def optimizer(
     for i, calculator in enumerate(calculators):
         if calculator == "CHARMM":
             if i == 0:
-                calc = CHARMM(struc, tag, steps=[1000], atom_info=atom_info, debug=True)
+                calc = CHARMM(struc, tag, steps=[1000], atom_info=atom_info)#, debug=True)
                 calc.run() #clean=False); import sys; sys.exit()
-                # print("CCCCCC", calc.optimized); import sys; sys.exit()
-                #print(calc.error)
-                #print(calc.struc.lattice, calc.error, calc.structure.energy)
                 if calc.error:
                     os.chdir(cwd)
                     return None
                 else:
-                    if not calc.optimized:  #
+                    if not calc.optimized:
                         calc = CHARMM(struc, tag, steps=[500], atom_info=atom_info)
                         calc.run()
                         if calc.error:
@@ -343,7 +373,6 @@ def optimizer(
         else:
             struc = calc.structure
             struc.resort()
-    #print(struc.lattice, calc.structure.energy)
     os.chdir(cwd)
 
     # density should not be too small
@@ -359,12 +388,12 @@ def optimizer(
             s = ASE_relax(s, 'ANI', step=50, fmax=0.1, logfile="ase.log")
             if s is None: return None
             eng = s.get_potential_energy()
-            stress = max(abs(s.get_stress())) / units.GPa  # print(id, eng, stress)
+            stress = max(abs(s.get_stress())) / units.GPa
 
             t = time() - t0
             if t > max_time:
                 try:
-                    print("!!!!! Long time in ani calculation", t)
+                    print("!!!Long time in ani calculation", t)
                     print(struc.get_1D_representation().to_string())
                     struc.optimize_lattice()
                 except:
@@ -381,10 +410,8 @@ def optimizer(
                 results["time"] = time() - t0
             else:
                 print(f"stress is wrong {stress:6.2f}")
+                # print(struc); import sys; sys.exit()
                 return None
-                # print(struc)
-                # print(struc.to_file())
-                # import sys; sys.exit()
     else:
         results = {}
         results["xtal"] = struc
@@ -392,7 +419,6 @@ def optimizer(
         results["time"] = time() - t0
 
     return results
-
 
 def optimizer_par(
     xtals,
@@ -518,7 +544,7 @@ def optimizer_single(
     else:
         if mutate:
             tag = "Mutation"
-            xtal = mutator(xtal, smiles, opt_lat, None)#ref_pxrd)
+            xtal = mutator(xtal, smiles, opt_lat, None)
         else:
             tag = "QRandom "
 
@@ -526,18 +552,18 @@ def optimizer_single(
     if xtal is None:
         res = None
     else:
-        res = optimizer(xtal, atom_info, workdir, job_tag, opt_lat, skip_ani=skip_ani, pre_opt=pre_opt)
+        res = optimizer(xtal, atom_info, workdir, job_tag, opt_lat,
+                        skip_ani=skip_ani, pre_opt=pre_opt)
 
     # 3. Check match w.r.t the reference
     match = False
     if res is not None:
         xtal, eng = res["xtal"], res["energy"]
-        if check_stable and eng < 9999.:
-            res = sweep(xtal, comp, atom_info, workdir, job_tag, skip_ani, optimizer)
-            if res is not None: xtal, eng = res
-        rep = xtal.get_1D_representation()
         N = sum(xtal.numMols)
-        strs = rep.to_string(None, eng / N, tag)  # print(strs)
+        if check_stable and eng < 9999.:
+            res = sweep(xtal, comp, atom_info, workdir, job_tag,
+                        skip_ani, optimizer)
+            if res is not None: xtal, eng = res
 
         if ref_pmg is not None:
             pmg_s1 = xtal.to_pymatgen()
@@ -565,19 +591,19 @@ def optimizer_single(
             strs += f" {match:.3f}"
 
         xtal.energy = eng
-        print(f"{id:3d} " + strs)#; print(xtal, eng); import sys; sys.exit()
+        print(f"{id:3d} " + strs)#; import sys; sys.exit()
         return xtal, match
     else:
         return None, match
-
 
 def refine_struc(xtal, smiles, calculator):
     """
     refine the structure with the ML calculator
 
     Args:
-        - xtal: pyxtal structure
-        - calculator: ANI_relax or MACE_relax
+        xtal: pyxtal structure
+        smiles: list of smiles
+        calculator: ANI_relax or MACE_relax
     """
     s = xtal.to_ase()
     s = calculator(s, 'ANI', step=50, fmax=0.1, logfile="ase.log")
@@ -591,16 +617,17 @@ def refine_struc(xtal, smiles, calculator):
     xtal.from_seed(pmg, mols)
     return xtal, eng1
 
-
 def compute_par(row, pmg, work_dir, skf_dir, queue, compute):
     """
     Args:
-        xtal:
-        queue
+        row: ase db row object
+        pmg: pymatgen structure
+        work_dir: working directory
+        skf_dir: directory for the skf files
+        queue: multiprocessing.Queue to store results
     """
     data = compute(row, pmg, work_dir, skf_dir)
     queue.put((row.id, row.csd_code, data))
-
 
 def compute(row, pmg, work_dir, skf_dir, info=None):
     """
@@ -696,8 +723,10 @@ def load_reference_from_db(db_name, code=None):
             os.makedirs(wdir+'/calc', exist_ok=True)
 
             chm_info = row.data['charmm_info']
-            prm = open(wdir+'/calc/pyxtal.prm', 'w'); prm.write(chm_info['prm']); prm.close()
-            rtf = open(wdir+'/calc/pyxtal.rtf', 'w'); rtf.write(chm_info['rtf']); rtf.close()
+            prm_file = wdir+'/calc/pyxtal.prm'
+            rtf_file = wdir+'/calc/pyxtal.rtf'
+            prm = open(prm_file, 'w'); prm.write(chm_info['prm']); prm.close()
+            rtf = open(rtf_file, 'w'); rtf.write(chm_info['rtf']); rtf.close()
 
         if xtal.has_special_site(): xtal = xtal.to_subgroup()
 
@@ -752,16 +781,16 @@ if __name__ == "__main__":
     print(sm.StructureMatcher().fit(pmg1, pmg2))
 
     reps = [
-        "81  9.71  6.19 14.25  84.7 1 0 0.21 0.44 0.12  169.6  -16.9  176.2   77.6    9.6   24.9 0",
-        "81  8.38 10.06 11.10 107.8 1 0 0.26 0.42 0.31  118.8  -22.6 -111.9 -117.3    0.4   11.9 0",
-        "82  9.37  7.92 12.13 111.0 1 0 0.29 0.34 0.10  155.5  -27.6 -161.1   74.6   10.7 -149.8 0",
+    "81 9.71  6.19 14.25  84.7 1 0 0.21 0.44 0.12 169.6 -16.9  176.2   77.6  9.6   24.9 0",
+    "81 8.38 10.06 11.10 107.8 1 0 0.26 0.42 0.31 118.8 -22.6 -111.9 -117.3  0.4   11.9 0",
+    "82 9.37  7.92 12.13 111.0 1 0 0.29 0.34 0.10 155.5 -27.6 -161.1   74.6 10.7 -149.8 0",
     ]
     for rep in reps:
         rep = representation.from_string(rep, [smile])
         xtal1 = rep.to_pyxtal()
         check_stable_structure(xtal1, c_info, w_dir, skip_ani=True, optimizer=optimizer)
 """
- 81 11.38  6.48 11.24  96.9 1 0 0.23 0.43 0.03  -44.6   25.0   34.4  -76.6   -5.2  171.5 0 -70594.48
- 81 11.38  6.48 11.24  96.9 1 0 0.23 0.43 0.03  -44.6   25.0   34.4  -76.6   -5.2  171.5 0 -70594.48
+ 81 11.38 6.48 11.24 96.9 1 0 0.23 0.43 0.03 -44.6 25.0 34.4 -76.6 -5.2 171.5 0 -70594.48
+ 81 11.38 6.48 11.24 96.9 1 0 0.23 0.43 0.03 -44.6 25.0 34.4 -76.6 -5.2 171.5 0 -70594.48
 True
 """

@@ -69,12 +69,11 @@ def generate_qrs_xtals(cell, wp_bounds, N_pop, smiles, comp, sampler_wp=None, d_
         prev = 0
         for seq in seqs:
             wp = [0] + sample_wp[prev:prev+seq] + [0]#; print('DDDD', prev, prev+seq, sample_wp[prev:prev+seq], wp)
-            x.append(wp) #, [0] + wp0.tolist() + [False]] #print(x)
+            x.append(wp) # print(x)
             prev = seq
         rep = representation(x, smiles)
         xtal = rep.to_pyxtal(composition=comp)
         if not xtal.has_special_site() and len(xtal.check_short_distances(r=d_tol)) == 0:
-            #print("debug", rep)
             xtals.append((xtal, "QRandom"))
             if len(xtals) == N_pop:
                 return xtals
@@ -112,7 +111,7 @@ class QRS(GlobalOptimize):
         eng_cutoff (float): the cutoff energy for FF training
         E_max (float): maximum energy defined as an invalid structure
         verbose (bool): show more details
-        use_mpi: bool = False,
+        use_mpi (bool): whether or not use mpi for parallel calculation
     """
 
     def __init__(
@@ -143,9 +142,7 @@ class QRS(GlobalOptimize):
         factor: float = 1.1,
         eng_cutoff: float = 5.0,
         E_max: float = 1e10,
-        N_survival: int = 20,
         verbose: bool = False,
-        random_state: int | None = None,
         max_time: float | None = None,
         matcher: StructureMatcher | None = None,
         early_quit: bool = False,
@@ -209,7 +206,6 @@ class QRS(GlobalOptimize):
         s += "\nMethod    : Deterministic Quasi-Random Sampling"
         s += f"\nGeneration: {self.N_gen:4d}"
         s += f"\nPopulation: {self.N_pop:4d}"
-        # The rest base information from now on
         return s
 
     def _run(self, pool=None):
@@ -259,12 +255,10 @@ class QRS(GlobalOptimize):
 
 
             # Broadcast
-            if self.use_mpi:
-                cur_xtals = self.comm.bcast(cur_xtals, root=0)
+            if self.use_mpi: cur_xtals = self.comm.bcast(cur_xtals, root=0)
 
             # Local optimization
             gen_results = self.local_optimization(cur_xtals, qrs=True, pool=pool)
-            self.logging.info(f"Rank {self.rank} finishes local_opt")
 
             # Summary and Ranking
             quit = False

@@ -1218,7 +1218,7 @@ class mol_site:
         """
         Compute the distances between the periodic images
         N: number of atoms in the molecule
-        M:
+        M: number of periodic images
 
         Args:
             ignore (bool, optional): If `True`, ignores some periodic boundary conditions.
@@ -1317,6 +1317,7 @@ class mol_site:
         Args:
             wp2: the 2nd wp sites
             tm: a Tol_matrix object (or prototype string) for distance checking
+
         Returns:
             True or False
         """
