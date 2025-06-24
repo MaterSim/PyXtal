@@ -459,7 +459,7 @@ def optimizer_par(
         id = ids[i]
         mutate = mutates[i]
         job_tag = job_tags[i]
-        xtal, match = optimizer_single(
+        xtal, match, stable = optimizer_single(
             xtal,
             id,
             mutate,
@@ -485,7 +485,7 @@ def optimizer_par(
             check_stable,
             pre_opt,
         )
-        results.append((id, xtal, match))
+        results.append((id, xtal, match, stable))
     return results
 
 

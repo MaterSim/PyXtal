@@ -915,11 +915,11 @@ class GlobalOptimize:
                             + "-p" + str(id) for id in _ids]
                 _xtals = [xtals[id][0] for id in range(id1, id2)]
                 mutates = []
-                for i in range(len(_xtals)):
+                for i in range(id1, id2):
                     if qrs:
                         mutates.append(False)
                     else:
-                        if _xtals[i][1] == "Mutation":
+                        if xtals[i][1] == "Mutation":
                             mutates.append(True)
                         else:
                             mutates.append(False)
