@@ -66,7 +66,7 @@ def sweep(xtal, comp, c_info, w_dir, job_tag, skip_ani, optimizer, eps=[0.05, -0
             if res is not None:
                 xtal2, eng = res["xtal"], res["energy"]
                 if eng < eng0 - 1e-2:
-                    rep2 = xtal0.get_1D_representation()
+                    rep2 = xtal2.get_1D_representation()
                     print(rep2.to_string(eng/N), f"<- {eng0/N:.2f} ({id}@{eps_i:.2f})")
                     xtal0, eng0 = xtal2, eng
                     stable = False
@@ -177,15 +177,15 @@ def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125, random_state=None):
                 struc.molecules[i].active_sites = molecule.active_sites
         return struc
     except:
-        print("Trouble to get the representation")
-        print(xtal)
-        print("x", x)
-        print("smiles", smiles)
-        print("comp", comp)
-        xtal.to_file("bug.cif")
-        #print("is_valid_matrix\n", xtal.lattice.get_matrix())
-        print("cell_para", xtal.lattice.get_para(degree=True))
-        print(x[0])
+        #print("Trouble to get the representation")
+        #print(xtal)
+        #print("x", x)
+        #print("smiles", smiles)
+        #print("comp", comp)
+        #xtal.to_file("bug.cif")
+        ##print("is_valid_matrix\n", xtal.lattice.get_matrix())
+        #print("cell_para", xtal.lattice.get_para(degree=True))
+        #print(x[0])
         #raise RuntimeError("Problem occurs in mutation_lattice")
         return None
 
