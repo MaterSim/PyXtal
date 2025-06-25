@@ -971,13 +971,17 @@ class GlobalOptimize:
                         label = self.tag + "-g" + str(gen) + "-p" + str(id)
                         f.writelines(xtal.to_file(header=label))
                 self.engs.append(xtal.energy / sum(xtal.numMols))
-                self.stats[gen][id][0] = xtal.energy / sum(xtal.numMols)
-                self.stats[gen][id][1] = match
-                self.stats[gen][id][2] = stable
+                self.stats[gen, id, 0] = xtal.energy / sum(xtal.numMols)
+                self.stats[gen, id, 1] = match
+                self.stats[gen, id, 2] = stable
 
         self.min_energy = np.min(np.array(self.engs))
         self.N_struc = len(self.engs)
-        strs = f"Generation-{gen} finishes {self.N_pop}/{len(self.engs)} strucs"
+        if self.check_stable:
+            N_stable = int(self.stats[:gen+1, :, 2].sum())
+            strs = f"Generation-{gen} finishes {N_stable}/{len(self.engs)} stable strucs"
+        else:
+            strs = f"Generation-{gen} finishes {self.N_pop}/{len(self.engs)} strucs"
         print(strs)
         self.logging.info(strs)
 
