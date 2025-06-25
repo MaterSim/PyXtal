@@ -53,23 +53,30 @@ def sweep(xtal, comp, c_info, w_dir, job_tag, skip_ani, optimizer, eps=[0.05, -0
     stable = True
     sg = xtal.group.number
     abc = 3 if sg <= 74 else (2 if sg <= 194 else 1)
+    angle = 2 if sg <= 15 else 1
     for id in range(abc):
-        cell = cell0.copy()
         for eps_i in eps:
-            cell[id] *= (1 + eps_i) #1.05
-            x = [[xtal0.group.hall_number] + cell.tolist()]
-            x.extend(wps)
-            rep1 = representation(x, smiles)
-            # print("Init", rep1.to_string())
-            xtal1 = rep1.to_pyxtal(composition=comp)
-            res = optimizer(xtal1, c_info, w_dir, job_tag, skip_ani=skip_ani)
-            if res is not None:
-                xtal2, eng = res["xtal"], res["energy"]
-                if eng < eng0 - 1e-2:
-                    rep2 = xtal2.get_1D_representation()
-                    print(rep2.to_string(eng/N), f"<- {eng0/N:.2f} ({id}@{eps_i:.2f})")
-                    xtal0, eng0 = xtal2, eng
-                    stable = False
+            for ang in range(angle):
+                cell = cell0.copy()
+                cell[id] *= (1 + eps_i)
+                # Apply a small shear strain if the angle is allowed
+                if sg <=15:
+                    if ang == 0:
+                        cell[-1] += 2.0
+                    else:
+                        cell[-1] -= 2.0
+                x = [[xtal0.group.hall_number] + cell.tolist()]
+                x.extend(wps)
+                rep1 = representation(x, smiles)
+                xtal1 = rep1.to_pyxtal(composition=comp)
+                res = optimizer(xtal1, c_info, w_dir, job_tag, skip_ani=skip_ani)
+                if res is not None:
+                    xtal2, eng = res["xtal"], res["energy"]
+                    if eng < eng0 - 1e-2:
+                        rep2 = xtal2.get_1D_representation()
+                        print(rep2.to_string(eng/N), f"<- {eng0/N:.2f} ({id}@{eps_i:.2f}/{ang})")
+                        xtal0, eng0 = xtal2, eng
+                        stable = False
     return xtal0, eng0, stable
 
 
