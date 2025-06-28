@@ -68,15 +68,20 @@ def sweep(xtal, comp, c_info, w_dir, job_tag, skip_ani, optimizer, eps=[0.05, -0
                 x = [[xtal0.group.hall_number] + cell.tolist()]
                 x.extend(wps)
                 rep1 = representation(x, smiles)
-                xtal1 = rep1.to_pyxtal(composition=comp)
-                res = optimizer(xtal1, c_info, w_dir, job_tag, skip_ani=skip_ani)
-                if res is not None:
-                    xtal2, eng = res["xtal"], res["energy"]
-                    if eng < eng0 - 1e-2:
-                        rep2 = xtal2.get_1D_representation()
-                        print(rep2.to_string(eng/N), f"<- {eng0/N:.2f} ({id}@{eps_i:.2f}/{ang})")
-                        xtal0, eng0 = xtal2, eng
-                        stable = False
+                try:
+                    xtal1 = rep1.to_pyxtal(composition=comp)
+                except:
+                    print("Problem in rep.to_pyxtal", rep1)
+                    xtal1 = None
+                if xtal1 is not None:
+                    res = optimizer(xtal1, c_info, w_dir, job_tag, skip_ani=skip_ani)
+                    if res is not None:
+                        xtal2, eng = res["xtal"], res["energy"]
+                        if eng < eng0 - 1e-2:
+                            rep2 = xtal2.get_1D_representation()
+                            print(rep2.to_string(eng/N), f"<- {eng0/N:.2f} ({id}@{eps_i:.2f}/{ang})")
+                            xtal0, eng0 = xtal2, eng
+                            stable = False
     return xtal0, eng0, stable
 
 
