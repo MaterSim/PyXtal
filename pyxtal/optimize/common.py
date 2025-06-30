@@ -4,6 +4,7 @@ Common utlities for global search
 import os
 import warnings
 from time import time
+import concurrent.futures
 
 import numpy as np
 from random import choice
@@ -19,6 +20,27 @@ from pyxtal.util import ase2pymatgen
 from pyxtal.XRD import Similarity, pxrd_refine
 
 warnings.filterwarnings("ignore")
+
+
+def get_rmsd_with_timeout(matcher, ref_pmg, structure, timeout=10):
+    """Calculate RMSD with a timeout
+    
+    Args:
+        matcher: Structure matcher object
+        ref_pmg: Reference pymatgen structure
+        structure: Structure to compare
+        timeout: Maximum execution time in seconds
+        
+    Returns:
+        RMSD value or None if calculation times out
+    """
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(matcher.get_rms_dist, ref_pmg, structure)
+        try:
+            return future.result(timeout=timeout)
+        except concurrent.futures.TimeoutError:
+            print(f"RMSD calculation timed out after {timeout} seconds")
+            return None
 
 def sweep(xtal, comp, c_info, w_dir, job_tag, skip_ani, optimizer, eps=[0.05, -0.02]):
     """
@@ -590,7 +612,7 @@ def optimizer_single(
             pmg_s1.remove_species("H")
             # Prevent the false call of matcher call
             try:
-                rmsd = matcher.get_rms_dist(ref_pmg, pmg_s1)
+                rmsd = get_rmsd_with_timeout(matcher, ref_pmg, pmg_s1)
             except:
                 rmsd = None
             if rmsd is not None:

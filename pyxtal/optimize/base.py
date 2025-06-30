@@ -390,7 +390,7 @@ class GlobalOptimize:
         xtals = []
         for id in ids:
             (xtal, _) = ref_xtals[id]
-            if xtal.energy is not None and xtal.energy <= self.E_max and self.new_struc(xtal, xtals):
+            if xtal is not None and xtal.energy is not None and xtal.energy <= self.E_max and self.new_struc(xtal, xtals):
                 xtals.append(xtal)  # .to_ase(resort=False))
             if len(xtals) == N_max:
                 break
