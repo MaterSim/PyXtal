@@ -133,11 +133,17 @@ class CHARMM:
                     cmd, shell=True, timeout=self.timeout, check=True, stderr=devnull)
                 return result.returncode  # Or handle the result as needed
             except subprocess.CalledProcessError as e:
-                print(f"Cmd '{cmd}' failed with return code {e.returncode}.")
-                os.system(f'cp {self.input} err-{self.input}')
-                #os.system(f'cp {self.crd} err-{self.crd}')
-                #os.system(f'cp {self.psf} err-{self.psf}')
-                return None
+                print(f"Cmd '{cmd}' failed. Trying another cutoff.....")
+                try:
+                    # try again with a different cutoff
+                    self.write(cutoff=16.0)
+                    result = subprocess.run(
+                    cmd, shell=True, timeout=self.timeout, check=True, stderr=devnull)
+                    return result.returncode  # Or handle the result as needed
+                except subprocess.CalledProcessError as e:
+                    print(f"Cmd '{cmd}' failed with return code {e.returncode}.")
+                    os.system(f'cp {self.input} err-{self.input}')
+                    return None
             except subprocess.TimeoutExpired:
                 print(f"External cmd {cmd} timed out.")
                 return None
@@ -149,7 +155,7 @@ class CHARMM:
         os.remove(self.psf) if os.path.exists(self.psf) else None
         os.remove(self.dump) if os.path.exists(self.dump) else None
 
-    def write(self):
+    def write(self, cutoff=14.0):
         """
         setup the necessary files for charmm calculation
         """
@@ -237,7 +243,7 @@ class CHARMM:
             f.write("Crystal Define @shape @a @b @c @alpha @beta @gamma\n")
             site0 = self.structure.mol_sites[0]
             f.write(
-                f"Crystal Build cutoff 14.0 noperations {len(site0.wp.ops) - 1:d}\n")
+                f"Crystal Build cutoff {cutoff} noperations {len(site0.wp.ops) - 1:d}\n")
             for i, op in enumerate(site0.wp.ops):
                 if i > 0:
                     f.write(f"({op.as_xyz_str():s})\n")

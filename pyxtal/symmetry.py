@@ -1478,6 +1478,7 @@ class Group:
                 if wp.get_dof() == 0: strs += "*"
             print(strs)
             print("Base WP Choices:   ", base)
+            print("Upper Bounds:      ", upper_bounds)
     
         sols = get_wyc_from_comp(numIons, base, upper_bounds, verbose=verbose, max_wyc=1)
         if len(sols) > 0:
