@@ -1468,8 +1468,17 @@ class Group:
             has_freedom: True/False
         """
         from pyxtal.util import get_wyc_from_comp
-
         base, upper_bounds = self._get_base_and_upper_bounds()
+
+        if verbose:
+            print("\nInput Composition: ", numIons)
+            strs = f"Space Group {self.number:5d}: "
+            for wp in self:
+                strs += f" {wp.multiplicity}{wp.letter}"
+                if wp.get_dof() == 0: strs += "*"
+            print(strs)
+            print("Base WP Choices:   ", base)
+    
         sols = get_wyc_from_comp(numIons, base, upper_bounds, verbose=verbose, max_wyc=1)
         if len(sols) > 0:
             return True, sols[0][1]  # Return the first solution's freedom status

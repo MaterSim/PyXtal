@@ -774,7 +774,7 @@ def get_wyc_from_comp(composition: int,
                 total_solutions.append((combo, freedom))
                 if verbose: print("valid WP combo:", combo)
             else:
-                if verbose: print("Reached max_wyc limit, stop!.")
+                # if verbose: print("Reached max_wyc limit, stop!.")
                 break
     return total_solutions
 
