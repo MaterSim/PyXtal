@@ -92,7 +92,7 @@ class molecular_crystal:
         self.number = self.group.number
         self.hall_number = self.group.hall_number
 
-        # Composition
+        # Composition: QZ: be cautious about the multiplicity
         if numMols is None:
             numMols = [len(self.group[0])] * len(molecules)
             no_check_compability = True
@@ -120,9 +120,9 @@ class molecular_crystal:
 
         # Check the minimum dof within the Wyckoff positions
         if no_check_compability:
-            compat, self.degrees = True, True
+            compat, self.has_freedom = True, True
         else:
-            compat, self.degrees = self.group.check_compatible(self.numMols, self.valid_orientations)
+            compat, self.has_freedom = self.group.check_compatible(self.numMols) #self.valid_orientations)
 
         if not compat:
             msg = f"Inincompatible compoisition {self.numMols} with symmetry {self.group.number}"
@@ -321,7 +321,7 @@ class molecular_crystal:
         If successful, ``self.valid`` is True
         """
         self.numattempts = 0
-        if not self.degrees:
+        if not self.has_freedom:
             self.lattice_attempts = 20
             self.coord_attempts = 3
             self.ori_attempts = 1

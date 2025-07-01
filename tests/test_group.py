@@ -82,6 +82,9 @@ class TestGroup(unittest.TestCase):
         assert Group(227).check_compatible([8]) == (True, False)
         assert Group(227).check_compatible([4]) == (False, False)
         assert Group(19).check_compatible([6]) == (False, False)
+        assert Group(221).check_compatible([15, 16, 17, 21]) == (True, True)
+        assert Group(221).check_compatible([15, 16, 2, 2]) == (False, False)
+
 
     def test_search_supergroup_paths(self):
         paths = Group(59, quick=True).search_supergroup_paths(139, 2)

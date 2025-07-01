@@ -4,6 +4,8 @@ some utilities
 
 import os
 import re
+from itertools import product
+from typing import List, Tuple
 
 import numpy as np
 from ase import Atoms
@@ -16,7 +18,7 @@ from pyxtal.symmetry import Hall
 
 def find_dir(dirs):
     """
-    a short function to find the correct dir from a list
+    A short function to find the correct dir from a list.
     """
     for d in dirs:
         if os.path.isdir(d):
@@ -54,7 +56,7 @@ def ase2pymatgen(struc):
 
 def symmetrize_cell(struc, mode="C"):
     """
-    symmetrize structure from pymatgen, and return the struc in conventional or
+    Symmetrize structure from pymatgen, and return the struc in conventional or
     primitive setting.
 
     Args:
@@ -83,7 +85,7 @@ def good_lattice(struc, maxvec=50.0, minvec=1.2, maxang=150, minang=30):
 
 def symmetrize(pmg, tol=1e-3, a_tol=5.0, style="pyxtal", hn=None):
     """
-    symmetrize the structure from spglib.
+    Symmetrize the structure from spglib.
 
     Args:
         pmg: pymatgen structure
@@ -140,7 +142,7 @@ def get_symmetrized_pmg(pmg, tol=1e-3, a_tol=5.0, style="pyxtal", hn=None):
 
 def extract_ase_db(db_file, id):
     """
-    a short cut to extract the structural information
+    A short cut to extract the structural information
     from the ase db file by row id
     """
 
@@ -163,7 +165,8 @@ def extract_ase_db(db_file, id):
 
 def parse_cif(filename, header=False, spg=False, eng=False, csd=False, sim=False):
     """
-    read structures from a cif (our own format with #END)
+    Read structures from a cif (our own format with #END)
+
     Args:
         filename: string
         header: bool, whether or not return header
@@ -286,10 +289,10 @@ def get_similar_cids_from_pubchem(base, MaxRecords):
 def search_csd_code_by_pubchem(cid):
     """
     Args:
-        cid: PubChem cid
+        cid: PubChem cid.
 
     Returns:
-        CIDs that have CCDC crystal structure data
+        CIDs that have CCDC crystal structure data.
     """
 
     import json
@@ -364,7 +367,7 @@ def search_csd_entries_by_code(code):
 def get_struc_from__parser(p):
     """
     A utility to get the pymatgen structure from the CifParser
-    Sometimes the cif structure may have repeated atom entries
+    Sometimes the cif structure may have repeated atom entries.
 
     Args:
         p: pymatgen CifParser object
@@ -431,7 +434,7 @@ def get_struc_from__parser(p):
 
 def Kgrid(struc, Kresol=0.10, dimension=3):
     """
-    Assign kpoints based on the lattice
+    Assign kpoints based on the lattice.
     """
     # a, b, c, alpha, beta, gamma = struc.get_cell_lengths_and_angles()
     a, b, c, alpha, beta, gamma = struc.cell.cellpar()
@@ -454,8 +457,8 @@ def Kgrid(struc, Kresol=0.10, dimension=3):
 
 def sort_by_dimer(atoms, N_mols, id=10, tol=4.0):
     """
-    sort the ase atoms' xyz according to dimer
-    so far only tested on aspirin
+    sort the ase atoms' xyz according to dimer.
+    so far only tested on aspirin.
 
     Args:
         atoms: atoms object from pyxtal
@@ -518,11 +521,11 @@ def generate_wp_lib(
     Generate wps according to the composition constraint (e.g., SiO2)
 
     Args;
-        - spg_list: list of space group choices
-        - composition: chemical compositions [1, 2]
-        - num_wp: (min_wp, max_wp)
-        - num_fu: (min_fu, max_fu)
-        - num_dof: (min_dof, max_dof)
+        spg_list: list of space group choices
+        composition: chemical compositions [1, 2]
+        num_wp: (min_wp, max_wp)
+        num_fu: (min_fu, max_fu)
+        num_dof: (min_dof, max_dof)
 
     Returns:
         a list of wps [spg, ([wp1, ...], ... [wp1, ...]), dof]
@@ -576,7 +579,7 @@ def generate_wp_lib(
 
 def reset_lammps_cell(atoms0):
     """
-    set the cell into lammps format
+    Set the cell into lammps format.
     """
     from ase.calculators.lammpslib import convert_cell
 
@@ -591,7 +594,7 @@ def reset_lammps_cell(atoms0):
 
 def new_struc(xtal, xtals):
     """
-    check if this is a new structure
+    Check if this is a new structure.
 
     Args:
         xtal: input structure
@@ -669,7 +672,7 @@ def split_list_by_ratio(nums, ratio):
 
     Args:
         nums (list of int): The list of integers to split.
-        ratio (tuple of int): A tuple of the desired ratio (e.g., (1, 1) for 1:1 ratio).
+        ratio (tuple of int): A tuple of the desired ratio (e.g., (1, 1) ).
 
     Returns:
         list of tuple: A list of tuples where each contains two lists of indices.
@@ -717,26 +720,110 @@ def get_pmg_dist(pmg1, pmg2, ltol=0.3, stol=0.3, angle_tol=5.0, scale=True):
     """
     from pymatgen.analysis.structure_matcher import StructureMatcher
     sm = StructureMatcher(ltol=ltol, stol=stol, angle_tol=angle_tol, scale=scale)
-    are_match = sm.fit(pmg1, pmg2)#, symmetric==True)
-    if are_match:
+    match = sm.fit(pmg1, pmg2)#, symmetric==True)
+    if match:
         return sm.get_rms_dist(pmg1, pmg2)[0]
     else:
         return 100.0
 
 
+def get_wyc_from_comp(composition: int,
+                      base: List[int],
+                      upper_bounds: List[int],
+                      max_wyc=20,
+                      num_wp=(None, None),
+                      verbose=False) -> List[Tuple[int]]:
+    """
+    Generate all valid wyc combinations for a single target value.
+
+    Args:
+        composition (int): The target value to achieve by summing the products.
+        base (List[int]): List of integers representing the base values.
+        upper_bounds (List[int]): List of upper bounds for each element in `base`.
+                                  If an element has no upper limit, use `None`.
+        max_wyc (int): Maximum number of combinations to return.
+        verbose (bool): If True, print the combinations found.
+
+    Example:
+        get_wyc_from_comp([6], [1, 2, 3], [None, 2, None])
+        # Returns: [(6, 0, 0), (4, 1, 0), (2, 2, 0), ..., etc.]
+    """
+    solutions = []
+    free_ids = [i for i, ub in enumerate(upper_bounds) if ub is None]
+    n = len(base)
+    
+    for num in composition:
+        max_counts = [
+            (upper_bounds[i] if upper_bounds[i] is not None else num // base[i])
+            for i in range(n)
+        ]
+
+        _solutions = []
+        for counts in product(*(range(m + 1) for m in max_counts)):
+            total = sum(c * b for c, b in zip(counts, base))
+            if total == num:
+                _solutions.append(counts)
+        solutions.append(_solutions)
+        #print(num, _solutions, max_counts)
+
+    total_solutions = []
+    for combo in product(*solutions):
+        valid, freedom = check_upper_bounds(combo, upper_bounds, num_wp)
+        if valid:
+            if len(total_solutions) < max_wyc:
+                total_solutions.append((combo, freedom))
+                if verbose: print("valid WP combo:", combo)
+            else:
+                if verbose: print("Reached max_wyc limit, stop!.")
+                break
+    return total_solutions
+
+def check_upper_bounds(solutions: List[Tuple[int]], upper_bounds: List[int], total_bounds: list[int]) -> bool:
+    """
+    Check if the elementwise sum of the selected solutions respects upper bounds.
+    and if the sums use the non-None upper bounds.
+
+    Example:
+        solutions = [(6, 0, 0), (4, 1, 0), (2, 2, 0)]
+        upper_bounds = [10, 2, None]  # No upper limit for third element
+        check_upper_bounds(solutions, upper_bounds)
+        # Returns: True, since the sums are within the bounds
+    """
+
+    n = len(upper_bounds)
+    total = [0] * n
+    for sol in solutions:
+        for i in range(n):
+            total[i] += sol[i]
+
+    min_bound = total_bounds[0]
+    max_bound = total_bounds[1]
+    if min_bound is not None and max_bound is not None:
+        total_sum = sum(total)
+        if total_sum < min_bound or total_sum > max_bound:
+            return False, False
+
+    for i in range(n):
+        if upper_bounds[i] is not None and total[i] > upper_bounds[i]:
+            return False, False
+
+    # Check if the sums use the non-None upper bounds
+    for i in range(n):
+        if upper_bounds[i] is None and total[i] > 0:
+            return True, True
+    return True, False
+
 if __name__ == "__main__":
-    from argparse import ArgumentParser
+    # from argparse import ArgumentParser
+    # parser = ArgumentParser()
+    # parser.add_argument("-f", dest="file", help="path of database file")
+    # parser.add_argument("-i", dest="id", help="index of the row")
 
-    parser = ArgumentParser()
-    parser.add_argument("-f", dest="file", help="path of database file")
-    parser.add_argument(
-        "-i",
-        dest="id",
-        help="index of the row",
-    )
-
-    options = parser.parse_args()
-    ids = options.id
-    ids = [int(id) for id in ids.split(",")] if ids.find(
-        ",") > 0 else [int(ids)]
-    extract_ase_db(options.file, ids)
+    # options = parser.parse_args()
+    # ids = options.id
+    # ids = [int(id) for id in ids.split(",")] if ids.find(",") > 0 else [int(ids)]
+    # extract_ase_db(options.file, ids)
+    base = [48, 24, 12, 8, 6, 3, 1]
+    upper_bounds = [None, None, None, None, None, 2, 2]
+    sols = get_wyc_from_comp([15, 16, 17, 21], base, upper_bounds, verbose=True, max_wyc=1)
+    sols = get_wyc_from_comp([15, 16, 17, 21], base, upper_bounds, verbose=True, max_wyc=1, num_wp=(3, 10))

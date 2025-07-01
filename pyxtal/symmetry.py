@@ -1239,11 +1239,9 @@ class Group:
         return t_subgroup[str(number)]
 
     def get_max_k_subgroup(self):
-
         return self._get_max_k_subgroup(self.number)
 
     def get_max_t_subgroup(self):
-
         return self._get_max_t_subgroup(self.number)
 
     def get_max_subgroup(self, H):
@@ -1455,81 +1453,7 @@ class Group:
             msg = "Only supports the subgroups for space group"
             raise NotImplementedError(msg)
 
-    def get_lists(self, numIon, used_indices):
-        """
-        Compute the lists of possible mult/maxn/freedom/i_wp
-
-        Args:
-            numIon: integer number of atoms
-            used_indices: a list of integer numbers
-        """
-        l_mult0 = []
-        l_maxn0 = []
-        l_free0 = []
-        indices0 = []
-        for i_wp, wp in enumerate(self):
-            indices0.append(i_wp)
-            l_mult0.append(len(wp))
-            l_maxn0.append(numIon // len(wp))
-            # check the freedom
-            if np.allclose(wp[0].rotation_matrix, np.zeros([3, 3])):
-                l_free0.append(False)
-            else:
-                l_free0.append(True)
-        return self.clean_lists(numIon, l_mult0, l_maxn0, l_free0, indices0, used_indices)
-
-    def get_lists_mol(self, numIon, used_indices, orientations):
-        """
-        Compute the lists of possible mult/maxn/freedom/i_wp
-
-        Args:
-            numIon: integer number of atoms
-            used_indices: a list of integer numbers
-            orientations: list of orientations
-        """
-        l_mult0 = []
-        l_maxn0 = []
-        l_free0 = []
-        indices0 = []
-        for i_wp, wp in enumerate(self):
-            # Check that at least one valid orientation exists
-            j, k = jk_from_i(i_wp, self.wyckoffs_organized)
-            if len(orientations) > j and len(orientations[j]) > k:
-                indices0.append(i_wp)
-                l_mult0.append(len(wp))
-                l_maxn0.append(numIon // len(wp))
-                # check the freedom
-                if np.allclose(wp[0].rotation_matrix, np.zeros([3, 3])):
-                    l_free0.append(False)
-                else:
-                    l_free0.append(True)
-        return self.clean_lists(numIon, l_mult0, l_maxn0, l_free0, indices0, used_indices)
-
-    @staticmethod
-    def clean_lists(numIon, l_mult0, l_maxn0, l_free0, indices0, used_indices):
-        # Remove redundant multiplicities:
-        l_mult = []
-        l_maxn = []
-        l_free = []
-        indices = []
-        for mult, maxn, free, i_wp in zip(l_mult0, l_maxn0, l_free0, indices0):
-            if free:
-                if mult not in l_mult:
-                    l_mult.append(mult)
-                    l_maxn.append(maxn)
-                    l_free.append(True)
-                    indices.append(i_wp)
-            elif not free and i_wp not in used_indices:
-                l_mult.append(mult)
-                indices.append(i_wp)
-                if mult <= numIon:
-                    l_maxn.append(1)
-                elif mult > numIon:
-                    l_maxn.append(0)
-                l_free.append(False)
-        return l_mult, l_maxn, l_free, indices
-
-    def check_compatible(self, numIons, valid_orientations=None):
+    def check_compatible(self, numIons, verbose=False):
         """
         Checks if the number of atoms is compatible with the Wyckoff
         positions. Considers the number of degrees of freedom for each Wyckoff
@@ -1537,90 +1461,52 @@ class Group:
 
         Args:
             numIons: list of integers
-            valid_orientations: list of possible orientations (molecule only)
+            verbose: bool, whether to print the process
 
         Returns:
             Compatible: True/False
             has_freedom: True/False
         """
-        has_freedom = False  # whether or not one degree of freedom exists
-        used_indices = []  # wp's already used that don't have any freedom
+        from pyxtal.util import get_wyc_from_comp
 
-        # Loop over species
-        # Sort the specie from low to high so that the solution can be found ealier
-        for id in np.argsort(numIons):
-            # Get lists of multiplicity, maxn and freedom
-            numIon = numIons[id]
-            if valid_orientations is None:
-                l_mult, l_maxn, l_free, indices = self.get_lists(
-                    numIon, used_indices)
-            else:
-                vo = valid_orientations[id]
-                l_mult, l_maxn, l_free, indices = self.get_lists_mol(
-                    numIon, used_indices, vo)
-            # print(numIon, l_mult, indices, l_maxn, l_free)
-
-            # Loop over possible combinations
-            p = 0  # Create pointer variable to move through lists
-            # Store the number of each WP, used across possible WP combinations
-            n0 = [0] * len(l_mult)
-            n = deepcopy(n0)
-            for i, _mult in enumerate(l_mult):
-                if l_maxn[i] != 0:
-                    p = i
-                    n[i] = l_maxn[i]
-                    break
-            p2 = p
-            if n == n0:
-                return False, False
-
-            # print(numIon, n, n0, p)
-            while True:
-                num = np.dot(n, l_mult)
-                dobackwards = False
-                # The combination works: move to next species
-                if num == numIon:
-                    # Check if at least one degree of freedom exists
-                    for val, free, i_wp in zip(n, l_free, indices):
-                        if val > 0:
-                            if free:
-                                has_freedom = True
-                            else:
-                                used_indices.append(i_wp)
-                    break
-                # All combinations failed: return False
-                if n == n0 and p >= len(l_mult) - 1:
-                    # print('All combinations failed', numIon, n, n0)
-                    return False, False
-                # Too few atoms
-                if num < numIon:
-                    # Forwards routine
-                    # Move p to the right and max out
-                    if p < len(l_mult) - 1:
-                        p += 1
-                        n[p] = min((numIon - num) // l_mult[p], l_maxn[p])
-                    elif p == len(l_mult) - 1:
-                        # p is already at last position: trigger backwards routine
-                        dobackwards = True
-                # Too many atoms
-                if num > numIon or dobackwards:
-                    # Backwards routine
-                    # Set n[p] to 0, move p backwards to non-zero, and decrease by 1
-                    n[p] = 0
-                    while p > 0 and p > p2:
-                        p -= 1
-                        if n[p] != 0:
-                            n[p] -= 1
-                            if n[p] == 0 and p == p2:
-                                p2 = p + 1
-                            break
-            # print('used_indices', used_indices)
-        if has_freedom:
-            # All species passed: return True
-            return True, True
+        base, upper_bounds = self._get_base_and_upper_bounds()
+        sols = get_wyc_from_comp(numIons, base, upper_bounds, verbose=verbose, max_wyc=1)
+        if len(sols) > 0:
+            return True, sols[0][1]  # Return the first solution's freedom status
         else:
-            # All species passed, but no degrees of freedom: return 0
-            return True, False
+            if verbose: print(f"No valid Wyckoff positions for {numIons} in {self.symbol}.")
+            return False, False
+
+
+    def _get_base_and_upper_bounds(self):
+        """
+        Get the base and upper bounds for the Wyckoff positions.
+        The base is a list of unique multiplicities, and the upper bounds are
+        the maximum number of times each multiplicity can be occupied.
+        If a Wyckoff position has zero degrees of freedom, it can only be occupied once.
+
+        For example, space group 221 has Wyckoff positions:
+        48n, 24m, 24l, 24k, 12j, 12i, 12h, 8g, 6f, 6e, 3d, 3c, 1b, 1a.
+        The base is [48, 24, 12, 8, 6, 3, 1].
+        The upper bounds are [None, None, None, None, None, 2, 2].
+        """
+        base, upper_bounds = [], []
+        for wp in self:
+            if wp.multiplicity not in base:
+                base.append(wp.multiplicity)
+                if wp.get_dof() > 0:
+                    upper_bounds.append(None)
+                else:
+                    upper_bounds.append(1)
+            else:
+                idx = base.index(wp.multiplicity)
+                if upper_bounds[idx] is not None:
+                    if wp.get_dof() > 0:
+                        upper_bounds[idx] = None
+                    else:
+                        upper_bounds[idx] += 1
+        return base, upper_bounds
+
 
     def search_supergroup_paths(self, H, max_layer=5):
         """
@@ -3224,14 +3110,14 @@ def choose_wyckoff_mol(
 # -------------------- quick utilities for symmetry conversion ----------------
 def swap_xyz_string(xyzs, permutation):
     """
-    Permutate the xyz string operation
+    Permutate the xyz string operation.
 
     Args:
         xyzs: e.g. ['x', 'y+1/2', '-z']
         permuation: list, e.g., [0, 2, 1]
 
     Returns:
-        the new xyz string after transformation
+        The new xyz string after transformation.
     """
     if permutation == [0, 1, 2]:
         return xyzs
@@ -3263,7 +3149,7 @@ def swap_xyz_string(xyzs, permutation):
 
 def swap_xyz_ops(ops, permutation):
     """
-    change the symmetry operation by swaping the axes
+    Change the symmetry operation by swaping the axes.
 
     Args:
         ops: SymmOp object

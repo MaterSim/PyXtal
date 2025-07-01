@@ -114,7 +114,7 @@ class random_crystal:
         self.set_sites(sites)
 
         # Lattice and coordinates
-        compat, self.degrees = self.group.check_compatible(self.numIons)
+        compat, self.has_freedom = self.group.check_compatible(self.numIons)
         if not compat:
             self.valid = False
             msg = "Compoisition " + str(self.numIons)
@@ -279,7 +279,7 @@ class random_crystal:
         If successful, `self.valid` is True
         """
         self.numattempts = 0
-        if not self.degrees:
+        if not self.has_freedom:
             self.lattice_attempts = 5
             self.coord_attempts = 5
         else:
@@ -437,7 +437,7 @@ class random_crystal:
             diff = numIon - num
             if diff > 0:
                 # check if compatible
-                compat, self.degrees = self.group.check_compatible([diff])
+                compat, self.has_freedom = self.group.check_compatible([diff])
                 if compat:
                     return True
                 else:
