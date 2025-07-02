@@ -7,7 +7,9 @@ A base class for global optimization including:
 """
 from __future__ import annotations
 from multiprocessing import Pool
+from multiprocessing import get_context
 from concurrent.futures import TimeoutError
+import traceback
 import signal
 
 import logging
@@ -26,6 +28,8 @@ from pyxtal.optimize.common import optimizer, randomizer
 from pyxtal.optimize.common import optimizer_par, optimizer_single
 from pyxtal.lattice import Lattice
 from pyxtal.symmetry import Group
+
+
 
 def setup_worker_logger(log_file):
     """
@@ -70,8 +74,13 @@ def run_optimizer_with_timeout(args, logger):
 def process_task(args):
     logger = logging.getLogger()
     #logger.info(f"Rank {args[-2]} start process_task.")
-    result = run_optimizer_with_timeout(args, logger)
-    return result
+    try:
+        result = run_optimizer_with_timeout(args, logger)
+        return result
+    except Exception as e:
+        error_trace = traceback.format_exc()
+        logger.error(f"Process {os.getpid()} failed with error: {str(e)}\n{error_trace}")
+        return None
 
 class GlobalOptimize:
     """
@@ -366,13 +375,20 @@ class GlobalOptimize:
         self.ref_pxrd = ref_pxrd
 
         if self.ncpu > 1:
-            pool = Pool(processes=self.ncpu,
+            ctx = get_context("spawn")  # safer than fork
+            pool = ctx.Pool(processes=self.ncpu,
                         initializer=setup_worker_logger,
                         initargs=(self.log_file,))
         else:
             pool = None
 
-        results = self._run(pool)
+        try:
+            results = self._run(pool)
+        except (EOFError, OSError) as e:
+            print(f"Error in running the optimizer: {e}")
+            pool.terminate()
+            pool.join()
+            return None
 
         if self.rank == 0:
             t = (time() - t0)/60

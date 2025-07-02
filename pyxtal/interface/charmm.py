@@ -42,7 +42,7 @@ class CHARMM:
         output="charmm.log",
         dump="result.pdb",
         debug=False,
-        timeout=20,
+        timeout=25.0,
     ):
         self.errorE = 1e+5
         self.error = False
@@ -143,6 +143,9 @@ class CHARMM:
                 except subprocess.CalledProcessError as e:
                     print(f"Cmd '{cmd}' failed with return code {e.returncode}.")
                     os.system(f'cp {self.input} err-{self.input}')
+                    return None
+                except subprocess.TimeoutExpired:
+                    print(f"External cmd {cmd} timed out.")
                     return None
             except subprocess.TimeoutExpired:
                 print(f"External cmd {cmd} timed out.")
