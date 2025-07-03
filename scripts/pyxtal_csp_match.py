@@ -19,7 +19,7 @@ parser.add_option("--emax", dest="emax", type=float, default=100,
                   help="maximum energy, optional")
 parser.add_option("-c", "--cut", dest="cut", type=int,
                   help="cutoff number, optional")
-parser.add_option("--early_stop", dest="early_stop", 
+parser.add_option("--early_stop", dest="early_stop",
                   action="store_true", default=False,
                   help="stop when the first match is found")
 
@@ -53,10 +53,9 @@ engs = np.array(engs)
 ids = np.argsort(engs)
 
 cifs = [cifs[id] for id in ids]
-engs = engs[ids] 
+engs = engs[ids]
 engs -= engs.min()  # Normalize energies to the lowest one
 engs *= 96.485
-
 
 # Find the id of energy that is between [options.emin, options.emax]
 n1 = np.searchsorted(engs, options.emin, side='left')
@@ -69,9 +68,10 @@ xtal = pyxtal(molecular=True)
 for id, cif in enumerate(cifs):
     pmg = mg.core.Structure.from_str(cif, fmt='cif')
     xtal.from_seed(pmg, molecules = smiles)
-    print(f"Struc {id + n1:4d}: {xtal.group.number:3d} Eng: {engs[id]:.3f} kJ/mol, Den: {pmg.density:.3f} g/cm^3")
+    strs = f"Struc {ids[id]:6d}: {xtal.group.number:3d} {engs[id]:.3f} kJ/mol, {pmg.density:.3f} g/cm^3"
     pmg.remove_species("H")
     if abs(pmg.density-pmg_ref.density)<=0.05 and sm.StructureMatcher().fit(pmg, pmg_ref):
-        print(f"Struc {ids[id]} is matched with reference structure.")
+        strs += '+++++++++++'
         if options.early_stop:
             break
+    print(strs)
