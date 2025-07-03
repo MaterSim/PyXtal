@@ -13,10 +13,10 @@ parser.add_option("-f", "--cif", dest="cif",
                   help="cif file name, optional")
 parser.add_option("-r", "--ref", dest="ref",
                   help="reference structure")
-parser.add_option("-b", "--n1", dest="n1", type=int, default=0,
-                  help="starting id, optional")
-parser.add_option("-e", "--n2", dest="n2", type=int, default=-1,
-                  help="ennding id, optional")
+parser.add_option("--emin", dest="emin", type=float, default=0,
+                  help="minimum energy, optional")
+parser.add_option("--emax", dest="emax", type=float, default=100,
+                  help="maximum energy, optional")
 parser.add_option("-c", "--cut", dest="cut", type=int,
                   help="cutoff number, optional")
 parser.add_option("--early_stop", dest="early_stop", 
@@ -24,8 +24,6 @@ parser.add_option("--early_stop", dest="early_stop",
                   help="stop when the first match is found")
 
 (options, args) = parser.parse_args()
-n1 = options.n1
-n2 = options.n2
 
 with open(options.cif, 'r') as f:
     lines = f.readlines()
@@ -55,22 +53,23 @@ engs = np.array(engs)
 ids = np.argsort(engs)
 
 cifs = [cifs[id] for id in ids]
-engs = [engs[id] for id in ids]
+engs = engs[ids] 
+engs -= engs.min()  # Normalize energies to the lowest one
+engs *= 96.485
 
-if n2 == -1:
-    cifs = cifs[n1:]
-    engs = engs[n1:]
-else:
-    n2 = min(n2, len(cifs))
-    cifs = cifs[n1:n2]
-    engs = engs[n1:n2]
+
+# Find the id of energy that is between [options.emin, options.emax]
+n1 = np.searchsorted(engs, options.emin, side='left')
+n2 = np.searchsorted(engs, options.emax, side='right')
+engs = engs[n1:n2]
+cifs = [cifs[id] for id in range(n1, n2)]
 
 count = 0
 xtal = pyxtal(molecular=True)
 for id, cif in enumerate(cifs):
     pmg = mg.core.Structure.from_str(cif, fmt='cif')
     xtal.from_seed(pmg, molecules = smiles)
-    print(f"Struc {id + n1:4d}: {xtal.group.number:3d} Eng: {engs[id]:.3f} eV, Den: {pmg.density:.3f} g/cm^3")
+    print(f"Struc {id + n1:4d}: {xtal.group.number:3d} Eng: {engs[id]:.3f} kJ/mol, Den: {pmg.density:.3f} g/cm^3")
     pmg.remove_species("H")
     if abs(pmg.density-pmg_ref.density)<=0.05 and sm.StructureMatcher().fit(pmg, pmg_ref):
         print(f"Struc {ids[id]} is matched with reference structure.")
