@@ -195,6 +195,11 @@ class WFS(GlobalOptimize):
                                 id = self._selTournament(engs)
                                 cur_xtals[i] = (prev_xtals[id][0], "Mutation")
 
+                        # If the space group is 1, it is a random structure                        
+                        if len(self.sg) > 0 and cur_xtals[i][0] is not None and cur_xtals[i][1] == "Mutation":
+                            if cur_xtals[i][0].group.number == 1:
+                                cur_xtals[i] = (None, "Random")
+
             # broadcast
             if self.use_mpi: cur_xtals = self.comm.bcast(cur_xtals, root=0)
 

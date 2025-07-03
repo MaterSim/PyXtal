@@ -455,8 +455,10 @@ class GlobalOptimize:
                     res = self._print_match(xtal, self.ref_pmg)
                     e, d1, d2 = xtal.energy/sum(xtal.numMols), res[0], res[1]
                     try:
-                        label = self.tag + "-g" + str(gen) + "-p" + str(i)
-                        label += f"-e{e:.3f}-{tag:s}-{d1:4.2f}-{d2:4.2f}"
+                        den = xtal.get_density()
+                        spg = xtal.group.number
+                        label = self.tag + f"-g{gen}-p{i}-d{den:.3f}-spg{spg}"
+                        label += f"-e{e:.3f}-{tag:s}-{d1:.2f}-{d2:.2f}"
                     except:
                         print("Error in e, tag, d1, d2", e, tag, d1, d2)
                     f.writelines(xtal.to_file(header=label))
@@ -984,7 +986,10 @@ class GlobalOptimize:
                     if self.verbose:
                         print("Add qualified structure", id, xtal.energy)
                     with open(self.cif, "a+") as f:
-                        label = self.tag + "-g" + str(gen) + "-p" + str(id)
+                        eng = abs(xtal.energy / sum(xtal.numMols))
+                        den = xtal.get_density()
+                        spg = xtal.group.number
+                        label = self.tag + f"-g{gen}-p{id}-d{den:.3f}-spg{spg}-e{eng:.3f}"
                         f.writelines(xtal.to_file(header=label))
                 self.engs.append(xtal.energy / sum(xtal.numMols))
                 self.stats[gen, id, 0] = xtal.energy / sum(xtal.numMols)
