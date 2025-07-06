@@ -9,7 +9,7 @@ warnings.filterwarnings("ignore")
 
 
 parser = OptionParser()
-parser.add_option("-f", "--cif", dest="cif",
+parser.add_option("-f", "--cif", dest="cif", default="WFS-gaff.cif",
                   help="cif file name, optional")
 parser.add_option("-r", "--ref", dest="ref",
                   help="reference structure")
@@ -24,6 +24,7 @@ parser.add_option("--early_stop", dest="early_stop",
                   help="stop when the first match is found")
 
 (options, args) = parser.parse_args()
+matcher = sm.StructureMatcher(ltol=0.3, stol=0.3, angle_tol=5.0)
 
 with open(options.cif, 'r') as f:
     lines = f.readlines()
@@ -39,8 +40,11 @@ if options.ref is None:
     raise ValueError("Reference structure is required.")
 else:
     pmg_ref = mg.core.Structure.from_file(options.ref)
+    xtal = pyxtal(molecular=True)
+    xtal.from_seed(pmg_ref, molecules = smiles)
+    print(f"Reference Structure loaded from {options.ref} {pmg_ref.density:.3f}")
     pmg_ref.remove_species("H")
-    print(f"Reference Structure loaded from {options.ref}")
+    print(xtal)
 
 cifs, engs = parse_cif(options.cif, eng=True)
 print("Total Number of Structures:", len(cifs))
@@ -54,6 +58,7 @@ ids = np.argsort(engs)
 
 cifs = [cifs[id] for id in ids]
 engs = engs[ids]
+print(f"Min energy in eV: {engs.min()+options.emin/96.485:.4f} {engs.min()+options.emax/96.485}")
 engs -= engs.min()  # Normalize energies to the lowest one
 engs *= 96.485
 
@@ -67,11 +72,19 @@ count = 0
 xtal = pyxtal(molecular=True)
 for id, cif in enumerate(cifs):
     pmg = mg.core.Structure.from_str(cif, fmt='cif')
-    xtal.from_seed(pmg, molecules = smiles)
-    strs = f"Struc {ids[id]:6d}: {xtal.group.number:3d} {engs[id]:.3f} kJ/mol, {pmg.density:.3f} g/cm^3"
-    pmg.remove_species("H")
-    if abs(pmg.density-pmg_ref.density)<=0.05 and sm.StructureMatcher().fit(pmg, pmg_ref):
-        strs += '+++++++++++'
-        if options.early_stop:
-            break
-    print(strs)
+    try:
+        xtal.from_seed(pmg, molecules = smiles)
+        strs = f"Struc {ids[id]:6d}: {xtal.group.number:3d} {engs[id]:.3f} kJ/mol, {pmg.density:.3f} g/cm^3"
+        pmg.remove_species("H")
+        if abs(pmg.density-pmg_ref.density) <= 0.15:
+            strs += '****'
+            if matcher.fit(pmg, pmg_ref):
+                count += 1
+                strs += '+++++++++++'
+                if options.early_stop:
+                    break
+        print(strs)
+    except:
+        continue
+
+print(f"Found {count} matches")

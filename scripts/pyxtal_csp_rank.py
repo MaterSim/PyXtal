@@ -41,7 +41,7 @@ def new_struc(xtal, xtals, max_num=100):
 
 
 parser = OptionParser()
-parser.add_option("-f", "--cif", dest="cif",
+parser.add_option("-f", "--cif", dest="cif", default="WFS-gaff.cif",
                   help="cif file name, optional")
 parser.add_option("-r", "--rank", dest="rank", default='energy',
                   help="ranking criteria: default is energy")
@@ -91,7 +91,8 @@ else:
     sims = [sims[id] for id in ids]
 
 cifs = [cifs[id] for id in ids]
-engs = [engs[id] for id in ids]
+engs = engs[ids]
+eng0 = engs.min()
 
 if n2 == -1:
     cifs = cifs[n1:]
@@ -100,6 +101,7 @@ else:
     n2 = min(n2, len(cifs))
     cifs = cifs[n1:n2]
     engs = engs[n1:n2]
+print("Index", n1, n2, cut, len(cifs))
 with open(output1, 'w') as f: f.write(l)
 
 xtals = []
@@ -117,9 +119,10 @@ with open(output1, 'a+') as f:
                 eng = engs[id]
                 label = f"{count}-d{den:.3f}-spg{spg}-e{eng:.3f}"
                 f.writelines(xtal.to_file(header=label))
-                print(f"{ids[id]:6d} {count:4d} {label}")
+                print(f"{ids[id]:6d} {label} {(eng-eng0)*96.485:6.2f}")
                 count += 1
                 if count == cut:
+                    print("Stop", count)
                     break
         except:
             print("Problem in reading")

@@ -457,7 +457,7 @@ class GlobalOptimize:
                     try:
                         den = xtal.get_density()
                         spg = xtal.group.number
-                        label = self.tag + f"-g{gen}-p{i}-d{den:.3f}-spg{spg}"
+                        label = self.tag + f"-g{gen}-p{i}-{tag}-d{den:.3f}-spg{spg}"
                         label += f"-e{e:.3f}-{tag:s}-{d1:.2f}-{d2:.2f}"
                     except:
                         print("Error in e, tag, d1, d2", e, tag, d1, d2)
@@ -984,12 +984,13 @@ class GlobalOptimize:
                 # Don't write bad structure
                 if self.cif is not None and xtal.energy < 9999:
                     if self.verbose:
-                        print("Add qualified structure", id, xtal.energy)
+                        print("Add structure", id, xtal.energy)
                     with open(self.cif, "a+") as f:
                         eng = abs(xtal.energy / sum(xtal.numMols))
                         den = xtal.get_density()
                         spg = xtal.group.number
-                        label = self.tag + f"-g{gen}-p{id}-d{den:.3f}-spg{spg}-e{eng:.3f}"
+                        tag = xtals[id][1]
+                        label = self.tag + f"-g{gen}-p{id}-{tag}-d{den:.3f}-spg{spg}-e{eng:.3f}"
                         f.writelines(xtal.to_file(header=label))
                 self.engs.append(xtal.energy / sum(xtal.numMols))
                 self.stats[gen, id, 0] = xtal.energy / sum(xtal.numMols)

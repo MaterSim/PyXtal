@@ -5,14 +5,13 @@ import matplotlib.pyplot as plt
 from optparse import OptionParser
 
 parser = OptionParser()
-parser.add_option("-f", "--cif", dest="cif",
+parser.add_option("-f", "--cif", dest="cif", default="WFS-gaff.cif",
                   help="cif file name, optional")
-parser.add_option("--Ecut", dest="Ecut", type=float, default=100.0,
+parser.add_option("--emax", dest="Ecut", type=float, default=100.0,
                   help="Energy cutoff, optional")
 parser.add_option("--Ncut", dest="Ncut", type=int, default=-1,
                   help="Number cutoff, optional")
 (options, args) = parser.parse_args()
-
 # Read and parse the log file
 os.system(f"grep data {options.cif} > log.txt")
 data = []
@@ -21,10 +20,11 @@ with open('log.txt', 'r') as f:
         if line.startswith('data_'):
             # Split by '-' and extract values
             parts = line.strip().split('-')
-            density = float(parts[3][1:])  # Remove 'd' and convert to float
-            spg = int(parts[4][3:])        # Remove 'spg' and convert to int
-            energy = float(parts[5][1:])*-96.485    # Remove 'e' and convert to float
+            density = float(parts[-3][1:])  # Remove 'd' and convert to float
+            spg = int(parts[-2][3:])        # Remove 'spg' and convert to int
+            energy = float(parts[-1][1:])*-96.485    # Remove 'e' and convert to float
             data.append({'Density_g_m3': density, 'Space_group': spg, 'Energy_kJ_mol': energy})
+            print(f"{spg:3d}, {energy:12.4f}")
 
 # Create DataFrame from parsed data
 print("Total number of structures:", len(data))
@@ -39,7 +39,7 @@ for key in ['Density_g_m3', 'Space_group', 'Energy_kJ_mol']:
     df[key] = df[key][ids]
 
 # Create a figure with 2 subplots
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 8))
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(17, 8))
 
 # Scatter plot in first subplot
 scatter = ax1.scatter(df['Density_g_m3'], df['Energy_kJ_mol'], c=df['Space_group'], alpha=0.5, cmap='plasma')
@@ -90,8 +90,7 @@ for bar in bars:
     sg_num = existing_sg[int(bar.get_x())]  # Get space group number
     min_energy = df[df['Space_group'] == sg_num]['Energy_kJ_mol'].min()
     ax2.text(bar.get_x() + bar.get_width()/2., height,
-             #f'{int(height)}\n{min_energy:.1f}',
-             f'{min_energy:.1f}',
+             f'{min_energy:.0f}',
              ha='center', va='bottom')
 
 ax2.set_xlabel('Space Group Number')
@@ -103,3 +102,5 @@ ax2.set_xlim(0.5, len(existing_sg) + 0.5)  # Adjust x-axis limits to center bars
 plt.tight_layout()
 plt.savefig('crystal_data_plot.png', dpi=300)
 plt.close()
+
+print(options.Ecut)
