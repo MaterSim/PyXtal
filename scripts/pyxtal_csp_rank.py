@@ -51,6 +51,8 @@ parser.add_option("-e", "--n2", dest="n2", type=int, default=-1,
                   help="ennding id, optional")
 parser.add_option("-c", "--cut", dest="cut", type=int,
                   help="cutoff number, optional")
+parser.add_option("--dmax", dest="dmax", type=float, dmax=10.0,
+                  help="maximum density in g/cm^3, optional")
 
 (options, args) = parser.parse_args()
 rank = options.rank
@@ -97,10 +99,12 @@ eng0 = engs.min()
 if n2 == -1:
     cifs = cifs[n1:]
     engs = engs[n1:]
+    ids = ids[n1:]
 else:
     n2 = min(n2, len(cifs))
     cifs = cifs[n1:n2]
     engs = engs[n1:n2]
+    ids = ids[n1:n2]
 print("Index", n1, n2, cut, len(cifs))
 with open(output1, 'w') as f: f.write(l)
 
@@ -118,8 +122,9 @@ with open(output1, 'a+') as f:
                 den = xtal.get_density()
                 eng = engs[id]
                 label = f"{count}-d{den:.3f}-spg{spg}-e{eng:.3f}"
-                f.writelines(xtal.to_file(header=label))
-                print(f"{ids[id]:6d} {label} {(eng-eng0)*96.485:6.2f}")
+                if den < options.dmax:
+                    f.writelines(xtal.to_file(header=label))
+                    print(f"{ids[id]:6d} {label} {(eng-eng0)*96.485:6.2f}")
                 count += 1
                 if count == cut:
                     print("Stop", count)

@@ -7,12 +7,17 @@ from optparse import OptionParser
 parser = OptionParser()
 parser.add_option("-f", "--cif", dest="cif", default="WFS-gaff.cif",
                   help="cif file name, optional")
+parser.add_option("-m", "--match", dest="match", #default="Matched.cif",
+                  help="mathed cif file name, optional")
 parser.add_option("--emax", dest="Ecut", type=float, default=100.0,
                   help="Energy cutoff, optional")
-parser.add_option("--Ncut", dest="Ncut", type=int, default=-1,
-                  help="Number cutoff, optional")
 (options, args) = parser.parse_args()
 # Read and parse the log file
+if len(options.cif.split('/')) > 1:
+    dir = options.cif.split('/')[-2]
+else:
+    dir = os.getcwd().split('/')[-1]
+
 os.system(f"grep data {options.cif} > log.txt")
 data = []
 with open('log.txt', 'r') as f:
@@ -23,7 +28,7 @@ with open('log.txt', 'r') as f:
             density = float(parts[-3][1:])  # Remove 'd' and convert to float
             spg = int(parts[-2][3:])        # Remove 'spg' and convert to int
             energy = float(parts[-1][1:])*-96.485    # Remove 'e' and convert to float
-            data.append({'Density_g_m3': density, 'Space_group': spg, 'Energy_kJ_mol': energy})
+            data.append({'Density_g_cm3': density, 'Space_group': spg, 'Energy_kJ_mol': energy})
             print(f"{spg:3d}, {energy:12.4f}")
 
 # Create DataFrame from parsed data
@@ -33,23 +38,36 @@ df = pd.DataFrame(data)
 #df = pd.read_csv('crystal_data.csv')
 df['Energy_kJ_mol'] -= df['Energy_kJ_mol'].min()  # Normalize energy for better visualization
 ids = np.argsort(df['Energy_kJ_mol'])
-if options.Ncut > -1: ids = ids[:options.Ncut]
 
-for key in ['Density_g_m3', 'Space_group', 'Energy_kJ_mol']:
+for key in ['Density_g_cm3', 'Space_group', 'Energy_kJ_mol']:
     df[key] = df[key][ids]
 
 # Create a figure with 2 subplots
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(17, 8))
 
 # Scatter plot in first subplot
-scatter = ax1.scatter(df['Density_g_m3'], df['Energy_kJ_mol'], c=df['Space_group'], alpha=0.5, cmap='plasma')
+scatter = ax1.scatter(df['Density_g_cm3'], df['Energy_kJ_mol'], c=df['Space_group'], alpha=0.5, cmap='plasma')
 ax1.set_xlabel('Density (g/m$^3$)')
 ax1.set_ylabel('Energy (kJ/mol)')
 ax1.set_ylim(-3, options.Ecut)
-ax1.set_xlim(df['Density_g_m3'].min()-0.05, df['Density_g_m3'].max()+0.05)  # Adjust x-axis limit for better visibility
-ax1.set_title('Energy vs Density (colored by Space Group)')
+ax1.set_xlim(df['Density_g_cm3'].min()-0.05, df['Density_g_cm3'].max()+0.05)  # Adjust x-axis limit for better visibility
+ax1.set_title(f'Energy vs Density ({dir})')
 ax1.grid(True)
 plt.colorbar(scatter, ax=ax1, label='Space Group', fraction=0.046, pad=0.04)
+
+if options.match is not None:
+    os.system(f"grep data {options.match} > match.txt")
+    match = []
+    with open('match.txt', 'r') as f:
+        for line in f:
+            parts = line.strip().split('-')
+            density = float(parts[-3][1:])  # Remove 'd' and convert to float
+            energy = float(parts[-1][1:])
+            match.append([density, energy])
+            print(f"{density:12.4f}, {energy:12.4f}")
+    match = np.array(match)
+    ax1.scatter(match[:, 0], match[:, 1], marker='*', c='r', s=100, label='Match')
+    ax1.legend()
 
 # Histogram in second subplot
 # Group by space group and calculate mean energy and count

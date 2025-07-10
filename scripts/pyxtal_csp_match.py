@@ -67,24 +67,32 @@ n1 = np.searchsorted(engs, options.emin, side='left')
 n2 = np.searchsorted(engs, options.emax, side='right')
 engs = engs[n1:n2]
 cifs = [cifs[id] for id in range(n1, n2)]
+ids = ids[n1:n2]
 
+output1 = 'Matched.cif'
 count = 0
 xtal = pyxtal(molecular=True)
-for id, cif in enumerate(cifs):
-    pmg = mg.core.Structure.from_str(cif, fmt='cif')
-    try:
-        xtal.from_seed(pmg, molecules = smiles)
-        strs = f"Struc {ids[id]:6d}: {xtal.group.number:3d} {engs[id]:.3f} kJ/mol, {pmg.density:.3f} g/cm^3"
-        pmg.remove_species("H")
-        if abs(pmg.density-pmg_ref.density) <= 0.15:
-            strs += '****'
-            if matcher.fit(pmg, pmg_ref):
-                count += 1
-                strs += '+++++++++++'
-                if options.early_stop:
-                    break
-        print(strs)
-    except:
-        continue
+with open(output1, 'w') as f:
+    for id, cif in enumerate(cifs):
+        pmg = mg.core.Structure.from_str(cif, fmt='cif')
+        try:
+            xtal.from_seed(pmg, molecules = smiles)
+            strs = f"Struc {ids[id]:6d}: {xtal.group.number:3d} {engs[id]:.3f} kJ/mol, {pmg.density:.3f} g/cm^3"
+            pmg.remove_species("H")
+            if abs(pmg.density-pmg_ref.density) <= 0.15:
+                strs += '****'
+                if matcher.fit(pmg, pmg_ref):
+                    count += 1
+                    strs += '+++++++++++'
+                    spg = xtal.group.number
+                    den = xtal.get_density()
+                    eng = engs[id]
+                    label = f"{count}-d{den:.3f}-spg{spg}-e{eng:.3f}"
+                    f.writelines(xtal.to_file(header=label))
+                    if options.early_stop:
+                        break
+            print(strs)
+        except:
+            continue
 
 print(f"Found {count} matches")

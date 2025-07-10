@@ -1479,7 +1479,7 @@ class Group:
             print(strs)
             print("Base WP Choices:   ", base)
             print("Upper Bounds:      ", upper_bounds)
-    
+
         sols = get_wyc_from_comp(numIons, base, upper_bounds, verbose=verbose, max_wyc=1)
         if len(sols) > 0:
             return True, sols[0][1]  # Return the first solution's freedom status
@@ -1730,8 +1730,29 @@ class Group:
 
         return solutions
 
-    def short_path_to_general_wp(self, index=1, t_only=False):
+    def path_to_zp2(self):
         """
+        Find a path to split general wp to zp=2.
+        """
+        if self.number in [195, 196, 197, 198, 199]:
+            sub = self.get_max_t_subgroup()
+            #print(self.number, sub['index'])
+            H = [sub['subgroup'][i] for i, id in enumerate(sub['index']) if id == 3]
+            g_type = 't'
+        else:
+            if self.number in [1, 2, 3, 4, 5, 6, 7, 8, 9, 143, 144, 145, 146]:
+                # k_subgroup
+                sub = self.get_max_k_subgroup()
+                g_type = 'k'
+            else:
+                # t_subgroup
+                sub = self.get_max_t_subgroup()
+                g_type = 't'
+            H = [sub['subgroup'][i] for i, id in enumerate(sub['index']) if id == 2]
+        return H, g_type
+
+    def short_path_to_general_wp(self, index=1, t_only=False):
+        """u
         Find a short path to turn the spcical wp to general position
 
         Args:
