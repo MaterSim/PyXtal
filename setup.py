@@ -28,7 +28,7 @@ with open("README.md") as fh:
 
 setup(
     name="pyxtal",
-    version="1.1.0",
+    version="1.1.1",
     author="Scott Fredericks, Kevin Parrish, Qiang Zhu",
     author_email="alecfans@gmail.com",
     description="Python code for generation of crystal structures based on symmetry constraints.",
@@ -52,6 +52,9 @@ setup(
     scripts=[
         "scripts/pyxtal_main.py",
         "scripts/pyxtal_symmetry.py",
+        "scripts/pyxtal_csp_plot.py",
+        "scripts/pyxtal_csp_match.py",
+        "scripts/pyxtal_csp_rank.py",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

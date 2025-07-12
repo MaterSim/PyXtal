@@ -11,18 +11,15 @@ warnings.filterwarnings("ignore")
 
 
 parser = OptionParser()
-parser.add_option("-f", "--cif", dest="cif", default="WFS-gaff.cif",
-                  help="cif file name, optional")
-parser.add_option("-r", "--ref", dest="ref",
-                  help="reference structure")
+parser.add_option("-f", dest="cif", default="WFS-gaff.cif", help="input cif file")
+parser.add_option("-r", dest="ref", help="reference")
+parser.add_option("-o", dest="out", default="Matched.cif", help="output")
+parser.add_option("-c", dest="cut", type=int, help="cutoff number of struc")
 parser.add_option("--emin", dest="emin", type=float, default=0,
-                  help="minimum energy, optional")
+                  help="minimum energy, default 0")
 parser.add_option("--emax", dest="emax", type=float, default=100,
-                  help="maximum energy, optional")
-parser.add_option("-c", "--cut", dest="cut", type=int,
-                  help="cutoff number, optional")
-parser.add_option("--early_stop", dest="early_stop",
-                  action="store_true", default=False,
+                  help="maximum energy, default 100")
+parser.add_option("--early_stop", dest="early", action="store_true", default=False,
                   help="stop when the first match is found")
 parser.add_option("--XRD", dest="xrd",
                   action="store_true", default=False,
@@ -81,10 +78,9 @@ engs = engs[n1:n2]
 cifs = [cifs[id] for id in range(n1, n2)]
 ids = ids[n1:n2]
 
-output1 = 'Matched.cif'
 count = 0
 xtal = pyxtal(molecular=True)
-with open(output1, 'w') as f:
+with open(options.out, 'w') as f:
     for id, cif in enumerate(cifs):
         pmg = mg.core.Structure.from_str(cif, fmt='cif')
         match = False
@@ -114,7 +110,7 @@ with open(output1, 'w') as f:
             label = f"{count}-d{den:.3f}-spg{spg}-e{eng:.3f}"
             if options.xrd: label += f"-s{sim:.3f}"
             f.writelines(xtal.to_file(header=label))
-            if options.early_stop:
+            if options.early:
                 break
         print(strs)
 print(f"Found {count} matches")
