@@ -163,7 +163,7 @@ def extract_ase_db(db_file, id):
             print(my)
 
 
-def parse_cif(filename, header=False, spg=False, eng=False, csd=False, sim=False):
+def parse_cif(filename, header=False, spg=False, eng=False, csd=False, sim=False, verbose=False):
     """
     Read structures from a cif (our own format with #END)
 
@@ -196,6 +196,9 @@ def parse_cif(filename, header=False, spg=False, eng=False, csd=False, sim=False
                         tmp.append(l)
                     cif = listToString(tmp)
                     strings.append(cif)
+                    if verbose:
+                        if len(strings) % 100 == 0:
+                            print(f"Read {len(strings)} structures")
                 start = i
                 headers.append(lines[i])
             elif lines[i].find("_symmetry_Int_Tables_number") == 0:
@@ -751,7 +754,7 @@ def get_wyc_from_comp(composition: int,
     solutions = []
     free_ids = [i for i, ub in enumerate(upper_bounds) if ub is None]
     n = len(base)
-    
+
     for num in composition:
         max_counts = [
             (upper_bounds[i] if upper_bounds[i] is not None else num // base[i])
