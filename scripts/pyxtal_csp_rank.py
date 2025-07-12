@@ -51,7 +51,7 @@ parser.add_option("-e", "--n2", dest="n2", type=int, default=-1,
                   help="ennding id, optional")
 parser.add_option("-c", "--cut", dest="cut", type=int,
                   help="cutoff number, optional")
-parser.add_option("--dmax", dest="dmax", type=float, dmax=10.0,
+parser.add_option("--dmax", dest="dmax", type=float, default=10.0,
                   help="maximum density in g/cm^3, optional")
 
 (options, args) = parser.parse_args()
