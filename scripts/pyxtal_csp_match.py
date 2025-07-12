@@ -1,9 +1,11 @@
+
 import pymatgen as mg
 import numpy as np
 from pyxtal.util import parse_cif
 from optparse import OptionParser
 import pymatgen.analysis.structure_matcher as sm
 from pyxtal import pyxtal
+from pyxtal.XRD import Similarity
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -22,6 +24,11 @@ parser.add_option("-c", "--cut", dest="cut", type=int,
 parser.add_option("--early_stop", dest="early_stop",
                   action="store_true", default=False,
                   help="stop when the first match is found")
+parser.add_option("--XRD", dest="xrd",
+                  action="store_true", default=False,
+                  help="Compare XRD")
+parser.add_option("--smin", dest="smin", type=float, default=0.80,
+                  help="min similarity for XRD")
 
 (options, args) = parser.parse_args()
 matcher = sm.StructureMatcher(ltol=0.3, stol=0.3, angle_tol=5.0)
@@ -45,6 +52,11 @@ else:
     print(f"Reference Structure loaded from {options.ref} {pmg_ref.density:.3f}")
     pmg_ref.remove_species("H")
     print(xtal)
+
+    if options.xrd:
+        thetas = [0, 35.0]
+        xrd = xtal.get_XRD(thetas=thetas)
+        p_ref = xrd.get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
 
 cifs, engs = parse_cif(options.cif, eng=True)
 print("Total Number of Structures:", len(cifs))
@@ -75,24 +87,34 @@ xtal = pyxtal(molecular=True)
 with open(output1, 'w') as f:
     for id, cif in enumerate(cifs):
         pmg = mg.core.Structure.from_str(cif, fmt='cif')
+        match = False
         try:
             xtal.from_seed(pmg, molecules = smiles)
             strs = f"Struc {ids[id]:6d}: {xtal.group.number:3d} {engs[id]:.3f} kJ/mol, {pmg.density:.3f} g/cm^3"
-            pmg.remove_species("H")
-            if abs(pmg.density-pmg_ref.density) <= 0.15:
-                strs += '****'
-                if matcher.fit(pmg, pmg_ref):
-                    count += 1
-                    strs += '+++++++++++'
-                    spg = xtal.group.number
-                    den = xtal.get_density()
-                    eng = engs[id]
-                    label = f"{count}-d{den:.3f}-spg{spg}-e{eng:.3f}"
-                    f.writelines(xtal.to_file(header=label))
-                    if options.early_stop:
-                        break
-            print(strs)
+            if options.xrd:
+                p1 = xtal.get_XRD(thetas=thetas).get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
+                sim = Similarity(p1, p_ref, x_range=thetas).value
+                if sim > options.smin: match = True
+                strs += f'{sim:12.3f} in PXRD similarity'
+            else:
+                pmg.remove_species("H")
+                if abs(pmg.density-pmg_ref.density) <= 0.15:
+                    strs += '****'
+                    if matcher.fit(pmg, pmg_ref):
+                        match = True
         except:
             continue
 
+        if match:
+            count += 1
+            strs += '+++++++++++'
+            spg = xtal.group.number
+            den = xtal.get_density()
+            eng = engs[id]
+            label = f"{count}-d{den:.3f}-spg{spg}-e{eng:.3f}"
+            if options.xrd: label += f"-s{sim:.3f}"
+            f.writelines(xtal.to_file(header=label))
+            if options.early_stop:
+                break
+        print(strs)
 print(f"Found {count} matches")
