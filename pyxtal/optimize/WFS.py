@@ -99,7 +99,6 @@ class WFS(GlobalOptimize):
         self.check = check
         self.N_gen = N_gen
         self.N_pop = N_pop
-        self.fracs = np.array(fracs)
         self.verbose = verbose
         self.name = 'WFS'
 
@@ -140,10 +139,11 @@ class WFS(GlobalOptimize):
         )
 
         if fracs is None:
-            if len(self.sgs) > 4:
+            if len(self.sg) > 4:
                 fracs = [0.8, 0.2]
             else:
                 fracs = [0.6, 0.4]
+        self.fracs = np.array(fracs)
 
         if self.rank == 0:
             strs = self.full_str()
