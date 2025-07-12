@@ -95,8 +95,7 @@ class WFS(GlobalOptimize):
             self.random_state = np.random.default_rng(random_state)
 
         # POPULATION parameters:
-        if fracs is None:
-            fracs = [0.6, 0.4]
+
         self.check = check
         self.N_gen = N_gen
         self.N_pop = N_pop
@@ -139,6 +138,12 @@ class WFS(GlobalOptimize):
             use_mpi,
             pre_opt,
         )
+
+        if fracs is None:
+            if len(self.sgs) > 4:
+                fracs = [0.8, 0.2]
+            else:
+                fracs = [0.6, 0.4]
 
         if self.rank == 0:
             strs = self.full_str()
@@ -195,7 +200,7 @@ class WFS(GlobalOptimize):
                                 id = self._selTournament(engs)
                                 cur_xtals[i] = (prev_xtals[id][0], "Mutation")
 
-                        # If the space group is 1, it is a random structure                        
+                        # If the space group is 1, it is a random structure
                         if len(self.sg) > 0 and cur_xtals[i][0] is not None and cur_xtals[i][1] == "Mutation":
                             if cur_xtals[i][0].group.number == 1:
                                 cur_xtals[i] = (None, "Random")
