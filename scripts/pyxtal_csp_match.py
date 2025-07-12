@@ -36,7 +36,7 @@ with open(options.cif, 'r') as f:
     for l in lines:
         if 'smile' in l:
             smile_str = l.split(':')[1].strip()
-            smiles = [smile_str + '.smi']
+            smiles = [s + '.smi' for s in smile_str.split('.')]
             break
 print(smiles)
 
@@ -80,7 +80,9 @@ ids = ids[n1:n2]
 
 count = 0
 xtal = pyxtal(molecular=True)
+
 with open(options.out, 'w') as f:
+    f.write(f'smiles: {smile_str}\n')
     for id, cif in enumerate(cifs):
         pmg = mg.core.Structure.from_str(cif, fmt='cif')
         match = False
