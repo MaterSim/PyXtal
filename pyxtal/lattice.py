@@ -13,7 +13,7 @@ from pyxtal.operations import angle, create_matrix
 class Lattice:
     """
     Class for storing and generating crystal lattices.
-    
+
     Args:
     -----
     ltype : str
@@ -21,13 +21,13 @@ class Lattice:
     volume : float
         Volume of the lattice in Angstroms cubed
     matrix : ndarray
-        3x3 matrix representing the lattice vectors 
-    PBC : list 
+        3x3 matrix representing the lattice vectors
+    PBC : list
         Periodic boundary condition list. 1 means periodic, 0 means non-periodic.
         Example: [1,1,1] is 3D periodic, [0,0,1] is periodic only along z
     **kwargs : dict
         Optional parameters for lattice generation:
-        
+
         - area : float
             Cross-sectional area (Å²) for 1D crystals only
         - thickness : float
@@ -35,7 +35,7 @@ class Lattice:
         - unique_axis : str
             Axis ('a','b' or 'c') that is not symmetrically equivalent to others.
             Use default values for random crystal generation
-        - random : bool 
+        - random : bool
             If False, preserves stored lattice geometry when resetting matrix.
             Use set_matrix() or set_para to modify
         - min_l : float
@@ -1099,11 +1099,11 @@ class Lattice:
             else:
                 return abc_diff, abc_f_diff, ang_diff2, False
 
-    def __str__(self):
-        return (
-            f"{self.a:8.4f}, {self.b:8.4f}, {self.c:8.4f}, {self.alpha * deg:8.4f}, "
-            f"{self.beta * deg:8.4f}, {self.gamma * deg:8.4f}, {self.ltype!s:s}"
-        )
+    def __str__(self, fmt='8.4f', ltype=True):
+        strs = f"{self.a:{fmt}}, {self.b:{fmt}}, {self.c:{fmt}}, "
+        strs += f"{self.alpha * deg:{fmt}}, {self.beta * deg:{fmt}}, {self.gamma * deg:{fmt}}"
+        if ltype: strs += f", {self.ltype!s}"
+        return strs
 
     def __repr__(self):
         return str(self)

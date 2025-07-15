@@ -297,7 +297,7 @@ class representation:
         # symmetry
         v = self.x[0]
         struc = pyxtal(molecular=True)
-        struc.group, _number = Group(v[0], use_hall=True), v[0]
+        struc.group = Group(v[0], use_hall=True)
 
         # lattice
         ltype = struc.group.lattice_type
@@ -420,7 +420,7 @@ class representation:
 
     def same_smiles(self, smiles):
         if len(self.smiles) == smiles:
-            return all(s2 == s2 for s1, s2 in zip(self.smiles, smiles))
+            return all(s1 == s2 for s1, s2 in zip(self.smiles, smiles))
         else:
             return False
 
@@ -474,7 +474,21 @@ class representation:
                     diffs.extend(diff_ori)
                     diffs.extend(diff_tor)
             return np.array(diffs)
-
+        
+    def update_smiles(self, smiles):
+        """
+        Update the smiles of the representation
+        """
+        if len(smiles) != len(self.smiles):
+            raise ValueError("Number of smiles does not match")
+        self.smiles = smiles
+        # update the x for the new smiles
+        for i, smile in enumerate(smiles):
+            if smile.endswith(".smi"):
+                smile = smile[:-4]
+            for j in range(len(self.x)):
+                if self.x[j][0] == i:
+                    self.x[j][0] = smile
 
 if __name__ == "__main__":
     # aspirin

@@ -116,6 +116,7 @@ with open(output1, 'a+') as f:
         try:
             xtal = pyxtal(molecular=True)
             xtal.from_seed(pmg, molecules = smiles)
+            xtal.energy = engs[id]
             if new_struc(xtal, xtals, 100):
                 xtals.append(xtal)
                 spg = xtal.group.number

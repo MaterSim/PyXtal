@@ -1,5 +1,5 @@
 """
-Module for XRD simulation (experimental stage)
+Module for XRD simulation
 """
 
 import collections
@@ -20,23 +20,24 @@ with importlib.resources.as_file(
 
 class XRD:
     """
-    a class to compute the powder XRD.
+    A class to compute the powder XRD.
 
     Args:
         crystal: ase atoms object
-        wavelength: float
-        max2theta: float
-        per_N: int
-        ncpu: int
-        preferred_orientation: boolean
-        march_parameter: float
+        wavelength (float): wavelength of the X-ray in Angstrom (default: 1.54184)
+        thetas (list): list of 2theta angles in degrees (default: [0, 180])
+        res (float): resolution of the XRD in degrees (default: 0.01)
+        per_N (int): number of hkl per process (default: 30000)
+        ncpu: int, number of cpu to use (default: 1)
+        preferred_orientation: boolean, whether to use preferred orientation
+        march_parameter: float, the march parameter for preferred orientation
     """
 
     def __init__(
         self,
         crystal,
         wavelength=1.54184,
-        thetas=None,
+        thetas=[0, 180],
         res=0.01,
         per_N=30000,
         ncpu=1,
@@ -44,8 +45,7 @@ class XRD:
         preferred_orientation=False,
         march_parameter=None,
     ):
-        if thetas is None:
-            thetas = [0, 180]
+
         self.res = np.radians(res)
         if filename is None:
             self.wavelength = wavelength
@@ -129,19 +129,14 @@ class XRD:
         """
         3x3 representation -> 1x6 (a, b, c, alpha, beta, gamma)
         """
-
-        # rec_matrix = crystal.get_reciprocal_cell()
         rec_matrix = crystal.cell.reciprocal()
         d_max = self.wavelength / np.sin(self.min2theta / 2) / 2
         d_min = self.wavelength / np.sin(self.max2theta / 2) / 2
 
         # This block is to find the shortest d_hkl
-        # for all basic directions (1,0,0), (0,1,0), (1,1,0), (1,-1,0)
-
         hkl_index = create_index()  # 2, 2, 2)
         hkl_max = np.array([1, 1, 1])
 
-        # to fix soon
         for index in hkl_index:
             d = np.linalg.norm(np.dot(index, rec_matrix))
             multiple = int(np.ceil(1 / d / d_min))
@@ -158,8 +153,6 @@ class XRD:
         hkl = np.array(np.meshgrid(h, k, l)).transpose()
         hkl_list = np.reshape(hkl, [len(h) * len(k) * len(l), 3])
         hkl_list = hkl_list[np.where(hkl_list.any(axis=1))[0]]
-        # id = int((len(hkl_list)-1)/2)
-        # hkl_list = np.delete(hkl_list, int((len(hkl_list)-1)/2), axis=0)
         d_hkl = 1 / np.linalg.norm(np.dot(hkl_list, rec_matrix), axis=1)
 
         shortlist = np.where((d_hkl >= d_min) & (d_hkl < d_max))[0]
@@ -213,87 +206,39 @@ class XRD:
             Is = get_all_intensity(N_cycles, N_atom, self.per_N, positions, self.hkl_list, s2s, coeffs, zs)
         else:
             import multiprocessing as mp
-
             queue = mp.Queue()
             cycle_per_cpu = int(np.ceil(N_cycle / self.ncpu))
-            if False:
-                Is = np.zeros([N_hkls])
-                for cycle in range(cycle_per_cpu):
-                    processes = []
-                    for cpu in range(self.ncpu):
-                        mycycle = self.ncpu * cycle + cpu
-                        Start = mycycle * hkl_per_proc
-                        End = min([N_hkls, Start + hkl_per_proc])
-                        # print(N_cycle, mycycle, cpu, Start, End, N_hkls)
-                        if Start < End:
-                            p = mp.Process(
-                                target=get_all_intensity_par,
-                                args=(
-                                    cpu,
-                                    queue,
-                                    [mycycle],
-                                    Start,
-                                    End,
-                                    hkl_per_proc,
-                                    positions,
-                                    self.hkl_list[Start:End],
-                                    s2s[Start:End],
-                                    coeffs,
-                                    zs,
-                                ),
-                            )
-                            p.start()
-                            processes.append(p)
+            processes = []
+            for cpu in range(self.ncpu):
+                N1 = cpu * cycle_per_cpu
+                Start = N1 * hkl_per_proc
+                if cpu + 1 == self.ncpu:
+                    N2 = N_cycle
+                    End = N_hkls
+                else:
+                    N2 = (cpu + 1) * cycle_per_cpu
+                    End = N2 * hkl_per_proc
 
-                    # print("collect results")
-                    unsorted_result = [queue.get() for p in processes]
-                    for p in processes:
-                        p.join()
-                    for t in unsorted_result:
-                        Is[t[1] : t[2]] += t[3]
-                    # print('Done=================', cycle)
+                cycles = range(N1, N2)
 
-            else:
-                processes = []
-                for cpu in range(self.ncpu):
-                    N1 = cpu * cycle_per_cpu
-                    Start = N1 * hkl_per_proc
-                    if cpu + 1 == self.ncpu:
-                        N2 = N_cycle
-                        End = N_hkls
-                    else:
-                        N2 = (cpu + 1) * cycle_per_cpu
-                        End = N2 * hkl_per_proc
+                p = mp.Process(
+                    target=get_all_intensity_par,
+                    args=(cpu, queue, cycles, Start, End,
+                        hkl_per_proc, positions,
+                        self.hkl_list[Start:End],
+                        s2s[Start:End],
+                        coeffs, zs))
+                p.start()
+                processes.append(p)
 
-                    cycles = range(N1, N2)
+            unsorted_result = [queue.get() for p in processes]
+            for p in processes:
+                p.join()
 
-                    p = mp.Process(
-                        target=get_all_intensity_par,
-                        args=(
-                            cpu,
-                            queue,
-                            cycles,
-                            Start,
-                            End,
-                            hkl_per_proc,
-                            positions,
-                            self.hkl_list[Start:End],
-                            s2s[Start:End],
-                            coeffs,
-                            zs,
-                        ),
-                    )
-                    p.start()
-                    processes.append(p)
-
-                unsorted_result = [queue.get() for p in processes]
-                for p in processes:
-                    p.join()
-
-                # collect results
-                Is = np.zeros([N_hkls])
-                for t in unsorted_result:
-                    Is[t[1] : t[2]] += t[3]
+            # collect results
+            Is = np.zeros([N_hkls])
+            for t in unsorted_result:
+                Is[t[1] : t[2]] += t[3]
 
         # Lorentz polarization factor
         lfs = (1 + np.cos(2 * self.theta) ** 2) / (np.sin(self.theta) ** 2 * np.cos(self.theta))
@@ -344,7 +289,6 @@ class XRD:
 
         # obtain important intensities (defined by SCALED_INTENSITY_TOL)
         # and corresponding 2*theta, hkl plane + multiplicity, and d_hkl
-
         max_intensity = max([v[0] for v in self.peaks.values()])
         x = []
         y = []
@@ -932,6 +876,18 @@ def create_index(imax=1, jmax=1, kmax=1):
 
 
 def get_intensity(positions, hkl, s2, coeffs, z):
+    """
+    Calculate the intensity for a given set of positions, hkl, s2, coefficients, and atomic numbers.
+    Args:
+        positions (np.ndarray): N*3 array of atomic positions in fractional coordinates.
+        hkl (np.ndarray): M*3 array of Miller indices.
+        s2 (np.ndarray): M array of sin^2(theta) values.
+        coeffs (np.ndarray): N*4*2 array of coefficients for each atom.
+        z (np.ndarray): N*1 array of atomic numbers.
+
+    Returns:
+        np.ndarray: M array of calculated intensities.
+    """
     const = 2j * np.pi
     g_dot_rs = np.dot(positions, hkl)  # N*M
     exps = np.exp(const * g_dot_rs)  # N*M
@@ -959,10 +915,7 @@ def get_all_intensity(N_cycles, N_atom, per_N, positions, hkls, s2s, coeffs, zs)
 
 
 def get_all_intensity_par(cpu, queue, cycles, Start, End, hkl_per_proc, positions, hkls, s2s, coeffs, zs):
-    # print("proc", cpu, cycles)
     Is = np.zeros(End - Start)
-    # print(cpu, Start, End)
-
     for i, cycle in enumerate(cycles):
         N1 = cycle * hkl_per_proc - Start
         N2 = End - Start if i + 1 == len(cycles) else N1 + hkl_per_proc
@@ -972,15 +925,20 @@ def get_all_intensity_par(cpu, queue, cycles, Start, End, hkl_per_proc, position
     queue.put((cpu, Start, End, Is))
 
 
-def pxrd_refine(xtal, ref_pxrd, thetas, steps=20):
+def pxrd_refine(xtal, ref_pxrd, thetas, steps=50):
     """
     Improve the lattice w.r.t the reference PXRD
 
     Args:
-        xtal:
-        ref_pxrd:
-        thetas:
-        steps (int):
+        xtal: pyxtal object
+        ref_pxrd: tuple of (thetas, intensities) for the reference PXRD
+        thetas: list of angles to calculate the PXRD
+        steps (int): number of steps for optimization
+
+    Returns:
+        xtal: refined pyxtal object
+        x: parameters used for optimization
+        sim: similarity value between the refined PXRD and the reference PXRD
     """
     from scipy.optimize import minimize
 
@@ -994,73 +952,118 @@ def pxrd_refine(xtal, ref_pxrd, thetas, steps=20):
 
     rep = xtal.get_1D_representation()
     x0 = rep.x[0][1:]
-    fun(x0, rep, ref_pxrd, thetas)
-    res = minimize(
-        fun,
-        x0,
-        args=(rep, ref_pxrd, thetas),
-        method="Nelder-Mead",
-        options={"maxiter": steps},
-    )
-    rep.x[0][1:] = res.x
-    xtal = rep.to_pyxtal()
-    return xtal, res.x, -res.fun
-
+    f0 = fun(x0, rep, ref_pxrd, thetas)
+    if f0 < -0.8:
+        res = minimize(fun, x0,
+                       args=(rep, ref_pxrd, thetas),
+                       method="Nelder-Mead",
+                       options={"maxiter": steps})
+        rep.x[0][1:] = res.x
+        xtal = rep.to_pyxtal()
+        return xtal, -res.fun
+    else:
+        #print("The initial PXRD is unlikely to match the reference PXRD well.")
+        return xtal, -f0
 
 if __name__ == "__main__":
     from optparse import OptionParser
-
     from matplotlib import pyplot as plt
-    from pymatgen.core import Structure
-
     from pyxtal import pyxtal
     from pyxtal.util import parse_cif
+    from pymatgen.core import Structure
 
     parser = OptionParser()
-    parser.add_option("-f", "--cif", dest="cif", help="cif file name")
-    parser.add_option("-s", "--step", dest="step", type=int, default=20, help="steps, optional")
+    parser.add_option("-f", dest="cif", help="cif file name")
+    parser.add_option("-r", dest="ref", help="ref pxrd file", default="ref_pxrd.txt")
+    parser.add_option("-s", dest="step", type=int, default=30, help="steps, optional")
+    parser.add_option("-o", dest="out", default="PXRD-Matched.cif", help="output")
+    parser.add_option("--smin", dest="smin", type=float, default=0.85,
+                      help="minimum similarity to refine PXRD, default 0.85")
+    parser.add_option("--thetas", dest="thetas", type=float, nargs=2, default=[5, 35],
+                      help="thetas for PXRD calculation, default [5, 35]")
 
     (options, args) = parser.parse_args()
-    thetas = [5, 50]
-    data = np.loadtxt("ref.txt")
-    data[:, 1] /= np.max(data[:, 1])  # Normalize the intensity
-    ref_pxrd = (data[:, 0], data[:, 1])
+    thetas = options.thetas
+    if options.ref is None:
+        raise ValueError("Please provide a reference PXRD file using -r option.")
+    if not os.path.exists(options.ref):
+        raise FileNotFoundError(f"Reference PXRD '{options.ref}' does not exist.") 
 
+    smiles = None
     with open(options.cif) as f:
         lines = f.readlines()
         for l in lines:
-            if l.find("smile") > 0:
+            if 'smile' in l:
+                smile_str = l.split(':')[1].strip()
+                smiles = [s + '.smi' for s in smile_str.split('.')]
                 break
-        smiles = []
-        tmp = l.split(":")[-1].split(".")
-        tmp[-1] = tmp[-1][:-1]
-        for t in tmp:
-            t = t.replace(" ", "")
-            smiles.append(t + ".smi")
+    if smiles is None:
+        raise ValueError("No smiles found in the CIF file. Please check the CIF format.")
+    else:
+        print("Smiles found:", smiles)
+    with open(options.out, 'w') as f: f.write(f'smiles: {smile_str}\n')
 
-    cifs = parse_cif(options.cif)
-    fig, axs = plt.subplots(
-        nrows=len(cifs),
-        ncols=2,
-        linewidth=1,
-        figsize=(12, 3 * len(cifs)),
-    )
+    if options.ref.endswith(".cif"):
+        s = pyxtal(molecular=True)
+        s.from_seed(options.ref, molecules=smiles)
+        ref_pxrd =s.get_XRD(thetas=thetas).get_profile(res=0.15, user_kwargs={"FWHM": 0.25}) 
+    else:
+        data = np.loadtxt(options.ref, skiprows=1)  # Load the reference PXRD data
+        data[:, 1] /= np.max(data[:, 1])  # Normalize the intensity
+        ref_pxrd = (data[:, 0], data[:, 1])
+
+    #cifs, engs = parse_cif(options.cif)#, eng=True)
+    cifs = parse_cif(options.cif)#, eng=True)
+    pxrds = []
     s = pyxtal(molecular=True)
     for i, cif in enumerate(cifs):
-        pmg = Structure.from_str(cif, fmt="cif")
-        ax1, ax2 = axs[i, 0], axs[i, 1]
-        ax1.plot(ref_pxrd[0], ref_pxrd[1], label="ref")
-        ax2.plot(ref_pxrd[0], ref_pxrd[1], label="ref")
-        s.from_seed(pmg, molecules=smiles)
-        pxrd = s.get_XRD(thetas=thetas).get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
-        (s, val0, val1) = pxrd_refine(s, ref_pxrd, thetas, steps=0)
-        ax1.plot(pxrd[0], pxrd[1], label=f"Init: {val1:6.3f}")
+        try:
+            pmg = Structure.from_str(cif, fmt="cif")
+            s.from_seed(pmg, molecules=smiles)
+        except:
+            print(f"Failed to parse CIF {i}. Skipping...")
+            continue
+        pxrd1 = s.get_XRD(thetas=thetas).get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
+        s1, val1 = pxrd_refine(s, ref_pxrd, thetas, steps=0)
+        print(i, s1.lattice, val1)
 
-        (s, val0, val1) = pxrd_refine(s, ref_pxrd, thetas, steps=options.step)
-        ax2.plot(pxrd[0], pxrd[1], label=f"Opt: {val1:6.3f}")
-        pxrd = s.get_XRD(thetas=thetas).get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
+        if val1 > options.smin:
+            s2, val2 = pxrd_refine(s1, ref_pxrd, thetas, steps=options.step)
+            pxrd2 = s2.get_XRD(thetas=thetas).get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
+            print(i, s2.lattice, val2, '++++++')
+
+            if val2 > 0.95:
+                str1 = s1.lattice.__str__(fmt="4.1f", ltype=False)
+                str2 = s2.lattice.__str__(fmt="4.1f", ltype=False)
+                label1 = f"{str1} - {val1:.3f} - {s1.group.number}"
+                label2 = f"{str2} - {val2:.3f} - {s2.group.number}"
+                pxrds.append((pxrd1, label1, pxrd2, label2))
+                with open(options.out, 'a+') as f:
+                    f.writelines(s1.to_file(header=label1))
+                    f.writelines(s2.to_file(header=label2))
+
+    if len(pxrds) == 0:
+        raise ValueError("No PXRDs found that match the reference PXRD well.")
+    else:
+        print("PXRDs found:", len(pxrds))
+
+    fig, axs = plt.subplots(nrows=len(pxrds), ncols=2,
+                            figsize=(12, 2 * len(pxrds)))
+
+    if len(pxrds) == 1: axs = np.array([axs])
+    for i, (pxrd1, label1, pxrd2, label2) in enumerate(pxrds):
+        ax1, ax2 = axs[i, 0], axs[i, 1]
+        item1 = label1.split('-')
+        item2 = label2.split('-')
+        cell1, sim1, spg1 = item1[0], item1[1], item1[2].strip()
+        cell2, sim2, spg2 = item2[0], item2[1], item2[2].strip()
+        l1 = f"Init. Similarity: {sim1} ({spg1})"
+        l2 = f"Opt.  Similarity: {sim2} ({spg2})"
+        ax1.plot(ref_pxrd[0], ref_pxrd[1], 'black', label=l1, lw=1.0, alpha=0.5)
+        ax2.plot(ref_pxrd[0], ref_pxrd[1], 'black', label=l2, lw=1.0, alpha=0.5)
+        ax1.plot(pxrd1[0], pxrd1[1], 'b:', label=cell1, lw=1.2, alpha=0.5)
+        ax2.plot(pxrd2[0], pxrd2[1], 'b:', label=cell2, lw=1.2, alpha=0.5)
         ax2.legend()
         ax1.legend()
-
-        print(i, s.lattice, val1)
     fig.savefig("pxrd_match.png", dpi=150)
+    print("PXRD matching completed. Results saved to pxrd_match.png.")
