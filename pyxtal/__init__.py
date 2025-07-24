@@ -3038,7 +3038,17 @@ class pyxtal:
                     count += 1
             xtal0.species = None
             xtal0._get_formula()  # update species
-            xtals.append(xtal0)
+
+            # Check if composition matches desired ratio
+            comp = xtal0.numIons
+            total = sum(comp)
+            actual_ratio = [c/total for c in comp]
+            target_ratio = [r/sum(ratio) for r in ratio]
+
+            # Allow small deviation (0.01) from target ratio
+            if all(abs(a - t) < 0.01 for a, t in zip(actual_ratio, target_ratio)):
+                xtals.append(xtal0)
+
         return xtals
 
         # idx, sites, t_types, k_types = self._get_subgroup_ids(H, group_type, None, max_cell, min_cell)
