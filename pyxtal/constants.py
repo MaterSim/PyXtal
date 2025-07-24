@@ -82,6 +82,6 @@ logo = rf"""#############################################################
 #---------------------(version {__version__:>8s})--------------------#
 #       A Python package for random crystal generation      #
 #       url: https://github.com/qzhu2017/pyxtal             #
-#       @Zhu's group at University of Nevada Las Vegas      #
+#       @Zhu's group at U. North Carolina at Charlotte      #
 #############################################################
 """

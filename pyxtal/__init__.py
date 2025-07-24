@@ -2002,6 +2002,29 @@ class pyxtal:
                     break
         return special
 
+    def to_subgroup_zp2(self):
+        """
+        Transform a crystal with zprime from 1 to 2 subgroup representation.
+        This function is for molecular crystals only.
+
+        Returns:
+            pyxtal: A new pyxtal structure in the subgroup setting with general Wyckoff positions
+        """
+        if not self.molecular:
+            raise RuntimeError("This function is only for molecular crystals")
+
+        if abs(self.get_zprime()[0] - 1.0) > 1e-4:
+            raise RuntimeError("This function is only for molecular crystals with zprime=1")
+
+        ids, g_type = self.group.path_to_zp2()
+        path =[self.random_state.choice(ids)]
+        print(g_type, path)
+        sub, _ = self.subgroup_by_path(g_type, path, eps=0)
+        sub.optimize_lattice()
+        sub.source = "subgroup"
+
+        return sub
+
     def to_subgroup(self, path=None, t_only=True, iterate=False, species=None, verbose=False):
         """
         Transform a crystal with special sites to a subgroup representation with general sites.
@@ -3056,23 +3079,20 @@ class pyxtal:
     def substitute(self, dicts):
         """
         Substitute atoms of one element with another element.
-        For molecular crystals, the substitution is done in the molecule level.
-
-        Example (toadd)
 
         Args:
             dicts (dict): Dictionary mapping original elements to substituted elements.
-                 For example: {"F": "Cl"}
+
+        Example
+        --------
+        >>> struc = pyxtal()
+        >>> struc.from_prototype("rocksalt")
+        >>> struc.substitute({"Cl": "F"})
+
         """
         pmg = self.to_pymatgen()
         pmg.replace_species(dicts)
-        if self.molecular:
-            for ele in dicts:
-                smi = [m.smile.replace(ele, dicts[ele]) +
-                       ".smi" for m in self.molecules]
-            self.from_seed(pmg, smi)
-        else:
-            self.from_seed(pmg)
+        self.from_seed(pmg)
 
     def remove_species(self, species):
         """
@@ -3195,6 +3215,23 @@ class pyxtal:
         self.molecules = molecules
         self.numMols = numMols
         self.mol_sites = sites
+
+    def substitute_molecules(self, smiles):
+        """
+        Substitute the molecules in the structure with new molecules based on SMILES strings.
+
+        Args:
+            smiles (list): List of SMILES strings for the new molecules.
+        """
+        if not self.molecular:
+            raise ValueError("Cannot substitute molecules for non-molecular structures")
+
+        if len(self.molecules) != len(smiles):
+            raise ValueError("Number of SMILES must match number of molecules in the structure")
+
+        #rep = self.get_1D_representation()
+        #rep.
+        #rep1 = representation(x, smiles)
 
     def set_cutoff(self, exclude_ii=False, value=None):
         """
@@ -4153,6 +4190,11 @@ class pyxtal:
         elif prototype == 'diamond':
             self.from_spg_wps_rep(227, ['8a'], [3.567])
 
+        elif prototype == 'h-diamond':
+            self.from_spg_wps_rep(194,
+                                  ['4f'],
+                                  [2.50, 4.17, 0.0628])
+
         elif prototype == 'a-cristobalite':
             self.from_spg_wps_rep(92,
                                   ['4a', '8b'],
@@ -4183,6 +4225,11 @@ class pyxtal:
                                   ['1a', '1b'],
                                   [5.59],
                                   ['Cs', 'Cl'])
+        elif prototype in ['cBN']:
+            self.from_spg_wps_rep(216,
+                                  ['4a', '4d'],
+                                  [3.63],
+                                  ['B', 'N'])
         else:
             raise ValueError("Cannot support the input prototype", prototype)
 
