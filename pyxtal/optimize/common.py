@@ -24,13 +24,13 @@ warnings.filterwarnings("ignore")
 
 def get_rmsd_with_timeout(matcher, ref_pmg, structure, timeout=10):
     """Calculate RMSD with a timeout
-    
+
     Args:
         matcher: Structure matcher object
         ref_pmg: Reference pymatgen structure
         structure: Structure to compare
         timeout: Maximum execution time in seconds
-        
+
     Returns:
         RMSD value or None if calculation times out
     """
@@ -316,6 +316,7 @@ def optimizer(
     calculators = None,
     max_time = 180,
     skip_ani = False,
+    output_ani = True,
     pre_opt = False,
 ):
     """
@@ -330,6 +331,7 @@ def optimizer(
         calculators: e.g., `['CHARMM', 'GULP']`
         max_time: maximum time for the optimization
         skip_ani: whether to skip ANI relaxation
+        output_ani: whether to output the ANI relaxed structure
         pre_opt: whether to perform pre-relaxation
 
     Returns:
@@ -435,7 +437,14 @@ def optimizer(
                     return None
             elif stress < stress_tol:
                 results = {}
-                results["xtal"] = struc
+                if output_ani:
+                    xtal = pyxtal(molecular=True)
+                    pmg = ase2pymatgen(s)
+                    mols = [m.smile + ".smi" for m in struc.molecules]
+                    xtal.from_seed(pmg, mols)
+                    results["xtal"] = xtal
+                else:
+                    results["xtal"] = struc
                 if eng is not None:
                     results["energy"] = eng
                 else:
@@ -477,6 +486,7 @@ def optimizer_par(
     ref_pxrd,
     use_hall,
     skip_ani,
+    output_ani,
     check_stable,
     pre_opt,
 ):
@@ -516,6 +526,7 @@ def optimizer_par(
             ref_pxrd,
             use_hall,
             skip_ani,
+            output_ani,
             check_stable,
             pre_opt,
         )
@@ -546,6 +557,7 @@ def optimizer_single(
     ref_pxrd,
     use_hall,
     skip_ani,
+    output_ani,
     check_stable,
     pre_opt,
 ):
@@ -577,6 +589,10 @@ def optimizer_single(
         tag = "Random  "
     else:
         if mutate:
+            if len(xtal.numMols)==1 and (xtal.get_zprime()[0]-1.0) < 1e-2 and np.random.random() < 0.5:
+                print("perform subgroup split")
+                xtal = xtal.to_subgroup_zp2()
+
             xtal = mutator(xtal, smiles, opt_lat, None)
             tag = "Mutation "
         else:
@@ -587,7 +603,7 @@ def optimizer_single(
         res = None
     else:
         res = optimizer(xtal, atom_info, workdir, job_tag, opt_lat,
-                        skip_ani=skip_ani, pre_opt=pre_opt)
+                        skip_ani=skip_ani, output_ani=output_ani, pre_opt=pre_opt)
 
     match = False # used for matching with reference
     stable = True # used for tagging if the structure is stable

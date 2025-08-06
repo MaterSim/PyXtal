@@ -106,6 +106,7 @@ class GlobalOptimize:
         sites (list): list of wp sites, e.g., [['4a']]
         use_hall (bool): whether or not use hall number (default: False)
         skip_ani (bool): whether or not use ani or not (default: True)
+        output_ani (bool): whether or not output the ANI relaxed structure (default: True)
         eng_cutoff (float): the cutoff energy for FF training
         E_max (float): maximum energy defined as an invalid structure
         matcher : structurematcher from pymatgen
@@ -136,6 +137,7 @@ class GlobalOptimize:
         sites: list[any] | None = None,
         use_hall: bool = False,
         skip_ani: bool = True,
+        output_ani: bool = True,
         factor: float = 1.1,
         eng_cutoff: float = 5.0,
         E_max: float = 1e10,
@@ -206,6 +208,7 @@ class GlobalOptimize:
         if self.rank > 0: self.log_file += f"-{self.rank}"
 
         self.skip_ani = skip_ani
+        self.output_ani = output_ani
         self.check_stable = check_stable
         if not self.opt_lat:
             self.check_stable = False
@@ -812,6 +815,7 @@ class GlobalOptimize:
             self.ref_pxrd,
             self.use_hall,
             self.skip_ani,
+            self.output_ani,
             self.check_stable,
             self.pre_opt,
         ]
@@ -1159,6 +1163,7 @@ class GlobalOptimize:
             ET.SubElement(root, "use_mpi").text = str(self.use_mpi)
             ET.SubElement(root, "verbose").text = str(self.verbose)
             ET.SubElement(root, "skip_ani").text = str(self.skip_ani)
+            ET.SubElement(root, "output_ani").text = str(self.output_ani)
             ET.SubElement(root, "check_stable").text = str(self.check_stable)
             ET.SubElement(root, "pre_opt").text = str(self.pre_opt)
             ET.SubElement(root, "use_hall").text = str(self.use_hall)
@@ -1202,6 +1207,7 @@ def load_xml(filename, tag='GO'):
         use_mpi = text_to_bool(basic.find("use_mpi").text)
         verbose = text_to_bool(basic.find("verbose").text)
         skip_ani = text_to_bool(basic.find("skip_ani").text)
+        output_ani = text_to_bool(basic.find("output_ani").text)
         check_stable = text_to_bool(basic.find("check_stable").text)
         pre_opt = text_to_bool(basic.find("pre_opt").text)
         use_hall = text_to_bool(basic.find("use_hall").text)
@@ -1224,7 +1230,7 @@ def load_xml(filename, tag='GO'):
                 ff_parameters, reference_file, None, N_gen,
                 N_pop, N_cpu, fracs, cif, None, None,
                 composition, lattice, None, None, None,
-                use_hall, skip_ani, factor, eng_cutoff, E_max,
+                use_hall, skip_ani, output_ani, factor, eng_cutoff, E_max,
                 verbose, None, max_time, None, early_quit,
                 check_stable, use_mpi, pre_opt)
     else:

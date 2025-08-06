@@ -977,8 +977,10 @@ if __name__ == "__main__":
     parser.add_option("-r", dest="ref", help="ref pxrd file", default="ref_pxrd.txt")
     parser.add_option("-s", dest="step", type=int, default=30, help="steps, optional")
     parser.add_option("-o", dest="out", default="PXRD-Matched.cif", help="output")
-    parser.add_option("--smin", dest="smin", type=float, default=0.85,
+    parser.add_option("--smin1", dest="smin1", type=float, default=0.85,
                       help="minimum similarity to refine PXRD, default 0.85")
+    parser.add_option("--smin2", dest="smin2", type=float, default=0.92,
+                      help="minimum similarity to refine PXRD, default 0.92")
     parser.add_option("--thetas", dest="thetas", type=float, nargs=2, default=[5, 35],
                       help="thetas for PXRD calculation, default [5, 35]")
 
@@ -987,7 +989,7 @@ if __name__ == "__main__":
     if options.ref is None:
         raise ValueError("Please provide a reference PXRD file using -r option.")
     if not os.path.exists(options.ref):
-        raise FileNotFoundError(f"Reference PXRD '{options.ref}' does not exist.") 
+        raise FileNotFoundError(f"Reference PXRD '{options.ref}' does not exist.")
 
     smiles = None
     with open(options.cif) as f:
@@ -1006,7 +1008,7 @@ if __name__ == "__main__":
     if options.ref.endswith(".cif"):
         s = pyxtal(molecular=True)
         s.from_seed(options.ref, molecules=smiles)
-        ref_pxrd =s.get_XRD(thetas=thetas).get_profile(res=0.15, user_kwargs={"FWHM": 0.25}) 
+        ref_pxrd =s.get_XRD(thetas=thetas).get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
     else:
         data = np.loadtxt(options.ref, skiprows=1)  # Load the reference PXRD data
         data[:, 1] /= np.max(data[:, 1])  # Normalize the intensity
@@ -1027,12 +1029,12 @@ if __name__ == "__main__":
         s1, val1 = pxrd_refine(s, ref_pxrd, thetas, steps=0)
         print(i, s1.lattice, val1)
 
-        if val1 > options.smin:
+        if val1 > options.smin1:
             s2, val2 = pxrd_refine(s1, ref_pxrd, thetas, steps=options.step)
             pxrd2 = s2.get_XRD(thetas=thetas).get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
             print(i, s2.lattice, val2, '++++++')
 
-            if val2 > 0.95:
+            if val2 > options.smin2:
                 str1 = s1.lattice.__str__(fmt="4.1f", ltype=False)
                 str2 = s2.lattice.__str__(fmt="4.1f", ltype=False)
                 label1 = f"{str1} - {val1:.3f} - {s1.group.number}"
@@ -1042,28 +1044,42 @@ if __name__ == "__main__":
                     f.writelines(s1.to_file(header=label1))
                     f.writelines(s2.to_file(header=label2))
 
+                fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(12, 4))
+
+                item1 = label1.split('-')
+                item2 = label2.split('-')
+                cell1, sim1, spg1 = item1[0], item1[1], item1[2].strip()
+                cell2, sim2, spg2 = item2[0], item2[1], item2[2].strip()
+
+                l1 = f"Init. Similarity: {sim1} ({spg1})"
+                l2 = f"Opt.  Similarity: {sim2} ({spg2})"
+
+                ax1.plot(ref_pxrd[0], ref_pxrd[1], 'black', label=l1, lw=1.0, alpha=0.5)
+                ax2.plot(ref_pxrd[0], ref_pxrd[1], 'black', label=l2, lw=1.0, alpha=0.5)
+                ax1.plot(pxrd1[0], pxrd1[1], 'b:', label=cell1, lw=1.2, alpha=0.5)
+                ax2.plot(pxrd2[0], pxrd2[1], 'b:', label=cell2, lw=1.2, alpha=0.5)
+
+                ax1.set_xlabel('2θ (degrees)')
+                ax1.set_ylabel('Intensity (a.u.)')
+                ax2.set_xlabel('2θ (degrees)')
+                ax2.set_ylabel('Intensity (a.u.)')
+
+                ax1.legend()
+                ax2.legend()
+
+                fig.suptitle(f'PXRD Match {i+1}')
+                fig.tight_layout()
+
+                fig.savefig(f"pxrd_match_{i+1}.png", dpi=150)
+                plt.close(fig)
+
+
+
     if len(pxrds) == 0:
         raise ValueError("No PXRDs found that match the reference PXRD well.")
     else:
         print("PXRDs found:", len(pxrds))
 
-    fig, axs = plt.subplots(nrows=len(pxrds), ncols=2,
-                            figsize=(12, 2 * len(pxrds)))
-
-    if len(pxrds) == 1: axs = np.array([axs])
-    for i, (pxrd1, label1, pxrd2, label2) in enumerate(pxrds):
-        ax1, ax2 = axs[i, 0], axs[i, 1]
-        item1 = label1.split('-')
-        item2 = label2.split('-')
-        cell1, sim1, spg1 = item1[0], item1[1], item1[2].strip()
-        cell2, sim2, spg2 = item2[0], item2[1], item2[2].strip()
-        l1 = f"Init. Similarity: {sim1} ({spg1})"
-        l2 = f"Opt.  Similarity: {sim2} ({spg2})"
-        ax1.plot(ref_pxrd[0], ref_pxrd[1], 'black', label=l1, lw=1.0, alpha=0.5)
-        ax2.plot(ref_pxrd[0], ref_pxrd[1], 'black', label=l2, lw=1.0, alpha=0.5)
-        ax1.plot(pxrd1[0], pxrd1[1], 'b:', label=cell1, lw=1.2, alpha=0.5)
-        ax2.plot(pxrd2[0], pxrd2[1], 'b:', label=cell2, lw=1.2, alpha=0.5)
-        ax2.legend()
-        ax1.legend()
-    fig.savefig("pxrd_match.png", dpi=150)
-    print("PXRD matching completed. Results saved to pxrd_match.png.")
+    #print("Saving individual PXRD match figures...")
+    #for i, (pxrd1, label1, pxrd2, label2) in enumerate(pxrds):
+    #print(f"Saved {len(pxrds)} individual PXRD match figures.")
