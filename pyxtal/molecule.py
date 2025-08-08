@@ -1701,14 +1701,16 @@ class Orientation:
 
             # Parse the angle
             if angle == "random":
-                angle = (self.random_state.random() - 1) * np.pi * 2
+                #angle = (self.random_state.random() - 1) * np.pi * 2
+                angle = (np.random.rand() - 1) * np.pi * 2
             #self.angle = angle
 
             # Update the matrix
             r1 = Rotation.from_rotvec(angle * self.axis)
 
             # Optionally flip the molecule
-            if self.degrees == 2 and flip and self.random_state.random() > 0.5:
+            #if self.degrees == 2 and flip and self.random_state.random() > 0.5:
+            if self.degrees == 2 and flip and np.random.random() > 0.5:
                 ax = self.random_state.choice(["x", "y", "z"])
                 angle0 = self.random_state.choice([90, 180, 270])
                 r2 = Rotation.from_euler(ax, angle0, degrees=True)
@@ -1726,7 +1728,8 @@ class Orientation:
 
     def set_axis(self):
         if self.degrees == 2:
-            axis = self.random_state.random(3) - 0.5
+            #axis = self.random_state.random(3) - 0.5
+            axis = np.random.rand(3) - 0.5
             self.axis = axis / np.linalg.norm(axis)
             self.angle = 0
 

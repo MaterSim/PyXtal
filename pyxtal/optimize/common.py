@@ -589,9 +589,9 @@ def optimizer_single(
         tag = "Random  "
     else:
         if mutate:
-            if len(xtal.numMols)==1 and (xtal.get_zprime()[0]-1.0) < 1e-2 and np.random.random() < 0.5:
-                print("perform subgroup split")
-                xtal = xtal.to_subgroup_zp2()
+            #if len(xtal.numMols)==1 and (xtal.get_zprime()[0]-1.0) < 1e-2 and np.random.random() < 0.5:
+            #    print("perform subgroup split")
+            #    xtal = xtal.to_subgroup_zp2()
 
             xtal = mutator(xtal, smiles, opt_lat, None)
             tag = "Mutation "
