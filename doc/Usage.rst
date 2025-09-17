@@ -903,11 +903,11 @@ O atoms.
     Al @ [ 0.0000  0.0000  0.2418], WP [4e] Site [..2]
     Al @ [ 0.1294  0.6392  0.0000], WP [4g] Site [..m]
     Si @ [ 0.2458  0.2522  0.0000], WP [4g] Site [..m]
-	 O @ [ 0.4241  0.3636  0.0000], WP [4g] Site [..m]
-	 O @ [ 0.5538  0.2648  0.0000], WP [4g] Site [..m]
-	 O @ [ 0.0000  0.0000  0.5000], WP [2b] Site [..2/m]
-	 O @ [ 0.0000  0.5000  0.0000], WP [2c] Site [..2/m]
-	 O @ [ 0.4348  0.6979  0.2566], WP [8h] Site [1]
+    O @ [ 0.4241  0.3636  0.0000], WP [4g] Site [..m]
+    O @ [ 0.5538  0.2648  0.0000], WP [4g] Site [..m]
+    O @ [ 0.0000  0.0000  0.5000], WP [2b] Site [..2/m]
+    O @ [ 0.0000  0.5000  0.0000], WP [2c] Site [..2/m]
+    O @ [ 0.4348  0.6979  0.2566], WP [8h] Site [1]
 
 
 Similarly, PyXtal allows the user to pre-assign the partial information (e.g.,
