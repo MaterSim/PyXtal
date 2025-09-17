@@ -33,6 +33,24 @@ class TestDof(unittest.TestCase):
 
 
 class TestAtomic3D(unittest.TestCase):
+
+    def test_partial(self):
+        cell = Lattice.from_para(7.8758, 7.9794, 5.6139, 90, 90, 90, ltype='orthorhombic')
+        spg = 58
+        elements = ['Al', 'Si', 'O']
+        composition = [8, 4, 20]
+
+        sites = [{"4e": [0.0000, 0.0000, 0.2418],
+                  "4g": [0.1294, 0.6392, 0.0000],
+                 },
+                 {"4g": [0.2458, 0.2522, 0.0000]},
+                 {"4g": [[0.4241, 0.3636, 0.0000], [0.5538, 0.2648, 0.0000]]},
+                ]
+
+        s = pyxtal()
+        s.from_random(3, spg, elements, composition, lattice=cell, sites=sites)
+        assert s.valid
+
     def test_single_specie(self):
         struc = pyxtal()
         struc.from_random(3, 225, ["C"], [4], 1.2, conventional=False)
