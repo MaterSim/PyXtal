@@ -9,7 +9,7 @@ import os
 import numpy as np
 from monty.serialization import loadfn
 from scipy.interpolate import interp1d
-
+from scipy.special import erf
 from pyxtal.database.element import Element
 
 with importlib.resources.as_file(
@@ -603,8 +603,13 @@ class Profile:
             # print(two_theta, intensity)
             if self.method == "gaussian":
                 fwhm = self.kwargs["FWHM"]
-                dtheta2 = ((px - two_theta) / fwhm) ** 2
-                tmp = np.exp(-4 * np.log(2) * dtheta2)
+                bin_edges = np.concatenate([px - self.res/2, [px[-1] + self.res/2]])
+                tmp = np.zeros_like(px)
+                for i in range(len(px)):
+                    left, right = bin_edges[i], bin_edges[i+1]
+                    tmp[i] = gaussian_integrated(left, right, two_theta, fwhm)
+                #dtheta2 = ((px - two_theta) / fwhm) ** 2
+                #tmp = np.exp(-4 * np.log(2) * dtheta2)
                 # tmp = gaussian(two_theta, px, fwhm)
 
             elif self.method == "lorentzian":
@@ -924,6 +929,12 @@ def get_all_intensity_par(cpu, queue, cycles, Start, End, hkl_per_proc, position
         # print('run', cpu, N1+Start, N2+Start, N1, N2)
     queue.put((cpu, Start, End, Is))
 
+
+def gaussian_integrated(bin_left, bin_right, center, fwhm):
+    sigma = fwhm / (2 * np.sqrt(2 * np.log(2)))
+    # Integrate the normalized Gaussian over [bin_left, bin_right]
+    return 0.5 * (erf((bin_right - center) / (np.sqrt(2) * sigma)) -
+                  erf((bin_left - center) / (np.sqrt(2) * sigma)))
 
 def pxrd_refine(xtal, ref_pxrd, thetas, steps=50):
     """
