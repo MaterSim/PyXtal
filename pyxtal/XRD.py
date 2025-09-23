@@ -10,6 +10,7 @@ import numpy as np
 from monty.serialization import loadfn
 from scipy.interpolate import interp1d
 from scipy.special import erf
+from scipy.signal import find_peaks
 from pyxtal.database.element import Element
 
 with importlib.resources.as_file(
@@ -130,8 +131,9 @@ class XRD:
         3x3 representation -> 1x6 (a, b, c, alpha, beta, gamma)
         """
         rec_matrix = crystal.cell.reciprocal()
-        d_max = self.wavelength / np.sin(self.min2theta / 2) / 2
-        d_min = self.wavelength / np.sin(self.max2theta / 2) / 2
+        eps = 1e-8  # small value to avoid division by zero
+        d_max = self.wavelength / (np.sin(self.min2theta / 2) + eps) / 2
+        d_min = self.wavelength / (np.sin(self.max2theta / 2) + eps) / 2
 
         # This block is to find the shortest d_hkl
         hkl_index = create_index()  # 2, 2, 2)
@@ -975,6 +977,126 @@ def pxrd_refine(xtal, ref_pxrd, thetas, steps=50):
     else:
         #print("The initial PXRD is unlikely to match the reference PXRD well.")
         return xtal, -f0
+    
+
+def check_pxrd_match(xtal, ref_pxrd, s_tol=0.8, top_n=3, peak_tol=0.1, ang_tol=1.0, 
+                     wave_length=1.5406, verbose=False):
+    """
+    Check if there is a false match between the pyxtal structure and the reference PXRD.
+    First, check the similarity between the two PXRDs. If the similarity is above s_tol,
+    Second, for each of the top_n strongest peaks in the computed PXRD, check if the related
+    peaks (within peak_tol) are present in the reference PXRD within a tolerance.
+
+    Args:
+        xtal: pyxtal object
+        ref_pxrd: a 2D array of (thetas, intensities) for the reference PXRD
+        s_tol: similarity tolerance, default is 0.8
+        top_n: number of strongest peaks to consider, default is 3
+        peak_tol: tolerance for peaks to be considered for a comparison, default is 0.05
+        ang_tol: tolerance for matching peaks in degrees, default is 1.0
+        wave_length: X-ray wavelength, default is Cu K-alpha
+        verbose: whether or not print the information
+
+    Returns:
+        bool: True if there is a false match, False otherwise
+    """
+    xrd = xtal.get_XRD(thetas=[ref_pxrd[0][0], ref_pxrd[0][-1]], wavelength=wave_length)
+    pxrd = xrd.get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
+    sim = Similarity(ref_pxrd, pxrd, x_range=[ref_pxrd[0][0], ref_pxrd[0][-1]]).value
+    if verbose:
+        print(f"Similarity between computed PXRD and reference PXRD: {sim:.4f}")
+        print(xrd)
+    if sim > s_tol:
+        # get the strongest peaks from the computed PXRD from xtal
+        peaks = xrd.pxrd[:, -1] # intensity
+        hkls = xrd.pxrd[:, 2:5] # hkl
+        thetas = xrd.pxrd[:, 0] # 2theta
+        sorted_indices = np.argsort(peaks)[::-1]
+        sorted_hkls = hkls[sorted_indices]
+        sorted_peaks = peaks[sorted_indices]
+        sorted_thetas = thetas[sorted_indices]
+        for i in range(top_n):
+            hkl = sorted_hkls[i]
+            # get the hkls that are related to the current hkl
+            for j, h in enumerate(hkls):
+                if is_multiple(h, hkl) and not np.all(h == hkl):
+                    theta = sorted_thetas[j]
+                    peak = sorted_peaks[j]
+                    if peak > peak_tol:
+                        if verbose:
+                            print(f"Checking {h}/{hkl} in top {i+1} peak  => {peak:.2f} at {theta:.2f}")
+                        # check if there is a peak in the reference PXRD within ang_tol and peak_tol
+                        close_peaks = ref_pxrd[0][(ref_pxrd[0] >= theta - ang_tol) & (ref_pxrd[0] <= theta + ang_tol)]
+                        close_peaks = close_peaks[np.abs(close_peaks - theta) <= peak_tol]
+                        if len(close_peaks) == 0:
+                            if verbose:
+                                print(f"False match at hkl {hkl}/{h} at {theta:.2f} not in ref. PXRD")
+                            return False       
+        return True  # No false match found
+    else:
+        return False  # Similarity too low to consider
+
+def is_multiple(hkl, ref_hkl):
+    # Avoid division by zero and require ref_hkl is not (0,0,0)
+    if np.all(ref_hkl == 0):
+        return False
+    # Find the scaling factor for each component, ignore zeros in ref_hkl
+    factors = []
+    for h, r in zip(hkl, ref_hkl):
+        if r == 0:
+            if h != 0:
+                return False
+        else:
+            factors.append(h / r)
+    # All nonzero factors must be equal and positive integer
+    if len(factors) == 0:
+        return False
+    first = factors[0]
+    if not np.allclose(factors, first):
+        return False
+    # Check if the factor is a positive integer
+    return first > 0 and np.isclose(first, int(round(first)))
+
+def get_para_from_pxrd(ref_pxd, spg, wave_length=1.5406):
+    """
+    Estimate the lattice parameters from the reference PXRD using Bragg's law and cubic assumption.
+
+    Args:
+        ref_pxd: tuple of (thetas, intensities) for the reference PXRD
+        spg: space group number
+        wave_length: X-ray wavelength, default is Cu K-alpha
+
+    Returns:
+        a: estimated lattice parameter
+    """
+    # Get the first peak position
+    #thetas, intensities = ref_pxd
+    #peak_index = np.argmax(intensities)
+    #theta = thetas[peak_index] / 2  # Convert 2theta to theta
+    #a = wave_length / (2 * np.sin(np.radians(theta)))  # Bragg's law
+    #if spg > 194:
+    #    if spg in [196, 202, 203, 209, 210, 216, 219, 225, 226, 227, 228]: # F-cubic 111
+    #        a /= np.sqrt(3)
+    #    elif spg in [195, 198, 199, 200, 201, 205, 206, 207, 208, 211, 212, 213, 214, 215]: # I-cubic 200
+    #        a /= np.sqrt(2)
+    #    cell = [a, a, a, 90, 90, 90]
+    #elif 143 <= spg <= 194: # (001) or (100)
+    #    cell = [[a, a, a, 90, 90, 120], []]
+    #elif 75 <= spg <= 142: 
+    #    if P: # (100) or (001)
+    #    elif I: # (101) or (110)
+    #        a /= np.sqrt(2)
+    #elif 16 <= spg <= 74: # (100) or (001)
+    #    if P: #(100), (010), (001)
+    #    elif I: (101) or (110)
+    #    elif C/F/I: (001)/(020)/(101) ???
+    #elif 3 <= spg <= 15: # (001) or (100)
+    #    if P: #(100), (010), (001)
+    #    elif A/B/C: (001)/(010)/(100)
+    #else: # (001), (100), (010)
+    #    cell = [a, a, 10, 90, 90, 90]
+    #return cell
+    pass
 
 if __name__ == "__main__":
     from optparse import OptionParser

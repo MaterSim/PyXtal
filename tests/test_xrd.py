@@ -4,22 +4,13 @@ import os
 import unittest
 
 from pyxtal import pyxtal
-from pyxtal.lattice import Lattice
-from pyxtal.symmetry import Wyckoff_position
-from pyxtal.XRD import Similarity
-
+from pyxtal.XRD import Similarity, check_pxrd_match
 
 def resource_filename(package_name, resource_path):
     package_path = importlib.util.find_spec(package_name).submodule_search_locations[0]
     return os.path.join(package_path, resource_path)
 
-
 cif_path = resource_filename("pyxtal", "database/cifs/")
-l01 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
-l02 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
-wp1 = Wyckoff_position.from_group_and_index(36, 0)
-wp2 = Wyckoff_position.from_group_and_letter(36, "4a")
-
 
 class TestPXRD(unittest.TestCase):
     def test_similarity(self):
@@ -38,6 +29,18 @@ class TestPXRD(unittest.TestCase):
         xrd3.get_profile()
         s = Similarity(p1, p2, x_range=[15, 90])
         assert 0.95 < s.value < 1.001
+
+    def test_match(self):
+        dia = pyxtal()
+        dia.from_prototype('diamond')
+        xrd = dia.get_XRD()
+        pxrd1 = xrd.get_profile(res=0.25, user_kwargs={"FWHM": 0.25})
+        assert check_pxrd_match(dia, pxrd1)
+        sub = dia.subgroup_once(H=141, eps=0.025)
+        sub = sub.subgroup_once(H=74, eps=0.01)
+        sub = sub.subgroup_once(H=12, eps=0.01)
+        assert check_pxrd_match(sub, pxrd1, s_tol=0.7)
+
 
 if __name__ == "__main__":
     unittest.main()
