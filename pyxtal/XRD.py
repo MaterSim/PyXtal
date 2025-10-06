@@ -10,7 +10,6 @@ import numpy as np
 from monty.serialization import loadfn
 from scipy.interpolate import interp1d
 from scipy.special import erf
-from scipy.signal import find_peaks
 from pyxtal.database.element import Element
 
 with importlib.resources.as_file(
@@ -32,6 +31,8 @@ class XRD:
         ncpu: int, number of cpu to use (default: 1)
         preferred_orientation: boolean, whether to use preferred orientation
         march_parameter: float, the march parameter for preferred orientation
+        TWO_THETA_TOL: tolerance to find repeating angles
+        SCALED_INTENSITY_TOL: threshold for intensities
     """
 
     def __init__(
@@ -45,6 +46,8 @@ class XRD:
         filename=None,
         preferred_orientation=False,
         march_parameter=None,
+        TWO_THETA_TOL=1e-5,
+        SCALED_INTENSITY_TOL=1e-5,
     ):
 
         self.res = np.radians(res)
@@ -56,7 +59,10 @@ class XRD:
             self.ncpu = ncpu
             self.name = crystal.get_chemical_formula()
             self.preferred_orientation = preferred_orientation
+            self.debye_waller_factor = 1.0  # default no debye waller factor
             self.march_parameter = march_parameter
+            self.SCALED_INTENSITY_TOL = SCALED_INTENSITY_TOL
+            self.TWO_THETA_TOL = TWO_THETA_TOL
             self.all_dhkl(crystal)
             self.skip_hkl = self.intensity(crystal)
             self.pxrdf()
@@ -162,11 +168,11 @@ class XRD:
         hkl_list = hkl_list[shortlist]
         sintheta = self.wavelength / 2 / d_hkl
 
-        self.theta = np.arcsin(sintheta)
-        self.hkl_list = np.array(hkl_list, dtype=int)
+        self.theta = np.arcsin(sintheta)#; print(self.theta[0:5000:])#; import sys; sys.exit()
+        self.hkl_list = np.array(hkl_list, dtype=int)#; print(self.hkl_list[0:5000:]); import sys; sys.exit()
         self.d_hkl = d_hkl
 
-    def intensity(self, crystal, TWO_THETA_TOL=1e-5, SCALED_INTENSITY_TOL=1e-5):
+    def intensity(self, crystal):
         """
         This function calculates all that is necessary to find the intensities.
         This scheme is similar to pymatgen
@@ -175,8 +181,7 @@ class XRD:
         the exact hkl families
 
         Args:
-            TWO_THETA_TOL: tolerance to find repeating angles
-            SCALED_INTENSITY_TOL: threshold for intensities
+
         """
         # obtain scattering parameters, atomic numbers, and occus
         # print("total number of hkl lists", len(self.hkl_list))
@@ -198,7 +203,8 @@ class XRD:
             zs[i] = Element(elem).z
 
         # A heavy calculation, Partition it to prevent the memory issue
-        s2s = (np.sin(self.theta) / self.wavelength) ** 2  # M
+        #s2s = self.d_hkl**2 #(np.sin(self.theta) / self.wavelength) ** 2  # M
+        s2s = 1 / (4 * self.d_hkl ** 2)  # M
         hkl_per_proc = int(self.per_N / N_atom)
         N_cycle = int(np.ceil(N_hkls / hkl_per_proc))
         positions = crystal.get_scaled_positions()
@@ -276,7 +282,7 @@ class XRD:
             for id in range(len(self.hkl_list)):
                 hkl, d_hkl = self.hkl_list[id], self.d_hkl[id]
                 # find where the scattered angles are equal
-                ind = np.where(np.abs(np.subtract(two_thetas, _two_thetas[id])) < TWO_THETA_TOL)
+                ind = np.where(np.abs(np.subtract(two_thetas, _two_thetas[id])) < self.TWO_THETA_TOL)
                 if len(ind[0]) > 0:
                     # append intensity, hkl plane, and thetas to lists
                     self.peaks[two_thetas[ind[0][0]]][0] += Is[id] * lfs[id] * pos[id]
@@ -300,12 +306,12 @@ class XRD:
         for k in sorted(self.peaks.keys()):
             count += 1
             v = self.peaks[k]
-            if skip_hkl:
-                fam = {}
-                fam[tuple(v[1][0])] = len(v[1])
-            else:
-                fam = self.get_unique_families(v[1])
-            if v[0] / max_intensity * 100 > SCALED_INTENSITY_TOL:
+            #if skip_hkl:
+            #    fam = {}
+            #    fam[tuple(v[1][0])] = len(v[1])
+            #else:
+            fam = self.get_unique_families(v[1])#; print(v[1], fam)
+            if v[0] / max_intensity * 100 > self.SCALED_INTENSITY_TOL:
                 # print(k, v[0]/max_intensity)
                 x.append(k)
                 y.append(v[0])
@@ -350,12 +356,15 @@ class XRD:
         PL[:, -1] = PL[:, -1] / max(PL[:, -1])
         self.pxrd = PL
 
-    def get_unique_families(self, hkls):
+    def get_unique_families(self, hkls, verbose=False):
         """
         Returns unique families of Miller indices. Families must be permutations
         of each other.
+
         Args:
             hkls ([h, k, l]): List of Miller indices.
+            verbose (bool): Whether or not to print out information on families.
+
         Returns:
             {hkl: multiplicity}: A dict with unique hkl and multiplicity.
         """
@@ -369,13 +378,14 @@ class XRD:
         unique = collections.defaultdict(list)
         for hkl1 in hkls:
             found = False
+            hkl1_tuple = tuple(hkl1)
             for hkl2 in unique:
                 if is_perm(hkl1, hkl2):
                     found = True
-                    unique[hkl2].append(hkl1)
+                    unique[hkl2].append(hkl1_tuple)
                     break
             if not found:
-                unique[hkl1].append(hkl1)
+                unique[hkl1_tuple].append(hkl1_tuple)
 
         pretty_unique = {}
         for v in unique.values():
@@ -887,7 +897,7 @@ def get_intensity(positions, hkl, s2, coeffs, z):
     Calculate the intensity for a given set of positions, hkl, s2, coefficients, and atomic numbers.
     Args:
         positions (np.ndarray): N*3 array of atomic positions in fractional coordinates.
-        hkl (np.ndarray): M*3 array of Miller indices.
+        hkl (np.ndarray): 3*M array of Miller indices.
         s2 (np.ndarray): M array of sin^2(theta) values.
         coeffs (np.ndarray): N*4*2 array of coefficients for each atom.
         z (np.ndarray): N*1 array of atomic numbers.
@@ -895,16 +905,20 @@ def get_intensity(positions, hkl, s2, coeffs, z):
     Returns:
         np.ndarray: M array of calculated intensities.
     """
-    const = 2j * np.pi
-    g_dot_rs = np.dot(positions, hkl)  # N*M
-    exps = np.exp(const * g_dot_rs)  # N*M
-
+    #N = len(positions); positions = np.random.rand(N, 3) #-= np.round(positions)  # ensure within [0,1)
+    g_dot_rs = np.dot(positions, hkl)  # N*3 dot 3*M -> N*M
+    exps = np.exp(-2j * np.pi * g_dot_rs)  # N*M
+    #print(exps[0]); import sys; sys.exit()
     tmp1 = np.exp(np.einsum("ij,k->ijk", -coeffs[:, :, 1], s2))  # N*4, M
     tmp2 = np.einsum("ij,ijk->ik", coeffs[:, :, 0], tmp1)  # N*4, N*M
     sfs = np.add(-41.78214 * np.einsum("ij,j->ij", tmp2, s2), z)  # N*M, M -> N*M
     fs = np.sum(sfs * exps, axis=0)  # M
 
     # Final intensity values, M
+    #for i, f in enumerate(fs):
+    #    if f.real > 0.1 and s2[i] < 0.05:
+    #        print("hkl", hkl[:, i], s2[i], '|F|', f)
+
     return (fs * fs.conjugate()).real
 
 
@@ -977,9 +991,9 @@ def pxrd_refine(xtal, ref_pxrd, thetas, steps=50):
     else:
         #print("The initial PXRD is unlikely to match the reference PXRD well.")
         return xtal, -f0
-    
 
-def check_pxrd_match(xtal, ref_pxrd, s_tol=0.8, top_n=3, peak_tol=0.1, ang_tol=1.0, 
+
+def check_pxrd_match(xtal, ref_pxrd, s_tol=0.8, top_n=3, peak_tol=0.1, ang_tol=1.0,
                      wave_length=1.5406, verbose=False):
     """
     Check if there is a false match between the pyxtal structure and the reference PXRD.
@@ -1031,10 +1045,10 @@ def check_pxrd_match(xtal, ref_pxrd, s_tol=0.8, top_n=3, peak_tol=0.1, ang_tol=1
                         if len(close_peaks) == 0:
                             if verbose:
                                 print(f"False match at hkl {hkl}/{h} at {theta:.2f} not in ref. PXRD")
-                            return False       
-        return True  # No false match found
+                            return 0
+        return sim
     else:
-        return False  # Similarity too low to consider
+        return sim  # Similarity too low to consider
 
 def is_multiple(hkl, ref_hkl):
     # Avoid division by zero and require ref_hkl is not (0,0,0)
@@ -1082,7 +1096,7 @@ def get_para_from_pxrd(ref_pxd, spg, wave_length=1.5406):
     #    cell = [a, a, a, 90, 90, 90]
     #elif 143 <= spg <= 194: # (001) or (100)
     #    cell = [[a, a, a, 90, 90, 120], []]
-    #elif 75 <= spg <= 142: 
+    #elif 75 <= spg <= 142:
     #    if P: # (100) or (001)
     #    elif I: # (101) or (110)
     #        a /= np.sqrt(2)

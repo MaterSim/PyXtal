@@ -14,7 +14,6 @@ with importlib.resources.as_file(
 ) as path:
     ATOMIC_SCATTERING_PARAMS = loadfn(path)
 
-
 def bessel_basis(r, nmax=6, r_cut=0.24):
     """
     Spherical Bessel basis functions - excellent for reciprocal space
@@ -304,6 +303,62 @@ class RECP:
         plt.tight_layout()
         plt.savefig(filename, dpi=300)
         plt.close()
+
+    def reconstruction(self, spg, wps, elements, rep0, P_ref, rdf_ref, verbose=False):
+        """
+        Generate a crystal with the desired local P_ref
+
+        Args:
+            spg (int): pyxtal.symmetry.Group object
+            wps: list of wps for the disired crystal (e.g., [wp1, wp2])
+            P_ref: reference enviroment
+
+        Returns:
+            xtal and its mse loss
+        """
+        torch.autograd.set_detect_anomaly(True)
+
+        def apply_bounds(tensor):
+            """Clamps tensor values between 0 and 1."""
+            with torch.no_grad():
+                tensor.clamp_(0.0, 1.0)
+
+        # Clone and enable gradients for `reps`
+        rep = rep.clone().detach().requires_grad_(True)
+        generators = generators.clone().detach()
+
+        # Choose optimizer
+        optimizer = torch.optim.Adam([rep_batch], lr=lr)
+        scheduler = StepLR(optimizer, step_size=50, gamma=0.1)
+
+        # Optimization loop
+        for step in range(num_steps):
+            optimizer.zero_grad()
+
+            # Compute losses per sample (B,)
+            loss = self.loss(spg, wps, elements, P_ref, RDF_ref)
+            loss.backward(torch.ones_like(loss))
+            torch.nn.utils.clip_grad_norm_(rep_batch, max_norm=10.0)  # Gradient clipping
+
+            # Step the scheduler
+            optimizer.step()
+            if step > 100: scheduler.step()
+
+            if verbose and step % 1 == 0:
+                print(f"Step {step}, {loss_sum:.6f}, LR={scheduler.get_last_lr()[0]:.6f}")
+            if step + 1 == num_steps:
+                print(f"stopping at last iteration")
+        xtal =
+        return rep.detach(), losses.detach()
+
+    def loss(self, spg, wps, elements, P_ref, RDF_ref):
+        res =  WP.get()
+        p, xrd, rdf = self.compute()
+        loss1 = torch.sum()
+        return loss
+
+
+
 
 
 if __name__ == "__main__":

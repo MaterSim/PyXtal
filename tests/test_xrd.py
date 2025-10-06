@@ -35,11 +35,11 @@ class TestPXRD(unittest.TestCase):
         dia.from_prototype('diamond')
         xrd = dia.get_XRD()
         pxrd1 = xrd.get_profile(res=0.25, user_kwargs={"FWHM": 0.25})
-        assert check_pxrd_match(dia, pxrd1)
+        assert check_pxrd_match(dia, pxrd1) > 0.8
         sub = dia.subgroup_once(H=141, eps=0.025)
         sub = sub.subgroup_once(H=74, eps=0.01)
         sub = sub.subgroup_once(H=12, eps=0.01)
-        assert check_pxrd_match(sub, pxrd1, s_tol=0.7)
+        assert check_pxrd_match(sub, pxrd1, s_tol=0.7) > 0.7
 
 
 if __name__ == "__main__":
