@@ -83,7 +83,7 @@ for id, cif in enumerate(cifs):
     try:
         xtal.from_seed(pmg, molecules = smiles)
         xtal.energy = engs[ids]
-        strs = f"Struc {ids[id]:6d}: {spg:3d} {eng]:.3f} kJ/mol, {den:.3f} g/cm^3"
+        strs = f"Struc {ids[id]:6d}: {spg:3d} {eng:.3f} kJ/mol, {den:.3f} g/cm^3"
         if options.xrd:
             p1 = xtal.get_XRD(thetas=thetas).get_profile(res=0.15, user_kwargs={"FWHM": 0.25})
             sim = Similarity(p1, p_ref, x_range=thetas).value
