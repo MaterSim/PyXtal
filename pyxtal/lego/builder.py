@@ -669,8 +669,8 @@ class builder(object):
                     xtals_opt.extend(valid_xtals)  # Use deque to reduce memory
 
             # Remove the duplicate structures
-            self.db.update_row_topology(overwrite=False, prefix=self.prefix)
-            self.db.clean_structures_spg_topology(dim=self.dim)
+            #self.db.update_row_topology(overwrite=False, prefix=self.prefix)
+            #self.db.clean_structures_spg_topology(dim=self.dim)
 
             # After each minibatch, delete the local variables and run garbage collection
             del ids, _xtals, _xs
@@ -712,7 +712,10 @@ class builder(object):
             #print('start', i, rep, len(rep))
             xtal = pyxtal()
             discrete = False if N_grids is None else True
-            discrete_cell = abs(rep[1] - round(rep[1])) < 1e-5
+            try:
+                discrete_cell = abs(rep[1] - round(rep[1])) < 1e-5
+            except (IndexError, TypeError):
+                discrete_cell = False  # or some default value
             xtal.from_tabular_representation(rep,
                                              normalize=False,
                                              discrete=discrete,
@@ -760,7 +763,10 @@ class builder(object):
                         rep = reps[id]
                         xtal = pyxtal()
                         discrete = False if N_grids is None else True
-                        discrete_cell = abs(rep[1] - round(rep[1])) < 1e-5
+                        try:
+                            discrete_cell = abs(rep[1] - round(rep[1])) < 1e-5
+                        except (IndexError, TypeError):
+                            discrete_cell = False  
                         xtal.from_tabular_representation(rep,
                                                          normalize=False,
                                                          discrete=discrete,
