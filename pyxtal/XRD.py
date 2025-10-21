@@ -105,7 +105,7 @@ class XRD:
     def __repr__(self):
         return str(self)
 
-    def by_hkl(self, hkl=None):
+    def by_hkl(self, hkl=None, N_max=None):
         """
         d for any give abitray [h,k,l] index
         """
@@ -113,6 +113,8 @@ class XRD:
         if hkl is None:
             id1 = self.hkl_labels
             seqs = range(len(id1))
+            if N_max is not None:
+                seqs = range(min(N_max, len(id1)))
         else:
             seqs = None
             for id, label in enumerate(self.hkl_labels):

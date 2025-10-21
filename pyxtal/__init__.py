@@ -4240,6 +4240,12 @@ class pyxtal:
                                   ['4a', '4d'],
                                   [3.63],
                                   ['B', 'N'])
+        elif prototype in ['olivine']:
+            self.from_spg_wps_rep(62,
+                                  ['4a', '4c', '4c', '8d', '4c', '4c'],
+                                  [10.18, 5.96, 4.75, 0.723, 0.992, 0.906, 0.426,
+                                   0.663, 0.532, 0.777, 0.554, 0.222, 0.909, 0.767],
+                                  ['Mg', 'Mg', 'Si', 'O', 'O', 'O'])
         else:
             raise ValueError("Cannot support the input prototype", prototype)
 

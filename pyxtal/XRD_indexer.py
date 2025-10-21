@@ -61,6 +61,8 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.5406):
             b = np.array([1/d1**2, 1/d2**2])
             try:
                 x = np.linalg.solve(A, b)
+                if x[0] <= 0 or x[1] <= 0:
+                    continue
                 a = np.sqrt(1/x[0])
                 c = np.sqrt(1/x[1])
                 cell_values.append((a, c))
@@ -80,6 +82,8 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.5406):
             b = np.array([1/d1**2, 1/d2**2])
             try:
                 x = np.linalg.solve(A, b)
+                if x[0] <= 0 or x[1] <= 0:
+                    continue
                 a = np.sqrt(1/x[0])
                 c = np.sqrt(1/x[1])
                 cell_values.append((a, c))
@@ -213,8 +217,8 @@ def get_seeds(spg, hkls, two_thetas):
     return seed_hkls, seed_thetas
 
 
-def get_cell_from_multi_hkls(hkls, two_thetas, spg, wave_length=1.5406, 
-                             tolerance=0.05, min_matched_peaks=2):
+def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_length=1.5406, 
+                             tolerance=0.025, min_matched_peaks=2):
     """
     Estimate the cell parameters from multiple (hkl, two_theta) inputs.
     The idea is to use the Bragg's law and the lattice spacing formula to estimate the lattice parameters.
@@ -223,6 +227,7 @@ def get_cell_from_multi_hkls(hkls, two_thetas, spg, wave_length=1.5406,
     Args:
         hkls: list of (h, k, l) tuples
         two_thetas: list of 2theta values
+        long_thetas: list of all observed 2theta values
         spg (int): space group number
         wave_length: X-ray wavelength, default is Cu K-alpha
         tolerance: tolerance for matching 2theta values, default is 0.05 degrees
@@ -231,6 +236,8 @@ def get_cell_from_multi_hkls(hkls, two_thetas, spg, wave_length=1.5406,
     Returns:
         cells: estimated lattice parameter
     """
+    if long_thetas is None:
+        long_thetas = two_thetas
     all_possible_hkls = generate_possible_hkls(max_h=6)
     test_hkls_array = np.array(all_possible_hkls)
 
@@ -245,7 +252,7 @@ def get_cell_from_multi_hkls(hkls, two_thetas, spg, wave_length=1.5406,
     for cell in cells:
         # Now try to index all other peaks using this 'a'
         matched_peaks = []  # (index, hkl, obs_theta, error)
-        for peak_idx, obs_theta in enumerate(two_thetas):            
+        for peak_idx, obs_theta in enumerate(long_thetas):            
             best_match = None
             best_error = float('inf')
             
@@ -276,7 +283,7 @@ def get_cell_from_multi_hkls(hkls, two_thetas, spg, wave_length=1.5406,
             # Score this solution
             n_matched = len(matched_peaks)
             if n_matched >= min_matched_peaks:
-                coverage = n_matched / len(two_thetas)
+                coverage = n_matched / len(long_thetas)
                 avg_error = np.mean([match[3] for match in matched_peaks])
                 consistency_score = 1.0 / (1.0 + avg_error)  # lower error = higher score
                 total_score = coverage * consistency_score
@@ -286,8 +293,9 @@ def get_cell_from_multi_hkls(hkls, two_thetas, spg, wave_length=1.5406,
                     best_solution = {
                         'cell': cell,
                         'n_matched': n_matched,
-                        'n_total': len(two_thetas),
+                        'n_total': len(long_thetas),
                         'score': total_score,
+                        #'avg_error': avg_error,
                     }
         
     return best_solution
@@ -297,53 +305,26 @@ if __name__ == "__main__":
     from pyxtal import pyxtal
 
     xtal = pyxtal()
-    xtal.from_prototype("diamond")
-
-    # initial guesses of the first 5 hkls
     guesses = [
                [(1, 1, 1), (2, 2, 0), (3, 1, 1)],
-               [(1, 1, 1), (3, 1, 1), (2, 2, 2)],
-               [(2, 0, 0), (2, 2, 0), (3, 1, 1)],
-               [(2, 2, 0), (3, 1, 1), (2, 2, 2)],
-               [(1, 1, 1), (2, 0, 0), (2, 2, 0)],
-            ]
-    xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
-    theta = xrd.pxrd[:len(guesses[0]), 0]
-    print(xrd)
-    spg = xtal.group.number
-    for guess in guesses:
-        result = get_cell_from_multi_hkls(guess, theta, spg)
-        print(guess, result)
-
-
-    xtal = pyxtal()
-    xtal.from_prototype("graphite")
-    guesses = [
                [(0, 0, 2), (1, 0, 0), (1, 0, 1)],
                [(0, 0, 2), (1, 0, 1), (1, 1, 0)],
                [(1, 0, 0), (1, 0, 1), (1, 1, 0)],
-            ]
-    xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
-    theta = xrd.pxrd[:len(guesses[0]), 0]
-    print(xrd)
-    spg = xtal.group.number
-    for guess in guesses:
-        result = get_cell_from_multi_hkls(guess, theta, spg)
-        print(guess, result)
-
-    xtal = pyxtal()
-    xtal.from_prototype("a-cristobalite")
-    guesses = [
-               [(1, 0, 1), (1, 1, 1), (1, 0, 2)],
+               [(2, 0, 0), (1, 0, 1), (2, 1, 0)],
                [(1, 0, 0), (1, 1, 1), (1, 0, 2)],
                [(1, 0, 1), (1, 1, 1), (3, 1, 1)],
                [(2, 2, 0), (3, 1, 1), (2, 2, 2)],
                [(1, 1, 1), (2, 0, 0), (2, 2, 0)],
             ]
-    xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
-    theta = xrd.pxrd[:len(guesses[0]), 0]
-    print(xrd)
-    spg = xtal.group.number
-    for guess in guesses:
-        result = get_cell_from_multi_hkls(guess, theta, spg)
-        print(guess, result)
+    for prototype in ["diamond", "graphite", "a-cristobalite", "olivine"]:
+        xtal.from_prototype(prototype)
+        xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
+        theta = xrd.pxrd[:3, 0]
+        print("Testing prototype:", prototype, xtal.lattice)
+        print(xrd.by_hkl(N_max=5))
+        spg = xtal.group.number
+        for guess in guesses:
+            hkls = [tuple(hkl) for hkl in guess]
+            result = get_cell_from_multi_hkls(spg, hkls, theta, xrd.pxrd[:10, 0])
+            if result is not None and result['score'] > 0.9:
+                print("  Guess:", guess, "->", result)
