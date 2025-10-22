@@ -4246,6 +4246,14 @@ class pyxtal:
                                   [10.18, 5.96, 4.75, 0.723, 0.992, 0.906, 0.426,
                                    0.663, 0.532, 0.777, 0.554, 0.222, 0.909, 0.767],
                                   ['Mg', 'Mg', 'Si', 'O', 'O', 'O'])
+        elif prototype in ['beta-Ga2O3']:
+            self.from_spg_wps_rep(12,
+                                  ['4i', '4i', '4i', '4i', '4i'],
+                                  [12.28, 3.04, 5.82, 103.8,
+                                   0.091, 0.795, 0.659, 0.315,
+                                   0.504, 0.743, 0.165, 0.109,
+                                   0.173, 0.563],
+                                  ['Ga', 'Ga', 'O', 'O', 'O'])
         else:
             raise ValueError("Cannot support the input prototype", prototype)
 

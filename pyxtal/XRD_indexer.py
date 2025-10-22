@@ -112,6 +112,39 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.5406):
                 cell_values.append((a, b, c))
             except np.linalg.LinAlgError:
                 continue
+    elif 3 <= spg <= 15:  # monoclinic, need a, b, c, beta
+        # need four hkls to determine a, b, c, beta
+        len_solutions = len(hkls) // 4
+        for i in range(len_solutions):
+            (h1, k1, l1), (h2, k2, l2), (h3, k3, l3), (h4, k4, l4) = hkls[4*i], hkls[4*i + 1], hkls[4*i + 2], hkls[4*i + 3]
+            theta1 = np.radians(two_thetas[4*i] / 2)
+            theta2 = np.radians(two_thetas[4*i + 1] / 2)
+            theta3 = np.radians(two_thetas[4*i + 2] / 2)
+            theta4 = np.radians(two_thetas[4*i + 3] / 2)
+            d1 = wave_length / (2 * np.sin(theta1))
+            d2 = wave_length / (2 * np.sin(theta2))
+            d3 = wave_length / (2 * np.sin(theta3))
+            d4 = wave_length / (2 * np.sin(theta4))
+            # Non-linear system; use numerical methods
+            from scipy.optimize import minimize
+
+            def objective(params):
+                a, b, c, beta_deg = params
+                beta = np.radians(beta_deg)
+                eqs = []
+                for (h, k, l), d_obs in zip([(h1, k1, l1), (h2, k2, l2), (h3, k3, l3), (h4, k4, l4)],
+                                            [d1, d2, d3, d4]):
+                    sin_beta_sq = np.sin(beta)**2
+                    d_calc_inv_sq = (h**2 / (a**2 * sin_beta_sq)) + (k**2 / b**2) + \
+                                    (l**2 / (c**2 * sin_beta_sq)) - \
+                                    (2 * h * l * np.cos(beta) / (a * c * sin_beta_sq))
+                    eqs.append((1/d_obs**2 - d_calc_inv_sq)**2)
+                return sum(eqs)
+            initial_guess = [2.0, 2.0, 2.0, 90.0]
+            result = minimize(objective, initial_guess)#; print(result.x, result.fun)
+            if result.success:
+                a, b, c, beta = result.x
+                cell_values.append((a, b, c, beta))
     else:
         msg = "Only cubic, tetragonal, hexagonal, and orthorhombic systems are supported."
         raise NotImplementedError(msg)
@@ -143,8 +176,9 @@ def calc_two_theta_from_cell(spg, hkls, cells, wave_length=1.5406):
         d = 1 / np.sqrt(h**2 / a**2 + k**2 / b**2 + l**2 / c**2)
     elif spg >= 3:  # monoclinic
         a, b, c, beta = cells[0], cells[1], cells[2], np.radians(cells[3])
-        d = 1 / np.sqrt((h**2 / a**2) + (k**2 * np.sin(beta)**2 / b**2) + (l**2 / c**2) - 
-                        (2 * h * l * np.cos(beta) / (a * c)))
+        sin_beta = np.sin(beta)
+        d = 1 / np.sqrt((h**2 / (a**2 * sin_beta**2)) + (k**2 / b**2) + (l**2 / (c**2 * sin_beta**2)) - 
+                (2 * h * l * np.cos(beta) / (a * c * sin_beta**2)))
     else:
         raise NotImplementedError("triclinic systems are not supported.")
     sin_theta = wave_length / (2 * d)
@@ -211,6 +245,29 @@ def get_seeds(spg, hkls, two_thetas):
                     seed_thetas.append(two_thetas[i])
                     seed_thetas.append(two_thetas[j])
                     seed_thetas.append(two_thetas[k])
+    elif spg >= 3:  # monoclinic
+        for i in range(len(hkls)-1):
+            h1, k1, l1 = hkls[i]
+            for j in range(i+1, len(hkls)):
+                h2, k2, l2 = hkls[j]
+                for k in range(j+1, len(hkls)):
+                    h3, k3, l3 = hkls[k]
+                    for m in range(k+1, len(hkls)):
+                        h4, k4, l4 = hkls[m]
+                        if (h1 == 0 and h2 == 0 and h3 == 0 and h4 == 0):
+                            continue
+                        elif (k1 == 0 and k2 == 0 and k3 == 0 and k4 == 0):
+                            continue
+                        elif (l1 == 0 and l2 == 0 and l3 == 0 and l4 == 0):
+                            continue
+                        seed_hkls.append((h1, k1, l1))
+                        seed_hkls.append((h2, k2, l2))
+                        seed_hkls.append((h3, k3, l3))
+                        seed_hkls.append((h4, k4, l4))
+                        seed_thetas.append(two_thetas[i])
+                        seed_thetas.append(two_thetas[j])
+                        seed_thetas.append(two_thetas[k])
+                        seed_thetas.append(two_thetas[m])
     else:
         raise NotImplementedError("mono/tri-clinic systems are not supported.")
 
@@ -218,7 +275,7 @@ def get_seeds(spg, hkls, two_thetas):
 
 
 def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_length=1.5406, 
-                             tolerance=0.025, min_matched_peaks=2):
+                             tolerance=0.05, min_matched_peaks=2):
     """
     Estimate the cell parameters from multiple (hkl, two_theta) inputs.
     The idea is to use the Bragg's law and the lattice spacing formula to estimate the lattice parameters.
@@ -243,8 +300,8 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
 
     best_solution = None
     best_score = 0
-    
-    seed_hkls, seed_thetas = get_seeds(spg, hkls, two_thetas)
+
+    seed_hkls, seed_thetas = get_seeds(spg, hkls, two_thetas)#; print(seed_hkls, seed_thetas)
     cells = get_cell_params(spg, seed_hkls, seed_thetas, wave_length)#; print(cells)
     cells = np.array(cells)
     cells = np.unique(cells, axis=0)#; print(cells)  # remove duplicates
@@ -315,16 +372,19 @@ if __name__ == "__main__":
                [(1, 0, 1), (1, 1, 1), (3, 1, 1)],
                [(2, 2, 0), (3, 1, 1), (2, 2, 2)],
                [(1, 1, 1), (2, 0, 0), (2, 2, 0)],
+               [(0, 0, 1), (2, 0, -1), (2, 0, 1), (4, 0, 0), (1, 1, 0)],
             ]
-    for prototype in ["diamond", "graphite", "a-cristobalite", "olivine"]:
+    for prototype in ["diamond", "graphite", "a-cristobalite", "olivine", "beta-Ga2O3"]:
         xtal.from_prototype(prototype)
         xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
-        theta = xrd.pxrd[:3, 0]
-        print("Testing prototype:", prototype, xtal.lattice)
+        print("\nTesting prototype:", prototype, xtal.lattice)
         print(xrd.by_hkl(N_max=5))
         spg = xtal.group.number
         for guess in guesses:
+            n_peaks = len(guess)
+            if spg < 16 and n_peaks < 4: continue
+            theta = xrd.pxrd[:n_peaks, 0]
             hkls = [tuple(hkl) for hkl in guess]
             result = get_cell_from_multi_hkls(spg, hkls, theta, xrd.pxrd[:10, 0])
             if result is not None and result['score'] > 0.9:
-                print("  Guess:", guess, "->", result)
+                print("Guess:", guess, "->", result['cell'],)
