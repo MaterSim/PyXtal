@@ -6,7 +6,7 @@ import numpy as np
 def generate_possible_hkls(max_h=5, level=2):
     """
     Generate reasonable hkl indices within a cutoff for different crystal systems.
-    
+
     Args:
         max_h: maximum absolute value for h, k, l
         level: level of indexing (0 for triclinic; 1 for monoclinic; 2 for orthorhombic or higher)
@@ -31,7 +31,7 @@ def generate_possible_hkls(max_h=5, level=2):
                     possible_hkls.extend(list(base_hkls))
     return list(set(possible_hkls))  # remove duplicates
 
-def get_cell_params(spg, hkls, two_thetas, wave_length=1.5406):
+def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
     """
     Calculate cell parameters for a given set of hkls.
 
@@ -151,7 +151,7 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.5406):
 
     return cell_values
 
-def calc_two_theta_from_cell(spg, hkls, cells, wave_length=1.5406):
+def calc_two_theta_from_cell(spg, hkls, cells, wave_length=1.54184):
     """
     Calculate expected 2theta values from hkls and cell parameters.
 
@@ -177,7 +177,7 @@ def calc_two_theta_from_cell(spg, hkls, cells, wave_length=1.5406):
     elif spg >= 3:  # monoclinic
         a, b, c, beta = cells[0], cells[1], cells[2], np.radians(cells[3])
         sin_beta = np.sin(beta)
-        d = 1 / np.sqrt((h**2 / (a**2 * sin_beta**2)) + (k**2 / b**2) + (l**2 / (c**2 * sin_beta**2)) - 
+        d = 1 / np.sqrt((h**2 / (a**2 * sin_beta**2)) + (k**2 / b**2) + (l**2 / (c**2 * sin_beta**2)) -
                 (2 * h * l * np.cos(beta) / (a * c * sin_beta**2)))
     else:
         raise NotImplementedError("triclinic systems are not supported.")
@@ -274,7 +274,7 @@ def get_seeds(spg, hkls, two_thetas):
     return seed_hkls, seed_thetas
 
 
-def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_length=1.5406, 
+def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_length=1.54184,
                              tolerance=0.05, min_matched_peaks=2):
     """
     Estimate the cell parameters from multiple (hkl, two_theta) inputs.
@@ -309,30 +309,30 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
     for cell in cells:
         # Now try to index all other peaks using this 'a'
         matched_peaks = []  # (index, hkl, obs_theta, error)
-        for peak_idx, obs_theta in enumerate(long_thetas):            
+        for peak_idx, obs_theta in enumerate(long_thetas):
             best_match = None
             best_error = float('inf')
-            
+
             # Try all possible hkls for this peak - vectorized version
             expected_thetas = calc_two_theta_from_cell(spg, test_hkls_array, cell, wave_length)
-                        
+
             # Filter out None values
             valid_mask = expected_thetas != None
             valid_thetas = expected_thetas[valid_mask]
             valid_hkls = test_hkls_array[valid_mask]
-            
+
             if len(valid_thetas) > 0:
                 valid_thetas = np.array(valid_thetas, dtype=float)
                 errors = np.abs(obs_theta - valid_thetas)
                 within_tolerance = errors < tolerance
-                
+
                 if np.any(within_tolerance):
                     min_idx = np.argmin(errors[within_tolerance])
                     valid_indices = np.where(within_tolerance)[0]
                     best_idx = valid_indices[min_idx]
                     best_error = errors[best_idx]
                     best_match = (peak_idx, tuple(valid_hkls[best_idx]), obs_theta, best_error)
-            
+
             #print(cell, peak_idx, best_match)
             if best_match is not None:
                 matched_peaks.append(best_match)
@@ -344,7 +344,7 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
                 avg_error = np.mean([match[3] for match in matched_peaks])
                 consistency_score = 1.0 / (1.0 + avg_error)  # lower error = higher score
                 total_score = coverage * consistency_score
-                
+
                 if total_score > best_score:
                     best_score = total_score
                     best_solution = {
@@ -354,7 +354,7 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
                         'score': total_score,
                         #'avg_error': avg_error,
                     }
-        
+
     return best_solution
 
 
@@ -372,6 +372,7 @@ if __name__ == "__main__":
                [(1, 0, 1), (1, 1, 1), (3, 1, 1)],
                [(2, 2, 0), (3, 1, 1), (2, 2, 2)],
                [(1, 1, 1), (2, 0, 0), (2, 2, 0)],
+               [(1, 1), (2, 0, 0), (2, 2, 0)], # test bad case
                [(0, 0, 1), (2, 0, -1), (2, 0, 1), (4, 0, 0), (1, 1, 0)],
             ]
     for prototype in ["diamond", "graphite", "a-cristobalite", "olivine", "beta-Ga2O3"]:
@@ -384,7 +385,7 @@ if __name__ == "__main__":
             n_peaks = len(guess)
             if spg < 16 and n_peaks < 4: continue
             theta = xrd.pxrd[:n_peaks, 0]
-            hkls = [tuple(hkl) for hkl in guess]
+            hkls = [tuple(hkl) for hkl in guess if len(hkl) == 3]
             result = get_cell_from_multi_hkls(spg, hkls, theta, xrd.pxrd[:10, 0])
             if result is not None and result['score'] > 0.9:
                 print("Guess:", guess, "->", result['cell'],)
