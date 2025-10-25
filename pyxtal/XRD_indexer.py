@@ -106,6 +106,8 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
             b = np.array([1/d1**2, 1/d2**2, 1/d3**2])
             try:
                 x = np.linalg.solve(A, b)
+                if x[0] <= 0 or x[1] <= 0 or x[2] <= 0:
+                    continue
                 a = np.sqrt(1/x[0])
                 b = np.sqrt(1/x[1])
                 c = np.sqrt(1/x[2])
@@ -144,6 +146,8 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
             result = minimize(objective, initial_guess)#; print(result.x, result.fun)
             if result.success:
                 a, b, c, beta = result.x
+                if a > 50 or b > 50 or c > 50 or beta <= 30 or beta >= 150:
+                    continue
                 cell_values.append((a, b, c, beta))
     else:
         msg = "Only cubic, tetragonal, hexagonal, and orthorhombic systems are supported."
@@ -360,11 +364,12 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
 
 if __name__ == "__main__":
     from pyxtal import pyxtal
+    from itertools import combinations
 
     xtal = pyxtal()
     guesses = [
                [(1, 1, 1), (2, 2, 0), (3, 1, 1)],
-               [(0, 0, 2), (1, 0, 0), (1, 0, 1)],
+               [(0, 0, 2), (1, 0, 0)],#, (1, 0, 1)],
                [(0, 0, 2), (1, 0, 1), (1, 1, 0)],
                [(1, 0, 0), (1, 0, 1), (1, 1, 0)],
                [(2, 0, 0), (1, 0, 1), (2, 1, 0)],
@@ -378,14 +383,32 @@ if __name__ == "__main__":
     for prototype in ["diamond", "graphite", "a-cristobalite", "olivine", "beta-Ga2O3"]:
         xtal.from_prototype(prototype)
         xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
-        print("\nTesting prototype:", prototype, xtal.lattice)
-        print(xrd.by_hkl(N_max=5))
         spg = xtal.group.number
+        print("\nTesting prototype:", prototype, xtal.lattice, xtal.group.symbol)
+        print(xrd.by_hkl(N_max=5))
+        if True:
+            guesses = xtal.group.generate_hkl_guesses(4, max_square=16)
+
+        print("Total guesses:", len(guesses))
+        # check if all hkls follows the accending order not (220 cannot be before 200)
+
         for guess in guesses:
+            hkls = [tuple(hkl) for hkl in guess]
             n_peaks = len(guess)
-            if spg < 16 and n_peaks < 4: continue
             theta = xrd.pxrd[:n_peaks, 0]
-            hkls = [tuple(hkl) for hkl in guess if len(hkl) == 3]
-            result = get_cell_from_multi_hkls(spg, hkls, theta, xrd.pxrd[:10, 0])
-            if result is not None and result['score'] > 0.9:
-                print("Guess:", guess, "->", result['cell'],)
+            # select n peaks from first n+1 peaks, skipping a peak
+            exit = False
+            if n_peaks < len(xrd.pxrd):
+                available_peaks = xrd.pxrd[:n_peaks+1, 0]
+                # Try each combination of n peaks from the first n+1 peaks
+                for peak_combo in combinations(range(n_peaks+1), n_peaks):
+                    theta = available_peaks[list(peak_combo)]
+                    result = get_cell_from_multi_hkls(spg, hkls, theta, xrd.pxrd[:10, 0])
+                    if result is not None and result['n_matched'] > 8:
+                        print("Guess:", hkls, "->", result['cell'])
+                        if result['score'] > 0.95:
+                            print("High score, exiting early.")
+                            exit = True
+                            break
+            if exit:
+                break

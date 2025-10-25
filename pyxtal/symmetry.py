@@ -144,472 +144,111 @@ class SymmetryData:
 # ------------------------------ Constants ---------------------------------------
 SYMDATA = SymmetryData()
 HALL_TABLE = SYMDATA.get_hall_table()
+face_centers = [22, 42, 43, 69, 70, 196, 202, 203, 209, 210,
+                216, 219, 225, 226, 227, 228]
+body_centers = [23, 24, 44, 45, 46, 71, 72, 73, 74, 79,
+                80, 82, 87, 88, 97, 98, 107, 108, 109, 110,
+                119, 120, 121, 122, 139, 140, 141, 142, 197, 199,
+                204, 206, 211, 214, 217, 220, 229, 230]
+a_centers = [38, 39, 40, 41]
+c_centers = [5, 8, 9, 12, 15, 20, 21, 35, 36, 37, 63, 64, 65, 66, 67, 68]
+# screw axes
+screw_21a = [18, 19, 24, 51, 54, 55, 56, 58, 59, 60, 61, 62, 68, 72, 73,
+             90, 92, 94, 96, 113, 114, 122, 127, 128, 129, 130, 135, 136,
+             137, 138, 198, 199, 205, 206, 210, 212, 213, 214, 227, 228, 230]
+screw_41a = [210, 213, 214, 227, 228, 230]
+screw_42a = [208, 223, 224, 226]
+screw_43a = [212]
+screw_21b = [4, 11, 14, 18, 19, 24, 52, 55, 56, 57, 58, 59, 61, 62, 64, 67,
+             72, 73, 74, 90, 92, 94, 96, 113, 114, 127, 128, 129, 130, 135,
+             136, 137, 138, 198, 199, 205, 206, 210, 212, 213, 214, 227, 228, 230]
+screw_41b = [210, 213, 214, 227, 228, 230]
+screw_42b = [208, 223, 224, 226]
+screw_43b = [212]
+screw_21c = [17, 19, 20, 24, 26, 29, 31, 33, 36, 53, 57, 60, 61, 62, 63, 64,
+             73, 76, 78, 80, 88, 91, 92, 95, 96, 98, 109, 110, 141, 142, 169,
+             170, 173, 176, 178, 179, 182, 185, 186, 193, 194, 198, 199, 205,
+             206, 210, 212, 213, 214, 227, 228, 230]
+screw_41c = [76, 80, 88, 91, 92, 98, 109, 110, 141, 142, 210, 213, 214, 227, 228, 230]
+screw_42c = [77, 84, 86, 93, 94, 101, 102, 105, 106, 131, 132, 133, 134, 135,
+             136, 137, 138, 208, 223, 224, 226]
+screw_43c = [78, 95, 96, 212]
+screw_31c = [144, 151, 152, 169, 172, 178, 181]
+screw_32c = [145, 153, 154, 170, 171, 179, 180]
+screw_61c = [169, 178]
+screw_62c = [171, 180]
+screw_63c = [173, 176, 182, 185, 186, 193, 194]
+screw_64c = [172, 181]
+screw_65c = [170, 179]
+
+# glide planes
+b_glide_a = [32, 39, 41, 45, 50, 55, 57, 60, 61, 72, 73, 100, 106,
+             110, 117, 125, 127, 133, 135, 205, 206, 230]
+c_glide_a = [27, 29, 37, 49, 54, 56, 66, 68, 101, 103, 108, 116, 120,
+             124, 130, 132, 138, 140, 142, 158, 159, 161, 163, 165,
+             167, 184, 185, 186, 188, 190, 192, 193, 194]
+n_glide_a = [30, 33, 34, 48, 52, 58, 62, 102, 104, 109, 118, 126,
+             128, 134, 136, 201, 222, 224]
+d_glide_a = [43, 70, 203, 227, 228]
+a_glide_b = [28, 29, 32, 33, 40, 41, 45, 46, 50, 55, 72, 100, 106, 117,
+             125, 127, 133, 135, 142]
+c_glide_b = [7, 9, 13, 14, 15, 26, 27, 30, 36, 37, 49, 54, 56, 57, 60,
+             61, 63, 64, 66, 68, 73, 101, 103, 108, 110, 116, 120, 124,
+             130, 132, 138, 140, 159, 163, 184, 186, 190, 192, 194, 205, 206, 230]
+n_glide_b = [31, 34, 48, 52, 53, 58, 102, 104, 118, 126, 128, 134, 136,
+             141, 201, 222, 224]
+d_glide_b = [43, 70, 203, 227, 228]
+a_glide_c = [51, 52, 53, 54, 61, 62, 68, 73, 88, 141, 142, 205, 206, 230]
+b_glide_c = [64, 67, 74]
+n_glide_c = [48, 50, 56, 59, 60, 85, 86, 125, 126, 129, 130, 133, 134,
+             137, 138, 201, 222, 224]
+d_glide_c = [70, 203, 227, 228]
+
+cn_glide_110 = [103, 104, 105, 106, 108, 112, 113, 114, 124, 126, 127,
+                128, 129, 130, 131, 133, 135, 137, 138, 140, 158, 161,
+                165, 167, 184, 185, 188, 192, 193, 218, 219, 222, 223,
+                224, 226]
+an_glide_011 = [222, 224]
+bn_glide_101 = [222, 224]
+d_glide_110 = [220, 230]
+d_glide_011 = [220, 227, 228, 230]
+d_glide_101 = [220, 227, 228, 230]
 
 spglib_hall_numbers = [
-    1,
-    2,
-    3,
-    6,
-    9,
-    18,
-    21,
-    30,
-    39,
-    57,
-    60,
-    63,
-    72,
-    81,
-    90,
-    108,
-    109,
-    112,
-    115,
-    116,
-    119,
-    122,
-    123,
-    124,
-    125,
-    128,
-    134,
-    137,
-    143,
-    149,
-    155,
-    161,
-    164,
-    170,
-    173,
-    176,
-    182,
-    185,
-    191,
-    197,
-    203,
-    209,
-    212,
-    215,
-    218,
-    221,
-    227,
-    228,
-    230,
-    233,
-    239,
-    245,
-    251,
-    257,
-    263,
-    266,
-    269,
-    275,
-    278,
-    284,
-    290,
-    292,
-    298,
-    304,
-    310,
-    313,
-    316,
-    322,
-    334,
-    335,
-    337,
-    338,
-    341,
-    343,
-    349,
-    350,
-    351,
-    352,
-    353,
-    354,
-    355,
-    356,
-    357,
-    358,
-    359,
-    361,
-    363,
-    364,
-    366,
-    367,
-    368,
-    369,
-    370,
-    371,
-    372,
-    373,
-    374,
-    375,
-    376,
-    377,
-    378,
-    379,
-    380,
-    381,
-    382,
-    383,
-    384,
-    385,
-    386,
-    387,
-    388,
-    389,
-    390,
-    391,
-    392,
-    393,
-    394,
-    395,
-    396,
-    397,
-    398,
-    399,
-    400,
-    401,
-    402,
-    404,
-    406,
-    407,
-    408,
-    410,
-    412,
-    413,
-    414,
-    416,
-    418,
-    419,
-    420,
-    422,
-    424,
-    425,
-    426,
-    428,
-    430,
-    431,
-    432,
-    433,
-    435,
-    436,
-    438,
-    439,
-    440,
-    441,
-    442,
-    443,
-    444,
-    446,
-    447,
-    448,
-    449,
-    450,
-    452,
-    454,
-    455,
-    456,
-    457,
-    458,
-    460,
-    462,
-    463,
-    464,
-    465,
-    466,
-    467,
-    468,
-    469,
-    470,
-    471,
-    472,
-    473,
-    474,
-    475,
-    476,
-    477,
-    478,
-    479,
-    480,
-    481,
-    482,
-    483,
-    484,
-    485,
-    486,
-    487,
-    488,
-    489,
-    490,
-    491,
-    492,
-    493,
-    494,
-    495,
-    497,
-    498,
-    500,
-    501,
-    502,
-    503,
-    504,
-    505,
-    506,
-    507,
-    508,
-    509,
-    510,
-    511,
-    512,
-    513,
-    514,
-    515,
-    516,
-    517,
-    518,
-    520,
-    521,
-    523,
-    524,
-    525,
-    527,
-    529,
-    530,
+    1, 2, 3, 6, 9, 18, 21, 30, 39, 57, 60, 63, 72, 81, 90, 108, 109, 112, 115, 116,
+    119, 122, 123, 124, 125, 128, 134, 137, 143, 149, 155, 161, 164, 170, 173, 176,
+    182, 185, 191, 197, 203, 209, 212, 215, 218, 221, 227, 228, 230, 233, 239, 245,
+    251, 257, 263, 266, 269, 275, 278, 284, 290, 292, 298, 304, 310, 313, 316, 322,
+    334, 335, 337, 338, 341, 343, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358,
+    359, 361, 363, 364, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377,
+    378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393,
+    394, 395, 396, 397, 398, 399, 400, 401, 402, 404, 406, 407, 408, 410, 412, 413,
+    414, 416, 418, 419, 420, 422, 424, 425, 426, 428, 430, 431, 432, 433, 435, 436,
+    438, 439, 440, 441, 442, 443, 444, 446, 447, 448, 449, 450, 452, 454, 455, 456,
+    457, 458, 460, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474,
+    475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490,
+    491, 492, 493, 494, 495, 497, 498, 500, 501, 502, 503, 504, 505, 506, 507, 508,
+    509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 520, 521, 523, 524, 525, 527,
+    529, 530,
 ]
 
 # The map between standard space group and hall numbers
 pyxtal_hall_numbers = [
-    1,
-    2,
-    3,
-    6,
-    9,
-    18,
-    21,
-    30,
-    39,
-    57,
-    60,
-    63,
-    72,
-    81,
-    90,
-    108,
-    109,
-    112,
-    115,
-    116,
-    119,
-    122,
-    123,
-    124,
-    125,
-    128,
-    134,
-    137,
-    143,
-    149,
-    155,
-    161,
-    164,
-    170,
-    173,
-    176,
-    182,
-    185,
-    191,
-    197,
-    203,
-    209,
-    212,
-    215,
-    218,
-    221,
-    227,
-    229,
-    230,
-    234,
-    239,
-    245,
-    251,
-    257,
-    263,
-    266,
-    269,
-    275,
-    279,
-    284,
-    290,
-    292,
-    298,
-    304,
-    310,
-    313,
-    316,
-    323,
-    334,
-    336,
-    337,
-    338,
-    341,
-    343,
-    349,
-    350,
-    351,
-    352,
-    353,
-    354,
-    355,
-    356,
-    357,
-    358,
-    360,
-    362,
-    363,
-    365,
-    366,
-    367,
-    368,
-    369,
-    370,
-    371,
-    372,
-    373,
-    374,
-    375,
-    376,
-    377,
-    378,
-    379,
-    380,
-    381,
-    382,
-    383,
-    384,
-    385,
-    386,
-    387,
-    388,
-    389,
-    390,
-    391,
-    392,
-    393,
-    394,
-    395,
-    396,
-    397,
-    398,
-    399,
-    400,
-    401,
-    403,
-    405,
-    406,
-    407,
-    409,
-    411,
-    412,
-    413,
-    415,
-    417,
-    418,
-    419,
-    421,
-    423,
-    424,
-    425,
-    427,
-    429,
-    430,
-    431,
-    432,
-    433,
-    435,
-    436,
-    438,
-    439,
-    440,
-    441,
-    442,
-    443,
-    444,
-    446,
-    447,
-    448,
-    449,
-    450,
-    452,
-    454,
-    455,
-    456,
-    457,
-    458,
-    460,
-    462,
-    463,
-    464,
-    465,
-    466,
-    467,
-    468,
-    469,
-    470,
-    471,
-    472,
-    473,
-    474,
-    475,
-    476,
-    477,
-    478,
-    479,
-    480,
-    481,
-    482,
-    483,
-    484,
-    485,
-    486,
-    487,
-    488,
-    489,
-    490,
-    491,
-    492,
-    493,
-    494,
-    496,
-    497,
-    499,
-    500,
-    501,
-    502,
-    503,
-    504,
-    505,
-    506,
-    507,
-    508,
-    509,
-    510,
-    511,
-    512,
-    513,
-    514,
-    515,
-    516,
-    517,
-    519,
-    520,
-    522,
-    523,
-    524,
-    526,
-    528,
-    529,
-    530,
+    1, 2, 3, 6, 9, 18, 21, 30, 39, 57, 60, 63, 72, 81, 90, 108, 109, 112, 115, 116,
+    119, 122, 123, 124, 125, 128, 134, 137, 143, 149, 155, 161, 164, 170, 173, 176,
+    182, 185, 191, 197, 203, 209, 212, 215, 218, 221, 227, 229, 230, 234, 239, 245,
+    251, 257, 263, 266, 269, 275, 279, 284, 290, 292, 298, 304, 310, 313, 316, 323,
+    334, 336, 337, 338, 341, 343, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358,
+    360, 362, 363, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377,
+    378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393,
+    394, 395, 396, 397, 398, 399, 400, 401, 403, 405, 406, 407, 409, 411, 412, 413,
+    415, 417, 418, 419, 421, 423, 424, 425, 427, 429, 430, 431, 432, 433, 435, 436,
+    438, 439, 440, 441, 442, 443, 444, 446, 447, 448, 449, 450, 452, 454, 455, 456,
+    457, 458, 460, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474,
+    475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490,
+    491, 492, 493, 494, 496, 497, 499, 500, 501, 502, 503, 504, 505, 506, 507, 508,
+    509, 510, 511, 512, 513, 514, 515, 516, 517, 519, 520, 522, 523, 524, 526, 528,
+    529, 530,
 ]
 
 
@@ -964,6 +603,196 @@ class Group:
 
         return dof
 
+    def is_valid_hkl(self, h, k, l):
+        """
+        Check if the given (h, k, l) is allowed by the space group symmetry.
+
+        Args:
+            h (int): Miller index h
+            k (int): Miller index k
+            l (int): Miller index l
+
+        Returns:
+            bool: True if (h, k, l) is allowed, False otherwise
+        """
+        # Check if the (h, k, l) is allowed by the space group symmetry
+        # This is a placeholder implementation and should be replaced with the actual symmetry check
+        return is_hkl_allowed(h, k, l, self.number)
+
+    def get_reflection_conditions(self):
+        """
+        Get the reflection conditions for the space group.
+
+        Returns:
+            dict: A dictionary with keys as (h, k, l) tuples and values as booleans indicating if the reflection is allowed.
+        """
+        dicts = {"fcs (all odd/even)": face_centers,
+                "bcs (h+k+l=2n)": body_centers,
+                "acs (k+l=2n)": a_centers,
+                "ccs (h+k=2n)": c_centers,
+                "screw_21a (h00), h=2n": screw_21a,
+                "screw_41a (h00), h=4n": screw_41a,
+                "screw_42a (h00), h=2n": screw_42a,
+                "screw_43a (h00), h=4n": screw_43a,
+                "screw_21b (0k0), k=2n": screw_21b,
+                "screw_41b (0k0), k=4n": screw_41b,
+                "screw_42b (0k0), k=2n": screw_42b,
+                "screw_43b (0k0), k=4n": screw_43b,
+                "screw_21c (00l), l=2n": screw_21c,
+                "screw_41c (00l), l=4n": screw_41c,
+                "screw_42c (00l), l=2n": screw_42c,
+                "screw_43c (00l), l=4n": screw_43c,
+                "screw_31c (00l), l=3n": screw_31c,
+                "screw_32c (00l), l=3n": screw_32c,
+                "screw_61c (00l), l=6n": screw_61c,
+                "screw_62c (00l), l=3n": screw_62c,
+                "screw_63c (00l), l=2n": screw_63c,
+                "screw_64c (00l), l=3n": screw_64c,
+                "screw_65c (00l), l=6n": screw_65c,
+                "b_glide_a (0kl), k=2n": b_glide_a,
+                "c_glide_a (0kl), l=2n": c_glide_a,
+                "n_glide_a (0kl), k+l=2n": n_glide_a,
+                "d_glide_a (0kl), k+l=4n": d_glide_a,
+                "a_glide_b (h0l), h=2n": a_glide_b,
+                "c_glide_b (h0l), l=2n": c_glide_b,
+                "n_glide_b (h0l), h+l=2n": n_glide_b,
+                "d_glide_b (h0l), h+l=4n": d_glide_b,
+                "a_glide_c (0kl), h=2n": a_glide_c,
+                "b_glide_c (0kl), l=2n": b_glide_c,
+                "n_glide_c (0kl), h+l=2n": n_glide_c,
+                "d_glide_c (0kl), l=2n": d_glide_c,
+                "cn_glide_110 (hhl), l=2n": cn_glide_110,
+                "an_glide_011 (hkk), h=2n": an_glide_011,
+                "bn_glide_101 (hkh), k=2n": bn_glide_101,
+                "glide_110 (hhl), l=2n 2h+l=4n": d_glide_110,
+                "glide_011 (hkk), h=2n 2k+h=4n": d_glide_011,
+                "glide_101 (hkh), k=2n 2h+k=4n": d_glide_101,
+        }
+        print(f"Reflection condition applied")
+        for key in dicts:
+            if self.number in dicts[key]:
+                print(key)
+
+    def generate_possible_hkls(self, max_h=3, max_square=12):
+        """
+        Generate reasonable hkl indices within a cutoff for different crystal systems.
+        This function considers the extinction conditions to limit the hkls.
+
+        Args:
+            max_h: maximum absolute value for h, k, l
+        """
+        if self.number > 194:  # cubic
+            base_signs = [(1, 1, 1)]
+        elif self.number >= 16:  # orthorhombic or higher
+            base_signs = [(1, 1, 1), (1, -1, 1)]
+        else:  # tetragonal or lower
+            base_signs = [(1, 1, 1), (1, 1, -1), (1, -1, 1), (-1, 1, 1),
+                        (1, -1, -1), (-1, 1, -1), (-1, -1, 1), (-1, -1, -1)]
+
+        # Generate all possible hkls and filter by extinction rules
+        possible_hkls = []
+        canonical_seen = set()  # Track canonical forms to avoid duplicates
+
+        for h in range(0, max_h + 1):
+            for k in range(0, max_h + 1):
+                for l in range(0, max_h + 1):
+                    if h == 0 and k == 0 and l == 0:  # Exclude (0,0,0)
+                        continue
+                    if h*h + k*k + l*l > max_square:
+                        continue
+
+                    canonical = get_canonical_hkl(h, k, l, self.number)
+                    if canonical in canonical_seen: continue
+
+                    if h*h + k*k + l*l > 0:  # exclude (0,0,0)
+                        # Add all permutations and sign variations
+                        valid_hkls = []
+                        for signs in base_signs:
+                            sh, sk, sl = signs[0]*h, signs[1]*k, signs[2]*l
+                            if is_hkl_allowed(sh, sk, sl, self.number):
+                                valid_hkls.append((sh, sk, sl))
+                    if valid_hkls:
+                        canonical_seen.add(canonical)
+                        possible_hkls.append(canonical)
+
+        # Sort by h²+k²+l² in ascending order
+        possible_hkls.sort(key=lambda hkl: hkl[0]**2 + hkl[1]**2 + hkl[2]**2)
+
+        return possible_hkls  # remove duplicates
+
+    def generate_hkl_guesses(self, max_h=3, max_square=12):
+        """
+        Generate reasonable hkl indices within a cutoff for different crystal systems.
+        This function considers the extinction conditions to limit the hkls.
+
+        Args:
+            max_h: maximum absolute value for h, k, l
+        """
+        from itertools import permutations
+
+        possible_hkls = self.generate_possible_hkls(max_h=max_h,
+                                                    max_square=max_square)
+        if self.number > 195:
+            guesses = [[hkl] for hkl in possible_hkls]
+        elif self.number >= 75:
+            # select pairs
+            guesses = []
+            for i in range(len(possible_hkls)-1):
+                h1, k1, l1 = possible_hkls[i]
+                for j in range(i+1, len(possible_hkls)):
+                    h2, k2, l2 = possible_hkls[j]
+                    if (l1 == 0 and l2 == 0):
+                        continue
+                    elif (h1 == 0 and k1 == 0) and (h2 == 0 and k2 == 0):
+                        continue
+                    solutions = [(h1, k1, l1), (h2, k2, l2)]
+                    guesses.extend(list(permutations(solutions)))
+        elif self.number >= 16:
+            # select triplets
+            guesses = []
+            for i in range(len(possible_hkls)-1):
+                h1, k1, l1 = possible_hkls[i]
+                for j in range(i+1, len(possible_hkls)):
+                    h2, k2, l2 = possible_hkls[j]
+                    for k in range(j+1, len(possible_hkls)):
+                        h3, k3, l3 = possible_hkls[k]
+                        if (h1 == 0 and h2 == 0 and h3 == 0):
+                            continue
+                        elif (k1 == 0 and k2 == 0 and k3 == 0):
+                            continue
+                        elif (l1 == 0 and l2 == 0 and l3 == 0):
+                            continue
+                        solutions = [(h1, k1, l1), (h2, k2, l2), (h3, k3, l3)]
+                        guesses.extend(list(itertools.permutations(solutions)))
+        elif self.number >= 3:
+            # select quadruplets
+            guesses = []
+            base_signs = [(1, 1, 1), (1, 1, -1)]
+            for i in range(len(possible_hkls)-1):
+                h1, k1, l1 = possible_hkls[i]
+                for j in range(i+1, len(possible_hkls)):
+                    h2, k2, l2 = possible_hkls[j]
+                    for k in range(j+1, len(possible_hkls)):
+                        h3, k3, l3 = possible_hkls[k]
+                        for m in range(k+1, len(possible_hkls)):
+                            h4, k4, l4 = possible_hkls[m]
+                            if (h1 == 0 and h2 == 0 and h3 == 0 and h4 == 0):
+                                continue
+                            elif (k1 == 0 and k2 == 0 and k3 == 0 and k4 == 0):
+                                continue
+                            elif (l1 == 0 and l2 == 0 and l3 == 0 and l4 == 0):
+                                continue
+                            for signs in base_signs:
+                                sh1, sk1, sl1 = signs[0]*h1, signs[1]*k1, signs[2]*l1
+                                sh2, sk2, sl2 = signs[0]*h2, signs[1]*k2, signs[2]*l2
+                                sh3, sk3, sl3 = signs[0]*h3, signs[1]*k3, signs[2]*l3
+                                sh4, sk4, sl4 = signs[0]*h4, signs[1]*k4, signs[2]*l4
+                                solutions = [(sh1, sk1, sl1), (sh2, sk2, sl2),
+                                             (sh3, sk3, sl3), (sh4, sk4, sl4)]
+                                guesses.extend(list(itertools.permutations(solutions)))
+
+        return guesses
+
     def is_valid_combination(self, sites):
         """
         Check if the solutions are valid. A special WP with zero freedom (0,0,0)
@@ -1162,7 +991,7 @@ class Group:
             elif bravis == "F":
                 ops = ops[: int(len(ops) / 4)]
 
-            return site_symmetry(ops, l_type, bravis, True)
+            return site_symmetry(ops, l_type, bravis, self.number, True)
             # ss.to_beautiful_matrix_representation()
         else:
             raise ValueError("Only supports space group symmetry")
@@ -2372,7 +2201,7 @@ class Wyckoff_position:
 
     def get_site_symmetry_object(self, idx=0):
         ops = self.get_site_symm_ops(idx)#; print(self.number, self.index, self.letter)
-        return site_symmetry(ops, self.lattice_type, self.symbol[0])
+        return site_symmetry(ops, self.lattice_type, self.symbol[0], self.number)
 
     def get_site_symmetry(self, idx=0):
         ss = self.get_site_symmetry_object(idx)
@@ -3353,19 +3182,21 @@ class site_symmetry:
         ops: a list of SymmOp objects representing the site symmetry
         lattice_type (str): e.g., 'cubic'
         Bravis (str): 'P', 'R', 'A', 'B', 'C', 'F', 'I'
+        number (int): space group number
         parse_trans (bool): do space group or site
 
     Returns:
         a string representing the site symmetry (e.g., `2mm`)
     """
 
-    def __init__(self, ops, lattice_type, Bravis="P", parse_trans=False):
+    def __init__(self, ops, lattice_type, Bravis, number, parse_trans=False):
         hexagonal = lattice_type in ["hexagonal", "trigonal"]
         self.parse_trans = parse_trans
         self.opas = [OperationAnalyzer(
             op, parse_trans, hexagonal) for op in ops]
         self.lattice_type = lattice_type
         self.directions = get_symmetry_directions(lattice_type, Bravis)
+        self.number = number
 
         # No translation: 7 fundamental / 13 compound symmetries
         # With translation: 18 fundamental / 37 compound symmetries
@@ -3800,6 +3631,10 @@ class site_symmetry:
             for row in matrix:
                 if np.array_equal(row, [1, 0, 1, 1, 0, 0, 0]):
                     row[2] = 0
+
+        if self.number == 100:
+            matrix[7] = np.array([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+            matrix[8] = np.array([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         return matrix
 
 
@@ -4734,6 +4569,160 @@ def get_symmetry_directions(lattice_type, symbol="P", unique_axis="b"):
         ]
     else:
         return [[(0, 1, 0)]]
+
+def is_hkl_allowed(h, k, l, spg):
+    """
+    Check if hkl is allowed based on systematic absences for the given space group.
+
+    Symmetry Element              | Affected Reflection | Condition for Reflection to Be Present
+    ------------------------------|---------------------|----------------------------------------
+    Lattice Centering:
+      primitive lattice (P)       | hkl                 | always present
+      body-centered lattice (I)   | hkl                 | h + k + l = even
+      end-centered lattice (A)    | hkl                 | k + l = even
+      end-centered lattice (B)    | hkl                 | h + l = even
+      end-centered lattice (C)    | hkl                 | h + k = even
+      face-centered lattice (F)   | hkl                 | h, k, l all odd or all even
+
+    Screw Axes:
+      2-fold screw, 21 || a       | h00                 | h = even
+      4-fold screw, 42 || a       | h00                 | h = even
+      6-fold screw, 63 || c       | 00l                 | l divisible by 3
+      3-fold screw, 31 or 32 || c | 00l                 | l divisible by 3
+      6-fold screw, 62 or 64 || a | h00                 | h divisible by 4
+      4-fold screw, 41 or 43 || a | h00                 | h divisible by 4
+      6-fold screw, 61 or 65 || c | 00l                 | l divisible by 6
+
+    Glide Plane Perpendicular to the B-axis:
+      a glide                     | h0l                 | h = even
+      c glide                     | h0l                 | l = even
+      n glide                     | h0l                 | h + l = even
+      d glide                     | h0l                 | h + l divisible by 4
+    """
+
+    # Lattice Centering:
+    if spg in body_centers:
+        if not (h + k + l) % 2 == 0:  # I-centering
+            return False
+    elif spg in face_centers:
+        if not (h%2 == k%2 == l%2):  # F-centering
+            return False
+    elif spg in c_centers:
+        if not (h + k) % 2 == 0:  # C-centering
+            return False
+    elif spg in a_centers:
+        if not (k + l) % 2 == 0:  # A-centering
+            return False
+
+    if spg in screw_21a + screw_42a:  #
+        if k == 0 and l == 0 and h % 2 == 1:
+            return False
+    if spg in screw_41a + screw_43a:  # 4_1, 4_3 parallel to b, h00 with h%4 forbidden
+        if k == 0 and l == 0 and h % 4 != 0:
+            return False
+
+    if spg in screw_21b + screw_42b:  # 2_1, 4_2 parallel to b, 0k0 with k%2 forbidden
+        if h == 0 and l == 0 and k % 2 == 1:
+            return False
+    if spg in screw_41b + screw_43b:  # 4_1, 4_3 parallel to b, 0k0 with k%4 forbidden
+        if h == 0 and l == 0 and k % 4 != 0:
+            return False
+
+    if spg in screw_21c + screw_42c + screw_63c:  # 2_1, 4_2 parallel to c, 00l with l%2 forbidden
+        if h == 0 and k == 0 and l % 2 == 1:
+            return False
+    if spg in screw_41c + screw_43c:  # 4_1, 4_3 parallel to c, 00l with l%4 forbidden
+        if h == 0 and k == 0 and l % 4 != 0:
+            return False
+    if spg in screw_31c + screw_32c + screw_62c + screw_64c:  # 3_1, 3_2 parallel to c, 00l with l%3 forbidden
+        if h == 0 and k == 0 and l % 3 != 0:
+            return False
+    if spg in screw_61c + screw_65c:  # 6_1, 6_5 perpendicular to c, 00l with l%6 forbidden
+        if h == 0 and k == 0 and l % 6 != 0:
+            return False
+
+    if spg in b_glide_a:  # a-glide perpendicular to b: 0kl with h odd forbidden
+        if h == 0 and k % 2 == 1:
+            return False
+    if spg in c_glide_a:  # c-glide perpendicular to b: 0kl with l odd forbidden
+        if h == 0 and l % 2 == 1:
+            return False
+    if spg in n_glide_a:  # n-glide perpendicular to b: 0kl with k+l odd forbidden
+        if h == 0 and (k + l) % 2 == 1:
+            return False
+    if spg in d_glide_a:  # d-glide perpendicular to b: 0kl with k+l not divisible by 4 forbidden
+        if h == 0 and (k + l) % 4 != 0:
+            return False
+
+    if spg in a_glide_b:  # a-glide perpendicular to a: h0l with k odd forbidden
+        if k == 0 and h % 2 == 1:
+            return False
+    if spg in c_glide_b:  # c-glide perpendicular to a: h0l with l odd forbidden
+        if k == 0 and l % 2 == 1:
+            return False
+    if spg in n_glide_b:  # n-glide perpendicular to a: h0l with h+l odd forbidden
+        if k == 0 and (h + l) % 2 == 1:
+            return False
+    if spg in d_glide_b:  # d-glide perpendicular to a: h0l with h+l not divisible by 4 forbidden
+        if k == 0 and (h + l) % 4 != 0:
+            return False
+
+    if spg in a_glide_c:  # a-glide perpendicular to c: hk0 with l odd forbidden
+        if l == 0 and h % 2 == 1:
+            return False
+    if spg in b_glide_c:  # b-glide perpendicular to c:
+        if l == 0 and k % 2 == 1:
+            return False
+    if spg in n_glide_c:  # n-glide perpendicular to c:
+        if l == 0 and (h + k) % 2 == 1:
+            return False
+    if spg in d_glide_c:  # d-glide perpendicular to c:
+        if l == 0 and (h + k) % 4 != 0:
+            return False
+
+    if spg in cn_glide_110:  # n-glide perpendicular to [110]: hhl with l odd forbidden
+        if h == k and l % 2 == 1:
+            return False
+    elif spg in d_glide_110:
+        if h == k and h % 2 == 0 and (h+k+l) % 4 != 0:
+            return False
+
+    if spg in an_glide_011:  # n-glide perpendicular to [011]: 0ll with h odd forbidden
+        if k == l and h % 2 == 1:
+            return False
+    elif spg in d_glide_011:  # d-glide perpendicular to [011]: 0ll with h not divisible by 4 forbidden
+        if k == l and h % 2 == 0 and (h+k+l) % 4 != 0:
+            return False
+    if spg in bn_glide_101:  # n-glide perpendicular to [101]: hkh with k odd forbidden
+        if h == l and k % 2 == 1:
+            return False
+    elif spg in d_glide_101:  # d-glide perpendicular to [101]:
+        if h == l and k % 2 == 0 and (h+k+l) % 4 != 0:
+            return False
+
+    return True
+
+def get_canonical_hkl(h, k, l, spg):
+    """
+    Get the canonical form of hkl for each crystal system to remove symmetry equivalents
+    """
+    hkl = [abs(h), abs(k), abs(l)]  # Take absolute values first
+
+    if spg >= 195:  # cubic
+        # For cubic: sort in descending order
+        # (2,2,0), (2,0,2), (0,2,2) all become (2,2,0)
+        hkl.sort(reverse=True)
+        return tuple(hkl)
+
+    elif spg >= 142:  # tetragonal/hexagonal
+        # For tetragonal: h and k are equivalent, l is unique
+        # (2,1,3) and (1,2,3) are equivalent -> (2,1,3)
+        h_sorted = sorted([hkl[0], hkl[1]], reverse=True)
+        return tuple([h_sorted[0], h_sorted[1], hkl[2]])
+
+    else:  # monoclinic, triclinic
+        # Lower symmetry: keep as is
+        return tuple(hkl)
 
 
 if __name__ == "__main__":
