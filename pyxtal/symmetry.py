@@ -3632,7 +3632,7 @@ class site_symmetry:
                 if np.array_equal(row, [1, 0, 1, 1, 0, 0, 0]):
                     row[2] = 0
 
-        if self.number == 100:
+        if self.parse_trans and self.number == 100:
             matrix[7] = np.array([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
             matrix[8] = np.array([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         return matrix
