@@ -203,11 +203,10 @@ b_glide_c = [64, 67, 74]
 n_glide_c = [48, 50, 56, 59, 60, 85, 86, 125, 126, 129, 130, 133, 134,
              137, 138, 201, 222, 224]
 d_glide_c = [70, 203, 227, 228]
-
-cn_glide_110 = [103, 104, 105, 106, 108, 112, 113, 114, 124, 126, 127,
-                128, 129, 130, 131, 133, 135, 137, 138, 140, 158, 161,
-                165, 167, 184, 185, 188, 192, 193, 218, 219, 222, 223,
-                224, 226]
+cn_glide_110 = [103, 104, 105, 106, 108, 112, 113, 114, 124, 126, 128,
+                130, 131, 133, 135, 137, 138, 140, 158, 161, 165, 167,
+                184, 185, 188, 192, 193, 218, 219, 222, 223, 224, 226,
+                228]
 an_glide_011 = [222, 224]
 bn_glide_101 = [222, 224]
 d_glide_110 = [109, 110, 122, 141, 142, 220, 230]
@@ -720,7 +719,7 @@ class Group:
 
         return possible_hkls  # remove duplicates
 
-    def generate_hkl_guesses(self, max_h=3, max_square=12):
+    def generate_hkl_guesses(self, max_h=3, max_square=12, verbose=False):
         """
         Generate reasonable hkl indices within a cutoff for different crystal systems.
         This function considers the extinction conditions to limit the hkls.
@@ -732,6 +731,7 @@ class Group:
 
         possible_hkls = self.generate_possible_hkls(max_h=max_h,
                                                     max_square=max_square)
+        if verbose: print(possible_hkls)
         if self.number > 195:
             guesses = [[hkl] for hkl in possible_hkls]
         elif self.number >= 75:
@@ -745,8 +745,17 @@ class Group:
                         continue
                     elif (h1 == 0 and k1 == 0) and (h2 == 0 and k2 == 0):
                         continue
-                    solutions = [(h1, k1, l1), (h2, k2, l2)]
-                    guesses.extend(list(permutations(solutions)))
+                    if self.number > 142:
+                        base_signs = [(1, 1, 1), (1, -1, 1)]
+                    else:
+                        base_signs = [(1, 1, 1)]
+                    for signs in base_signs:
+                        sh1, sk1, sl1 = signs[0]*h1, signs[1]*k1, signs[2]*l1
+                        sh2, sk2, sl2 = signs[0]*h2, signs[1]*k2, signs[2]*l2
+                        solutions = [(sh1, sk1, sl1), (sh2, sk2, sl2)]
+                        guesses.extend(list(itertools.permutations(solutions)))
+                    #solutions = [(h1, k1, l1), (h2, k2, l2)]
+                    #guesses.extend(list(permutations(solutions)))
         elif self.number >= 16:
             # select triplets
             guesses = []
@@ -3636,6 +3645,9 @@ class site_symmetry:
             if self.number == 100:
                 matrix[7] = np.array([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
                 matrix[8] = np.array([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+            if self.number in [127, 129]:
+                matrix[7] = np.array([1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+                matrix[8] = np.array([1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
             elif self.number == 227:  #2/m
                 matrix[8]  = np.array([1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
                 matrix[10] = np.array([1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
@@ -4723,7 +4735,7 @@ def get_canonical_hkl(h, k, l, spg):
         hkl.sort(reverse=True)
         return tuple(hkl)
 
-    elif spg >= 142:  # tetragonal/hexagonal
+    elif spg >= 75:  # tetragonal/hexagonal
         # For tetragonal: h and k are equivalent, l is unique
         # (2,1,3) and (1,2,3) are equivalent -> (2,1,3)
         h_sorted = sorted([hkl[0], hkl[1]], reverse=True)

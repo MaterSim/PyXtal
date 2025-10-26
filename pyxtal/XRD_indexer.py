@@ -65,9 +65,11 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
                     continue
                 a = np.sqrt(1/x[0])
                 c = np.sqrt(1/x[1])
+                if a > 50: continue
                 cell_values.append((a, c))
             except np.linalg.LinAlgError:
                 continue
+
     elif 75 <= spg <= 142:  # tetragonal, need a and c
         # need two hkls to determine a and c
         len_solutions = len(hkls) // 2
@@ -86,6 +88,7 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
                     continue
                 a = np.sqrt(1/x[0])
                 c = np.sqrt(1/x[1])
+                if a > 50: continue
                 cell_values.append((a, c))
             except np.linalg.LinAlgError:
                 continue
@@ -111,6 +114,7 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
                 a = np.sqrt(1/x[0])
                 b = np.sqrt(1/x[1])
                 c = np.sqrt(1/x[2])
+                if a > 50 or b > 50 or c > 50: continue
                 cell_values.append((a, b, c))
             except np.linalg.LinAlgError:
                 continue
@@ -279,7 +283,7 @@ def get_seeds(spg, hkls, two_thetas):
 
 
 def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_length=1.54184,
-                             tolerance=0.05, min_matched_peaks=2):
+                             tolerance=0.05, min_matched_peaks=2, max_h=8):
     """
     Estimate the cell parameters from multiple (hkl, two_theta) inputs.
     The idea is to use the Bragg's law and the lattice spacing formula to estimate the lattice parameters.
@@ -293,13 +297,14 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
         wave_length: X-ray wavelength, default is Cu K-alpha
         tolerance: tolerance for matching 2theta values, default is 0.05 degrees
         min_matched_peaks: minimum number of matched peaks to consider a valid solution
+        max_h: maximum index of hkl
 
     Returns:
         cells: estimated lattice parameter
     """
     if long_thetas is None:
         long_thetas = two_thetas
-    all_possible_hkls = generate_possible_hkls(max_h=6)
+    all_possible_hkls = generate_possible_hkls(max_h=max_h)
     test_hkls_array = np.array(all_possible_hkls)
 
     best_solution = None
