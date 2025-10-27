@@ -719,13 +719,16 @@ class Group:
 
         return possible_hkls  # remove duplicates
 
-    def generate_hkl_guesses(self, max_h=3, max_square=12, verbose=False):
+    def generate_hkl_guesses(self, max_h=3, max_square=12, reduce=True, verbose=False):
         """
         Generate reasonable hkl indices within a cutoff for different crystal systems.
         This function considers the extinction conditions to limit the hkls.
 
         Args:
             max_h: maximum absolute value for h, k, l
+            max_square: maximum h^2 + k^2 + l^2
+            reduce: whether or not reduce the number of guesses
+            verbose: whether or not print the possible hkls
         """
         from itertools import permutations
 
@@ -745,15 +748,43 @@ class Group:
                         continue
                     elif (h1 == 0 and k1 == 0) and (h2 == 0 and k2 == 0):
                         continue
-                    if self.number > 142:
-                        base_signs = [(1, 1, 1), (1, -1, 1)]
+                    # only consider the cases with increasing |h|, |k|, |l|
+                    if self.number < 143:
+                        if abs(h1) >= abs(h2) and abs(k1) >= abs(k2) and abs(l1) >= abs(l2):
+                            #print("skip", (h1, k1, l1), (h2, k2, l2))
+                            guesses.append([(h2, k2, l2), (h1, k1, l1)])
+                        elif abs(h2) >= abs(h1) and abs(k2) >= abs(k1) and abs(l2) >= abs(l1):
+                            #print("skip", (h2, k2, l2), (h1, k1, l1))
+                            guesses.append([(h1, k1, l1), (h2, k2, l2)])
+                        else:
+                            solutions = [(h1, k1, l1), (h2, k2, l2)]
+                            guesses.extend(list(permutations(solutions)))
                     else:
-                        base_signs = [(1, 1, 1)]
-                    for signs in base_signs:
-                        sh1, sk1, sl1 = signs[0]*h1, signs[1]*k1, signs[2]*l1
-                        sh2, sk2, sl2 = signs[0]*h2, signs[1]*k2, signs[2]*l2
-                        solutions = [(sh1, sk1, sl1), (sh2, sk2, sl2)]
-                        guesses.extend(list(itertools.permutations(solutions)))
+                        base_signs = [(1, 1, 1), (1, -1, 1)]
+                        for signs in base_signs:
+                            sh1, sk1, sl1 = signs[0]*h1, signs[1]*k1, signs[2]*l1
+                            sh2, sk2, sl2 = signs[0]*h2, signs[1]*k2, signs[2]*l2
+                            # if h1, k1, l1 and h2, k2, l2 have same sign pattern,
+                            # only consider the cases with increasing |h|, |k|, |l|
+                            if (np.sign(sh1) == np.sign(sh2) and
+                                np.sign(sk1) == np.sign(sk2) and
+                                np.sign(sl1) == np.sign(sl2)):
+                                if (abs(sh1) <= abs(sh2) and
+                                    abs(sk1) <= abs(sk2) and
+                                    abs(sl1) <= abs(sl2)):
+                                    #print("skip", (sh2, sk2, sl2), (sh1, sk1, sl1))
+                                    guesses.append([(sh1, sk1, sl1), (sh2, sk2, sl2)])
+                                elif (abs(sh2) <= abs(sh1) and
+                                      abs(sk2) <= abs(sk1) and
+                                      abs(sl2) <= abs(sl1)):
+                                    #print("skip", (sh1, sk1, sl1), (sh2, sk2, sl2))
+                                    guesses.append([(sh2, sk2, sl2), (sh1, sk1, sl1)])
+                                else:
+                                    guesses.append([(sh1, sk1, sl1), (sh2, sk2, sl2)])
+                                    guesses.append([(sh2, sk2, sl2), (sh1, sk1, sl1)])
+                            else:
+                                guesses.append([(sh1, sk1, sl1), (sh2, sk2, sl2)])
+                                guesses.append([(sh2, sk2, sl2), (sh1, sk1, sl1)])
                     #solutions = [(h1, k1, l1), (h2, k2, l2)]
                     #guesses.extend(list(permutations(solutions)))
         elif self.number >= 16:
@@ -765,14 +796,17 @@ class Group:
                     h2, k2, l2 = possible_hkls[j]
                     for k in range(j+1, len(possible_hkls)):
                         h3, k3, l3 = possible_hkls[k]
-                        if (h1 == 0 and h2 == 0 and h3 == 0):
+                        if (h1 == h2 == h3 == 0):
                             continue
-                        elif (k1 == 0 and k2 == 0 and k3 == 0):
+                        elif (k1 == k2 == k3 == 0):
                             continue
-                        elif (l1 == 0 and l2 == 0 and l3 == 0):
+                        elif (l1 == l2 == l3 == 0):
                             continue
                         solutions = [(h1, k1, l1), (h2, k2, l2), (h3, k3, l3)]
                         guesses.extend(list(itertools.permutations(solutions)))
+
+            if reduce: guesses = self.reduce_hkl_guesses(guesses)
+
         elif self.number >= 3:
             # select quadruplets
             guesses = []
@@ -800,7 +834,29 @@ class Group:
                                              (sh3, sk3, sl3), (sh4, sk4, sl4)]
                                 guesses.extend(list(itertools.permutations(solutions)))
 
+
         return guesses
+
+    def reduce_hkl_guesses(self, hkls):
+        """
+        Reduce the hkl guesses by removing duplicates based on canonical forms.
+
+        Args:
+            hkls (list): List of hkl guess tuples
+
+        Returns:
+            list: Reduced list of hkl guesses tuples
+        """
+        # convert (hkl) to numpy array for easier processing
+        hkls_array = np.array([np.array(guess) for guess in hkls])
+        if  15 < self.number < 75:
+            hkls = np.abs(hkls_array)
+            mask1 = np.all(hkls[:, 0] >= hkls[:, 1], axis=1)#; print("mask\n", mask1, hkls[2], hkls[2,0], hkls[2,1], hkls[2,0] >= hkls[2,1])
+            mask2 = np.all(hkls[:, 1] >= hkls[:, 2], axis=1)
+            mask3 = np.all(hkls[:, 0] >= hkls[:, 2], axis=1)
+            mask = (mask1 | mask2 | mask3)#; print("mask", len(mask), hkls[mask][:5])
+            hkls = hkls[~mask]
+        return [tuple(map(tuple, guess)) for guess in hkls]
 
     def is_valid_combination(self, sites):
         """
