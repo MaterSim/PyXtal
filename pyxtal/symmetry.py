@@ -672,7 +672,7 @@ class Group:
             if self.number in dicts[key]:
                 print(key)
 
-    def generate_possible_hkls(self, max_h=3, max_square=12):
+    def generate_possible_hkls(self, h_max, k_max=None, l_max=None, max_square=12):
         """
         Generate reasonable hkl indices within a cutoff for different crystal systems.
         This function considers the extinction conditions to limit the hkls.
@@ -680,6 +680,9 @@ class Group:
         Args:
             max_h: maximum absolute value for h, k, l
         """
+        if k_max is None: k_max = h_max
+        if l_max is None: l_max = h_max
+
         if self.number > 194:  # cubic
             base_signs = [(1, 1, 1)]
         elif self.number >= 16:  # orthorhombic or higher
@@ -692,9 +695,9 @@ class Group:
         possible_hkls = []
         canonical_seen = set()  # Track canonical forms to avoid duplicates
 
-        for h in range(0, max_h + 1):
-            for k in range(0, max_h + 1):
-                for l in range(0, max_h + 1):
+        for h in range(0, h_max + 1):
+            for k in range(0, k_max + 1):
+                for l in range(0, l_max + 1):
                     if h == 0 and k == 0 and l == 0:  # Exclude (0,0,0)
                         continue
                     if h*h + k*k + l*l > max_square:
@@ -719,20 +722,24 @@ class Group:
 
         return possible_hkls  # remove duplicates
 
-    def generate_hkl_guesses(self, max_h=3, max_square=12, reduce=True, verbose=False):
+    def generate_hkl_guesses(self, h_max=2, k_max=None, l_max=None, max_square=12,
+                             reduce=True, verbose=False):
         """
         Generate reasonable hkl indices within a cutoff for different crystal systems.
         This function considers the extinction conditions to limit the hkls.
 
         Args:
-            max_h: maximum absolute value for h, k, l
+            h_max: maximum absolute value for h
+            l_max: maximum absolute value for k
+            k_max: maximum absolute value for l
             max_square: maximum h^2 + k^2 + l^2
             reduce: whether or not reduce the number of guesses
             verbose: whether or not print the possible hkls
         """
         from itertools import permutations
-
-        possible_hkls = self.generate_possible_hkls(max_h=max_h,
+        if k_max is None: k_max = h_max
+        if l_max is None: l_max = h_max
+        possible_hkls = self.generate_possible_hkls(h_max, k_max, l_max,
                                                     max_square=max_square)
         if verbose: print(possible_hkls)
         if self.number > 195:

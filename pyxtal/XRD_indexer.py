@@ -3,7 +3,7 @@ Module for PXRD indexing and lattice parameter estimation.
 """
 import numpy as np
 
-def generate_possible_hkls(max_h=5, level=2):
+def generate_possible_hkls(h_max, k_max, l_max, level=2):
     """
     Generate reasonable hkl indices within a cutoff for different crystal systems.
 
@@ -11,17 +11,19 @@ def generate_possible_hkls(max_h=5, level=2):
         max_h: maximum absolute value for h, k, l
         level: level of indexing (0 for triclinic; 1 for monoclinic; 2 for orthorhombic or higher)
     """
-    if level == 2:
+    if level == 3: # orthorhombic or higher
         base_signs = [(1, 1, 1)]
-    elif level == 1: # monoclinic, beta is not 90
+    elif level == 2:  # hexagonal (110) (1-10)
         base_signs = [(1, 1, 1), (1, -1, 1)]
+    elif level == 1: # monoclinic, baxis unique, (101) (10-1)
+        base_signs = [(1, 1, 1), (1, 1, -1)]
     else:
         base_signs = [(1, 1, 1), (1, 1, -1), (1, -1, 1), (-1, 1, 1),
                       (1, -1, -1), (-1, 1, -1), (-1, -1, 1), (-1, -1, -1)]
     possible_hkls = []
-    for h in range(0, max_h + 1):
-        for k in range(0, max_h + 1):
-            for l in range(0, max_h + 1):
+    for h in range(0, h_max + 1):
+        for k in range(0, k_max + 1):
+            for l in range(0, l_max + 1):
                 if h*h + k*k + l*l > 0:  # exclude (0,0,0)
                     # Add all permutations and sign variations
                     base_hkls = set()
@@ -150,7 +152,9 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
             result = minimize(objective, initial_guess)#; print(result.x, result.fun)
             if result.success:
                 a, b, c, beta = result.x
-                if a > 50 or b > 50 or c > 50 or beta <= 30 or beta >= 150:
+                if a > 50 or b > 50 or c > 50 or beta <= 45 or beta >= 135:
+                    continue
+                if a < 0 or b < 0 or c < 0:
                     continue
                 cell_values.append((a, b, c, beta))
     else:
@@ -158,6 +162,37 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
         raise NotImplementedError(msg)
 
     return cell_values
+
+def get_d_hkl_from_cell(spg, cell, h, k, l):
+    """
+    Estimate the maximum hkl indices to consider based on the cell parameters and maximum 2theta.
+
+    Args:
+        spg (int): space group number
+        cell: cell parameters
+        h: h index
+        k: k index
+        l: l index
+    """
+    if spg >= 195:  # cubic
+        d = cell[0] / np.sqrt(h**2 + k**2 + l**2)
+    elif spg >= 143:  # hexagonal
+        a, c = cell[0], cell[1]
+        d = 1 / np.sqrt((4/3) * (h**2 + h*k + k**2) / a**2 + l**2 / c**2)
+    elif spg >= 75:  # tetragonal
+        a, c = cell[0], cell[1]
+        d = 1 / np.sqrt((h**2 + k**2) / a**2 + l**2 / c**2)
+    elif spg >= 16:  # orthorhombic
+        a, b, c = cell[0], cell[1], cell[2]
+        d = 1 / np.sqrt(h**2 / a**2 + k**2 / b**2 + l**2 / c**2)
+    elif spg >= 3:  # monoclinic
+        a, b, c, beta = cell[0], cell[1], cell[2], np.radians(cell[3])
+        sin_beta = np.sin(beta)
+        d = 1 / np.sqrt((h**2 / (a**2 * sin_beta**2)) + (k**2 / b**2) + (l**2 / (c**2 * sin_beta**2)) -
+                (2 * h * l * np.cos(beta) / (a * c * sin_beta**2)))
+    else:
+        raise NotImplementedError("triclinic systems are not supported.")
+    return d
 
 def calc_two_theta_from_cell(spg, hkls, cells, wave_length=1.54184):
     """
@@ -282,8 +317,11 @@ def get_seeds(spg, hkls, two_thetas):
     return seed_hkls, seed_thetas
 
 
+
+
+
 def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_length=1.54184,
-                             tolerance=0.05, min_matched_peaks=2, max_h=8):
+                             tolerance=0.05, min_matched_peaks=2):
     """
     Estimate the cell parameters from multiple (hkl, two_theta) inputs.
     The idea is to use the Bragg's law and the lattice spacing formula to estimate the lattice parameters.
@@ -302,10 +340,16 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
     Returns:
         cells: estimated lattice parameter
     """
-    if long_thetas is None:
-        long_thetas = two_thetas
-    all_possible_hkls = generate_possible_hkls(max_h=max_h)
-    test_hkls_array = np.array(all_possible_hkls)
+    if long_thetas is None: long_thetas = two_thetas
+    #test_hkls_array = np.array(generate_possible_hkls(max_h=max_h))
+    if spg > 194 or 15 < spg < 143:
+        level = 3  # orthorhombic or higher
+    elif 142 < spg < 195:
+        level = 2  # hexagonal
+    elif 2 < spg < 16:
+        level = 1  # monoclinic
+    else:
+        level = 0  # triclinic
 
     best_solution = None
     best_score = 0
@@ -314,7 +358,6 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
     cells = get_cell_params(spg, seed_hkls, seed_thetas, wave_length)#; print(cells)
     cells = np.array(cells)
     cells = np.unique(cells, axis=0)#; print(cells)  # remove duplicates
-
     for cell in cells:
         # Now try to index all other peaks using this 'a'
         matched_peaks = []  # (index, hkl, obs_theta, error)
@@ -323,12 +366,28 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
             best_error = float('inf')
 
             # Try all possible hkls for this peak - vectorized version
-            expected_thetas = calc_two_theta_from_cell(spg, test_hkls_array, cell, wave_length)
+            # get the maximum h from assuming the cell[-1] is (h00)
+            d_100 = get_d_hkl_from_cell(spg, cell, 1, 0, 0)
+            d_010 = get_d_hkl_from_cell(spg, cell, 0, 1, 0)
+            d_001 = get_d_hkl_from_cell(spg, cell, 0, 0, 1)
+            theta_100 = np.degrees(np.arcsin(wave_length / (2 * d_100)))
+            theta_010 = np.degrees(np.arcsin(wave_length / (2 * d_010)))
+            theta_001 = np.degrees(np.arcsin(wave_length / (2 * d_001)))
+            h_max = min([40, int(long_thetas[-1] / theta_100)])
+            k_max = min([40, int(long_thetas[-1] / theta_010)])
+            l_max = min([40, int(long_thetas[-1] / theta_001)])
+            #if h_max > 12 or k_max > 12 or l_max > 12:
+            #    print("Generating hkls with h_max,k_max,l_max:", cell, h_max, k_max, l_max, level)
+            test_hkls = np.array(generate_possible_hkls(h_max=h_max,
+                                                        k_max=k_max,
+                                                        l_max=l_max,
+                                                        level=level))
+            expected_thetas = calc_two_theta_from_cell(spg, test_hkls, cell, wave_length)
 
             # Filter out None values
             valid_mask = expected_thetas != None
             valid_thetas = expected_thetas[valid_mask]
-            valid_hkls = test_hkls_array[valid_mask]
+            valid_hkls = test_hkls[valid_mask]
 
             if len(valid_thetas) > 0:
                 valid_thetas = np.array(valid_thetas, dtype=float)
@@ -389,29 +448,44 @@ if __name__ == "__main__":
         xtal.from_prototype(prototype)
         xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
         spg = xtal.group.number
-        print("\nTesting prototype:", prototype, xtal.lattice, xtal.group.symbol)
-        print(xrd.by_hkl(N_max=5))
+        print("\nTesting prototype:", prototype, xtal.lattice, xtal.group.symbol, xtal.group.number)
+        print(xrd.by_hkl(N_max=10))
         if True:
-            guesses = xtal.group.generate_hkl_guesses(4, max_square=16)
+            if xtal.group.number >= 195:
+                guesses = xtal.group.generate_hkl_guesses(3, max_square=16)
+            elif xtal.group.number >= 75:
+                guesses = xtal.group.generate_hkl_guesses(2, 2, 6, max_square=36)
+            elif xtal.group.number >= 16:
+                guesses = xtal.group.generate_hkl_guesses(3, 3, 3, max_square=20)
+            else:
+                guesses = xtal.group.generate_hkl_guesses(4, 2, 2, max_square=17, verbose=True)
 
+        guesses = np.array(guesses)
         print("Total guesses:", len(guesses))
-        # check if all hkls follows the accending order not (220 cannot be before 200)
+        sum_squares = np.sum(guesses**2, axis=(1,2))
+        sorted_indices = np.argsort(sum_squares)
+        guesses = guesses[sorted_indices]
 
         for guess in guesses:
-            hkls = [tuple(hkl) for hkl in guess]
+            hkls = [tuple(hkl) for hkl in guess if len(hkl) == 3]
+            if len(hkls)>3 and (hkls[0] == (1, 1, -1) and hkls[1] == (0, 0, -1) and hkls[2] == (2, 0, -1)):
+                print("Trying guess:", hkls)
+                run = True
+            else:
+                run = False
             n_peaks = len(guess)
-            theta = xrd.pxrd[:n_peaks, 0]
             # select n peaks from first n+1 peaks, skipping a peak
             exit = False
-            if n_peaks < len(xrd.pxrd):
+            if run: #n_peaks < len(xrd.pxrd):
                 available_peaks = xrd.pxrd[:n_peaks+1, 0]
                 # Try each combination of n peaks from the first n+1 peaks
                 for peak_combo in combinations(range(n_peaks+1), n_peaks):
                     theta = available_peaks[list(peak_combo)]
-                    result = get_cell_from_multi_hkls(spg, hkls, theta, xrd.pxrd[:10, 0])
-                    if result is not None and result['n_matched'] > 8:
-                        print("Guess:", hkls, "->", result['cell'])
-                        if result['score'] > 0.95:
+                    result = get_cell_from_multi_hkls(spg, hkls, theta, xrd.pxrd[:15, 0])
+                    if result is not None and result['score'] > 0.95:
+                        print("Guess:", hkls, "->", result['cell'], "Score:", result['score'],
+                              "Matched peaks:", result['n_matched'], "/", result['n_total'])
+                        if result['score'] > 0.992:
                             print("High score, exiting early.")
                             exit = True
                             break
