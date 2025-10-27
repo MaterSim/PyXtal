@@ -373,9 +373,9 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
             theta_100 = np.degrees(np.arcsin(wave_length / (2 * d_100)))
             theta_010 = np.degrees(np.arcsin(wave_length / (2 * d_010)))
             theta_001 = np.degrees(np.arcsin(wave_length / (2 * d_001)))
-            h_max = min([40, int(long_thetas[-1] / theta_100)])
-            k_max = min([40, int(long_thetas[-1] / theta_010)])
-            l_max = min([40, int(long_thetas[-1] / theta_001)])
+            h_max = min([100, int(long_thetas[-1] / theta_100)])
+            k_max = min([100, int(long_thetas[-1] / theta_010)])
+            l_max = min([100, int(long_thetas[-1] / theta_001)])
             #if h_max > 12 or k_max > 12 or l_max > 12:
             #    print("Generating hkls with h_max,k_max,l_max:", cell, h_max, k_max, l_max, level)
             test_hkls = np.array(generate_possible_hkls(h_max=h_max,

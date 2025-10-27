@@ -723,7 +723,7 @@ class Group:
         return possible_hkls  # remove duplicates
 
     def generate_hkl_guesses(self, h_max=2, k_max=None, l_max=None, max_square=12,
-                             reduce=True, verbose=False):
+                             total_square=None, reduce=True, verbose=False):
         """
         Generate reasonable hkl indices within a cutoff for different crystal systems.
         This function considers the extinction conditions to limit the hkls.
@@ -733,6 +733,7 @@ class Group:
             l_max: maximum absolute value for k
             k_max: maximum absolute value for l
             max_square: maximum h^2 + k^2 + l^2
+            total_square: sum(all h^2 + k^2 + l^2)
             reduce: whether or not reduce the number of guesses
             verbose: whether or not print the possible hkls
         """
@@ -812,7 +813,6 @@ class Group:
                         solutions = [(h1, k1, l1), (h2, k2, l2), (h3, k3, l3)]
                         guesses.extend(list(itertools.permutations(solutions)))
 
-            if reduce: guesses = self.reduce_hkl_guesses(guesses)
 
         elif self.number >= 3:
             # select quadruplets
@@ -841,23 +841,29 @@ class Group:
                                              (sh3, sk3, sl3), (sh4, sk4, sl4)]
                                 guesses.extend(list(itertools.permutations(solutions)))
 
+        if reduce: guesses = self.reduce_hkl_guesses(guesses, total_square)
 
         return guesses
 
-    def reduce_hkl_guesses(self, hkls):
+    def reduce_hkl_guesses(self, hkls, total_square=None):
         """
         Reduce the hkl guesses by removing duplicates based on canonical forms.
 
         Args:
             hkls (list): List of hkl guess tuples
+            total_square (int): the maximum sum of h^2+k^2+l^2
 
         Returns:
             list: Reduced list of hkl guesses tuples
         """
         # convert (hkl) to numpy array for easier processing
-        hkls_array = np.array([np.array(guess) for guess in hkls])
+        hkls = np.array([np.array(guess) for guess in hkls])
+        if total_square is not None:
+            sums = np.sum(hkls**2, axis=(1,2))#; print(len(sums))
+            hkls = hkls[sums <= total_square]#; print(len(hkls))
+
         if  15 < self.number < 75:
-            hkls = np.abs(hkls_array)
+            hkls = np.abs(hkls)
             mask1 = np.all(hkls[:, 0] >= hkls[:, 1], axis=1)#; print("mask\n", mask1, hkls[2], hkls[2,0], hkls[2,1], hkls[2,0] >= hkls[2,1])
             mask2 = np.all(hkls[:, 1] >= hkls[:, 2], axis=1)
             mask3 = np.all(hkls[:, 0] >= hkls[:, 2], axis=1)
