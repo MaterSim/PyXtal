@@ -43,12 +43,23 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
         two_thetas: list of 2theta values
         wave_length: X-ray wavelength, default is Cu K-alpha
     """
+    hkls = np.array(hkls)
+    two_thetas = np.array(two_thetas)
+    
+    # Convert to d-spacings
+    thetas = np.radians(two_thetas / 2)
+    d_spacings = wave_length / (2 * np.sin(thetas))
+    
     cell_values = []
     if spg >= 195:  # cubic, only need a
-        for hkl, two_theta in zip(hkls, two_thetas):
-            theta = np.radians(two_theta / 2)
-            d = wave_length / (2 * np.sin(theta))
-            cell_values.append([d * np.sqrt(hkl[0]**2 + hkl[1]**2 + hkl[2]**2)])
+        h_sq_sum = np.sum(hkls**2, axis=1)
+        a_values = d_spacings * np.sqrt(h_sq_sum)
+        cell_values = [[a] for a in a_values if 0 < a < 50]
+        
+        #for hkl, two_theta in zip(hkls, two_thetas):
+        #    theta = np.radians(two_theta / 2)
+        #    d = wave_length / (2 * np.sin(theta))
+        #    cell_values.append([d * np.sqrt(hkl[0]**2 + hkl[1]**2 + hkl[2]**2)])
     elif 143 <= spg <= 194:  #  hexagonal, need a and c
         # need two hkls to determine a and c
         len_solutions = len(hkls) // 2
@@ -96,30 +107,67 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
                 continue
     elif 16 <= spg <= 74:  # orthorhombic, need a, b, c
         # need three hkls to determine a, b, c
-        len_solutions = len(hkls) // 3
-        for i in range(len_solutions):
-            (h1, k1, l1), (h2, k2, l2), (h3, k3, l3) = hkls[3*i], hkls[3*i + 1], hkls[3*i + 2]
-            theta1 = np.radians(two_thetas[3*i] / 2)
-            theta2 = np.radians(two_thetas[3*i + 1] / 2)
-            theta3 = np.radians(two_thetas[3*i + 2] / 2)
-            d1 = wave_length / (2 * np.sin(theta1))
-            d2 = wave_length / (2 * np.sin(theta2))
-            d3 = wave_length / (2 * np.sin(theta3))
-            A = np.array([[h1**2, k1**2, l1**2],
-                          [h2**2, k2**2, l2**2],
-                          [h3**2, k3**2, l3**2]])
-            b = np.array([1/d1**2, 1/d2**2, 1/d3**2])
-            try:
-                x = np.linalg.solve(A, b)
-                if x[0] <= 0 or x[1] <= 0 or x[2] <= 0:
-                    continue
-                a = np.sqrt(1/x[0])
-                b = np.sqrt(1/x[1])
-                c = np.sqrt(1/x[2])
-                if a > 50 or b > 50 or c > 50: continue
-                cell_values.append((a, b, c))
-            except np.linalg.LinAlgError:
-                continue
+        #len_solutions = len(hkls) // 3
+        #for i in range(len_solutions):
+        #    (h1, k1, l1), (h2, k2, l2), (h3, k3, l3) = hkls[3*i], hkls[3*i + 1], hkls[3*i + 2]
+        #    theta1 = np.radians(two_thetas[3*i] / 2)
+        #    theta2 = np.radians(two_thetas[3*i + 1] / 2)
+        #    theta3 = np.radians(two_thetas[3*i + 2] / 2)
+        #    d1 = wave_length / (2 * np.sin(theta1))
+        #    d2 = wave_length / (2 * np.sin(theta2))
+        #    d3 = wave_length / (2 * np.sin(theta3))
+        #    A = np.array([[h1**2, k1**2, l1**2],
+        #                  [h2**2, k2**2, l2**2],
+        #                  [h3**2, k3**2, l3**2]])
+        #    b = np.array([1/d1**2, 1/d2**2, 1/d3**2])
+        #    try:
+        #        x = np.linalg.solve(A, b)
+        #        if x[0] <= 0 or x[1] <= 0 or x[2] <= 0:
+        #            continue
+        #        a = np.sqrt(1/x[0])
+        #        b = np.sqrt(1/x[1])
+        #        c = np.sqrt(1/x[2])
+        #        if a > 50 or b > 50 or c > 50: continue
+        #        cell_values.append((a, b, c))
+        #    except np.linalg.LinAlgError:
+        #        continue
+        # Generate all possible triplets
+        n_hkls = len(hkls)
+        from itertools import combinations
+        triplet_indices = list(combinations(range(n_hkls), 3))
+        
+        if len(triplet_indices) == 0:
+            return []
+        
+        # Convert to arrays for vectorized operations
+        triplets = np.array(triplet_indices)  # Shape: (n_triplets, 3)
+        
+        # Get all triplets of hkls and d-spacings
+        hkls_triplets = hkls[triplets]  # Shape: (n_triplets, 3, 3)
+        d_triplets = d_spacings[triplets]  # Shape: (n_triplets, 3)
+        
+        # Build coefficient matrices for all triplets
+        A = np.zeros((len(triplets), 3, 3))
+        A[:, :, 0] = hkls_triplets[:, :, 0]**2  # h²
+        A[:, :, 1] = hkls_triplets[:, :, 1]**2  # k²
+        A[:, :, 2] = hkls_triplets[:, :, 2]**2  # l²
+        
+        b = 1/d_triplets**2  # Shape: (n_triplets, 3)
+        
+        try:
+            x = np.linalg.solve(A, b)  # Shape: (n_triplets, 3)
+            # Filter valid solutions
+            valid = np.all(x > 0, axis=1)
+            x_valid = x[valid]
+            
+            if len(x_valid) > 0:
+                a_values = np.sqrt(1/x_valid[:, 0])
+                b_values = np.sqrt(1/x_valid[:, 1])
+                c_values = np.sqrt(1/x_valid[:, 2])
+                cell_values = list(zip(a_values, b_values, c_values))
+        except np.linalg.LinAlgError:
+            pass
+
     elif 3 <= spg <= 15:  # monoclinic, need a, b, c, beta
         # need four hkls to determine a, b, c, beta
         len_solutions = len(hkls) // 4
@@ -476,7 +524,7 @@ if __name__ == "__main__":
             n_peaks = len(guess)
             # select n peaks from first n+1 peaks, skipping a peak
             exit = False
-            if run: #n_peaks < len(xrd.pxrd):
+            if n_peaks < len(xrd.pxrd):
                 available_peaks = xrd.pxrd[:n_peaks+1, 0]
                 # Try each combination of n peaks from the first n+1 peaks
                 for peak_combo in combinations(range(n_peaks+1), n_peaks):
