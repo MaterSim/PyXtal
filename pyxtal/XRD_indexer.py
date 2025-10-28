@@ -45,17 +45,17 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
     """
     hkls = np.array(hkls)
     two_thetas = np.array(two_thetas)
-    
+
     # Convert to d-spacings
     thetas = np.radians(two_thetas / 2)
     d_spacings = wave_length / (2 * np.sin(thetas))
-    
+
     cell_values = []
     if spg >= 195:  # cubic, only need a
         h_sq_sum = np.sum(hkls**2, axis=1)
         a_values = d_spacings * np.sqrt(h_sq_sum)
         cell_values = [[a] for a in a_values if 0 < a < 50]
-        
+
         #for hkl, two_theta in zip(hkls, two_thetas):
         #    theta = np.radians(two_theta / 2)
         #    d = wave_length / (2 * np.sin(theta))
@@ -107,66 +107,66 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
                 continue
     elif 16 <= spg <= 74:  # orthorhombic, need a, b, c
         # need three hkls to determine a, b, c
-        #len_solutions = len(hkls) // 3
-        #for i in range(len_solutions):
-        #    (h1, k1, l1), (h2, k2, l2), (h3, k3, l3) = hkls[3*i], hkls[3*i + 1], hkls[3*i + 2]
-        #    theta1 = np.radians(two_thetas[3*i] / 2)
-        #    theta2 = np.radians(two_thetas[3*i + 1] / 2)
-        #    theta3 = np.radians(two_thetas[3*i + 2] / 2)
-        #    d1 = wave_length / (2 * np.sin(theta1))
-        #    d2 = wave_length / (2 * np.sin(theta2))
-        #    d3 = wave_length / (2 * np.sin(theta3))
-        #    A = np.array([[h1**2, k1**2, l1**2],
-        #                  [h2**2, k2**2, l2**2],
-        #                  [h3**2, k3**2, l3**2]])
-        #    b = np.array([1/d1**2, 1/d2**2, 1/d3**2])
-        #    try:
-        #        x = np.linalg.solve(A, b)
-        #        if x[0] <= 0 or x[1] <= 0 or x[2] <= 0:
-        #            continue
-        #        a = np.sqrt(1/x[0])
-        #        b = np.sqrt(1/x[1])
-        #        c = np.sqrt(1/x[2])
-        #        if a > 50 or b > 50 or c > 50: continue
-        #        cell_values.append((a, b, c))
-        #    except np.linalg.LinAlgError:
-        #        continue
+        len_solutions = len(hkls) // 3
+        for i in range(len_solutions):
+            (h1, k1, l1), (h2, k2, l2), (h3, k3, l3) = hkls[3*i], hkls[3*i + 1], hkls[3*i + 2]
+            theta1 = np.radians(two_thetas[3*i] / 2)
+            theta2 = np.radians(two_thetas[3*i + 1] / 2)
+            theta3 = np.radians(two_thetas[3*i + 2] / 2)
+            d1 = wave_length / (2 * np.sin(theta1))
+            d2 = wave_length / (2 * np.sin(theta2))
+            d3 = wave_length / (2 * np.sin(theta3))
+            A = np.array([[h1**2, k1**2, l1**2],
+                          [h2**2, k2**2, l2**2],
+                          [h3**2, k3**2, l3**2]])
+            b = np.array([1/d1**2, 1/d2**2, 1/d3**2])
+            try:
+                x = np.linalg.solve(A, b)
+                if x[0] <= 0 or x[1] <= 0 or x[2] <= 0:
+                    continue
+                a = np.sqrt(1/x[0])
+                b = np.sqrt(1/x[1])
+                c = np.sqrt(1/x[2])
+                if a > 50 or b > 50 or c > 50: continue
+                cell_values.append((a, b, c))
+            except np.linalg.LinAlgError:
+                continue
         # Generate all possible triplets
-        n_hkls = len(hkls)
-        from itertools import combinations
-        triplet_indices = list(combinations(range(n_hkls), 3))
-        
-        if len(triplet_indices) == 0:
-            return []
-        
-        # Convert to arrays for vectorized operations
-        triplets = np.array(triplet_indices)  # Shape: (n_triplets, 3)
-        
-        # Get all triplets of hkls and d-spacings
-        hkls_triplets = hkls[triplets]  # Shape: (n_triplets, 3, 3)
-        d_triplets = d_spacings[triplets]  # Shape: (n_triplets, 3)
-        
-        # Build coefficient matrices for all triplets
-        A = np.zeros((len(triplets), 3, 3))
-        A[:, :, 0] = hkls_triplets[:, :, 0]**2  # h²
-        A[:, :, 1] = hkls_triplets[:, :, 1]**2  # k²
-        A[:, :, 2] = hkls_triplets[:, :, 2]**2  # l²
-        
-        b = 1/d_triplets**2  # Shape: (n_triplets, 3)
-        
-        try:
-            x = np.linalg.solve(A, b)  # Shape: (n_triplets, 3)
-            # Filter valid solutions
-            valid = np.all(x > 0, axis=1)
-            x_valid = x[valid]
-            
-            if len(x_valid) > 0:
-                a_values = np.sqrt(1/x_valid[:, 0])
-                b_values = np.sqrt(1/x_valid[:, 1])
-                c_values = np.sqrt(1/x_valid[:, 2])
-                cell_values = list(zip(a_values, b_values, c_values))
-        except np.linalg.LinAlgError:
-            pass
+        #n_hkls = len(hkls)
+        #from itertools import combinations
+        #triplet_indices = list(combinations(range(n_hkls), 3))
+        #
+        #if len(triplet_indices) == 0:
+        #    return []
+        #
+        ## Convert to arrays for vectorized operations
+        #triplets = np.array(triplet_indices)  # Shape: (n_triplets, 3)
+        #
+        ## Get all triplets of hkls and d-spacings
+        #hkls_triplets = hkls[triplets]  # Shape: (n_triplets, 3, 3)
+        #d_triplets = d_spacings[triplets]  # Shape: (n_triplets, 3)
+        #
+        ## Build coefficient matrices for all triplets
+        #A = np.zeros((len(triplets), 3, 3))
+        #A[:, :, 0] = hkls_triplets[:, :, 0]**2  # h²
+        #A[:, :, 1] = hkls_triplets[:, :, 1]**2  # k²
+        #A[:, :, 2] = hkls_triplets[:, :, 2]**2  # l²
+        #
+        #b = 1/d_triplets**2  # Shape: (n_triplets, 3)
+        #
+        #try:
+        #    x = np.linalg.solve(A, b)  # Shape: (n_triplets, 3)
+        #    # Filter valid solutions
+        #    valid = np.all(x > 0, axis=1)
+        #    x_valid = x[valid]
+        #
+        #    if len(x_valid) > 0:
+        #        a_values = np.sqrt(1/x_valid[:, 0])
+        #        b_values = np.sqrt(1/x_valid[:, 1])
+        #        c_values = np.sqrt(1/x_valid[:, 2])
+        #        cell_values = list(zip(a_values, b_values, c_values))
+        #except np.linalg.LinAlgError:
+        #    pass
 
     elif 3 <= spg <= 15:  # monoclinic, need a, b, c, beta
         # need four hkls to determine a, b, c, beta
@@ -369,7 +369,7 @@ def get_seeds(spg, hkls, two_thetas):
 
 
 def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_length=1.54184,
-                             tolerance=0.05, min_matched_peaks=2):
+                             tolerance=0.05, use_seed=True, min_matched_peaks=2):
     """
     Estimate the cell parameters from multiple (hkl, two_theta) inputs.
     The idea is to use the Bragg's law and the lattice spacing formula to estimate the lattice parameters.
@@ -382,8 +382,8 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
         spg (int): space group number
         wave_length: X-ray wavelength, default is Cu K-alpha
         tolerance: tolerance for matching 2theta values, default is 0.05 degrees
+        use_seed: whether to use seed hkls for initial cell estimation
         min_matched_peaks: minimum number of matched peaks to consider a valid solution
-        max_h: maximum index of hkl
 
     Returns:
         cells: estimated lattice parameter
@@ -402,8 +402,11 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
     best_solution = None
     best_score = 0
 
-    seed_hkls, seed_thetas = get_seeds(spg, hkls, two_thetas)#; print(seed_hkls, seed_thetas)
-    cells = get_cell_params(spg, seed_hkls, seed_thetas, wave_length)#; print(cells)
+    if use_seed:
+        seed_hkls, seed_thetas = get_seeds(spg, hkls, two_thetas)#; print(seed_hkls, seed_thetas)
+        cells = get_cell_params(spg, seed_hkls, seed_thetas, wave_length)#; print(cells)
+    else:
+        cells = get_cell_params(spg, hkls, two_thetas, wave_length)#; print(cells)
     cells = np.array(cells)
     cells = np.unique(cells, axis=0)#; print(cells)  # remove duplicates
     for cell in cells:
@@ -477,65 +480,109 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
 if __name__ == "__main__":
     from pyxtal import pyxtal
     from itertools import combinations
-
     xtal = pyxtal()
-    guesses = [
-               [(1, 1, 1), (2, 2, 0), (3, 1, 1)],
-               [(0, 0, 2), (1, 0, 0)],#, (1, 0, 1)],
-               [(0, 0, 2), (1, 0, 1), (1, 1, 0)],
-               [(1, 0, 0), (1, 0, 1), (1, 1, 0)],
-               [(2, 0, 0), (1, 0, 1), (2, 1, 0)],
-               [(1, 0, 0), (1, 1, 1), (1, 0, 2)],
-               [(1, 0, 1), (1, 1, 1), (3, 1, 1)],
-               [(2, 2, 0), (3, 1, 1), (2, 2, 2)],
-               [(1, 1, 1), (2, 0, 0), (2, 2, 0)],
-               [(1, 1), (2, 0, 0), (2, 2, 0)], # test bad case
-               [(0, 0, 1), (2, 0, -1), (2, 0, 1), (4, 0, 0), (1, 1, 0)],
-            ]
-    for prototype in ["diamond", "graphite", "a-cristobalite", "olivine", "beta-Ga2O3"]:
-        xtal.from_prototype(prototype)
-        xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
-        spg = xtal.group.number
-        print("\nTesting prototype:", prototype, xtal.lattice, xtal.group.symbol, xtal.group.number)
-        print(xrd.by_hkl(N_max=10))
-        if True:
-            if xtal.group.number >= 195:
-                guesses = xtal.group.generate_hkl_guesses(3, max_square=16)
-            elif xtal.group.number >= 75:
-                guesses = xtal.group.generate_hkl_guesses(2, 2, 6, max_square=36)
-            elif xtal.group.number >= 16:
-                guesses = xtal.group.generate_hkl_guesses(3, 3, 3, max_square=20)
-            else:
-                guesses = xtal.group.generate_hkl_guesses(4, 2, 2, max_square=17, verbose=True)
+    xtal.from_seed('pyxtal/database/cifs/JVASP-62168.cif')
+    xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
+    cell_ref = np.sort(np.array(xtal.lattice.encode()))
+    long_thetas = xrd.pxrd[:15, 0]
+    spg = xtal.group.number
+    print("\nTesting prototype:", xtal.lattice, xtal.group.symbol, xtal.group.number)
+    print(xrd.by_hkl(N_max=10))
 
-        guesses = np.array(guesses)
-        print("Total guesses:", len(guesses))
-        sum_squares = np.sum(guesses**2, axis=(1,2))
-        sorted_indices = np.argsort(sum_squares)
-        guesses = guesses[sorted_indices]
+    # Get the a list of hkl guesses and sort them by d^2
+    guesses = xtal.group.generate_hkl_guesses(2, 3, 5, max_square=29, total_square=40, verbose=True)
+    guesses = np.array(guesses)
+    print("Total guesses:", len(guesses))
+    sum_squares = np.sum(guesses**2, axis=(1,2))
+    sorted_indices = np.argsort(sum_squares)
+    guesses = guesses[sorted_indices]
 
-        for guess in guesses:
-            hkls = [tuple(hkl) for hkl in guess if len(hkl) == 3]
-            if len(hkls)>3 and (hkls[0] == (1, 1, -1) and hkls[1] == (0, 0, -1) and hkls[2] == (2, 0, -1)):
-                print("Trying guess:", hkls)
-                run = True
-            else:
-                run = False
-            n_peaks = len(guess)
-            # select n peaks from first n+1 peaks, skipping a peak
-            exit = False
-            if n_peaks < len(xrd.pxrd):
-                available_peaks = xrd.pxrd[:n_peaks+1, 0]
-                # Try each combination of n peaks from the first n+1 peaks
-                for peak_combo in combinations(range(n_peaks+1), n_peaks):
-                    theta = available_peaks[list(peak_combo)]
-                    result = get_cell_from_multi_hkls(spg, hkls, theta, xrd.pxrd[:15, 0])
-                    if result is not None and result['score'] > 0.95:
-                        print("Guess:", hkls, "->", result['cell'], "Score:", result['score'],
-                              "Matched peaks:", result['n_matched'], "/", result['n_total'])
-                        if result['score'] > 0.992:
-                            print("High score, exiting early.")
-                            exit = True
-                            break
-            if exit:
-                break
+    # Check the quality of each (hkl, 2theta) solutions
+    for guess in guesses:
+        found = False
+        n_peaks = len(guess)
+
+        # Try each combination of n peaks from the first n+1 peaks
+        N_add = 5
+        available_peaks = xrd.pxrd[:n_peaks + N_add, 0]
+
+        thetas = []
+        for peak_combo in combinations(range(n_peaks + N_add), n_peaks):
+            thetas.extend(available_peaks[list(peak_combo)])
+        hkls_t = np.tile(guess, (int(len(thetas)/len(guess)), 1))
+
+        result = get_cell_from_multi_hkls(spg, hkls_t, thetas, long_thetas, use_seed=False)
+        if result is not None and result['score'] > 0.95:
+            d2 = np.sum(guess**2)
+            print("Guess:", guess.flatten(), d2, "->", result['cell'], thetas[0], "Score:", result['score'])
+            if result['score'] > 0.992:
+                cell1 = np.sort(np.array(result['cell']))
+                diff = np.sum((cell1 - cell_ref)**2)
+                if diff < 0.1:
+                    print("High score, exiting early.")
+                    found = True
+                    break
+        if found:
+            break
+
+
+    #guesses = [
+    #           [(1, 1, 1), (2, 2, 0), (3, 1, 1)],
+    #           [(0, 0, 2), (1, 0, 0)],#, (1, 0, 1)],
+    #           [(0, 0, 2), (1, 0, 1), (1, 1, 0)],
+    #           [(1, 0, 0), (1, 0, 1), (1, 1, 0)],
+    #           [(2, 0, 0), (1, 0, 1), (2, 1, 0)],
+    #           [(1, 0, 0), (1, 1, 1), (1, 0, 2)],
+    #           [(1, 0, 1), (1, 1, 1), (3, 1, 1)],
+    #           [(2, 2, 0), (3, 1, 1), (2, 2, 2)],
+    #           [(1, 1, 1), (2, 0, 0), (2, 2, 0)],
+    #           [(1, 1), (2, 0, 0), (2, 2, 0)], # test bad case
+    #           [(0, 0, 1), (2, 0, -1), (2, 0, 1), (4, 0, 0), (1, 1, 0)],
+    #        ]
+    #for prototype in ["diamond", "graphite", "a-cristobalite", "olivine", "beta-Ga2O3"]:
+    #    xtal.from_prototype(prototype)
+    #    xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
+    #    spg = xtal.group.number
+    #    print("\nTesting prototype:", prototype, xtal.lattice, xtal.group.symbol, xtal.group.number)
+    #    print(xrd.by_hkl(N_max=10))
+    #    if True:
+    #        if xtal.group.number >= 195:
+    #            guesses = xtal.group.generate_hkl_guesses(3, max_square=16)
+    #        elif xtal.group.number >= 75:
+    #            guesses = xtal.group.generate_hkl_guesses(2, 2, 6, max_square=36)
+    #        elif xtal.group.number >= 16:
+    #            guesses = xtal.group.generate_hkl_guesses(3, 3, 3, max_square=20)
+    #        else:
+    #            guesses = xtal.group.generate_hkl_guesses(4, 2, 2, max_square=17, verbose=True)
+
+    #    guesses = np.array(guesses)
+    #    print("Total guesses:", len(guesses))
+    #    sum_squares = np.sum(guesses**2, axis=(1,2))
+    #    sorted_indices = np.argsort(sum_squares)
+    #    guesses = guesses[sorted_indices]
+
+    #    for guess in guesses:
+    #        hkls = [tuple(hkl) for hkl in guess if len(hkl) == 3]
+    #        if len(hkls)>3 and (hkls[0] == (1, 1, -1) and hkls[1] == (0, 0, -1) and hkls[2] == (2, 0, -1)):
+    #            print("Trying guess:", hkls)
+    #            run = True
+    #        else:
+    #            run = False
+    #        n_peaks = len(guess)
+    #        # select n peaks from first n+1 peaks, skipping a peak
+    #        exit = False
+    #        if n_peaks < len(xrd.pxrd):
+    #            available_peaks = xrd.pxrd[:n_peaks+1, 0]
+    #            # Try each combination of n peaks from the first n+1 peaks
+    #            for peak_combo in combinations(range(n_peaks+1), n_peaks):
+    #                theta = available_peaks[list(peak_combo)]
+    #                result = get_cell_from_multi_hkls(spg, hkls, theta, xrd.pxrd[:15, 0])
+    #                if result is not None and result['score'] > 0.95:
+    #                    print("Guess:", hkls, "->", result['cell'], "Score:", result['score'],
+    #                          "Matched peaks:", result['n_matched'], "/", result['n_total'])
+    #                    if result['score'] > 0.992:
+    #                        print("High score, exiting early.")
+    #                        exit = True
+    #                        break
+    #        if exit:
+    #            break
