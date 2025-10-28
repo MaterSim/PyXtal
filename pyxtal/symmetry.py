@@ -869,6 +869,17 @@ class Group:
             mask3 = np.all(hkls[:, 0] >= hkls[:, 2], axis=1)
             mask = (mask1 | mask2 | mask3)#; print("mask", len(mask), hkls[mask][:5])
             hkls = hkls[~mask]
+
+            # remove duplicates based on canonical forms
+            #canonical_seen = set()
+            #unique_hkls = []
+            #for guess in hkls:
+            #    canonical = self.get_canonical_form(guess)
+            #    if canonical not in canonical_seen:
+            #        canonical_seen.add(canonical)
+            #        unique_hkls.append(guess)
+            #hkls = unique_hkls
+
         return [tuple(map(tuple, guess)) for guess in hkls]
 
     def is_valid_combination(self, sites):
@@ -4810,8 +4821,15 @@ def get_canonical_hkl(h, k, l, spg):
         h_sorted = sorted([hkl[0], hkl[1]], reverse=True)
         return tuple([h_sorted[0], h_sorted[1], hkl[2]])
 
+    elif spg >= 16:  # orthorhombic
+        # For orthorhombic: all axes are unique, but we can still sort for canonical form
+        # Sort all three in descending order to remove permutation duplicates
+        hkl.sort(reverse=True)
+        return tuple(hkl)
+
     else:  # monoclinic, triclinic
-        # Lower symmetry: keep as is
+        # Lower symmetry: sort to remove permutation duplicates
+        hkl.sort(reverse=True)
         return tuple(hkl)
 
 
