@@ -869,19 +869,39 @@ class Group:
             mask3 = np.all(hkls[:, 0] >= hkls[:, 2], axis=1)
             mask = (mask1 | mask2 | mask3)#; print("mask", len(mask), hkls[mask][:5])
             hkls = hkls[~mask]
-            print("Reduced to", len(hkls), "guesses after applying ordering constraints.")
+            #print("Reduced to", len(hkls), "guesses after applying ordering constraints.")
             # remove duplicates based on canonical forms
             canonical_seen = set()
             unique_hkls = []
             for guess in hkls:
                 canonical = get_canonical_hkl_series(guess, self.number)
+                #if canonical == ((2, 0, 0), (1, 0, 5), (0, 2, 0)) or canonical == ((0, 2, 0), (5, 1, 0), (0, 0, 2)):
+                #    print("checking", guess, canonical)
                 if canonical not in canonical_seen:
                     canonical_seen.add(canonical)
                     unique_hkls.append(guess)
             hkls = unique_hkls
-            print("Reduced to", len(hkls), "guesses after removing duplicates.")
+            #print("Reduced to", len(hkls), "guesses after removing duplicates.")
 
         return [tuple(map(tuple, guess)) for guess in hkls]
+
+    def check_hkl_in_list(self, hkl, hkl_list):
+        """
+        Check if a given hkl is in the list of hkls considering symmetry.
+
+        Args:
+            hkl (tuple): The hkl tuple to check
+            hkl_list (list): List of hkl tuples to check against
+
+        Returns:
+            bool: True if hkl is in hkl_list, False otherwise
+        """
+        for candidate in hkl_list:
+            if candidate[0] == (0, 2, 0) and candidate[1] == (5, 1, 0) and candidate[2] == (0, 0, 2):
+                print(hkl, candidate, hkl == candidate)
+            if hkl == candidate:
+                return True
+        return False
 
     def is_valid_combination(self, sites):
         """
@@ -4836,98 +4856,91 @@ def get_canonical_hkl(h, k, l, spg):
 def get_canonical_hkl_series(hkl_series, spg):
     """
     Get canonical forms for a series of hkls ensuring consistent permutation order.
+    Apply the same permutation to ALL hkls in the series.
 
     Args:
         hkl_series: list of (h, k, l) tuples
         spg: space group number
 
     Returns:
-        tuple: (canonical_series, permutation_used)
+        tuple: canonical_series as a tuple (hashable)
     """
     from itertools import permutations
 
-    def apply_permutation(hkl, perm):
-        """Apply permutation to hkl"""
-        return tuple(abs(hkl[i]) for i in perm)
-
-    def sort_hkl(hkl, reverse=True):
-        """Sort hkl in descending order"""
-        return tuple(sorted([abs(x) for x in hkl], reverse=reverse))
+    def apply_permutation_to_series(hkl_series, perm):
+        """Apply the same permutation to all hkls in the series"""
+        return [tuple(abs(hkl[i]) for i in perm) for hkl in hkl_series]
 
     if spg >= 195:  # cubic - all three indices equivalent
-        # Try all 6 permutations and pick the one that gives lexicographically largest result
-        best_perm = None
+        # Try all 6 permutations and pick the lexicographically largest result
         best_canonical = None
         best_score = None
 
         for perm in permutations([0, 1, 2]):
-            canonical_series = [apply_permutation(hkl, perm) for hkl in hkl_series]
-            # Sort each hkl in descending order
-            canonical_series = [sort_hkl(hkl, reverse=True) for hkl in canonical_series]
+            # Apply the same permutation to the entire series
+            canonical_series = apply_permutation_to_series(hkl_series, perm)
 
-            # Score based on lexicographic ordering (prefer larger first elements)
-            score = sum(sum(h * (10**(3-i)) for i, h in enumerate(canonical))
-                       for canonical in canonical_series)
+            # Sort each individual hkl in descending order
+            canonical_series = [tuple(sorted(hkl, reverse=True)) for hkl in canonical_series]
 
-            if best_score is None or score > best_score:
-                best_score = score
-                best_perm = perm
-                best_canonical = canonical_series
-
-        return best_canonical, best_perm
-
-    elif spg >= 75:  # tetragonal/hexagonal - h and k equivalent, l unique
-        # Try permutations that keep l position (or move it consistently)
-        perms_to_try = [(0, 1, 2), (1, 0, 2), (2, 1, 0), (2, 0, 1), (0, 2, 1), (1, 2, 0)]
-
-        best_perm = None
-        best_canonical = None
-        best_score = None
-
-        for perm in perms_to_try:
-            canonical_series = []
-            for hkl in hkl_series:
-                permuted = apply_permutation(hkl, perm)
-                # For tetragonal: sort h,k but keep l separate
-                if perm[2] == 2:  # l stays in position 2
-                    h_sorted = sorted([permuted[0], permuted[1]], reverse=True)
-                    canonical = (h_sorted[0], h_sorted[1], permuted[2])
-                else:  # l moved to different position
-                    canonical = sort_hkl(permuted, reverse=True)
-                canonical_series.append(canonical)
-
-            # Score the result
-            score = sum(sum(h * (10**(3-i)) for i, h in enumerate(canonical))
-                       for canonical in canonical_series)
+            # Score based on lexicographic ordering
+            score = sum(sum(h * (10**(3-i)) for i, h in enumerate(hkl))
+                       for hkl in canonical_series)
 
             if best_score is None or score > best_score:
                 best_score = score
-                best_perm = perm
-                best_canonical = canonical_series
-
-        return best_canonical, best_perm
-
-    else:  # lower symmetry - try all permutations
-        perms_to_try = list(permutations([0, 1, 2]))
-
-        best_perm = None
-        best_canonical = None
-        best_score = None
-
-        for perm in perms_to_try:
-            canonical_series = [sort_hkl(apply_permutation(hkl, perm), reverse=True)
-                               for hkl in hkl_series]
-
-            score = sum(sum(h * (10**(3-i)) for i, h in enumerate(canonical))
-                       for canonical in canonical_series)
-
-            if best_score is None or score > best_score:
-                best_score = score
-                best_perm = perm
                 best_canonical = canonical_series
 
         return tuple(best_canonical)
 
+    elif spg >= 75:  # tetragonal/hexagonal - h and k equivalent, l unique
+        best_canonical = None
+        best_score = None
+
+        # Try permutations that maintain crystallographic meaning
+        perms_to_try = [(0, 1, 2), (1, 0, 2)]  # Keep l in position, swap h,k
+
+        for perm in perms_to_try:
+            # Apply the same permutation to the entire series
+            canonical_series = apply_permutation_to_series(hkl_series, perm)
+
+            # For tetragonal: sort h,k but keep l separate
+            canonical_series = [
+                tuple([*sorted([hkl[0], hkl[1]], reverse=True), hkl[2]])
+                for hkl in canonical_series
+            ]
+
+            # Score the result
+            score = sum(sum(h * (10**(3-i)) for i, h in enumerate(hkl))
+                       for hkl in canonical_series)
+
+            if best_score is None or score > best_score:
+                best_score = score
+                best_canonical = canonical_series
+
+        return tuple(best_canonical)
+
+    else:  # lower symmetry
+        # Try all permutations for the entire series
+        best_canonical = None
+        best_score = None
+
+        for perm in permutations([0, 1, 2]):
+            # Apply the same permutation to the entire series
+            canonical_series = apply_permutation_to_series(hkl_series, perm)
+
+            # Sort each hkl in descending order
+            #canonical_series = [tuple(sorted(hkl, reverse=True)) for hkl in canonical_series]
+
+            # Score the result
+            score = sum(sum(h * (10**(3-i)) for i, h in enumerate(hkl))
+                       for hkl in canonical_series)
+            #print(perm, hkl_series, '->', canonical_series, 'score:', score)
+            if best_score is None or score > best_score:
+                best_score = score
+                best_canonical = canonical_series
+
+        return tuple(best_canonical)
 
 if __name__ == "__main__":
     print("Test pyxtal.wp.site symmetry")
