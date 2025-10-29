@@ -8,7 +8,9 @@ def generate_possible_hkls(h_max, k_max, l_max, level=2):
     Generate reasonable hkl indices within a cutoff for different crystal systems.
 
     Args:
-        max_h: maximum absolute value for h, k, l
+        h_max: maximum absolute value for h
+        k_max: maximum absolute value for k
+        l_max: maximum absolute value for l
         level: level of indexing (0 for triclinic; 1 for monoclinic; 2 for orthorhombic or higher)
     """
     if level == 3: # orthorhombic or higher
@@ -224,30 +226,30 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
 
     return cell_values
 
-def get_d_hkl_from_cell(spg, cell, h, k, l):
+def get_d_hkl_from_cell(spg, cells, h, k, l):
     """
     Estimate the maximum hkl indices to consider based on the cell parameters and maximum 2theta.
 
     Args:
         spg (int): space group number
-        cell: cell parameters
+        cells: cell parameters
         h: h index
         k: k index
         l: l index
     """
     if spg >= 195:  # cubic
-        d = cell[0] / np.sqrt(h**2 + k**2 + l**2)
+        d = cells[:, 0] / np.sqrt(h**2 + k**2 + l**2)
     elif spg >= 143:  # hexagonal
-        a, c = cell[0], cell[1]
+        a, c = cells[:, 0], cells[:, 1]
         d = 1 / np.sqrt((4/3) * (h**2 + h*k + k**2) / a**2 + l**2 / c**2)
     elif spg >= 75:  # tetragonal
-        a, c = cell[0], cell[1]
+        a, c = cells[:, 0], cells[:, 1]
         d = 1 / np.sqrt((h**2 + k**2) / a**2 + l**2 / c**2)
     elif spg >= 16:  # orthorhombic
-        a, b, c = cell[0], cell[1], cell[2]
+        a, b, c = cells[:, 0], cells[:, 1], cells[:, 2]
         d = 1 / np.sqrt(h**2 / a**2 + k**2 / b**2 + l**2 / c**2)
     elif spg >= 3:  # monoclinic
-        a, b, c, beta = cell[0], cell[1], cell[2], np.radians(cell[3])
+        a, b, c, beta = cells[:, 0], cells[:, 1], cells[:, 2], np.radians(cells[:, 3])
         sin_beta = np.sin(beta)
         d = 1 / np.sqrt((h**2 / (a**2 * sin_beta**2)) + (k**2 / b**2) + (l**2 / (c**2 * sin_beta**2)) -
                 (2 * h * l * np.cos(beta) / (a * c * sin_beta**2)))
@@ -378,9 +380,6 @@ def get_seeds(spg, hkls, two_thetas):
     return seed_hkls, seed_thetas
 
 
-
-
-
 def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_length=1.54184,
                              tolerance=0.05, use_seed=True, min_matched_peaks=2):
     """
@@ -421,40 +420,41 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
     else:
         cells = get_cell_params(spg, hkls, two_thetas, wave_length)#; print(cells)
     cells = np.array(cells)
+    if len(cells) == 0: return None
     cells = np.unique(cells, axis=0)#; print(cells)  # remove duplicates
-    for cell in cells:
+
+    # Try all possible hkls for this peak - vectorized version
+    # get the maximum h from assuming the cell[-1] is (h00)
+    d_100s = get_d_hkl_from_cell(spg, cells, 1, 0, 0)
+    d_010s = get_d_hkl_from_cell(spg, cells, 0, 1, 0)
+    d_001s = get_d_hkl_from_cell(spg, cells, 0, 0, 1)
+    theta_100s = np.degrees(np.arcsin(wave_length / (2 * d_100s)))
+    theta_010s = np.degrees(np.arcsin(wave_length / (2 * d_010s)))
+    theta_001s = np.degrees(np.arcsin(wave_length / (2 * d_001s)))#; print(len(cells))
+    h_maxs = np.array(long_thetas[-1] / theta_100s, dtype=int)
+    k_maxs = np.array(long_thetas[-1] / theta_010s, dtype=int)
+    l_maxs = np.array(long_thetas[-1] / theta_001s, dtype=int)
+
+    for i, cell in enumerate(cells):
+        test_hkls = np.array(generate_possible_hkls(h_max=h_maxs[i],
+                                                    k_max=k_maxs[i],
+                                                    l_max=l_maxs[i],
+                                                    level=level))
+        expected_thetas = calc_two_theta_from_cell(spg, test_hkls, cell, wave_length)
+
         # Now try to index all other peaks using this 'a'
         matched_peaks = []  # (index, hkl, obs_theta, error)
-        for peak_idx, obs_theta in enumerate(long_thetas):
-            best_match = None
-            best_error = float('inf')
 
-            # Try all possible hkls for this peak - vectorized version
-            # get the maximum h from assuming the cell[-1] is (h00)
-            d_100 = get_d_hkl_from_cell(spg, cell, 1, 0, 0)
-            d_010 = get_d_hkl_from_cell(spg, cell, 0, 1, 0)
-            d_001 = get_d_hkl_from_cell(spg, cell, 0, 0, 1)
-            theta_100 = np.degrees(np.arcsin(wave_length / (2 * d_100)))
-            theta_010 = np.degrees(np.arcsin(wave_length / (2 * d_010)))
-            theta_001 = np.degrees(np.arcsin(wave_length / (2 * d_001)))
-            h_max = min([100, int(long_thetas[-1] / theta_100)])
-            k_max = min([100, int(long_thetas[-1] / theta_010)])
-            l_max = min([100, int(long_thetas[-1] / theta_001)])
-            #if h_max > 12 or k_max > 12 or l_max > 12:
-            #    print("Generating hkls with h_max,k_max,l_max:", cell, h_max, k_max, l_max, level)
-            test_hkls = np.array(generate_possible_hkls(h_max=h_max,
-                                                        k_max=k_max,
-                                                        l_max=l_max,
-                                                        level=level))
-            expected_thetas = calc_two_theta_from_cell(spg, test_hkls, cell, wave_length)
+        # Filter out None values
+        valid_mask = expected_thetas != None
+        valid_thetas = expected_thetas[valid_mask]
+        valid_hkls = test_hkls[valid_mask]
+        if len(valid_thetas) > 0:
+            valid_thetas = np.array(valid_thetas, dtype=float)
 
-            # Filter out None values
-            valid_mask = expected_thetas != None
-            valid_thetas = expected_thetas[valid_mask]
-            valid_hkls = test_hkls[valid_mask]
-
-            if len(valid_thetas) > 0:
-                valid_thetas = np.array(valid_thetas, dtype=float)
+            for peak_idx, obs_theta in enumerate(long_thetas):
+                best_match = None
+                best_error = float('inf')
                 errors = np.abs(obs_theta - valid_thetas)
                 within_tolerance = errors < tolerance
 
@@ -465,27 +465,26 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
                     best_error = errors[best_idx]
                     best_match = (peak_idx, tuple(valid_hkls[best_idx]), obs_theta, best_error)
 
-            #print(cell, peak_idx, best_match)
-            if best_match is not None:
-                matched_peaks.append(best_match)
+                #print(cell, peak_idx, best_match)
+                if best_match is not None: matched_peaks.append(best_match)
 
-            # Score this solution
-            n_matched = len(matched_peaks)
-            if n_matched >= min_matched_peaks:
-                coverage = n_matched / len(long_thetas)
-                avg_error = np.mean([match[3] for match in matched_peaks])
-                consistency_score = 1.0 / (1.0 + avg_error)  # lower error = higher score
-                total_score = coverage * consistency_score
+        # Score this solution
+        n_matched = len(matched_peaks)
+        if n_matched >= min_matched_peaks:
+            coverage = n_matched / len(long_thetas)
+            avg_error = np.mean([match[3] for match in matched_peaks])
+            consistency_score = 1.0 / (1.0 + avg_error)  # lower error = higher score
+            total_score = coverage * consistency_score
 
-                if total_score > best_score:
-                    best_score = total_score
-                    best_solution = {
-                        'cell': cell,
-                        'n_matched': n_matched,
-                        'n_total': len(long_thetas),
-                        'score': total_score,
-                        #'avg_error': avg_error,
-                    }
+            if total_score > best_score:
+                best_score = total_score
+                best_solution = {
+                    'cell': cell,
+                    'n_matched': n_matched,
+                    'n_total': len(long_thetas),
+                    'score': total_score,
+                    #'avg_error': avg_error,
+                }
 
     return best_solution
 
@@ -511,7 +510,7 @@ if __name__ == "__main__":
     guesses = guesses[sorted_indices]
 
     # Check the quality of each (hkl, 2theta) solutions
-    for guess in guesses[1000:]:
+    for guess in guesses[:]:
         found = False
         n_peaks = len(guess)
 
