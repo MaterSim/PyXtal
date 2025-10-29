@@ -423,7 +423,6 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
     if len(cells) == 0: return None
     cells = np.unique(cells, axis=0)#; print(cells)  # remove duplicates
 
-    # Try all possible hkls for this peak - vectorized version
     # get the maximum h from assuming the cell[-1] is (h00)
     d_100s = get_d_hkl_from_cell(spg, cells, 1, 0, 0)
     d_010s = get_d_hkl_from_cell(spg, cells, 0, 1, 0)
@@ -441,16 +440,15 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
                                                     l_max=l_maxs[i],
                                                     level=level))
         expected_thetas = calc_two_theta_from_cell(spg, test_hkls, cell, wave_length)
-
-        # Now try to index all other peaks using this 'a'
-        matched_peaks = []  # (index, hkl, obs_theta, error)
-
         # Filter out None values
         valid_mask = expected_thetas != None
         valid_thetas = expected_thetas[valid_mask]
         valid_hkls = test_hkls[valid_mask]
+        # Now try to index all other peaks using this 'a'
+
         if len(valid_thetas) > 0:
             valid_thetas = np.array(valid_thetas, dtype=float)
+            matched_peaks = []  # (index, hkl, obs_theta, error)
 
             for peak_idx, obs_theta in enumerate(long_thetas):
                 best_match = None
@@ -463,7 +461,8 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
                     valid_indices = np.where(within_tolerance)[0]
                     best_idx = valid_indices[min_idx]
                     best_error = errors[best_idx]
-                    best_match = (peak_idx, tuple(valid_hkls[best_idx]), obs_theta, best_error)
+                    #best_match = (peak_idx, tuple(valid_hkls[best_idx]), obs_theta, best_error)
+                    best_match = (peak_idx, obs_theta, best_error)
 
                 #print(cell, peak_idx, best_match)
                 if best_match is not None: matched_peaks.append(best_match)
@@ -472,7 +471,7 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
         n_matched = len(matched_peaks)
         if n_matched >= min_matched_peaks:
             coverage = n_matched / len(long_thetas)
-            avg_error = np.mean([match[3] for match in matched_peaks])
+            avg_error = np.mean([match[2] for match in matched_peaks])
             consistency_score = 1.0 / (1.0 + avg_error)  # lower error = higher score
             total_score = coverage * consistency_score
 
@@ -524,9 +523,9 @@ if __name__ == "__main__":
         hkls_t = np.tile(guess, (int(len(thetas)/len(guess)), 1))
 
         result = get_cell_from_multi_hkls(spg, hkls_t, thetas, long_thetas, use_seed=False)
-        if result is not None and result['score'] > 0.95:
+        if result is not None and result['score'] > 0.98:
             d2 = np.sum(guess**2)
-            print("Guess:", guess.flatten(), d2, "->", result['cell'], thetas[0], "Score:", result['score'])
+            print("Guess:", guess.flatten(), d2, "->", result['cell'], thetas[:len(guess)], "Score:", result['score'])
             if result['score'] > 0.992:
                 cell1 = np.sort(np.array(result['cell']))
                 diff = np.sum((cell1 - cell_ref)**2)
