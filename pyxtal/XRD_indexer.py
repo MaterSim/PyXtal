@@ -20,18 +20,35 @@ def generate_possible_hkls(h_max, k_max, l_max, level=2):
     else:
         base_signs = [(1, 1, 1), (1, 1, -1), (1, -1, 1), (-1, 1, 1),
                       (1, -1, -1), (-1, 1, -1), (-1, -1, 1), (-1, -1, -1)]
-    possible_hkls = []
-    for h in range(0, h_max + 1):
-        for k in range(0, k_max + 1):
-            for l in range(0, l_max + 1):
-                if h*h + k*k + l*l > 0:  # exclude (0,0,0)
-                    # Add all permutations and sign variations
-                    base_hkls = set()
-                    for signs in base_signs:
-                        sh, sk, sl = signs[0]*h, signs[1]*k, signs[2]*l
-                        base_hkls.add((sh, sk, sl))
-                    possible_hkls.extend(list(base_hkls))
-    return list(set(possible_hkls))  # remove duplicates
+    # Create meshgrid for all h, k, l combinations
+    h_vals, k_vals, l_vals = np.meshgrid(
+        np.arange(h_max + 1),
+        np.arange(k_max + 1),
+        np.arange(l_max + 1),
+        indexing='ij'
+    )
+
+    # Flatten to get all combinations
+    h_flat = h_vals.flatten()
+    k_flat = k_vals.flatten()
+    l_flat = l_vals.flatten()
+
+    # Filter out (0,0,0)
+    non_zero_mask = (h_flat**2 + k_flat**2 + l_flat**2) > 0
+    h_flat = h_flat[non_zero_mask]
+    k_flat = k_flat[non_zero_mask]
+    l_flat = l_flat[non_zero_mask]
+
+    # Apply all sign combinations vectorized
+    all_hkls = []
+    for signs in base_signs:
+        sh = signs[0] * h_flat
+        sk = signs[1] * k_flat
+        sl = signs[2] * l_flat
+        hkls_with_signs = np.column_stack([sh, sk, sl])
+        all_hkls.append(hkls_with_signs)
+
+    return np.vstack(all_hkls)
 
 def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
     """
@@ -56,10 +73,6 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
         a_values = d_spacings * np.sqrt(h_sq_sum)
         cell_values = [[a] for a in a_values if 0 < a < 50]
 
-        #for hkl, two_theta in zip(hkls, two_thetas):
-        #    theta = np.radians(two_theta / 2)
-        #    d = wave_length / (2 * np.sin(theta))
-        #    cell_values.append([d * np.sqrt(hkl[0]**2 + hkl[1]**2 + hkl[2]**2)])
     elif 143 <= spg <= 194:  #  hexagonal, need a and c
         # need two hkls to determine a and c
         len_solutions = len(hkls) // 2
@@ -498,7 +511,7 @@ if __name__ == "__main__":
     guesses = guesses[sorted_indices]
 
     # Check the quality of each (hkl, 2theta) solutions
-    for guess in guesses:
+    for guess in guesses[1000:]:
         found = False
         n_peaks = len(guess)
 
