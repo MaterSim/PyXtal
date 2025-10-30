@@ -381,7 +381,7 @@ def get_seeds(spg, hkls, two_thetas):
 
 
 def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_length=1.54184,
-                             tolerance=0.05, use_seed=True, min_matched_peaks=2):
+                             tolerance=0.05, use_seed=True, min_score=0.999):
     """
     Estimate the cell parameters from multiple (hkl, two_theta) inputs.
     The idea is to use the Bragg's law and the lattice spacing formula to estimate the lattice parameters.
@@ -395,10 +395,10 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
         wave_length: X-ray wavelength, default is Cu K-alpha
         tolerance: tolerance for matching 2theta values, default is 0.05 degrees
         use_seed: whether to use seed hkls for initial cell estimation
-        min_matched_peaks: minimum number of matched peaks to consider a valid solution
+        min_score: threshold score for consideration
 
     Returns:
-        cells: estimated lattice parameter
+        cells: list of solutions
     """
     if long_thetas is None: long_thetas = two_thetas
     #test_hkls_array = np.array(generate_possible_hkls(max_h=max_h))
@@ -411,16 +411,14 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
     else:
         level = 0  # triclinic
 
-    best_solution = None
-    best_score = 0
-
     if use_seed:
         seed_hkls, seed_thetas = get_seeds(spg, hkls, two_thetas)#; print(seed_hkls, seed_thetas)
         cells = get_cell_params(spg, seed_hkls, seed_thetas, wave_length)#; print(cells)
     else:
         cells = get_cell_params(spg, hkls, two_thetas, wave_length)#; print(cells)
+
     cells = np.array(cells)
-    if len(cells) == 0: return None
+    if len(cells) == 0: return []
     cells = np.unique(cells, axis=0)#; print(cells)  # remove duplicates
 
     # get the maximum h from assuming the cell[-1] is (h00)
@@ -434,6 +432,7 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
     k_maxs = np.array(long_thetas[-1] / theta_010s, dtype=int)
     l_maxs = np.array(long_thetas[-1] / theta_001s, dtype=int)
 
+    solutions = []
     for i, cell in enumerate(cells):
         test_hkls = np.array(generate_possible_hkls(h_max=h_maxs[i],
                                                     k_max=k_maxs[i],
@@ -469,23 +468,20 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
 
         # Score this solution
         n_matched = len(matched_peaks)
-        if n_matched >= min_matched_peaks:
-            coverage = n_matched / len(long_thetas)
-            avg_error = np.mean([match[2] for match in matched_peaks])
-            consistency_score = 1.0 / (1.0 + avg_error)  # lower error = higher score
-            total_score = coverage * consistency_score
+        coverage = n_matched / len(long_thetas)
+        avg_error = np.mean([match[-1] for match in matched_peaks])
+        consistency_score = 1.0 / (1.0 + avg_error)  # lower error = higher score
+        score = coverage * consistency_score
 
-            if total_score > best_score:
-                best_score = total_score
-                best_solution = {
-                    'cell': cell,
-                    'n_matched': n_matched,
-                    'n_total': len(long_thetas),
-                    'score': total_score,
-                    #'avg_error': avg_error,
-                }
+        if score > min_score:
+            solutions.append({
+                'cell': cell,
+                'n_matched': n_matched,
+                'n_total': len(long_thetas),
+                'score': score,
+            })
 
-    return best_solution
+    return solutions
 
 
 if __name__ == "__main__":
@@ -522,17 +518,16 @@ if __name__ == "__main__":
             thetas.extend(available_peaks[list(peak_combo)])
         hkls_t = np.tile(guess, (int(len(thetas)/len(guess)), 1))
 
-        result = get_cell_from_multi_hkls(spg, hkls_t, thetas, long_thetas, use_seed=False)
-        if result is not None and result['score'] > 0.98:
+        solutions = get_cell_from_multi_hkls(spg, hkls_t, thetas, long_thetas, use_seed=False)
+        for sol in solutions:
             d2 = np.sum(guess**2)
-            print("Guess:", guess.flatten(), d2, "->", result['cell'], thetas[:len(guess)], "Score:", result['score'])
-            if result['score'] > 0.992:
-                cell1 = np.sort(np.array(result['cell']))
-                diff = np.sum((cell1 - cell_ref)**2)
-                if diff < 0.1:
-                    print("High score, exiting early.")
-                    found = True
-                    break
+            print("Guess:", guess.flatten(), d2, "->", sol['cell'], thetas[:len(guess)], "Score:", sol['score'])
+            cell1 = np.sort(np.array(sol['cell']))
+            diff = np.sum((cell1 - cell_ref)**2)
+            if diff < 0.1:
+                print("High score, exiting early.")
+                found = True
+                break
         if found:
             break
 
