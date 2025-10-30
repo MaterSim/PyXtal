@@ -428,9 +428,9 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
     theta_100s = np.degrees(np.arcsin(wave_length / (2 * d_100s)))
     theta_010s = np.degrees(np.arcsin(wave_length / (2 * d_010s)))
     theta_001s = np.degrees(np.arcsin(wave_length / (2 * d_001s)))#; print(len(cells))
-    h_maxs = np.array(long_thetas[-1] / theta_100s, dtype=int)
-    k_maxs = np.array(long_thetas[-1] / theta_010s, dtype=int)
-    l_maxs = np.array(long_thetas[-1] / theta_001s, dtype=int)
+    h_maxs = np.array(long_thetas[-1] / theta_100s, dtype=int); h_maxs[h_maxs > 100] = 100
+    k_maxs = np.array(long_thetas[-1] / theta_010s, dtype=int); k_maxs[k_maxs > 100] = 100
+    l_maxs = np.array(long_thetas[-1] / theta_001s, dtype=int); l_maxs[l_maxs > 100] = 100
 
     solutions = []
     for i, cell in enumerate(cells):
