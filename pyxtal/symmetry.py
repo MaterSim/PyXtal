@@ -696,8 +696,12 @@ class Group:
         canonical_seen = set()  # Track canonical forms to avoid duplicates
 
         for h in range(0, h_max + 1):
-            for k in range(0, k_max + 1):
-                for l in range(0, l_max + 1):
+            # add permutation
+            k_min = h if self.number < 3 else 0
+            for k in range(k_min, k_max + 1):
+                # add additional
+                l_min = 0 if self.number > 15 else h
+                for l in range(l_min, l_max + 1):
                     if h == 0 and k == 0 and l == 0:  # Exclude (0,0,0)
                         continue
                     if h*h + k*k + l*l > max_square:
@@ -864,7 +868,7 @@ class Group:
 
         if  15 < self.number < 75:
             hkls = np.abs(hkls)
-            mask1 = np.all(hkls[:, 0] >= hkls[:, 1], axis=1)#; print("mask\n", mask1, hkls[2], hkls[2,0], hkls[2,1], hkls[2,0] >= hkls[2,1])
+            mask1 = np.all(hkls[:, 0] >= hkls[:, 1], axis=1)
             mask2 = np.all(hkls[:, 1] >= hkls[:, 2], axis=1)
             mask3 = np.all(hkls[:, 0] >= hkls[:, 2], axis=1)
             mask = (mask1 | mask2 | mask3)#; print("mask", len(mask), hkls[mask][:5])
@@ -4842,13 +4846,7 @@ def get_canonical_hkl(h, k, l, spg):
         h_sorted = sorted([hkl[0], hkl[1]], reverse=True)
         return tuple([h_sorted[0], h_sorted[1], hkl[2]])
 
-    #elif spg >= 16:  # orthorhombic
-    #    # For orthorhombic: all axes are unique, but we can still sort for canonical form
-    #    # Sort all three in descending order to remove permutation duplicates
-    #    hkl.sort(reverse=True)
-    #    return tuple(hkl)
-
-    else:  # monoclinic, triclinic
+    else: # monoclinic, triclinic
         # Lower symmetry: sort to remove permutation duplicates
         #hkl.sort(reverse=True)
         return tuple(hkl)

@@ -146,80 +146,35 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
                 cell_values.append((a, b, c))
             except np.linalg.LinAlgError:
                 continue
-        # Generate all possible triplets
-        #n_hkls = len(hkls)
-        #from itertools import combinations
-        #triplet_indices = list(combinations(range(n_hkls), 3))
-        #
-        #if len(triplet_indices) == 0:
-        #    return []
-        #
-        ## Convert to arrays for vectorized operations
-        #triplets = np.array(triplet_indices)  # Shape: (n_triplets, 3)
-        #
-        ## Get all triplets of hkls and d-spacings
-        #hkls_triplets = hkls[triplets]  # Shape: (n_triplets, 3, 3)
-        #d_triplets = d_spacings[triplets]  # Shape: (n_triplets, 3)
-        #
-        ## Build coefficient matrices for all triplets
-        #A = np.zeros((len(triplets), 3, 3))
-        #A[:, :, 0] = hkls_triplets[:, :, 0]**2  # h²
-        #A[:, :, 1] = hkls_triplets[:, :, 1]**2  # k²
-        #A[:, :, 2] = hkls_triplets[:, :, 2]**2  # l²
-        #
-        #b = 1/d_triplets**2  # Shape: (n_triplets, 3)
-        #
-        #try:
-        #    x = np.linalg.solve(A, b)  # Shape: (n_triplets, 3)
-        #    # Filter valid solutions
-        #    valid = np.all(x > 0, axis=1)
-        #    x_valid = x[valid]
-        #
-        #    if len(x_valid) > 0:
-        #        a_values = np.sqrt(1/x_valid[:, 0])
-        #        b_values = np.sqrt(1/x_valid[:, 1])
-        #        c_values = np.sqrt(1/x_valid[:, 2])
-        #        cell_values = list(zip(a_values, b_values, c_values))
-        #except np.linalg.LinAlgError:
-        #    pass
 
     elif 3 <= spg <= 15:  # monoclinic, need a, b, c, beta
         # need four hkls to determine a, b, c, beta
-        len_solutions = len(hkls) // 4
+        N = 4
+        len_solutions = len(hkls) // N
         for i in range(len_solutions):
-            (h1, k1, l1), (h2, k2, l2), (h3, k3, l3), (h4, k4, l4) = hkls[4*i], hkls[4*i + 1], hkls[4*i + 2], hkls[4*i + 3]
-            theta1 = np.radians(two_thetas[4*i] / 2)
-            theta2 = np.radians(two_thetas[4*i + 1] / 2)
-            theta3 = np.radians(two_thetas[4*i + 2] / 2)
-            theta4 = np.radians(two_thetas[4*i + 3] / 2)
-            d1 = wave_length / (2 * np.sin(theta1))
-            d2 = wave_length / (2 * np.sin(theta2))
-            d3 = wave_length / (2 * np.sin(theta3))
-            d4 = wave_length / (2 * np.sin(theta4))
+            hkls_sub = hkls[N*i:N*i+N]
+            thetas_sub = np.radians(two_thetas[N*i:N*i+N]/2)
+            d_sub = (1/wave_length / (2 * np.sin(thetas_sub)))**2
+
             # Non-linear system; use numerical methods
             from scipy.optimize import minimize
-
             def objective(params):
-                a, b, c, beta_deg = params
-                beta = np.radians(beta_deg)
-                eqs = []
-                for (h, k, l), d_obs in zip([(h1, k1, l1), (h2, k2, l2), (h3, k3, l3), (h4, k4, l4)],
-                                            [d1, d2, d3, d4]):
-                    sin_beta_sq = np.sin(beta)**2
-                    d_calc_inv_sq = (h**2 / (a**2 * sin_beta_sq)) + (k**2 / b**2) + \
-                                    (l**2 / (c**2 * sin_beta_sq)) - \
-                                    (2 * h * l * np.cos(beta) / (a * c * sin_beta_sq))
-                    eqs.append((1/d_obs**2 - d_calc_inv_sq)**2)
-                return sum(eqs)
-            initial_guess = [2.0, 2.0, 2.0, 90.0]
-            result = minimize(objective, initial_guess)#; print(result.x, result.fun)
-            if result.success:
+                a, b, c, beta = params
+                sin_beta2 = np.sin(beta)**2
+                cos_beta = np.cos(beta)
+                h, k, l = hkls_sub[:, 0], hkls_sub[:, 1], hkls_sub[:, 2]
+                d_inv_sq = (h**2 / (a**2 * sin_beta2)) + (k**2 / b**2) + \
+                                (l**2 / (c**2 * sin_beta2)) - \
+                                (2 * h * l * cos_beta / (a * c * sin_beta2))
+                return np.sum((d_sub - d_inv_sq)**2)
+
+            initial_guess = [2.0, 2.0, 2.0, np.pi/2]
+            bounds = [(1.8, 50), (1.8, 50), (1.8, 50), (np.pi/4, np.pi*3/4)]
+            result = minimize(objective, initial_guess, bounds=bounds)
+            if result.success and result.fun < 1e-5:
                 a, b, c, beta = result.x
-                if a > 50 or b > 50 or c > 50 or beta <= 45 or beta >= 135:
-                    continue
-                if a < 0 or b < 0 or c < 0:
-                    continue
-                cell_values.append((a, b, c, beta))
+                cell_values.append((a, b, c, np.degrees(beta)))
+                #print(result.x, result.fun, hkls_sub, thetas_sub)
     else:
         msg = "Only cubic, tetragonal, hexagonal, and orthorhombic systems are supported."
         raise NotImplementedError(msg)
@@ -442,7 +397,6 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
         # Filter out None values
         valid_mask = expected_thetas != None
         valid_thetas = expected_thetas[valid_mask]
-        valid_hkls = test_hkls[valid_mask]
         # Now try to index all other peaks using this 'a'
 
         if len(valid_thetas) > 0:
