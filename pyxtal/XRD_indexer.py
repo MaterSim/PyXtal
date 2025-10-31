@@ -154,27 +154,35 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
         for i in range(len_solutions):
             hkls_sub = hkls[N*i:N*i+N]
             thetas_sub = np.radians(two_thetas[N*i:N*i+N]/2)
-            d_sub = (1/wave_length / (2 * np.sin(thetas_sub)))**2
-
-            # Non-linear system; use numerical methods
-            from scipy.optimize import minimize
-            def objective(params):
-                a, b, c, beta = params
-                sin_beta2 = np.sin(beta)**2
-                cos_beta = np.cos(beta)
-                h, k, l = hkls_sub[:, 0], hkls_sub[:, 1], hkls_sub[:, 2]
-                d_inv_sq = (h**2 / (a**2 * sin_beta2)) + (k**2 / b**2) + \
-                                (l**2 / (c**2 * sin_beta2)) - \
-                                (2 * h * l * cos_beta / (a * c * sin_beta2))
-                return np.sum((d_sub - d_inv_sq)**2)
-
-            initial_guess = [2.0, 2.0, 2.0, np.pi/2]
-            bounds = [(1.8, 50), (1.8, 50), (1.8, 50), (np.pi/4, np.pi*3/4)]
-            result = minimize(objective, initial_guess, bounds=bounds)
-            if result.success and result.fun < 1e-5:
-                a, b, c, beta = result.x
-                cell_values.append((a, b, c, np.degrees(beta)))
-                #print(result.x, result.fun, hkls_sub, thetas_sub)
+            d_sub = (2 * np.sin(thetas_sub) / wave_length)**2
+            h1, k1, l1 = hkls_sub[0]
+            h2, k2, l2 = hkls_sub[1]
+            h3, k3, l3 = hkls_sub[2]
+            h4, k4, l4 = hkls_sub[3]
+            d1, d2, d3, d4 = d_sub[0], d_sub[1], d_sub[2], d_sub[3]
+            A = np.array([[h1**2, k1**2, l1**2, h1*l1],
+                          [h2**2, k2**2, l2**2, h2*l2],
+                          [h3**2, k3**2, l3**2, h3*l3],
+                          [h4**2, k4**2, l4**2, h4*l4]])
+            b = np.array([d1, d2, d3, d4])
+            #print(A, b)
+            try:
+                x = np.linalg.solve(A, b)#; print(A, x)
+                a1, a2, a3, a4 = x
+                if a1 <= 0 or a2 <= 0 or a3 <= 0: continue
+                b = np.sqrt(1/a2)#; print('b value', b); import sys; sys.exit()
+                cos_beta = - a4 / (2 * np.sqrt(a1) * np.sqrt(a3))
+                if cos_beta < -1 or cos_beta > 1: continue
+                betar = np.arccos(cos_beta)
+                sin_beta = np.sin(betar)
+                if sin_beta <= np.sin(np.pi/6): continue
+                a = np.sqrt(1/a1) / sin_beta
+                c = np.sqrt(1/a3) / sin_beta
+                if a > 50 or b > 50 or c > 50: continue
+                cell_values.append((a, b, c, np.degrees(betar)))
+                #print(h1, k1, l1, cell_values[-1])
+            except np.linalg.LinAlgError:
+                continue
     else:
         msg = "Only cubic, tetragonal, hexagonal, and orthorhombic systems are supported."
         raise NotImplementedError(msg)
@@ -441,8 +449,11 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
 if __name__ == "__main__":
     from pyxtal import pyxtal
     from itertools import combinations
+    np.set_printoptions(precision=4, suppress=True)
+    
     xtal = pyxtal()
-    xtal.from_seed('pyxtal/database/cifs/JVASP-62168.cif')
+    #xtal.from_seed('pyxtal/database/cifs/JVASP-62168.cif')
+    xtal.from_seed('pyxtal/database/cifs/JVASP-98225.cif')
     xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
     cell_ref = np.sort(np.array(xtal.lattice.encode()))
     long_thetas = xrd.pxrd[:15, 0]
@@ -451,12 +462,17 @@ if __name__ == "__main__":
     print(xrd.by_hkl(N_max=10))
 
     # Get the a list of hkl guesses and sort them by d^2
-    guesses = xtal.group.generate_hkl_guesses(2, 3, 5, max_square=29, total_square=40, verbose=True)
+    if spg >= 16:
+        guesses = xtal.group.generate_hkl_guesses(2, 3, 5, max_square=29, total_square=40, verbose=True)
+    else:
+        guesses = xtal.group.generate_hkl_guesses(2, 2, 2, max_square=20, total_square=30, verbose=True)
     guesses = np.array(guesses)
     print("Total guesses:", len(guesses))
     sum_squares = np.sum(guesses**2, axis=(1,2))
     sorted_indices = np.argsort(sum_squares)
     guesses = guesses[sorted_indices]
+    #guesses = np.array([[[2, 0, 0], [1, 1, 0], [0, 1, 1], [0, 0, 2]]])
+    #guesses = np.array([[[2, 0, 0], [1, 1, 0], [0, 0, 2], [2, 0, -2]]])
 
     # Check the quality of each (hkl, 2theta) solutions
     for guess in guesses[:]:
