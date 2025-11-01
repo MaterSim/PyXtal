@@ -727,7 +727,7 @@ class Group:
         return possible_hkls  # remove duplicates
 
     def generate_hkl_guesses(self, h_max=2, k_max=None, l_max=None, max_square=12,
-                             total_square=None, reduce=True, verbose=False):
+                             total_square=None, max_size=1000000,reduce=True, verbose=False):
         """
         Generate reasonable hkl indices within a cutoff for different crystal systems.
         This function considers the extinction conditions to limit the hkls.
@@ -738,160 +738,181 @@ class Group:
             k_max: maximum absolute value for l
             max_square: maximum h^2 + k^2 + l^2
             total_square: sum(all h^2 + k^2 + l^2)
+            max_size: maximum number of guesses to return
             reduce: whether or not reduce the number of guesses
             verbose: whether or not print the possible hkls
         """
-        from itertools import permutations
         if k_max is None: k_max = h_max
         if l_max is None: l_max = h_max
         possible_hkls = self.generate_possible_hkls(h_max, k_max, l_max,
                                                     max_square=max_square)
-        if verbose: print(possible_hkls)
+        possible_hkls = np.array(possible_hkls)
+        n_hkls = len(possible_hkls)
+        if verbose: print([tuple(hkl) for hkl in possible_hkls])
+
         if self.number > 195:
-            guesses = [[hkl] for hkl in possible_hkls]
+            guesses = np.reshape(possible_hkls, (len(possible_hkls), 1))
+
+        elif self.number > 143:
+            double_indices = np.array(list(itertools.combinations(range(n_hkls), 2)))
+            doubles = possible_hkls[double_indices]  # Shape: (n_doubles, 2, 3)
+            base_signs = np.array([(1, 1, 1), (1, -1, 1)])
+            all_guesses = []
+            for double in doubles:
+                for signs in base_signs:
+                    signed_double = double * signs[np.newaxis, :]
+                    all_guesses.extend(list(itertools.permutations(signed_double)))
+            guesses = np.array(all_guesses)
+
         elif self.number >= 75:
-            # select pairs
-            guesses = []
-            for i in range(len(possible_hkls)-1):
-                h1, k1, l1 = possible_hkls[i]
-                for j in range(i+1, len(possible_hkls)):
-                    h2, k2, l2 = possible_hkls[j]
-                    # only consider the cases with increasing |h|, |k|, |l|
-                    if self.number < 143:
-                        if abs(h1) >= abs(h2) and abs(k1) >= abs(k2) and abs(l1) >= abs(l2):
-                            #print("skip", (h1, k1, l1), (h2, k2, l2))
-                            guesses.append([(h2, k2, l2), (h1, k1, l1)])
-                        elif abs(h2) >= abs(h1) and abs(k2) >= abs(k1) and abs(l2) >= abs(l1):
-                            #print("skip", (h2, k2, l2), (h1, k1, l1))
-                            guesses.append([(h1, k1, l1), (h2, k2, l2)])
-                        else:
-                            solutions = [(h1, k1, l1), (h2, k2, l2)]
-                            guesses.extend(list(permutations(solutions)))
-                    else:
-                        base_signs = [(1, 1, 1), (1, -1, 1)]
-                        for signs in base_signs:
-                            sh1, sk1, sl1 = signs[0]*h1, signs[1]*k1, signs[2]*l1
-                            sh2, sk2, sl2 = signs[0]*h2, signs[1]*k2, signs[2]*l2
-                            # if h1, k1, l1 and h2, k2, l2 have same sign pattern,
-                            # only consider the cases with increasing |h|, |k|, |l|
-                            if (np.sign(sh1) == np.sign(sh2) and
-                                np.sign(sk1) == np.sign(sk2) and
-                                np.sign(sl1) == np.sign(sl2)):
-                                if (abs(sh1) <= abs(sh2) and
-                                    abs(sk1) <= abs(sk2) and
-                                    abs(sl1) <= abs(sl2)):
-                                    #print("skip", (sh2, sk2, sl2), (sh1, sk1, sl1))
-                                    guesses.append([(sh1, sk1, sl1), (sh2, sk2, sl2)])
-                                elif (abs(sh2) <= abs(sh1) and
-                                      abs(sk2) <= abs(sk1) and
-                                      abs(sl2) <= abs(sl1)):
-                                    #print("skip", (sh1, sk1, sl1), (sh2, sk2, sl2))
-                                    guesses.append([(sh2, sk2, sl2), (sh1, sk1, sl1)])
-                                else:
-                                    guesses.append([(sh1, sk1, sl1), (sh2, sk2, sl2)])
-                                    guesses.append([(sh2, sk2, sl2), (sh1, sk1, sl1)])
-                            else:
-                                guesses.append([(sh1, sk1, sl1), (sh2, sk2, sl2)])
-                                guesses.append([(sh2, sk2, sl2), (sh1, sk1, sl1)])
-                    #solutions = [(h1, k1, l1), (h2, k2, l2)]
-                    #guesses.extend(list(permutations(solutions)))
+            # Generate all double combinations
+            double_indices = np.array(list(itertools.combinations(range(n_hkls), 2)))
+            doubles = possible_hkls[double_indices]  # Shape: (n_doubles, 2, 3)
+            all_guesses = []
+            for double in doubles:
+                all_guesses.extend(list(itertools.permutations(double)))
+            guesses = np.array(all_guesses)
+
         elif self.number >= 16:
-            # select triplets
-            guesses = []
-            for i in range(len(possible_hkls)-1):
-                h1, k1, l1 = possible_hkls[i]
-                for j in range(i+1, len(possible_hkls)):
-                    h2, k2, l2 = possible_hkls[j]
-                    for k in range(j+1, len(possible_hkls)):
-                        h3, k3, l3 = possible_hkls[k]
-                        solutions = [(h1, k1, l1), (h2, k2, l2), (h3, k3, l3)]
-                        guesses.extend(list(itertools.permutations(solutions)))
+            triple_indices = np.array(list(itertools.combinations(range(n_hkls), 3)))
+            triples = possible_hkls[triple_indices]  # Shape: (n_triples, 3, 3)
+            all_guesses = []
+            for triple in triples:
+                all_guesses.extend(list(itertools.permutations(triple)))
+            guesses = np.array(all_guesses)
 
         elif self.number >= 3:
-            # select quadruplets
-            guesses = []
-            base_signs = [(1, 1, 1), (1, 1, -1)]
-            for i in range(len(possible_hkls)-1):
-                h1, k1, l1 = possible_hkls[i]
-                for j in range(i+1, len(possible_hkls)):
-                    h2, k2, l2 = possible_hkls[j]
-                    for k in range(j+1, len(possible_hkls)):
-                        h3, k3, l3 = possible_hkls[k]
-                        for m in range(k+1, len(possible_hkls)):
-                            h4, k4, l4 = possible_hkls[m]
-                            for signs in base_signs:
-                                sh1, sk1, sl1 = signs[0]*h1, signs[1]*k1, signs[2]*l1
-                                sh2, sk2, sl2 = signs[0]*h2, signs[1]*k2, signs[2]*l2
-                                sh3, sk3, sl3 = signs[0]*h3, signs[1]*k3, signs[2]*l3
-                                sh4, sk4, sl4 = signs[0]*h4, signs[1]*k4, signs[2]*l4
-                                solutions = [(sh1, sk1, sl1), (sh2, sk2, sl2),
-                                             (sh3, sk3, sl3), (sh4, sk4, sl4)]
-                                guesses.extend(list(itertools.permutations(solutions)))
+            # Generate all quadruple combinations
+            quadruple_indices = np.array(list(itertools.combinations(range(n_hkls), 4)))
+            quadruples = possible_hkls[quadruple_indices]  # Shape: (n_quadruples, 4, 3)
+            base_signs = np.array([(1, 1, 1), (1, 1, -1)])
 
-        if reduce: guesses = self.reduce_hkl_guesses(guesses, total_square)
+            #from time import time
+            #t0 = time()
+            n_quads = len(quadruples)
+            n_signs = len(base_signs)
+            n_perms = 24  # 4! permutations
+            quads_expanded = np.tile(quadruples[:, np.newaxis, :, :], (1, n_signs, 1, 1))
+            signs_expanded = np.tile(base_signs[np.newaxis, :, np.newaxis, :], (n_quads, 1, 4, 1))
+            signed_quads = quads_expanded * signs_expanded
+            signed_quads = signed_quads.reshape(-1, 4, 3)
+
+            perms = np.array(list(itertools.permutations(range(4))))
+            guesses = np.empty((n_signs * n_quads * n_perms, 4, 3), dtype=int)
+            for i, perm in enumerate(perms):
+                start_idx = i * n_signs * n_quads
+                end_idx = (i + 1) * n_signs * n_quads
+                guesses[start_idx:end_idx] = signed_quads[:, perm, :]
+            #t1 = time()
+            #if verbose: print("Time for generating quadruple hkl guesses:", t1 - t0, len(quadruples), len(guesses))
+
+        if total_square is not None:
+            sums = np.sum(guesses**2, axis=(1, 2))#; print(len(sums))
+            ids = np.argsort(sums)
+            if len(ids) > max_size: ids = ids[:max_size]
+            guesses = guesses[ids]
+
+        if reduce:
+            if verbose: print("Reducing hkl guesses...", len(guesses)) 
+            guesses = self.reduce_hkl_guesses(guesses)
 
         return guesses
 
-    def reduce_hkl_guesses(self, hkls, total_square=None):
+    def reduce_hkl_guesses(self, hkls):
         """
         Reduce the hkl guesses by removing duplicates based on canonical forms.
 
         Args:
-            hkls (list): List of hkl guess tuples
-            total_square (int): the maximum sum of h^2+k^2+l^2
+            hkls (list): np.ndarray of hkl guesses tuples
 
         Returns:
-            list: Reduced list of hkl guesses tuples
+            list: Reduced hkls
         """
-        # convert (hkl) to numpy array for easier processing
-        hkls = np.array([np.array(guess) for guess in hkls])
-        if total_square is not None:
-            sums = np.sum(hkls**2, axis=(1,2))#; print(len(sums))
-            hkls = hkls[sums <= total_square]#; print(len(hkls))
+        #print("Raw", len(hkls), "hkl guesses for space group", self.number)
 
         if 143 <= self.number <= 194:
+            # must follow the ordering constraints if two hkls have the same signs
+            # (h1, k1) >= (h2, k2) >= 0
+            condition1 = hkls[:, 0, :2] >= hkls[:, 1, :2]  # (h1, k1) >= (h2, k2)
+            condition2 = hkls[:, 1, :2] >= 0             # (h2, k2) >= 0
+            mask1 = np.all(condition1 & condition2, axis=1)
+            condition3 = hkls[:, 0, :2] <= hkls[:, 1, :2]  # (h1, k1) <= (h2, k2)
+            condition4 = hkls[:, 1, :2] <= 0             # (h2, k2) <= 0
+            mask2 = np.all(condition3 & condition4, axis=1)
+            mask3 = hkls[:, 0, 2] >= hkls[:, 1, 2] # l1 >= l2
+            mask = (mask1 | mask2) & mask3#; print(mask.sum(), mask1.sum(), mask2.sum(), mask3.sum())
+            hkls = hkls[~mask]
+            #print("Reducing order", len(hkls), "hkl guesses for space group", self.number)
+
             B = np.zeros([len(hkls), 2, 2])
             B[:,:,0] = 4/3 * (hkls[:,:,0] ** 2 + hkls[:,:,0] * hkls[:,:,1] + hkls[:,:,1] ** 2)
             B[:,:,1] = hkls[:,:,2] ** 2
             hkls = hkls[np.linalg.det(B) != 0]
+            #print("Reducing colinear", len(hkls), "hkl guesses for space group", self.number)
 
         elif 74 < self.number < 143:
+            # must follow the ordering constraints
+            mask1 = np.all(hkls[:,0,:] >= hkls[:,1,:], axis=1) # (h1, k1, l1) >= (h2, k2, l2)
+            hkls = hkls[~mask1]
+            print("Reducing order", len(hkls), "hkl guesses for space group", self.number)
+
+            # must be non-coplanar
             B = np.zeros([len(hkls), 2, 2])
             B[:,:,0] = hkls[:,:,0] ** 2 + hkls[:,:,1] ** 2
             B[:,:,1] = hkls[:,:,2] ** 2
             hkls = hkls[np.linalg.det(B) != 0]
-            #print("Reduced to", len(hkls), "guesses after applying ordering constraints
+            print("Reducing colinear", len(hkls), "hkl guesses for space group", self.number)
+
         elif 15 < self.number < 75:
-            hkls = np.abs(hkls)
+            # must follow the ordering constraints
+            mask1 = np.all(hkls[:,0,:] >= hkls[:,1,:], axis=1) # (h1, k1, l1) >= (h2, k2, l2)
+            mask2 = np.all(hkls[:,1,:] >= hkls[:,2,:], axis=1) # (h2, k2, l2) >= (h3, k3, l3)
+            mask3 = np.all(hkls[:,0,:] >= hkls[:,2,:], axis=1) # (h1, k1, l1) >= (h3, k3, l3)
+            mask = mask1 | mask2 | mask3
+            hkls = hkls[~mask]
+
             B = np.zeros([len(hkls), 3, 3])
             B[:,:,0] = hkls[:,:,0] ** 2
             B[:,:,1] = hkls[:,:,1] ** 2
             B[:,:,2] = hkls[:,:,2] ** 2
             hkls = hkls[np.linalg.det(B) != 0]
             #print("Reduced to", len(hkls), "guesses after applying ordering constraints.")
+
             # remove duplicates based on canonical forms
             canonical_seen = set()
             unique_hkls = []
             for guess in hkls:
                 canonical = get_canonical_hkl_series(guess, self.number)
-                #if canonical == ((2, 0, 0), (1, 0, 5), (0, 2, 0)) or canonical == ((0, 2, 0), (5, 1, 0), (0, 0, 2)):
-                #    print("checking", guess, canonical)
                 if canonical not in canonical_seen:
                     canonical_seen.add(canonical)
                     unique_hkls.append(guess)
             hkls = unique_hkls
             #print("Reduced to", len(hkls), "guesses after removing duplicates.")
+
         elif 2 < self.number <= 15:
-            # remove duplicates based on canonical forms
-            #print("Reduced to", len(hkls), "guesses after removing duplicates.")
+            # must follow the ordering constraints if two hkls have the same signs
+            # (h1, k1) >= (h2, k2) >= 0
+            for (i, j) in [(0, 1), (1, 2), (2, 3), (0, 2), (0, 3), (1, 3)]:
+                condition1 = np.all(hkls[:, i, 0::2] >= hkls[:, j, 0::2], axis=1)  # (h1, l1) >= (h2, l2)
+                condition2 = np.all(hkls[:, j, 0::2] >= 0, axis=1)             # (h2, l2) >= 0
+                mask1 = condition1 & condition2
+                condition3 = np.all(hkls[:, i, 0::2] <= hkls[:, j, 0::2], axis=1)  # (h1, l1) <= (h2, l2)
+                condition4 = np.all(hkls[:, j, 0::2] <= 0, axis=1)             # (h2, l2) <= 0
+                mask2 = condition3 & condition4
+                mask3 = hkls[:, i, 1] >= hkls[:, j, 1] # l1 >= l2
+                mask = (mask1 | mask2) & mask3#; print(mask.sum(), mask1.sum(), mask2.sum(), mask3.sum())
+                hkls = hkls[~mask]
+                #print("Reduced to", len(hkls), "guesses after ordering.")
+
             B = np.zeros([len(hkls), 4, 4])
             B[:,:,0] = hkls[:,:,0] ** 2
             B[:,:,1] = hkls[:,:,1] ** 2
             B[:,:,2] = hkls[:,:,2] ** 2
             B[:,:,3] = hkls[:,:,0] * hkls[:,:,2]
-            hkls = hkls[np.linalg.det(B) != 0]
+            hkls = hkls[np.abs(np.linalg.det(B)) > 1e-8]
             #print("Reduced to", len(hkls), "guesses after removing duplicates.")
-        return [tuple(map(tuple, guess)) for guess in hkls]
+
+        return hkls #[tuple(map(tuple, guess)) for guess in hkls]
 
     def check_hkl_in_list(self, hkl, hkl_list):
         """
@@ -904,12 +925,7 @@ class Group:
         Returns:
             bool: True if hkl is in hkl_list, False otherwise
         """
-        for candidate in hkl_list:
-            if candidate[0] == (0, 2, 0) and candidate[1] == (5, 1, 0) and candidate[2] == (0, 0, 2):
-                print(hkl, candidate, hkl == candidate)
-            if hkl == candidate:
-                return True
-        return False
+        return sum(np.sum((hkl_list - hkl)**2, axis=(1,2))==0) > 0
 
     def is_valid_combination(self, sites):
         """
