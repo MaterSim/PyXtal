@@ -1,0 +1,49 @@
+#############################################################
+#             ______       _    _          _                #
+#            (_____ \     \ \  / /        | |               #
+#             _____) )   _ \ \/ / |_  ____| |               #
+#            |  ____/ | | | )  (|  _)/ _  | |               #
+#            | |    | |_| |/ /\ \ |_( (_| | |___            #
+#            |_|     \__  /_/  \_\___)__|_|_____)           #
+#                   (____/                                  #
+#---------------------(version    1.1.1)--------------------#
+#       A Python package for random crystal generation      #
+#       url: https://github.com/qzhu2017/pyxtal             #
+#       @Zhu's group at U. North Carolina at Charlotte      #
+#############################################################
+data_from_pyxtal
+
+_symmetry_space_group_name_H-M 'Pm'
+_symmetry_Int_Tables_number                    6
+_symmetry_cell_setting                monoclinic
+_cell_length_a            3.275877
+_cell_length_b           12.022365
+_cell_length_c            3.275934
+_cell_angle_alpha        90.000000
+_cell_angle_beta        119.998614
+_cell_angle_gamma        90.000000
+_cell_volume            111.735027
+
+loop_
+ _symmetry_equiv_pos_site_id
+ _symmetry_equiv_pos_as_xyz
+1 'x, y, z'
+2 'x, -y, z'
+
+loop_
+ _atom_site_label
+ _atom_site_type_symbol
+ _atom_site_symmetry_multiplicity
+ _atom_site_fract_x
+ _atom_site_fract_y
+ _atom_site_fract_z
+ _atom_site_occupancy
+Al     Al       1     0.666664    0.500000    0.333276 1
+Al     Al       1     0.333337    0.000000    0.666625 1
+In     In       2     0.999999    0.750002    1.000000 1
+O      O        1     0.999999    0.500000    0.999942 1
+O      O        1     0.000002    0.000000    0.999965 1
+O      O        2     0.666657    0.342073    0.333341 1
+O      O        2     0.333342    0.157923    0.666662 1
+#END
+

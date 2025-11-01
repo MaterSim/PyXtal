@@ -697,10 +697,10 @@ class Group:
 
         for h in range(0, h_max + 1):
             # add permutation
-            k_min = h if self.number < 3 else 0
+            k_min = 0 #if self.number > 3 else h
             for k in range(k_min, k_max + 1):
                 # add additional
-                l_min = 0 if self.number > 15 else h
+                l_min = 0 #if self.number > 15 else h
                 for l in range(l_min, l_max + 1):
                     if h == 0 and k == 0 and l == 0:  # Exclude (0,0,0)
                         continue
@@ -756,10 +756,6 @@ class Group:
                 h1, k1, l1 = possible_hkls[i]
                 for j in range(i+1, len(possible_hkls)):
                     h2, k2, l2 = possible_hkls[j]
-                    if (l1 == 0 and l2 == 0):
-                        continue
-                    elif (h1 == 0 and k1 == 0) and (h2 == 0 and k2 == 0):
-                        continue
                     # only consider the cases with increasing |h|, |k|, |l|
                     if self.number < 143:
                         if abs(h1) >= abs(h2) and abs(k1) >= abs(k2) and abs(l1) >= abs(l2):
@@ -808,15 +804,8 @@ class Group:
                     h2, k2, l2 = possible_hkls[j]
                     for k in range(j+1, len(possible_hkls)):
                         h3, k3, l3 = possible_hkls[k]
-                        if (h1 == h2 == h3 == 0):
-                            continue
-                        elif (k1 == k2 == k3 == 0):
-                            continue
-                        elif (l1 == l2 == l3 == 0):
-                            continue
                         solutions = [(h1, k1, l1), (h2, k2, l2), (h3, k3, l3)]
                         guesses.extend(list(itertools.permutations(solutions)))
-
 
         elif self.number >= 3:
             # select quadruplets
@@ -830,12 +819,6 @@ class Group:
                         h3, k3, l3 = possible_hkls[k]
                         for m in range(k+1, len(possible_hkls)):
                             h4, k4, l4 = possible_hkls[m]
-                            if (h1 == 0 and h2 == 0 and h3 == 0 and h4 == 0):
-                                continue
-                            elif (k1 == 0 and k2 == 0 and k3 == 0 and k4 == 0):
-                                continue
-                            elif (l1 == 0 and l2 == 0 and l3 == 0 and l4 == 0):
-                                continue
                             for signs in base_signs:
                                 sh1, sk1, sl1 = signs[0]*h1, signs[1]*k1, signs[2]*l1
                                 sh2, sk2, sl2 = signs[0]*h2, signs[1]*k2, signs[2]*l2
@@ -866,13 +849,25 @@ class Group:
             sums = np.sum(hkls**2, axis=(1,2))#; print(len(sums))
             hkls = hkls[sums <= total_square]#; print(len(hkls))
 
-        if  15 < self.number < 75:
+        if 143 <= self.number <= 194:
+            B = np.zeros([len(hkls), 2, 2])
+            B[:,:,0] = 4/3 * (hkls[:,:,0] ** 2 + hkls[:,:,0] * hkls[:,:,1] + hkls[:,:,1] ** 2)
+            B[:,:,1] = hkls[:,:,2] ** 2
+            hkls = hkls[np.linalg.det(B) != 0]
+
+        elif 74 < self.number < 143:
+            B = np.zeros([len(hkls), 2, 2])
+            B[:,:,0] = hkls[:,:,0] ** 2 + hkls[:,:,1] ** 2
+            B[:,:,1] = hkls[:,:,2] ** 2
+            hkls = hkls[np.linalg.det(B) != 0]
+            #print("Reduced to", len(hkls), "guesses after applying ordering constraints
+        elif 15 < self.number < 75:
             hkls = np.abs(hkls)
-            mask1 = np.all(hkls[:, 0] >= hkls[:, 1], axis=1)
-            mask2 = np.all(hkls[:, 1] >= hkls[:, 2], axis=1)
-            mask3 = np.all(hkls[:, 0] >= hkls[:, 2], axis=1)
-            mask = (mask1 | mask2 | mask3)#; print("mask", len(mask), hkls[mask][:5])
-            hkls = hkls[~mask]
+            B = np.zeros([len(hkls), 3, 3])
+            B[:,:,0] = hkls[:,:,0] ** 2
+            B[:,:,1] = hkls[:,:,1] ** 2
+            B[:,:,2] = hkls[:,:,2] ** 2
+            hkls = hkls[np.linalg.det(B) != 0]
             #print("Reduced to", len(hkls), "guesses after applying ordering constraints.")
             # remove duplicates based on canonical forms
             canonical_seen = set()
@@ -886,7 +881,16 @@ class Group:
                     unique_hkls.append(guess)
             hkls = unique_hkls
             #print("Reduced to", len(hkls), "guesses after removing duplicates.")
-
+        elif 2 < self.number <= 15:
+            # remove duplicates based on canonical forms
+            #print("Reduced to", len(hkls), "guesses after removing duplicates.")
+            B = np.zeros([len(hkls), 4, 4])
+            B[:,:,0] = hkls[:,:,0] ** 2
+            B[:,:,1] = hkls[:,:,1] ** 2
+            B[:,:,2] = hkls[:,:,2] ** 2
+            B[:,:,3] = hkls[:,:,0] * hkls[:,:,2]
+            hkls = hkls[np.linalg.det(B) != 0]
+            #print("Reduced to", len(hkls), "guesses after removing duplicates.")
         return [tuple(map(tuple, guess)) for guess in hkls]
 
     def check_hkl_in_list(self, hkl, hkl_list):

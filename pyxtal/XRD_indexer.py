@@ -69,125 +69,98 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
     thetas = np.radians(two_thetas / 2)
     d_spacings = wave_length / (2 * np.sin(thetas))
 
-    cell_values = []
+    cells = []
     if spg >= 195:  # cubic, only need a
         h_sq_sum = np.sum(hkls**2, axis=1)
-        a_values = d_spacings * np.sqrt(h_sq_sum)
-        cell_values = [[a] for a in a_values if 0 < a < 50]
+        cells = d_spacings * np.sqrt(h_sq_sum)
+        cells = cells[cells < 50.0]
+        cells = np.reshape(cells, [len(cells), 1])
 
     elif 143 <= spg <= 194:  #  hexagonal, need a and c
         # need two hkls to determine a and c
         len_solutions = len(hkls) // 2
-        for i in range(len_solutions):
-            (h1, k1, l1), (h2, k2, l2) = hkls[2*i], hkls[2*i + 1]
-            theta1 = np.radians(two_thetas[2*i] / 2)
-            theta2 = np.radians(two_thetas[2*i + 1] / 2)
-            d1 = wave_length / (2 * np.sin(theta1))
-            d2 = wave_length / (2 * np.sin(theta2))
-            A = np.array([[4/3 * (h1**2 + h1*k1 + k1**2), l1**2],
-                          [4/3 * (h2**2 + h2*k2 + k2**2), l2**2]])
-            b = np.array([1/d1**2, 1/d2**2])
-            try:
-                x = np.linalg.solve(A, b)
-                if x[0] <= 0 or x[1] <= 0:
-                    continue
-                a = np.sqrt(1/x[0])
-                c = np.sqrt(1/x[1])
-                if a > 50: continue
-                cell_values.append((a, c))
-            except np.linalg.LinAlgError:
-                continue
+        ds = (2 * np.sin(thetas) / wave_length)**2
+        A = np.zeros([len(hkls), 2])
+        A[:, 0] = 4/3 * (hkls[:, 0] ** 2 + hkls[:, 0] * hkls[:, 1] + hkls[:, 1] ** 2)
+        A[:, 1] = hkls[:, 2] ** 2
+        B = np.reshape(ds, [len_solutions, 2])
+        A = np.reshape(A, [len_solutions, 2, 2])#; print(A.shape, B.shape)
+        xs = np.linalg.solve(A, B)#; print(xs); import sys; sys.exit()
+        xs = xs[xs[:, 0] > 0]
+        xs = xs[xs[:, 1] > 0]
+        cells = np.sqrt(1/xs)
+        cells = cells[cells[:, 0] < 50.0]
 
     elif 75 <= spg <= 142:  # tetragonal, need a and c
         # need two hkls to determine a and c
         len_solutions = len(hkls) // 2
-        for i in range(len_solutions):
-            (h1, k1, l1), (h2, k2, l2) = hkls[2*i], hkls[2*i + 1]
-            theta1 = np.radians(two_thetas[2*i] / 2)
-            theta2 = np.radians(two_thetas[2*i + 1] / 2)
-            d1 = wave_length / (2 * np.sin(theta1))
-            d2 = wave_length / (2 * np.sin(theta2))
-            A = np.array([[h1**2 + k1**2, l1**2],
-                          [h2**2 + k2**2, l2**2]])
-            b = np.array([1/d1**2, 1/d2**2])
-            try:
-                x = np.linalg.solve(A, b)
-                if x[0] <= 0 or x[1] <= 0:
-                    continue
-                a = np.sqrt(1/x[0])
-                c = np.sqrt(1/x[1])
-                if a > 50: continue
-                cell_values.append((a, c))
-            except np.linalg.LinAlgError:
-                continue
+        ds = (2 * np.sin(thetas) / wave_length)**2
+        A = np.zeros([len(hkls), 2])
+        A[:, 0] = hkls[:, 0] ** 2 + hkls[:, 1] ** 2
+        A[:, 1] = hkls[:, 2] ** 2
+        B = np.reshape(ds, [len_solutions, 2])
+        A = np.reshape(A, [len_solutions, 2, 2])#; print(A.shape, B.shape)
+        xs = np.linalg.solve(A, B)#; print(xs); import sys; sys.exit()
+        xs = xs[xs[:, 0] > 0]
+        xs = xs[xs[:, 1] > 0]
+        cells = np.sqrt(1/xs)
+        cells = cells[cells[:, 0] < 50.0]
+
     elif 16 <= spg <= 74:  # orthorhombic, need a, b, c
         # need three hkls to determine a, b, c
         len_solutions = len(hkls) // 3
-        for i in range(len_solutions):
-            (h1, k1, l1), (h2, k2, l2), (h3, k3, l3) = hkls[3*i], hkls[3*i + 1], hkls[3*i + 2]
-            theta1 = np.radians(two_thetas[3*i] / 2)
-            theta2 = np.radians(two_thetas[3*i + 1] / 2)
-            theta3 = np.radians(two_thetas[3*i + 2] / 2)
-            d1 = wave_length / (2 * np.sin(theta1))
-            d2 = wave_length / (2 * np.sin(theta2))
-            d3 = wave_length / (2 * np.sin(theta3))
-            A = np.array([[h1**2, k1**2, l1**2],
-                          [h2**2, k2**2, l2**2],
-                          [h3**2, k3**2, l3**2]])
-            b = np.array([1/d1**2, 1/d2**2, 1/d3**2])
-            try:
-                x = np.linalg.solve(A, b)
-                if x[0] <= 0 or x[1] <= 0 or x[2] <= 0:
-                    continue
-                a = np.sqrt(1/x[0])
-                b = np.sqrt(1/x[1])
-                c = np.sqrt(1/x[2])
-                if a > 50 or b > 50 or c > 50: continue
-                cell_values.append((a, b, c))
-            except np.linalg.LinAlgError:
-                continue
+        ds = (2 * np.sin(thetas) / wave_length)**2
+        A = np.zeros([len(hkls), 3])
+        A[:, 0] = hkls[:, 0] ** 2
+        A[:, 1] = hkls[:, 1] ** 2
+        A[:, 2] = hkls[:, 2] ** 2
+        B = np.reshape(ds, [len_solutions, 3])
+        A = np.reshape(A, [len_solutions, 3, 3])#; print(A.shape, B.shape)
+        xs = np.linalg.solve(A, B)#; print(xs); import sys; sys.exit()
+        xs = xs[xs[:, 0] > 0]
+        xs = xs[xs[:, 1] > 0]
+        xs = xs[xs[:, 2] > 0]
+        cells = np.sqrt(1/xs)
+        cells = cells[np.all(cells[:, :3] < 50.0, axis=1)]
 
     elif 3 <= spg <= 15:  # monoclinic, need a, b, c, beta
         # need four hkls to determine a, b, c, beta
-        N = 4
-        len_solutions = len(hkls) // N
-        for i in range(len_solutions):
-            hkls_sub = hkls[N*i:N*i+N]
-            thetas_sub = np.radians(two_thetas[N*i:N*i+N]/2)
-            d_sub = (2 * np.sin(thetas_sub) / wave_length)**2
-            h1, k1, l1 = hkls_sub[0]
-            h2, k2, l2 = hkls_sub[1]
-            h3, k3, l3 = hkls_sub[2]
-            h4, k4, l4 = hkls_sub[3]
-            d1, d2, d3, d4 = d_sub[0], d_sub[1], d_sub[2], d_sub[3]
-            A = np.array([[h1**2, k1**2, l1**2, h1*l1],
-                          [h2**2, k2**2, l2**2, h2*l2],
-                          [h3**2, k3**2, l3**2, h3*l3],
-                          [h4**2, k4**2, l4**2, h4*l4]])
-            b = np.array([d1, d2, d3, d4])
-            #print(A, b)
-            try:
-                x = np.linalg.solve(A, b)#; print(A, x)
-                a1, a2, a3, a4 = x
-                if a1 <= 0 or a2 <= 0 or a3 <= 0: continue
-                b = np.sqrt(1/a2)#; print('b value', b); import sys; sys.exit()
-                cos_beta = - a4 / (2 * np.sqrt(a1) * np.sqrt(a3))
-                if cos_beta < -1 or cos_beta > 1: continue
-                betar = np.arccos(cos_beta)
-                sin_beta = np.sin(betar)
-                if sin_beta <= np.sin(np.pi/6): continue
-                a = np.sqrt(1/a1) / sin_beta
-                c = np.sqrt(1/a3) / sin_beta
-                if a > 50 or b > 50 or c > 50: continue
-                cell_values.append((a, b, c, np.degrees(betar)))
-                #print(h1, k1, l1, cell_values[-1])
-            except np.linalg.LinAlgError:
-                continue
+        len_solutions = len(hkls) // 4
+        thetas = np.radians(two_thetas/2)
+        ds = (2 * np.sin(thetas) / wave_length)**2
+        # hkls (4*N, 3) A=> N, 4, 4
+        A = np.zeros([len(hkls), 4])
+        A[:, 0] = hkls[:, 0] ** 2
+        A[:, 1] = hkls[:, 1] ** 2
+        A[:, 2] = hkls[:, 2] ** 2
+        A[:, 3] = hkls[:, 0] * hkls[:, 2]
+        B = np.reshape(ds, [len_solutions, 4])
+        A = np.reshape(A, [len_solutions, 4, 4])#; print(A.shape, B.shape)
+        xs = np.linalg.solve(A, B)#; print(xs); import sys; sys.exit()
+        xs = xs[xs[:, 0] > 0]
+        xs = xs[xs[:, 1] > 0]
+        xs = xs[xs[:, 2] > 0]
+        cos_betas = -xs[:, 3] / (2 * np.sqrt(xs[:, 0] * xs[:, 2]))
+        masks = np.abs(cos_betas) <= 1/np.sqrt(2)
+        xs = xs[masks]
+        cos_betas = cos_betas[masks]
+        sin_betas = np.sqrt(1 - cos_betas ** 2)
+        cells = np.zeros([len(xs), 4])
+        cells[:, 1] = np.sqrt(1/xs[:, 1])
+        cells[:, 3] = np.degrees(np.arccos(cos_betas))
+        cells[:, 0] = np.sqrt(1/xs[:, 0]) / sin_betas
+        cells[:, 2] = np.sqrt(1/xs[:, 2]) / sin_betas
+
+        # force angle to be less than 90
+        mask = cells[:, 3] > 90.0
+        cells[mask, 3] = 180.0 - cells[mask, 3]
+        cells = cells[np.all(cells[:, :3] < 50.0, axis=1)]
+        #print(cells)
     else:
         msg = "Only cubic, tetragonal, hexagonal, and orthorhombic systems are supported."
         raise NotImplementedError(msg)
 
-    return cell_values
+    return cells
 
 def get_d_hkl_from_cell(spg, cells, h, k, l):
     """
@@ -382,6 +355,10 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
 
     cells = np.array(cells)
     if len(cells) == 0: return []
+    # keep cells up to 4 decimal places
+    if spg < 16:
+        cells[:, -1] = np.round(cells[:, -1], decimals=2)
+        cells[:, :3] = np.round(cells[:, :3], decimals=4)
     cells = np.unique(cells, axis=0)#; print(cells)  # remove duplicates
 
     # get the maximum h from assuming the cell[-1] is (h00)
@@ -434,6 +411,7 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
         avg_error = np.mean([match[-1] for match in matched_peaks])
         consistency_score = 1.0 / (1.0 + avg_error)  # lower error = higher score
         score = coverage * consistency_score
+        #print("Cell:", cell, "Matched:", n_matched, "Score:", score)
 
         if score > min_score:
             solutions.append({
@@ -450,10 +428,12 @@ if __name__ == "__main__":
     from pyxtal import pyxtal
     from itertools import combinations
     np.set_printoptions(precision=4, suppress=True)
-    
+
     xtal = pyxtal()
-    #xtal.from_seed('pyxtal/database/cifs/JVASP-62168.cif')
-    xtal.from_seed('pyxtal/database/cifs/JVASP-98225.cif')
+    xtal.from_seed('pyxtal/database/cifs/JVASP-62168.cif')
+    #xtal.from_seed('pyxtal/database/cifs/JVASP-98225.cif')
+    #xtal.from_seed('pyxtal/database/cifs/JVASP-50935.cif')
+    #xtal.from_seed('pyxtal/database/cifs/JVASP-28565.cif')
     xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
     cell_ref = np.sort(np.array(xtal.lattice.encode()))
     long_thetas = xrd.pxrd[:15, 0]
@@ -465,7 +445,7 @@ if __name__ == "__main__":
     if spg >= 16:
         guesses = xtal.group.generate_hkl_guesses(2, 3, 5, max_square=29, total_square=40, verbose=True)
     else:
-        guesses = xtal.group.generate_hkl_guesses(2, 2, 2, max_square=20, total_square=30, verbose=True)
+        guesses = xtal.group.generate_hkl_guesses(3, 3, 6, max_square=38, total_square=48, verbose=True)
     guesses = np.array(guesses)
     print("Total guesses:", len(guesses))
     sum_squares = np.sum(guesses**2, axis=(1,2))
@@ -473,9 +453,15 @@ if __name__ == "__main__":
     guesses = guesses[sorted_indices]
     #guesses = np.array([[[2, 0, 0], [1, 1, 0], [0, 1, 1], [0, 0, 2]]])
     #guesses = np.array([[[2, 0, 0], [1, 1, 0], [0, 0, 2], [2, 0, -2]]])
+    #guesses = np.array([[[0, 2, 0], [0, 0, 1], [1, 0, 0], [1, 0, -1]]])
 
     # Check the quality of each (hkl, 2theta) solutions
+    cell2 = np.sort(np.array(xtal.lattice.encode()))
+    if spg <= 15 and cell2[3] > 90: cell2[3] = 180 - cell2[3]
+    cells_all = np.reshape(cell2, (1, len(cell2)))
+
     for guess in guesses[:]:
+        #print('New guess', guess.flatten())
         found = False
         n_peaks = len(guess)
 
@@ -490,75 +476,19 @@ if __name__ == "__main__":
 
         solutions = get_cell_from_multi_hkls(spg, hkls_t, thetas, long_thetas, use_seed=False)
         for sol in solutions:
-            d2 = np.sum(guess**2)
-            print("Guess:", guess.flatten(), d2, "->", sol['cell'], thetas[:len(guess)], "Score:", sol['score'])
             cell1 = np.sort(np.array(sol['cell']))
-            diff = np.sum((cell1 - cell_ref)**2)
-            if diff < 0.1:
+            if spg <= 15 and cell1[3] > 90: cell1[3] = 180 - cell1[3]
+
+            # Check if it is a new solution
+            diffs = np.sum((cells_all - cell1)**2, axis=1)
+            if len(cells_all[diffs < 0.1]) == 0:
+                print("Guess:", guess.flatten(), np.sum(guess**2), "->", cell1, sol['score'])
+                cells_all = np.vstack((cells_all, cell1))
+
+            if diffs[0] < 0.1: #result['score'] > 0.9999:
+                print("Guess:", guess.flatten(), np.sum(guess**2), "->", cell1, sol['score'])
                 print("High score, exiting early.")
                 found = True
                 break
         if found:
             break
-
-
-    #guesses = [
-    #           [(1, 1, 1), (2, 2, 0), (3, 1, 1)],
-    #           [(0, 0, 2), (1, 0, 0)],#, (1, 0, 1)],
-    #           [(0, 0, 2), (1, 0, 1), (1, 1, 0)],
-    #           [(1, 0, 0), (1, 0, 1), (1, 1, 0)],
-    #           [(2, 0, 0), (1, 0, 1), (2, 1, 0)],
-    #           [(1, 0, 0), (1, 1, 1), (1, 0, 2)],
-    #           [(1, 0, 1), (1, 1, 1), (3, 1, 1)],
-    #           [(2, 2, 0), (3, 1, 1), (2, 2, 2)],
-    #           [(1, 1, 1), (2, 0, 0), (2, 2, 0)],
-    #           [(1, 1), (2, 0, 0), (2, 2, 0)], # test bad case
-    #           [(0, 0, 1), (2, 0, -1), (2, 0, 1), (4, 0, 0), (1, 1, 0)],
-    #        ]
-    #for prototype in ["diamond", "graphite", "a-cristobalite", "olivine", "beta-Ga2O3"]:
-    #    xtal.from_prototype(prototype)
-    #    xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
-    #    spg = xtal.group.number
-    #    print("\nTesting prototype:", prototype, xtal.lattice, xtal.group.symbol, xtal.group.number)
-    #    print(xrd.by_hkl(N_max=10))
-    #    if True:
-    #        if xtal.group.number >= 195:
-    #            guesses = xtal.group.generate_hkl_guesses(3, max_square=16)
-    #        elif xtal.group.number >= 75:
-    #            guesses = xtal.group.generate_hkl_guesses(2, 2, 6, max_square=36)
-    #        elif xtal.group.number >= 16:
-    #            guesses = xtal.group.generate_hkl_guesses(3, 3, 3, max_square=20)
-    #        else:
-    #            guesses = xtal.group.generate_hkl_guesses(4, 2, 2, max_square=17, verbose=True)
-
-    #    guesses = np.array(guesses)
-    #    print("Total guesses:", len(guesses))
-    #    sum_squares = np.sum(guesses**2, axis=(1,2))
-    #    sorted_indices = np.argsort(sum_squares)
-    #    guesses = guesses[sorted_indices]
-
-    #    for guess in guesses:
-    #        hkls = [tuple(hkl) for hkl in guess if len(hkl) == 3]
-    #        if len(hkls)>3 and (hkls[0] == (1, 1, -1) and hkls[1] == (0, 0, -1) and hkls[2] == (2, 0, -1)):
-    #            print("Trying guess:", hkls)
-    #            run = True
-    #        else:
-    #            run = False
-    #        n_peaks = len(guess)
-    #        # select n peaks from first n+1 peaks, skipping a peak
-    #        exit = False
-    #        if n_peaks < len(xrd.pxrd):
-    #            available_peaks = xrd.pxrd[:n_peaks+1, 0]
-    #            # Try each combination of n peaks from the first n+1 peaks
-    #            for peak_combo in combinations(range(n_peaks+1), n_peaks):
-    #                theta = available_peaks[list(peak_combo)]
-    #                result = get_cell_from_multi_hkls(spg, hkls, theta, xrd.pxrd[:15, 0])
-    #                if result is not None and result['score'] > 0.95:
-    #                    print("Guess:", hkls, "->", result['cell'], "Score:", result['score'],
-    #                          "Matched peaks:", result['n_matched'], "/", result['n_total'])
-    #                    if result['score'] > 0.992:
-    #                        print("High score, exiting early.")
-    #                        exit = True
-    #                        break
-    #        if exit:
-    #            break
