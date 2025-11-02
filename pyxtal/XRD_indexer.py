@@ -73,8 +73,12 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
     if spg >= 195:  # cubic, only need a
         h_sq_sum = np.sum(hkls**2, axis=1)
         cells = d_spacings * np.sqrt(h_sq_sum)
-        cells = cells[cells < 50.0]
+        for m in range(len(cells)):
+            print(cells[m], hkls[m], d_spacings[m], two_thetas[m])
+        mask = cells < 50.0
+        cells = cells[mask]
         cells = np.reshape(cells, [len(cells), 1])
+        hkls_out = hkls[mask]
 
     elif 143 <= spg <= 194:  #  hexagonal, need a and c
         # need two hkls to determine a and c
@@ -86,10 +90,14 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
         B = np.reshape(ds, [len_solutions, 2])
         A = np.reshape(A, [len_solutions, 2, 2])#; print(A.shape, B.shape)
         xs = np.linalg.solve(A, B)#; print(xs); import sys; sys.exit()
-        xs = xs[xs[:, 0] > 0]
-        xs = xs[xs[:, 1] > 0]
+        mask1 = np.all(xs[:, :] > 0, axis=1)
+        hkls_out = np.reshape(hkls, (len_solutions, 6))
+        hkls_out = hkls_out[mask1]
+        xs = xs[mask1]
         cells = np.sqrt(1/xs)
-        cells = cells[cells[:, 0] < 50.0]
+        mask2 = cells[:, 0] < 50.0
+        cells = cells[mask2]
+        hkls_out = hkls_out[mask2]
 
     elif 75 <= spg <= 142:  # tetragonal, need a and c
         # need two hkls to determine a and c
@@ -102,13 +110,13 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
         A = np.reshape(A, [len_solutions, 2, 2])#; print(A.shape, B.shape)
         xs = np.linalg.solve(A, B)#; print(xs); import sys; sys.exit()
         mask1 = np.all(xs[:, :] > 0, axis=1)
-        hkls = np.reshape(hkls, (len_solutions, 6))
-        hkls = hkls[mask1]
+        hkls_out = np.reshape(hkls, (len_solutions, 6))
+        hkls_out = hkls_out[mask1]
         xs = xs[mask1]
         cells = np.sqrt(1/xs)
         mask2 = np.all(cells[:, :2] < 50.0, axis=1)
         cells = cells[mask2]
-        hkls = hkls[mask2]
+        hkls_out = hkls_out[mask2]
 
     elif 16 <= spg <= 74:  # orthorhombic, need a, b, c
         # need three hkls to determine a, b, c
@@ -331,7 +339,7 @@ def get_seeds(spg, hkls, two_thetas):
 
 
 def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_length=1.54184,
-                             tolerance=0.05, use_seed=True, min_score=0.999):
+                             tolerance=0.05, use_seed=True, min_score=0.99):
     """
     Estimate the cell parameters from multiple (hkl, two_theta) inputs.
     The idea is to use the Bragg's law and the lattice spacing formula to estimate the lattice parameters.
@@ -427,7 +435,7 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
         avg_error = np.mean([match[-1] for match in matched_peaks])
         consistency_score = 1.0 / (1.0 + avg_error)  # lower error = higher score
         score = coverage * consistency_score
-        #print("Cell:", cell, "Matched:", n_matched, "Score:", score)
+        #print("Cell:", cell, hkls[i], "Score:", score)
 
         if score > min_score:
             solutions.append({
@@ -449,8 +457,11 @@ if __name__ == "__main__":
     #xtal.from_seed('pyxtal/database/cifs/JVASP-62168.cif') # 52s -> 16s
     #xtal.from_seed('pyxtal/database/cifs/JVASP-98225.cif') # P21/c -> 33s -> 12s
     #xtal.from_seed('pyxtal/database/cifs/JVASP-50935.cif') # Pm -> 45s -> 7.6s
-    #xtal.from_seed('pyxtal/database/cifs/JVASP-28565.cif') # 207s -> 91s -> 80s -> 72s
-    xtal.from_seed('pyxtal/database/cifs/JVASP-47532.cif') # 
+    xtal.from_seed('pyxtal/database/cifs/JVASP-28565.cif') # 207s -> 91s -> 80s -> 72s
+    #xtal.from_seed('pyxtal/database/cifs/JVASP-47532.cif') #
+    #xtal.from_seed('pyxtal/database/cifs/JVASP-28634.cif', tol=1e-4) # P21/c -> 33s -> 12s
+    #xtal.from_seed('pyxtal/database/cifs/JVASP-97915.cif', tol=1e-4) # P21/c -> 33s -> 12s
+    #xtal.from_seed('pyxtal/database/cifs/JVASP-86205.cif', tol=1e-4) # P21/c -> 33s -> 12s
 
     xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
     cell_ref = np.sort(np.array(xtal.lattice.encode()))
@@ -466,7 +477,8 @@ if __name__ == "__main__":
         if spg in [5, 8, 12, 15]:
             guesses = xtal.group.generate_hkl_guesses(3, 3, 6, max_square=38, total_square=40, verbose=True)
         else:
-            guesses = xtal.group.generate_hkl_guesses(3, 3, 4, max_square=29, total_square=35, verbose=True)
+            #guesses = xtal.group.generate_hkl_guesses(3, 3, 4, max_square=29, total_square=35, verbose=True)
+            guesses = xtal.group.generate_hkl_guesses(3, 3, 3, max_square=15, total_square=36, verbose=True)
     guesses = np.array(guesses)
     print("Total guesses:", len(guesses))
     sum_squares = np.sum(guesses**2, axis=(1,2))
@@ -483,16 +495,19 @@ if __name__ == "__main__":
     cell2 = np.sort(np.array(xtal.lattice.encode()))
     if spg <= 15 and cell2[3] > 90: cell2[3] = 180 - cell2[3]
     cells_all = np.reshape(cell2, (1, len(cell2)))
+
     # Try each combination of n peaks from the first n+1 peaks
     n_peaks = len(guesses[0])
-    available_peaks = xrd.pxrd[:n_peaks + N_add, 0]
+    N = min(n_peaks + N_add, len(xrd.pxrd))
+    available_peaks = xrd.pxrd[:N, 0]
+
     thetas = []
     for peak_combo in combinations(range(n_peaks + N_add), n_peaks):
         thetas.extend(available_peaks[list(peak_combo)])
     N_thetas = len(thetas) // n_peaks
     thetas = np.array(thetas)
     thetas = np.tile(thetas, N_batch)
-
+    print(n_peaks, len(long_thetas))#; import sys; sys.exit()
     found = False
     d2 = 0
     for i in range(len(guesses)//N_batch + 1):
@@ -503,7 +518,13 @@ if __name__ == "__main__":
             else:
                 thetas = thetas[:N_thetas * n_peaks * N_batch]
         hkls_b = np.reshape(guesses[N_batch*i:N_batch*(i+1)], [N_batch*n_peaks, 3])
-        hkls_t = np.tile(hkls_b, (N_thetas, 1))
+        if spg >= 195:
+            hkls_t = np.tile(hkls_b, (1, N_thetas))
+            hkls_t = np.reshape(hkls_t, [N_batch*N_thetas*n_peaks, 3])
+        else:
+            hkls_t = np.tile(hkls_b, (N_thetas, 1))
+        #print('hkl shape:', hkls_b.shape, hkls_t.shape)
+        #print('thetas shape:', thetas.shape)
         solutions = get_cell_from_multi_hkls(spg, hkls_t, thetas, long_thetas, use_seed=False)
         if i % 1000 == 0:
             print(f"Processed {N_batch*(i)}/{d2}, found {len(cells_all)-1} cells so far.")

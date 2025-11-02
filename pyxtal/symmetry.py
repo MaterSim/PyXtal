@@ -727,7 +727,7 @@ class Group:
         return possible_hkls  # remove duplicates
 
     def generate_hkl_guesses(self, h_max=2, k_max=None, l_max=None, max_square=12,
-                             total_square=None, max_size=1000000,reduce=True, verbose=False):
+                             total_square=None, max_size=2000000,reduce=True, verbose=False):
         """
         Generate reasonable hkl indices within a cutoff for different crystal systems.
         This function considers the extinction conditions to limit the hkls.
@@ -751,7 +751,7 @@ class Group:
         if verbose: print([tuple(hkl) for hkl in possible_hkls])
 
         if self.number > 195:
-            guesses = np.reshape(possible_hkls, (len(possible_hkls), 1))
+            guesses = np.reshape(possible_hkls, (len(possible_hkls), 1, 3))
 
         elif self.number > 143:
             double_indices = np.array(list(itertools.combinations(range(n_hkls), 2)))
