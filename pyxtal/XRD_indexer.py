@@ -339,7 +339,7 @@ def get_seeds(spg, hkls, two_thetas):
 
 
 def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_length=1.54184,
-                             tolerance=0.05, use_seed=True, min_score=0.99):
+                             tolerance=0.05, use_seed=True, min_score=0.999):
     """
     Estimate the cell parameters from multiple (hkl, two_theta) inputs.
     The idea is to use the Bragg's law and the lattice spacing formula to estimate the lattice parameters.
@@ -457,7 +457,8 @@ if __name__ == "__main__":
     #xtal.from_seed('pyxtal/database/cifs/JVASP-62168.cif') # 52s -> 16s
     #xtal.from_seed('pyxtal/database/cifs/JVASP-98225.cif') # P21/c -> 33s -> 12s
     #xtal.from_seed('pyxtal/database/cifs/JVASP-50935.cif') # Pm -> 45s -> 7.6s
-    xtal.from_seed('pyxtal/database/cifs/JVASP-28565.cif') # 207s -> 91s -> 80s -> 72s
+    #xtal.from_seed('pyxtal/database/cifs/JVASP-28565.cif') # 207s -> 91s -> 80s -> 72s
+    xtal.from_seed('pyxtal/database/cifs/JVASP-42300.cif') # 178s
     #xtal.from_seed('pyxtal/database/cifs/JVASP-47532.cif') #
     #xtal.from_seed('pyxtal/database/cifs/JVASP-28634.cif', tol=1e-4) # P21/c -> 33s -> 12s
     #xtal.from_seed('pyxtal/database/cifs/JVASP-97915.cif', tol=1e-4) # P21/c -> 33s -> 12s
@@ -471,27 +472,33 @@ if __name__ == "__main__":
     print(xrd.by_hkl(N_max=10))
 
     # Get the a list of hkl guesses and sort them by d^2
+    if spg >= 195:
+        min_score = 0.96
+    else:
+        min_score = 0.999
+
     if spg >= 16:
         guesses = xtal.group.generate_hkl_guesses(2, 3, 5, max_square=29, total_square=40, verbose=True)
     else:
         if spg in [5, 8, 12, 15]:
-            guesses = xtal.group.generate_hkl_guesses(3, 3, 6, max_square=38, total_square=40, verbose=True)
+            guesses = xtal.group.generate_hkl_guesses(3, 3, 5, max_square=29, total_square=40, verbose=True)
         else:
-            #guesses = xtal.group.generate_hkl_guesses(3, 3, 4, max_square=29, total_square=35, verbose=True)
-            guesses = xtal.group.generate_hkl_guesses(3, 3, 3, max_square=15, total_square=36, verbose=True)
+            guesses = xtal.group.generate_hkl_guesses(3, 3, 4, max_square=29, total_square=35, verbose=True)
+            #guesses = xtal.group.generate_hkl_guesses(3, 3, 3, max_square=15, total_square=36, verbose=True)
+
     guesses = np.array(guesses)
     print("Total guesses:", len(guesses))
     sum_squares = np.sum(guesses**2, axis=(1,2))
     sorted_indices = np.argsort(sum_squares)
     guesses = guesses[sorted_indices]
-    if len(guesses) > 200000: guesses = guesses[:200000]
+    if len(guesses) > 500000: guesses = guesses[:500000]
     #guesses = np.array([[[2, 0, 0], [1, 1, 0], [0, 1, 1], [0, 0, 2]]])
     #guesses = np.array([[[2, 0, 0], [1, 1, 0], [0, 0, 2], [2, 0, -2]]])
     #guesses = np.array([[[0, 0, -1], [1, 1, 0], [1, 1, -1], [0, 2, -5]]])
 
     # Check the quality of each (hkl, 2theta) solutions
     N_add = 5
-    N_batch = 20
+    N_batch = 10
     cell2 = np.sort(np.array(xtal.lattice.encode()))
     if spg <= 15 and cell2[3] > 90: cell2[3] = 180 - cell2[3]
     cells_all = np.reshape(cell2, (1, len(cell2)))
