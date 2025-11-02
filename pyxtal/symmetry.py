@@ -2335,7 +2335,7 @@ class Wyckoff_position:
 
     def get_site_symmetry_object(self, idx=0):
         ops = self.get_site_symm_ops(idx)#; print(self.number, self.index, self.letter)
-        return site_symmetry(ops, self.lattice_type, self.symbol[0], self.number)
+        return site_symmetry(ops, self.lattice_type, self.symbol[0], self.number, self.index)
 
     def get_site_symmetry(self, idx=0):
         ss = self.get_site_symmetry_object(idx)
@@ -3323,7 +3323,7 @@ class site_symmetry:
         a string representing the site symmetry (e.g., `2mm`)
     """
 
-    def __init__(self, ops, lattice_type, Bravis, number, parse_trans=False):
+    def __init__(self, ops, lattice_type, Bravis, number, wp_id=0, parse_trans=False):
         hexagonal = lattice_type in ["hexagonal", "trigonal"]
         self.parse_trans = parse_trans
         self.opas = [OperationAnalyzer(
@@ -3331,6 +3331,7 @@ class site_symmetry:
         self.lattice_type = lattice_type
         self.directions = get_symmetry_directions(lattice_type, Bravis)
         self.number = number
+        self.wp_id = wp_id
 
         # No translation: 7 fundamental / 13 compound symmetries
         # With translation: 18 fundamental / 37 compound symmetries
@@ -3604,8 +3605,13 @@ class site_symmetry:
                     self.symbols = ['.',  '.', '2']
                 elif self.symbols == ['.', '2/m', '.']:
                     self.symbols = ['.',  '.', '2/m']
-                elif self.symbols == ['3', '2', '2']:
-                    self.symbols = ['3', '.', '2']
+            if (self.number, self.wp_id) in [(157, 1), (162, 1), (162, 5),
+                                             (162, 6), (178, 1), (179, 1),
+                                             (180, 1), (180, 2), (181, 1),
+                                             (181, 2), (182, 1), (183, 2),
+                                             (185, 1), (189, 3), (191, 4),
+                                             (192, 2)]:
+                self.symbols = [self.symbols[i] for i in [0, 2, 1]]
 
         elif self.lattice_type == "cubic":
             for i, symbol in enumerate(self.symbols):
@@ -5012,6 +5018,7 @@ def get_canonical_hkl_series(hkl_series, spg):
 if __name__ == "__main__":
     print("Test pyxtal.wp.site symmetry")
     spg_list = [14, 36, 62, 99, 143, 160, 182, 183, 191, 192, 193, 194, 225, 230]
+    spg_list = [191, 192]
     for i in spg_list:
         g = Group(i)
         for wp in g:
