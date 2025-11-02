@@ -73,8 +73,7 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
     if spg >= 195:  # cubic, only need a
         h_sq_sum = np.sum(hkls**2, axis=1)
         cells = d_spacings * np.sqrt(h_sq_sum)
-        for m in range(len(cells)):
-            print(cells[m], hkls[m], d_spacings[m], two_thetas[m])
+        #for m in range(len(cells)): print(cells[m], hkls[m], d_spacings[m], two_thetas[m])
         mask = cells < 50.0
         cells = cells[mask]
         cells = np.reshape(cells, [len(cells), 1])
@@ -381,6 +380,8 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
     if spg < 16:
         cells[:, -1] = np.round(cells[:, -1], decimals=2)
         cells[:, :3] = np.round(cells[:, :3], decimals=4)
+    elif spg > 194:
+        cells = np.round(cells, decimals=5)
 
     _, unique_ids = np.unique(cells, axis=0, return_index=True)
     hkls = hkls[unique_ids]#; print(cells)  # remove duplicates
@@ -442,7 +443,7 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
                 'cell': cell,
                 'n_matched': n_matched,
                 'score': score,
-                'id': [i, hkls[i]],
+                'id': hkls[i],
             })
 
     return solutions
@@ -451,110 +452,122 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
 if __name__ == "__main__":
     from pyxtal import pyxtal
     from itertools import combinations
+    from time import time
     np.set_printoptions(precision=4, suppress=True)
 
     xtal = pyxtal()
-    #xtal.from_seed('pyxtal/database/cifs/JVASP-62168.cif') # 52s -> 16s
-    #xtal.from_seed('pyxtal/database/cifs/JVASP-98225.cif') # P21/c -> 33s -> 12s
-    #xtal.from_seed('pyxtal/database/cifs/JVASP-50935.cif') # Pm -> 45s -> 7.6s
-    #xtal.from_seed('pyxtal/database/cifs/JVASP-28565.cif') # 207s -> 91s -> 80s -> 72s
-    xtal.from_seed('pyxtal/database/cifs/JVASP-42300.cif') # 178s
-    #xtal.from_seed('pyxtal/database/cifs/JVASP-47532.cif') #
-    #xtal.from_seed('pyxtal/database/cifs/JVASP-28634.cif', tol=1e-4) # P21/c -> 33s -> 12s
-    #xtal.from_seed('pyxtal/database/cifs/JVASP-97915.cif', tol=1e-4) # P21/c -> 33s -> 12s
-    #xtal.from_seed('pyxtal/database/cifs/JVASP-86205.cif', tol=1e-4) # P21/c -> 33s -> 12s
+    data = []
+    for cif in [
+        #'pyxtal/database/cifs/JVASP-97915.cif', # Fm-3m, 0.9s
+        #'pyxtal/database/cifs/JVASP-86205.cif', # Im-3 204, 0.1s
+        #'pyxtal/database/cifs/JVASP-28634.cif', # P3m1, 0.1s
+        #'pyxtal/database/cifs/JVASP-85365.cif', # P4/mmm, 0.6s
+        #'pyxtal/database/cifs/JVASP-62168.cif', # Pnma, 33s
+        'pyxtal/database/cifs/JVASP-98225.cif', # P21/c, 14s
+        #'pyxtal/database/cifs/JVASP-50935.cif', # Pm, 10s
+        #'pyxtal/database/cifs/JVASP-28565.cif', # Cm, 100s
+        #'pyxtal/database/cifs/JVASP-36885.cif', # Cm, 100s
+        #'pyxtal/database/cifs/JVASP-42300.cif', # C2, 178s
+        #'pyxtal/database/cifs/JVASP-47532.cif', # P2/m,
+        ]:
+        t0 = time()
+        xtal.from_seed(cif)
+        xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
+        cell_ref = np.sort(np.array(xtal.lattice.encode()))
+        long_thetas = xrd.pxrd[:15, 0]
+        spg = xtal.group.number
+        print("\n", cif, xtal.lattice, xtal.group.symbol, xtal.group.number)
+        print(xrd.by_hkl(N_max=10))
 
-    xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
-    cell_ref = np.sort(np.array(xtal.lattice.encode()))
-    long_thetas = xrd.pxrd[:15, 0]
-    spg = xtal.group.number
-    print("\nTesting prototype:", xtal.lattice, xtal.group.symbol, xtal.group.number)
-    print(xrd.by_hkl(N_max=10))
-
-    # Get the a list of hkl guesses and sort them by d^2
-    if spg >= 195:
-        min_score = 0.96
-    else:
-        min_score = 0.999
-
-    if spg >= 16:
-        guesses = xtal.group.generate_hkl_guesses(2, 3, 5, max_square=29, total_square=40, verbose=True)
-    else:
-        if spg in [5, 8, 12, 15]:
-            guesses = xtal.group.generate_hkl_guesses(3, 3, 5, max_square=29, total_square=40, verbose=True)
-        else:
-            guesses = xtal.group.generate_hkl_guesses(3, 3, 4, max_square=29, total_square=35, verbose=True)
-            #guesses = xtal.group.generate_hkl_guesses(3, 3, 3, max_square=15, total_square=36, verbose=True)
-
-    guesses = np.array(guesses)
-    print("Total guesses:", len(guesses))
-    sum_squares = np.sum(guesses**2, axis=(1,2))
-    sorted_indices = np.argsort(sum_squares)
-    guesses = guesses[sorted_indices]
-    if len(guesses) > 500000: guesses = guesses[:500000]
-    #guesses = np.array([[[2, 0, 0], [1, 1, 0], [0, 1, 1], [0, 0, 2]]])
-    #guesses = np.array([[[2, 0, 0], [1, 1, 0], [0, 0, 2], [2, 0, -2]]])
-    #guesses = np.array([[[0, 0, -1], [1, 1, 0], [1, 1, -1], [0, 2, -5]]])
-
-    # Check the quality of each (hkl, 2theta) solutions
-    N_add = 5
-    N_batch = 10
-    cell2 = np.sort(np.array(xtal.lattice.encode()))
-    if spg <= 15 and cell2[3] > 90: cell2[3] = 180 - cell2[3]
-    cells_all = np.reshape(cell2, (1, len(cell2)))
-
-    # Try each combination of n peaks from the first n+1 peaks
-    n_peaks = len(guesses[0])
-    N = min(n_peaks + N_add, len(xrd.pxrd))
-    available_peaks = xrd.pxrd[:N, 0]
-
-    thetas = []
-    for peak_combo in combinations(range(n_peaks + N_add), n_peaks):
-        thetas.extend(available_peaks[list(peak_combo)])
-    N_thetas = len(thetas) // n_peaks
-    thetas = np.array(thetas)
-    thetas = np.tile(thetas, N_batch)
-    print(n_peaks, len(long_thetas))#; import sys; sys.exit()
-    found = False
-    d2 = 0
-    for i in range(len(guesses)//N_batch + 1):
-        if i == len(guesses)//N_batch:
-            N_batch = len(guesses) - N_batch * i
-            if N_batch == 0:
-                break
-            else:
-                thetas = thetas[:N_thetas * n_peaks * N_batch]
-        hkls_b = np.reshape(guesses[N_batch*i:N_batch*(i+1)], [N_batch*n_peaks, 3])
+        # Get the a list of hkl guesses and sort them by d^2
         if spg >= 195:
-            hkls_t = np.tile(hkls_b, (1, N_thetas))
-            hkls_t = np.reshape(hkls_t, [N_batch*N_thetas*n_peaks, 3])
+            min_score, N_add, N_batch = 0.96, 3, 5
+        elif spg > 15:
+            min_score, N_add, N_batch = 0.999, 5, 20
         else:
-            hkls_t = np.tile(hkls_b, (N_thetas, 1))
-        #print('hkl shape:', hkls_b.shape, hkls_t.shape)
-        #print('thetas shape:', thetas.shape)
-        solutions = get_cell_from_multi_hkls(spg, hkls_t, thetas, long_thetas, use_seed=False)
-        if i % 1000 == 0:
-            print(f"Processed {N_batch*(i)}/{d2}, found {len(cells_all)-1} cells so far.")
+            min_score, N_add, N_batch = 0.999, 8, 20
 
-        for sol in solutions:
-            cell1 = np.sort(np.array(sol['cell']))
+        if spg >= 16:
+            guesses = xtal.group.generate_hkl_guesses(2, 2, 5, max_square=29, total_square=40, verbose=True)
+        else:
+            if spg in [5, 8, 12, 15]:
+                guesses = xtal.group.generate_hkl_guesses(3, 3, 5, max_square=29, total_square=40, verbose=True)
+            else:
+                guesses = xtal.group.generate_hkl_guesses(3, 3, 4, max_square=29, total_square=35, verbose=True)
+                #guesses = xtal.group.generate_hkl_guesses(3, 3, 3, max_square=15, total_square=36, verbose=True)
 
-            # Check if it is a new solution
-            diffs = np.sum((cells_all - cell1)**2, axis=1)
-            guess = sol['id'][1]
-            score = sol['score']
-            d2 = np.sum(guess**2)
-            if len(cells_all[diffs < 0.1]) == 0:
-                print(f"Guess: {guess}, {d2}/{len(cells_all)-1} -> {cell1}, {score:.6f}")
-                cells_all = np.vstack((cells_all, cell1))
+        guesses = np.array(guesses)
+        print("Total guesses:", len(guesses))
+        sum_squares = np.sum(guesses**2, axis=(1,2))
+        sorted_indices = np.argsort(sum_squares)
+        guesses = guesses[sorted_indices]
+        if len(guesses) > 500000: guesses = guesses[:500000]
+        #guesses = np.array([[[2, 0, 0], [1, 1, 0], [0, 1, 1], [0, 0, 2]]])
+        #guesses = np.array([[[2, 0, 0], [1, 1, 0], [0, 0, 2], [2, 0, -2]]])
+        #guesses = np.array([[[0, 0, -1], [1, 1, 0], [1, 1, -1], [0, 2, -5]]])
 
-            # Early stopping for getting high-quality solutions
-            if diffs[0] < 0.1:
-                print(f"Guess: {guess}, {d2}/{len(cells_all)-1} -> {cell1}, {score:.6f}")
-                print("High score, exiting early.")
-                found = True
+        # Check the quality of each (hkl, 2theta) solutions
+        cell2 = np.sort(np.array(xtal.lattice.encode()))
+        if spg <= 15 and cell2[3] > 90: cell2[3] = 180 - cell2[3]
+        cells_all = np.reshape(cell2, (1, len(cell2)))
+
+        # Try each combination of n peaks from the first n+1 peaks
+        n_peaks = len(guesses[0])
+        N = min(n_peaks + N_add, len(xrd.pxrd))
+        available_peaks = xrd.pxrd[:N, 0]
+
+        thetas = []
+        for peak_combo in combinations(range(n_peaks + N_add), n_peaks):
+            thetas.extend(available_peaks[list(peak_combo)])
+        N_thetas = len(thetas) // n_peaks
+        thetas = np.array(thetas)
+        thetas = np.tile(thetas, N_batch)
+        found = False
+        d2 = 0
+        for i in range(len(guesses)//N_batch + 1):
+            if i == len(guesses)//N_batch:
+                N_batch = len(guesses) - N_batch * i
+                if N_batch == 0:
+                    break
+                else:
+                    thetas = thetas[:N_thetas * n_peaks * N_batch]
+            hkls_t = np.tile(guesses[N_batch*i:N_batch*(i+1)], (1, N_thetas, 1))
+            hkls_t = np.reshape(hkls_t, (-1, 3))#, order='F')
+            solutions = get_cell_from_multi_hkls(spg, hkls_t, thetas, long_thetas, min_score=min_score, use_seed=False)
+            if i % 1000 == 0:
+                print(f"Processed {N_batch*(i)}/{d2}, found {len(cells_all)-1} cells.")
+
+            for sol in solutions:
+                cell1 = np.sort(np.array(sol['cell']))
+
+                # Check if it is a new solution
+                diffs = np.sum((cells_all - cell1)**2, axis=1)
+                guess = sol['id']
+                score = sol['score']
+                d2 = np.sum(guess**2)
+                if len(cells_all[diffs < 0.1]) == 0:
+                    print(f"Guess: {guess}, {d2}/{len(cells_all)-1} -> {cell1}, {score:.6f}")
+                    cells_all = np.vstack((cells_all, cell1))
+
+                # Early stopping for getting high-quality solutions
+                if diffs[0] < 0.1:
+                    print(f"Guess: {guess}, {d2}/{len(cells_all)-1} -> {cell1}, {score:.6f}")
+                    print("High score, exiting early.")
+                    found = True
+                    break
+            if found:
                 break
-        if found:
-            break
+        t1 = time()
+        data.append((cif, spg, d2, len(cells_all), score, t1-t0))
 
-
+    for d in data: print(d)
+"""
+('pyxtal/database/cifs/JVASP-97915.cif', 225, 11, 1, 0.9944178674744656, 0.8724310398101807)
+('pyxtal/database/cifs/JVASP-86205.cif', 204, 4, 1, 0.9999808799880138, 0.10700225830078125)
+('pyxtal/database/cifs/JVASP-28634.cif', 156, 2, 1, 0.9999999999999456, 0.12210202217102051)
+('pyxtal/database/cifs/JVASP-85365.cif', 123, 16, 11, 0.999999999999978, 0.5885009765625)
+('pyxtal/database/cifs/JVASP-62168.cif', 62, 34, 123, 0.9999999999999891, 32.97966909408569)
+('pyxtal/database/cifs/JVASP-98225.cif', 14, 14, 3, 0.9999291925203678, 35.536349296569824)
+('pyxtal/database/cifs/JVASP-50935.cif', 6, 6, 25, 0.9998350565457528, 11.00560998916626)
+('pyxtal/database/cifs/JVASP-28565.cif', 8, 35, 3824, 0.9995855322890919, 490.50669598579407)
+"""

@@ -813,7 +813,7 @@ class Group:
             guesses = guesses[ids]
 
         if reduce:
-            if verbose: print("Reducing hkl guesses...", len(guesses)) 
+            if verbose: print("Reducing hkl guesses...", len(guesses))
             guesses = self.reduce_hkl_guesses(guesses)
 
         return guesses
@@ -3359,7 +3359,7 @@ class site_symmetry:
             one_hot_matrix[i, id] = 1
         return one_hot_matrix
 
-    def to_matrix_representation(self):
+    def to_matrix_representation(self, verbose=False):
         """
         To create a binary matrix to represent the symmetry elements on each axis
         Translation is also counted here.
@@ -3368,6 +3368,8 @@ class site_symmetry:
         # every direction must has identity symmetry
         matrix[:, 0] = 1
         self.inversion = False
+        if verbose:
+            print('Symmetry: 1  -1  2  m  3  4  -4')
 
         for opa in self.opas:
             if opa.type == "inversion":
@@ -3559,6 +3561,51 @@ class site_symmetry:
                     self.symbols[i] = "2"
             if self.symbols == ["2/m", "2/m", "2/m"]:
                 self.symbols = ["m", "m", "m"]
+            if self.symbols == ["6/m", "m", "2/m"]:
+                self.symbols = ["6/m", "m", "m"]
+            if self.symbols == ["-6", "m2m", "2"]:
+                self.symbols = ["-6", "m", "2"]
+            if self.symbols == ["m", "m2", "."]:
+                self.symbols = ["m", "m", "2"]
+            if self.symbols == ["m", "2m", "."]:
+                self.symbols = ["m", "2", "m"]
+            if self.symbols == ["2", "m", "."]:
+                self.symbols = ["2", "m", "m"]
+            if self.symbols == ["2/m", "m", "."]:
+                self.symbols = ["m", "m", "m"]
+            # https://github.com/MaterSim/PyXtal/issues/309
+            if self.symbols == ['3', 'm', 'm']:  # 3mm => 3.m
+                self.symbols = ['3',  '.', 'm']
+            if self.symbols == ['3', '2', '2']:  # 322 => 3.2
+                self.symbols = ['3',  '.', '2']
+            if self.symbols == ['2', '2', '.']:  # 22. => 222
+                self.symbols = ['2',  '2', '2']
+            if self.symbols == ['-6', 'mm2', 'm']: # -6mm2m => -6m2
+                self.symbols = ['-6', '2', 'm']
+            if self.symbols == ['-6', 'm2', 'm2']: # -6mm2m => -6m2
+                self.symbols = ['-6', 'm', '2']
+            if self.symbols == ['-3', 'm', '2/m']:
+                self.symbols = ['-3', '.', 'm']
+            if self.number == 193:
+                #193 12k        .m.        [['.'], ['m'], ['.']]
+                #193 12j        m..        [['m'], ['.'], ['.']]
+                #193 12i        .2.        [['.'], ['2'], ['.']]
+                #193 8h         3..        [['3'], ['.'], ['.']]
+                #193 6g         m2m        [['m'], ['2', 'm'], ['.']]
+                #193 6f         .2/m.      [['.'], ['2/m'], ['.']]
+                #193 4e         3mm        [['3'], ['m', 'm'], ['m']]
+                #193 4d         322        [['3'], ['2', '2'], ['2']]
+                #193 4c         -6..       [['-6'], ['.'], ['.']]
+                #193 2b         -3m2/m     [['-3'], ['2/m', '2/m'], ['2/m']]
+                #193 2a         -6mm2m     [['-6'], ['m', 'm', '2'], ['m']]
+                if self.symbols == ['.', 'm', '.']:
+                    self.symbols = ['.', '.', 'm']
+                elif self.symbols == ['.', '2', '.']:
+                    self.symbols = ['.',  '.', '2']
+                elif self.symbols == ['.', '2/m', '.']:
+                    self.symbols = ['.',  '.', '2/m']
+                elif self.symbols == ['3', '2', '2']:
+                    self.symbols = ['3', '.', '2']
 
         elif self.lattice_type == "cubic":
             for i, symbol in enumerate(self.symbols):
@@ -4746,7 +4793,7 @@ def is_hkl_allowed(h, k, l, spg):
       d glide                     | h0l                 | h + l divisible by 4
     """
 
-    # Lattice Centering:
+    # Lattice Centering (Table 2.2.13.1.)
     if spg in body_centers:
         if not (h + k + l) % 2 == 0:  # I-centering
             return False
@@ -4760,6 +4807,7 @@ def is_hkl_allowed(h, k, l, spg):
         if not (k + l) % 2 == 0:  # A-centering
             return False
 
+    # Check screw_axis (Table 2.2.13.2)
     if spg in screw_21a + screw_42a:  #
         if k == 0 and l == 0 and h % 2 == 1:
             return False
@@ -4787,6 +4835,7 @@ def is_hkl_allowed(h, k, l, spg):
         if h == 0 and k == 0 and l % 6 != 0:
             return False
 
+    # Check glide_plane (Table 2.2.13.2)
     if spg in b_glide_a:  # a-glide perpendicular to b: 0kl with h odd forbidden
         if h == 0 and k % 2 == 1:
             return False
@@ -4962,7 +5011,7 @@ def get_canonical_hkl_series(hkl_series, spg):
 
 if __name__ == "__main__":
     print("Test pyxtal.wp.site symmetry")
-    spg_list = [14, 36, 62, 99, 143, 160, 182, 191, 225, 230]
+    spg_list = [14, 36, 62, 99, 143, 160, 182, 183, 191, 192, 193, 194, 225, 230]
     for i in spg_list:
         g = Group(i)
         for wp in g:
@@ -4989,7 +5038,7 @@ if __name__ == "__main__":
         g = Group(i)
         print("\n", g.number, g.symbol)
         ss = g.get_spg_symmetry_object()
-        ss.to_beautiful_matrix_representation()
+        #ss.to_beautiful_matrix_representation()
         # matrix = ss.to_matrix_representation_spg()
         # print(matrix)
         # print(sum(sum(matrix)))

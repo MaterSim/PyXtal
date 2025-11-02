@@ -57,8 +57,11 @@ for i in range(1, 231):
     elif g.symbol[0] == 'A':
         acs.append(i)
     ss = g.get_spg_symmetry_object()
-    matrix = ss.to_matrix_representation()
-    # 1  -1 2  2_1 m  a  b  c  n  d  3  3_1 3_2 4  4_1 4_2 4_3 -4
+    matrix = ss.to_matrix_representation() # 15 * 18
+    # 18 columns: 1  -1 2  2_1 m  a  b  c  n  d  3  3_1 3_2 4  4_1 4_2 4_3 -4
+    # 15 row: (100) ..... https://pyxtal.readthedocs.io/en/latest/Symmetry_representation.html
+
+    # srew axis
     if matrix[0, 3] == 1: screw_21a.append(i)
     if matrix[0, -4] == 1: screw_41a.append(i)
     if matrix[0, -3] == 1: screw_42a.append(i)
@@ -71,13 +74,12 @@ for i in range(1, 231):
     if matrix[2, -4] == 1: screw_41c.append(i)
     if matrix[2, -3] == 1: screw_42c.append(i)
     if matrix[2, -2] == 1: screw_43c.append(i)
-        
     if matrix[2, 11] == 1: screw_31c.append(i)
     if matrix[2, 12] == 1: screw_32c.append(i)
-    
-    if matrix[2, 3] == 1 and matrix[2, 10] == 1: # 2_1, 3
+
+    if matrix[2, 3] == 1 and matrix[2, 10] == 1: # 2_1, 3 => 6_3 axis
         screw_63c.append(i)
-    if matrix[2, 2] == 1 and matrix[2, 12] == 1: # 2, 3_2
+    if matrix[2, 2] == 1 and matrix[2, 12] == 1: # 2, 3_2 => 6_2 axis
         screw_62c.append(i)
     if matrix[2, 2] == 1 and matrix[2, 11] == 1: # 2, 3_1
         screw_64c.append(i)
@@ -85,6 +87,7 @@ for i in range(1, 231):
         screw_61c.append(i)
     if matrix[2, 3] == 1 and matrix[2, 12] == 1: # 2_1, 3_2
         screw_65c.append(i)
+
     # glide planes
     if matrix[0, 6] == 1: b_glide_a.append(i)
     if matrix[0, 7] == 1: c_glide_a.append(i)
@@ -114,7 +117,7 @@ for i in range(1, 231):
     elif 1 == matrix[12, 9]:
         d_glide_101.append(i)
 
-dicts = {"fcs (all odd/even)": fcs, 
+dicts = {"fcs (all odd/even)": fcs,
          "bcs (h+k+l=2n)": bcs,
          "acs (k+l=2n)": acs,
          "ccs (h+k=2n)": ccs,
