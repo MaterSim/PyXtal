@@ -526,7 +526,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
 
 .. list-table::
    :header-rows: 1
-   :widths: auto
+   :widths: 10 20 10 20
 
    * - Space Group Number
      - Space Group Symbol
@@ -4927,27 +4927,27 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 149
      - P312
      - 1f
-     - 322
+     - 3.2
    * - 149
      - P312
      - 1e
-     - 322
+     - 3.2
    * - 149
      - P312
      - 1d
-     - 322
+     - 3.2
    * - 149
      - P312
      - 1c
-     - 322
+     - 3.2
    * - 149
      - P312
      - 1b
-     - 322
+     - 3.2
    * - 149
      - P312
      - 1a
-     - 322
+     - 3.2
    * - 150
      - P321
      - 6g
@@ -5075,7 +5075,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 157
      - P31m
      - 3c
-     - .m.
+     - ..m
    * - 157
      - P31m
      - 2b
@@ -5083,7 +5083,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 157
      - P31m
      - 1a
-     - 3mm
+     - 3.m
    * - 158
      - P3c1
      - 6d
@@ -5139,7 +5139,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 162
      - P-31m
      - 6k
-     - .m.
+     - ..m
    * - 162
      - P-31m
      - 6j
@@ -5155,31 +5155,31 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 162
      - P-31m
      - 3g
-     - .2/m.
+     - ..2/m
    * - 162
      - P-31m
      - 3f
-     - .2/m.
+     - ..2/m
    * - 162
      - P-31m
      - 2e
-     - 3mm
+     - 3.m
    * - 162
      - P-31m
      - 2d
-     - 322
+     - 3.2
    * - 162
      - P-31m
      - 2c
-     - 322
+     - 3.2
    * - 162
      - P-31m
      - 1b
-     - -3m2/m
+     - -3.m
    * - 162
      - P-31m
      - 1a
-     - -3m2/m
+     - -3.m
    * - 163
      - P-31c
      - 12i
@@ -5203,11 +5203,11 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 163
      - P-31c
      - 2d
-     - 322
+     - 3.2
    * - 163
      - P-31c
      - 2c
-     - 322
+     - 3.2
    * - 163
      - P-31c
      - 2b
@@ -5215,7 +5215,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 163
      - P-31c
      - 2a
-     - 322
+     - 3.2
    * - 164
      - P-3m1
      - 12j
@@ -5567,11 +5567,11 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 177
      - P622
      - 3g
-     - 22.\
+     - 222
    * - 177
      - P622
      - 3f
-     - 22.\
+     - 222
    * - 177
      - P622
      - 2e
@@ -5579,11 +5579,11 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 177
      - P622
      - 2d
-     - 322
+     - 3.2
    * - 177
      - P622
      - 2c
-     - 322
+     - 3.2
    * - 177
      - P622
      - 1b
@@ -5599,7 +5599,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 178
      - P6122
      - 6b
-     - .2.
+     - ..2
    * - 178
      - P6122
      - 6a
@@ -5611,7 +5611,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 179
      - P6522
      - 6b
-     - .2.
+     - ..2
    * - 179
      - P6522
      - 6a
@@ -5623,11 +5623,11 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 180
      - P6222
      - 6j
-     - .2.
+     - ..2
    * - 180
      - P6222
      - 6i
-     - .2.
+     - ..2
    * - 180
      - P6222
      - 6h
@@ -5647,19 +5647,19 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 180
      - P6222
      - 3d
-     - 22.\
+     - 222
    * - 180
      - P6222
      - 3c
-     - 22.\
+     - 222
    * - 180
      - P6222
      - 3b
-     - 22.\
+     - 222
    * - 180
      - P6222
      - 3a
-     - 22.\
+     - 222
    * - 181
      - P6422
      - 12k
@@ -5667,11 +5667,11 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 181
      - P6422
      - 6j
-     - .2.
+     - ..2
    * - 181
      - P6422
      - 6i
-     - .2.
+     - ..2
    * - 181
      - P6422
      - 6h
@@ -5691,19 +5691,19 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 181
      - P6422
      - 3d
-     - 22.\
+     - 222
    * - 181
      - P6422
      - 3c
-     - 22.\
+     - 222
    * - 181
      - P6422
      - 3b
-     - 22.\
+     - 222
    * - 181
      - P6422
      - 3a
-     - 22.\
+     - 222
    * - 182
      - P6322
      - 12i
@@ -5711,7 +5711,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 182
      - P6322
      - 6h
-     - .2.
+     - ..2
    * - 182
      - P6322
      - 6g
@@ -5727,15 +5727,15 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 182
      - P6322
      - 2d
-     - 322
+     - 3.2
    * - 182
      - P6322
      - 2c
-     - 322
+     - 3.2
    * - 182
      - P6322
      - 2b
-     - 322
+     - 3.2
    * - 182
      - P6322
      - 2a
@@ -5751,11 +5751,11 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 183
      - P6mm
      - 6d
-     - .m.
+     - ..m
    * - 183
      - P6mm
      - 3c
-     - 2m.
+     - 2mm
    * - 183
      - P6mm
      - 2b
@@ -5787,7 +5787,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 185
      - P63cm
      - 6c
-     - .m.
+     - ..m
    * - 185
      - P63cm
      - 4b
@@ -5795,7 +5795,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 185
      - P63cm
      - 2a
-     - 3mm
+     - 3.m
    * - 186
      - P63mc
      - 12d
@@ -5851,27 +5851,27 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 187
      - P-6m2
      - 1f
-     - -6m2m2
+     - -6m2
    * - 187
      - P-6m2
      - 1e
-     - -6m2m2
+     - -6m2
    * - 187
      - P-6m2
      - 1d
-     - -6m2m2
+     - -6m2
    * - 187
      - P-6m2
      - 1c
-     - -6m2m2
+     - -6m2
    * - 187
      - P-6m2
      - 1b
-     - -6m2m2
+     - -6m2
    * - 187
      - P-6m2
      - 1a
-     - -6m2m2
+     - -6m2
    * - 188
      - P-6c2
      - 12l
@@ -5903,7 +5903,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 188
      - P-6c2
      - 2e
-     - 322
+     - 3.2
    * - 188
      - P-6c2
      - 2d
@@ -5911,7 +5911,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 188
      - P-6c2
      - 2c
-     - 322
+     - 3.2
    * - 188
      - P-6c2
      - 2b
@@ -5919,7 +5919,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 188
      - P-6c2
      - 2a
-     - 322
+     - 3.2
    * - 189
      - P-62m
      - 12l
@@ -5935,7 +5935,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 189
      - P-62m
      - 6i
-     - .m.
+     - ..m
    * - 189
      - P-62m
      - 4h
@@ -5943,15 +5943,15 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 189
      - P-62m
      - 3g
-     - m2m.
+     - m2m
    * - 189
      - P-62m
      - 3f
-     - m2m.
+     - m2m
    * - 189
      - P-62m
      - 2e
-     - 3mm
+     - 3.m
    * - 189
      - P-62m
      - 2d
@@ -5963,11 +5963,11 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 189
      - P-62m
      - 1b
-     - -6mm2m
+     - -62m
    * - 189
      - P-62m
      - 1a
-     - -6mm2m
+     - -62m
    * - 190
      - P-62c
      - 12i
@@ -6023,27 +6023,27 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 191
      - P6/mmm
      - 12n
-     - .m.
+     - ..m
    * - 191
      - P6/mmm
      - 6m
-     - mm2.
+     - mm2
    * - 191
      - P6/mmm
      - 6l
-     - mm2.
+     - mm2
    * - 191
      - P6/mmm
      - 6k
-     - m2m.
+     - m2m
    * - 191
      - P6/mmm
      - 6j
-     - m2m.
+     - m2m
    * - 191
      - P6/mmm
      - 6i
-     - 2m.
+     - 2mm
    * - 191
      - P6/mmm
      - 4h
@@ -6051,11 +6051,11 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 191
      - P6/mmm
      - 3g
-     - 2/mm.
+     - mmm
    * - 191
      - P6/mmm
      - 3f
-     - 2/mm.
+     - mmm
    * - 191
      - P6/mmm
      - 2e
@@ -6063,19 +6063,19 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 191
      - P6/mmm
      - 2d
-     - -6m2m2
+     - -6m2
    * - 191
      - P6/mmm
      - 2c
-     - -6m2m2
+     - -6m2
    * - 191
      - P6/mmm
      - 1b
-     - 6/mm2/m
+     - 6/mmm
    * - 191
      - P6/mmm
      - 1a
-     - 6/mm2/m
+     - 6/mmm
    * - 192
      - P6/mcc
      - 24m
@@ -6087,7 +6087,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 192
      - P6/mcc
      - 12k
-     - .2.
+     - ..2
    * - 192
      - P6/mcc
      - 12j
@@ -6107,7 +6107,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 192
      - P6/mcc
      - 6f
-     - 22.\
+     - 222
    * - 192
      - P6/mcc
      - 4e
@@ -6119,7 +6119,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 192
      - P6/mcc
      - 4c
-     - 322
+     - 3.2
    * - 192
      - P6/mcc
      - 2b
@@ -6135,7 +6135,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 193
      - P63/mcm
      - 12k
-     - .m.
+     - ..m
    * - 193
      - P63/mcm
      - 12j
@@ -6143,7 +6143,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 193
      - P63/mcm
      - 12i
-     - .2.
+     - ..2
    * - 193
      - P63/mcm
      - 8h
@@ -6151,19 +6151,19 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 193
      - P63/mcm
      - 6g
-     - m2m.
+     - m2m
    * - 193
      - P63/mcm
      - 6f
-     - .2/m.
+     - ..2/m
    * - 193
      - P63/mcm
      - 4e
-     - 3mm
+     - 3.m
    * - 193
      - P63/mcm
      - 4d
-     - 322
+     - 3.2
    * - 193
      - P63/mcm
      - 4c
@@ -6171,11 +6171,11 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 193
      - P63/mcm
      - 2b
-     - -3m2/m
+     - -3.m
    * - 193
      - P63/mcm
      - 2a
-     - -6mm2m
+     - -62m
    * - 194
      - P63/mmc
      - 24l
@@ -6195,7 +6195,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 194
      - P63/mmc
      - 6h
-     - mm2.
+     - mm2
    * - 194
      - P63/mmc
      - 6g
@@ -6211,15 +6211,15 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 194
      - P63/mmc
      - 2d
-     - -6m2m2
+     - -6m2
    * - 194
      - P63/mmc
      - 2c
-     - -6m2m2
+     - -6m2
    * - 194
      - P63/mmc
      - 2b
-     - -6m2m2
+     - -6m2
    * - 194
      - P63/mmc
      - 2a
@@ -6259,7 +6259,7 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
    * - 195
      - P23
      - 1b
-     - 23.\ 
+     - 23.\
    * - 195
      - P23
      - 1a
@@ -7456,7 +7456,6 @@ The following table lists the space group number, symbol, Wyckoff label, and sit
      - Ia-3d
      - 16a
      - .-3.
-
 
 References
 ----------
