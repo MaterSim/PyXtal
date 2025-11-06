@@ -227,7 +227,7 @@ def calc_two_theta_from_cell(spg, hkls, cells, wave_length=1.54184):
     h, k, l = hkls[:, 0], hkls[:, 1], hkls[:, 2]
     if spg >= 195:  # cubic
         a = cells[0]
-        d = a / np.sqrt(h**2 + k**2 + l**2)
+        d = a / np.sqrt(h**2 + k**2 + l**2)#; print('ddddd', d)
     elif spg >= 143:  # hexagonal
         a, c = cells[0], cells[1]
         d = 1 / np.sqrt((4/3) * (h**2 + h*k + k**2) / a**2 + l**2 / c**2)
@@ -246,12 +246,11 @@ def calc_two_theta_from_cell(spg, hkls, cells, wave_length=1.54184):
         raise NotImplementedError("triclinic systems are not supported.")
     sin_theta = wave_length / (2 * d)
     # Handle cases where sin_theta > 1
-    valid = sin_theta <= 1
-    thetas = np.zeros_like(sin_theta)
-    thetas[valid] = np.arcsin(sin_theta[valid])
-    two_thetas = 2 * np.degrees(thetas)
-    two_thetas[~valid] = np.nan  # Mark invalid values as NaN
-    return two_thetas
+    valid = sin_theta <= 1#; print(d[~valid])
+    two_thetas = 2 * np.degrees(np.arcsin(sin_theta[valid]))
+    two_thetas = np.round(two_thetas, decimals=3)
+    two_thetas, ids = np.unique(two_thetas, return_index=True)
+    return two_thetas, hkls[valid][ids]
 
 def get_seeds(spg, hkls, two_thetas):
     """
@@ -338,7 +337,7 @@ def get_seeds(spg, hkls, two_thetas):
 
 
 def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_length=1.54184,
-                             tolerance=0.05, use_seed=True, min_score=0.999):
+                             tolerance=0.1, use_seed=True, min_score=0.999):
     """
     Estimate the cell parameters from multiple (hkl, two_theta) inputs.
     The idea is to use the Bragg's law and the lattice spacing formula to estimate the lattice parameters.
@@ -347,10 +346,10 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
     Args:
         hkls: list of (h, k, l) tuples
         two_thetas: list of 2theta values
-        long_thetas: list of all observed 2theta values
+        long_thetas: array of  all observed 2theta values
         spg (int): space group number
         wave_length: X-ray wavelength, default is Cu K-alpha
-        tolerance: tolerance for matching 2theta values, default is 0.05 degrees
+        tolerance: tolerance for matching 2theta values, default is 0.1 degrees
         use_seed: whether to use seed hkls for initial cell estimation
         min_score: threshold score for consideration
 
@@ -391,9 +390,9 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
     d_100s = get_d_hkl_from_cell(spg, cells, 1, 0, 0)
     d_010s = get_d_hkl_from_cell(spg, cells, 0, 1, 0)
     d_001s = get_d_hkl_from_cell(spg, cells, 0, 0, 1)
-    theta_100s = np.degrees(np.arcsin(wave_length / (2 * d_100s)))
-    theta_010s = np.degrees(np.arcsin(wave_length / (2 * d_010s)))
-    theta_001s = np.degrees(np.arcsin(wave_length / (2 * d_001s)))#; print(len(cells))
+    theta_100s = 2*np.degrees(np.arcsin(wave_length / (2 * d_100s)))
+    theta_010s = 2*np.degrees(np.arcsin(wave_length / (2 * d_010s)))
+    theta_001s = 2*np.degrees(np.arcsin(wave_length / (2 * d_001s)))
     h_maxs = np.array(long_thetas[-1] / theta_100s, dtype=int); h_maxs[h_maxs > 100] = 100
     k_maxs = np.array(long_thetas[-1] / theta_010s, dtype=int); k_maxs[k_maxs > 100] = 100
     l_maxs = np.array(long_thetas[-1] / theta_001s, dtype=int); l_maxs[l_maxs > 100] = 100
@@ -404,39 +403,35 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
                                                     k_max=k_maxs[i],
                                                     l_max=l_maxs[i],
                                                     level=level))
-        expected_thetas = calc_two_theta_from_cell(spg, test_hkls, cell, wave_length)
-        # Filter out None values
-        valid_mask = expected_thetas != None
-        valid_thetas = expected_thetas[valid_mask]
+        exp_thetas, exp_hkls = calc_two_theta_from_cell(spg, test_hkls, cell, wave_length)
+        if len(exp_thetas) == 0: continue
 
-        if len(valid_thetas) > 0:
-            valid_thetas = np.array(valid_thetas, dtype=float)
-            matched_peaks = []  # (index, hkl, obs_theta, error)
+        errors_matrix = np.abs(long_thetas[:, np.newaxis] - exp_thetas[np.newaxis, :])
+        within_tolerance = errors_matrix < tolerance
+        has_match = np.any(within_tolerance, axis=1)
+        best_errors = np.min(errors_matrix, axis=1)
+        #print('best errors', exp_thetas); import sys; sys.exit()
 
-            for peak_idx, obs_theta in enumerate(long_thetas):
-                best_match = None
-                best_error = float('inf')
-                errors = np.abs(obs_theta - valid_thetas)
-                within_tolerance = errors < tolerance
+        # Filter to only those with valid matches
+        valid_matches = has_match & (best_errors < tolerance)
+        matched_peaks = []  # (index, hkl, obs_theta, error)
+        valid_peak_indices = np.where(valid_matches)[0]
 
-                if np.any(within_tolerance):
-                    min_idx = np.argmin(errors[within_tolerance])
-                    valid_indices = np.where(within_tolerance)[0]
-                    best_idx = valid_indices[min_idx]
-                    best_error = errors[best_idx]
-                    #best_match = (peak_idx, tuple(valid_hkls[best_idx]), obs_theta, best_error)
-                    best_match = (peak_idx, obs_theta, best_error)
-
-                #print(cell, peak_idx, best_match)
-                if best_match is not None: matched_peaks.append(best_match)
+        for peak_idx in valid_peak_indices:
+            obs_theta = long_thetas[peak_idx]
+            error = best_errors[peak_idx]
+            matched_peaks.append((peak_idx, obs_theta, error))
+            #print(error)
 
         # Score this solution
         n_matched = len(matched_peaks)
         coverage = n_matched / len(long_thetas)
         avg_error = np.mean([match[-1] for match in matched_peaks])
-        consistency_score = 1.0 / (1.0 + avg_error)  # lower error = higher score
+        consistency_score = 1.0 / (1.0 + avg_error)  
         score = coverage * consistency_score
-        #print("Cell:", cell, hkls[i], "Score:", score)
+        #unmatches = exp_thetas[~within_tolerance.all(axis=0)]
+        #mask = (unmatches > long_thetas[0]) & (unmatches < long_thetas[-1])
+        #unmatches = exp_hkls[mask]
 
         if score > min_score:
             solutions.append({
@@ -444,7 +439,9 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
                 'n_matched': n_matched,
                 'score': score,
                 'id': hkls[i],
+                #'unmatched_thetas': unmatches,
             })
+            #print(cell, len(unmatches), unmatches)
 
     return solutions
 
@@ -463,12 +460,12 @@ if __name__ == "__main__":
         #'pyxtal/database/cifs/JVASP-28634.cif', # P3m1, 0.1s
         #'pyxtal/database/cifs/JVASP-85365.cif', # P4/mmm, 0.6s
         #'pyxtal/database/cifs/JVASP-62168.cif', # Pnma, 33s
-        'pyxtal/database/cifs/JVASP-98225.cif', # P21/c, 14s
+        #'pyxtal/database/cifs/JVASP-98225.cif', # P21/c, 14s
         #'pyxtal/database/cifs/JVASP-50935.cif', # Pm, 10s
         #'pyxtal/database/cifs/JVASP-28565.cif', # Cm, 100s
         #'pyxtal/database/cifs/JVASP-36885.cif', # Cm, 100s
         #'pyxtal/database/cifs/JVASP-42300.cif', # C2, 178s
-        #'pyxtal/database/cifs/JVASP-47532.cif', # P2/m,
+        'pyxtal/database/cifs/JVASP-47532.cif', # P2/m,
         ]:
         t0 = time()
         xtal.from_seed(cif)
@@ -560,7 +557,8 @@ if __name__ == "__main__":
         t1 = time()
         data.append((cif, spg, d2, len(cells_all), score, t1-t0))
 
-    for d in data: print(d)
+    for d in data: 
+        print(d)
 """
 ('pyxtal/database/cifs/JVASP-97915.cif', 225, 11, 1, 0.9944178674744656, 0.8724310398101807)
 ('pyxtal/database/cifs/JVASP-86205.cif', 204, 4, 1, 0.9999808799880138, 0.10700225830078125)
@@ -570,4 +568,15 @@ if __name__ == "__main__":
 ('pyxtal/database/cifs/JVASP-98225.cif', 14, 14, 3, 0.9999291925203678, 35.536349296569824)
 ('pyxtal/database/cifs/JVASP-50935.cif', 6, 6, 25, 0.9998350565457528, 11.00560998916626)
 ('pyxtal/database/cifs/JVASP-28565.cif', 8, 35, 3824, 0.9995855322890919, 490.50669598579407)
+
+('pyxtal/database/cifs/JVASP-97915.cif', 225, 11, 1, 0.9942656034459425, 0.9070873260498047)
+('pyxtal/database/cifs/JVASP-86205.cif', 204, 4, 1, 0.9997322519800832, 0.09690594673156738)
+('pyxtal/database/cifs/JVASP-28634.cif', 156, 2, 1, 0.9997539680387753, 0.07663106918334961)
+('pyxtal/database/cifs/JVASP-85365.cif', 123, 16, 9, 0.9997570762997596, 0.3383021354675293)
+('pyxtal/database/cifs/JVASP-62168.cif', 62, 34, 15, 0.9997220764747486, 13.73779296875)
+('pyxtal/database/cifs/JVASP-98225.cif', 14, 14, 1, 0.9997723881589121, 21.532269716262817)
+('pyxtal/database/cifs/JVASP-50935.cif', 6, 6, 25, 0.9997130006576738, 10.676042079925537)
+('pyxtal/database/cifs/JVASP-28565.cif', 8, 35, 2885, 0.9995837967820846, 218.40485000610352)
+('pyxtal/database/cifs/JVASP-36885.cif', 6, 5, 25, 0.9997727973911672, 10.984601259231567)
+('pyxtal/database/cifs/JVASP-42300.cif', 5, 25, 1, 0.9993642422227232, 84.00993585586548)
 """
