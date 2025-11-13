@@ -126,14 +126,14 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
         A[:, 1] = hkls[:, 1] ** 2
         A[:, 2] = hkls[:, 2] ** 2
         B = np.reshape(ds, [len_solutions, 3])
-        A = np.reshape(A, [len_solutions, 3, 3])#; print(A.shape, B.shape)
+        A = np.reshape(A, [len_solutions, 3, 3])
         xs = np.linalg.solve(A, B)#; print(xs); import sys; sys.exit()
         mask1 = np.all(xs[:, :] > 0, axis=1)
         hkls_out = np.reshape(hkls, (len_solutions, 9))
         hkls_out = hkls_out[mask1]
         xs = xs[mask1]
         cells = np.sqrt(1/xs)
-        mask2 = np.all(cells[:, :3] < 50.0, axis=1)
+        mask2 = np.all(cells[:, :3] < 65.0, axis=1)
         cells = cells[mask2]
         hkls_out = hkls_out[mask2]
 
@@ -336,6 +336,45 @@ def get_seeds(spg, hkls, two_thetas):
     return seed_hkls, seed_thetas
 
 
+def get_unique_thetas(xrd, spg):
+
+    if spg >= 195:
+        unique_thetas = xrd.pxrd[:20,0]
+    else:
+        # deal with (001, 002, 003) for spg < 195
+        int_counts = []
+        for jj in range(1, 5):
+            ratio = np.sin(np.radians(xrd.pxrd[jj,0]/2))/np.sin(np.radians(xrd.pxrd[0,0]/2))
+            if ratio > 1.1 and abs(ratio - round(ratio)) < 0.01:
+                int_counts.append(jj)
+        # in case two are related
+        if 1 not in int_counts:
+            for jj in range(2, 10):
+                ratio = np.sin(np.radians(xrd.pxrd[jj,0]/2))/np.sin(np.radians(xrd.pxrd[1,0]/2))
+                if ratio > 1.1 and abs(ratio - round(ratio)) < 0.01:
+                    int_counts.append(jj)
+
+        # if more than three ratios are close to integers, only keep the first peak
+        if len(int_counts) > 0:
+            unique_thetas = []
+            for jj in range(min(15, len(xrd.pxrd))):
+                if jj == 0 or jj not in int_counts:
+                    unique_thetas.append(xrd.pxrd[jj, 0])
+            unique_thetas = np.array(unique_thetas)
+            print('processed', unique_thetas)
+        else:
+            unique_thetas = xrd.pxrd[:min([15, len(xrd.pxrd)]), 0]
+
+    # Remove two consecutive peaks that are very close
+    filtered_thetas = [unique_thetas[0]]
+    for jj in range(1, len(unique_thetas)):
+        if abs(unique_thetas[jj] - unique_thetas[jj-1]) > 0.02:
+            filtered_thetas.append(unique_thetas[jj])
+    unique_thetas = np.array(filtered_thetas)
+    print("Final thetas:", unique_thetas)
+    return unique_thetas
+
+
 def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_length=1.54184,
                              tolerance=0.1, use_seed=True, min_score=0.999):
     """
@@ -427,11 +466,12 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
         n_matched = len(matched_peaks)
         coverage = n_matched / len(long_thetas)
         avg_error = np.mean([match[-1] for match in matched_peaks])
-        consistency_score = 1.0 / (1.0 + avg_error)  
+        consistency_score = 1.0 / (1.0 + avg_error)
         score = coverage * consistency_score
         #unmatches = exp_thetas[~within_tolerance.all(axis=0)]
         #mask = (unmatches > long_thetas[0]) & (unmatches < long_thetas[-1])
         #unmatches = exp_hkls[mask]
+        #print(cell, score, hkls[i], two_thetas)
 
         if score > min_score:
             solutions.append({
@@ -465,7 +505,12 @@ if __name__ == "__main__":
         #'pyxtal/database/cifs/JVASP-28565.cif', # Cm, 100s
         #'pyxtal/database/cifs/JVASP-36885.cif', # Cm, 100s
         #'pyxtal/database/cifs/JVASP-42300.cif', # C2, 178s
-        'pyxtal/database/cifs/JVASP-47532.cif', # P2/m,
+        #'pyxtal/database/cifs/JVASP-47532.cif', # P2/m,
+        #'pyxtal/database/cifs/JVASP-25063.cif', # bad slab
+        #'pyxtal/database/cifs/JVASP-119184.cif', # Imm2 44
+        #'pyxtal/database/cifs/JVASP-141590.cif', # R-3m 166
+        #'pyxtal/database/cifs/JVASP-45907.cif', # R-3m 166
+        'pyxtal/database/cifs/JVASP-119739.cif', # C2/m 12
         ]:
         t0 = time()
         xtal.from_seed(cif)
@@ -474,7 +519,7 @@ if __name__ == "__main__":
         long_thetas = xrd.pxrd[:15, 0]
         spg = xtal.group.number
         print("\n", cif, xtal.lattice, xtal.group.symbol, xtal.group.number)
-        print(xrd.by_hkl(N_max=10))
+        print(xrd.by_hkl(N_max=20))
 
         # Get the a list of hkl guesses and sort them by d^2
         if spg >= 195:
@@ -484,13 +529,16 @@ if __name__ == "__main__":
         else:
             min_score, N_add, N_batch = 0.999, 8, 20
 
-        if spg >= 16:
+        if spg >= 75:
+            guesses = xtal.group.generate_hkl_guesses(2, 3, 10, max_square=101, total_square=110, verbose=True)
+        elif spg >= 16:
             guesses = xtal.group.generate_hkl_guesses(2, 2, 5, max_square=29, total_square=40, verbose=True)
+            #guesses = xtal.group.generate_hkl_guesses(2, 2, 2, max_square=29, total_square=40, verbose=True)
         else:
             if spg in [5, 8, 12, 15]:
                 guesses = xtal.group.generate_hkl_guesses(3, 3, 5, max_square=29, total_square=40, verbose=True)
             else:
-                guesses = xtal.group.generate_hkl_guesses(3, 3, 4, max_square=29, total_square=35, verbose=True)
+                guesses = xtal.group.generate_hkl_guesses(4, 3, 4, max_square=29, total_square=35, verbose=True)
                 #guesses = xtal.group.generate_hkl_guesses(3, 3, 3, max_square=15, total_square=36, verbose=True)
 
         guesses = np.array(guesses)
@@ -499,7 +547,7 @@ if __name__ == "__main__":
         sorted_indices = np.argsort(sum_squares)
         guesses = guesses[sorted_indices]
         if len(guesses) > 500000: guesses = guesses[:500000]
-        #guesses = np.array([[[2, 0, 0], [1, 1, 0], [0, 1, 1], [0, 0, 2]]])
+        #guesses = np.array([[[0, 0, 2], [1, 0, 1], [0, 1, 3]]])
         #guesses = np.array([[[2, 0, 0], [1, 1, 0], [0, 0, 2], [2, 0, -2]]])
         #guesses = np.array([[[0, 0, -1], [1, 1, 0], [1, 1, -1], [0, 2, -5]]])
 
@@ -509,9 +557,10 @@ if __name__ == "__main__":
         cells_all = np.reshape(cell2, (1, len(cell2)))
 
         # Try each combination of n peaks from the first n+1 peaks
+        unique_thetas = get_unique_thetas(xrd, spg)
         n_peaks = len(guesses[0])
-        N = min(n_peaks + N_add, len(xrd.pxrd))
-        available_peaks = xrd.pxrd[:N, 0]
+        N = min(n_peaks + N_add, len(unique_thetas))
+        available_peaks = unique_thetas[:N]; print(available_peaks)
 
         thetas = []
         for peak_combo in combinations(range(n_peaks + N_add), n_peaks):
@@ -532,7 +581,7 @@ if __name__ == "__main__":
             hkls_t = np.reshape(hkls_t, (-1, 3))#, order='F')
             solutions = get_cell_from_multi_hkls(spg, hkls_t, thetas, long_thetas, min_score=min_score, use_seed=False)
             if i % 1000 == 0:
-                print(f"Processed {N_batch*(i)}/{d2}, found {len(cells_all)-1} cells.")
+                print(f"Processed {N_batch*i}/{d2}, found {len(cells_all)-1} cells.")
 
             for sol in solutions:
                 cell1 = np.sort(np.array(sol['cell']))
@@ -555,9 +604,9 @@ if __name__ == "__main__":
             if found:
                 break
         t1 = time()
-        data.append((cif, spg, d2, len(cells_all), score, t1-t0))
+        data.append((cif, spg, d2, i*N_batch, len(cells_all), score, t1-t0))
 
-    for d in data: 
+    for d in data:
         print(d)
 """
 ('pyxtal/database/cifs/JVASP-97915.cif', 225, 11, 1, 0.9944178674744656, 0.8724310398101807)
