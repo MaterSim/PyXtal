@@ -714,9 +714,10 @@ class database_topology:
         else:
             #hn = Group(row.space_group_number).hall_number
             xtal1 = pyxtal()
-            #atom.write('1.cif', format='cif')#, direct=True, vasp5=True)
             #xtal1.from_seed('1.cif', tol=tol)#, hn=hn)
             atom = self.db.get_atoms(id=id)
+            print(row.Topology)
+            atom.write('1.cif', format='cif')#, direct=True, vasp5=True)
             xtal1.from_seed(atom, tol=tol)#, hn=hn)
             pmg = ase2pymatgen(atom)
 
@@ -1520,9 +1521,9 @@ class database_topology:
                                 dftb_relaxed=xtal.to_file())
                     #self.logging.info(f'update_db_{calc}, {id}')
 
-    def update_row_topology(self, StructureType="Auto", overwrite=True, prefix=None, ref_dim=3):
+    def update_row_topology(self, StructureType="Auto", overwrite=True, prefix=None, ref_dim=3, timeout=60):
         """
-        Update row topology base on the CrystalNets.jl.
+        Update row topology using CrystalNets.jl via subprocess (faster than juliacall).
 
         Args:
             StructureType (str): Type of structure to analyze. Options are:
@@ -1532,89 +1533,226 @@ class database_topology:
             overwrite (bool): Whether to overwrite existing topology attributes.
             prefix (str): Prefix for temporary CIF files.
             ref_dim (int): Reference dimensionality to compare against.
+            timeout (int): Timeout in seconds for each Julia call. Default is 60.
         """
-        try:
-            import juliacall
-        except:
-            raise RuntimeError(
-                "Cannot load JuliaCall, Plz enable it before running")
+        import subprocess
+        import json
+        import os
+        from time import time
 
-        def parse_topology(topology_info):
-            """
-            Obtain the dimensionality and topology name
-            """
+        # Create Julia script for batch topology processing (handles multiple ARGS)
+        julia_script = f"""
+using CrystalNets
+using JSON
+
+CrystalNets.toggle_warning(false)
+CrystalNets.toggle_export(false)
+
+structure_type = "{StructureType}"
+if structure_type == "Zeolite"
+    option = CrystalNets.Options(structure=CrystalNets.StructureType.Zeolite)
+elseif structure_type == "MOF"
+    option = CrystalNets.Options(structure=CrystalNets.StructureType.MOF)
+else
+    option = CrystalNets.Options(structure=CrystalNets.StructureType.Auto)
+end
+
+function process_one(cif_file)
+    try
+        result = CrystalNets.determine_topology(cif_file, option)
+        output = []
+        results_list = length(result) > 1 ? collect(result) : [result[1]]
+        for res in results_list
+            name = string(res[1])
+            count = res[2]
+            genome = res[1][CrystalNets.Clustering.Auto]
+            dim = CrystalNets.ndims(CrystalNets.PeriodicGraph(genome))
+            push!(output, Dict("dim" => dim, "name" => name, "count" => count))
+        end
+        return output
+    catch e
+        return Dict("error" => string(e))
+    end
+end
+
+# Process all input files and return an array aligned to ARGS
+function process_batch(files)
+    results = Vector{{Any}}()
+    for f in files
+        push!(results, process_one(f))
+    end
+    return results
+end
+
+if length(ARGS) > 0
+    println(JSON.json(process_batch(ARGS)))
+end
+"""
+
+        # Save Julia script
+        script_path = "process_topology.jl"
+        with open(script_path, "w") as f:
+            f.write(julia_script)
+
+        def parse_topology(topology_list):
+            """Parse topology list to get dimension, name, and detail"""
             dim = 0
             name = ""
             detail = "None"
-            for i, x in enumerate(topology_info):
-                (d, n) = x
+
+            for i, topo in enumerate(topology_list):
+                d = topo["dim"]
+                n = topo["name"]
+
                 if d > dim:
                     dim = d
+
                 tmp = n.split(",")[0]
                 if tmp.startswith("UNKNOWN"):
-                    # tuple(int(num) for num in tmp[7:].split())
                     detail = tmp[7:]
                     tmp = "aaa"
                 elif tmp.startswith("unstable"):
                     tmp = "unstable"
+
                 name += tmp
-                if i + 1 < len(topology_info):
+                if topo["count"] > 1:
+                    name += f"({topo['count']})"
+
+                if i + 1 < len(topology_list):
                     name += "-"
+
             return dim, name, detail
 
-        jl = juliacall.newmodule("MOF_Builder")
-        jl.seval("using CrystalNets")
-        jl.CrystalNets.toggle_warning(False)  # to disable warnings
-        jl.CrystalNets.toggle_export(False)  # to disable exports
-        if StructureType == "Zeolite":
-            option = jl.CrystalNets.Options(structure=jl.StructureType.Zeolite)
-        elif StructureType == "MOF":
-            option = jl.CrystalNets.Options(structure=jl.StructureType.MOF)
-        else:
-            option = jl.CrystalNets.Options(structure=jl.StructureType.Auto)
-
-        cif_file = prefix + ".cif" if prefix is not None else "tmp.cif"
-
+        # Collect rows to process
+        rows_to_process = []
         for row in self.db.select():
             if overwrite or not hasattr(row, "topology"):
-                atoms = self.db.get_atoms(row.id)
+                rows_to_process.append(row.id)
+
+        if len(rows_to_process) == 0:
+            self.logging.info("No rows to process for topology update")
+            return
+
+        self.logging.info(f"Processing {len(rows_to_process)} structures for topology")
+
+        # Process structures in batches of 100: write CIFs once, call Julia once per batch
+        updates = []
+        batch_size = 100
+
+        def write_cifs_for_batch(batch_ids):
+            files = []
+            for row_id in batch_ids:
+                atoms = self.db.get_atoms(row_id)
+                cif_file = f"{prefix}_{row_id}.cif" if prefix is not None else f"tmp_{row_id}.cif"
                 atoms.write(cif_file, format="cif", parallel=False)
+                files.append(cif_file)
+            return files
 
-                # Call crystalnet.jl
-                result = jl.determine_topology(cif_file, option)
-                # print(result)
-                results = list(result) if len(result) > 1 else [result[0]]
+        def cleanup_files(files):
+            for f in files:
                 try:
-                    topo = []
-                    for res in results:
-                        # topology for SingleNodes
-                        name = str(res[0])
-                        if res[1] > 1:
-                            name += "(" + str(res[1]) + ")"
-                        genome = res[0][jl.Clustering.Auto]
-                        dim = jl.ndims(jl.CrystalNets.PeriodicGraph(genome))
-                        topo.append((dim, name))
+                    if os.path.exists(f):
+                        os.remove(f)
+                except Exception:
+                    pass
 
-                    # The maximum dimensionality and topology name
-                    dim, name, detail = parse_topology(topo)
-                except:
-                    dim, name, detail = 3, "error", "error"
-                if dim == ref_dim:
-                    print(
-                        "Updating Topology",
-                        row.space_group_number,
-                        row.wps,
-                        dim,
-                        name,
-                        detail[:10],
-                    )
-                if name.startswith("FAILED"):
-                    name = '0-dimensional'
-                # Unknown will be labeled as aaa
-                self.db.update(row.id, topology=name,
-                               dimension=dim, topology_detail=detail)
-            # else:
-            #    print("Existing Topology", row.topology)
+        # Loop over rows_to_process in chunks
+        for start in range(0, len(rows_to_process), batch_size):
+            end = min(start + batch_size, len(rows_to_process))
+            batch_ids = rows_to_process[start:end]
+
+            # 1) Write all CIFs for the batch
+            cif_files = write_cifs_for_batch(batch_ids)
+
+            # 2) Call Julia once with all file paths as arguments
+            try:
+                t0 = time()
+                result = subprocess.run(
+                    ["julia", script_path, *cif_files],
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout
+                )
+                elapsed = time() - t0
+
+                if result.returncode != 0:
+                    self.logging.warning(f"Julia failed for batch {start}-{end}: {result.stderr}")
+                    # Mark all as errors in this batch
+                    for row_id in batch_ids:
+                        updates.append((row_id, "error", 3, "julia_error"))
+                else:
+                    # Expect JSON array of results aligned with inputs
+                    try:
+                        batch_output = json.loads(result.stdout.strip())
+                    except Exception as e:
+                        self.logging.warning(f"Failed to parse JSON for batch {start}-{end}: {e}")
+                        for row_id in batch_ids:
+                            updates.append((row_id, "error", 3, "json_error"))
+                        cleanup_files(cif_files)
+                        continue
+
+                    # If single file, CrystalNets returns object; normalize to list
+                    if isinstance(batch_output, dict) and ("error" in batch_output or "dim" in batch_output):
+                        batch_output = [batch_output]
+
+                    # If Julia printed one JSON object per line, split and parse
+                    if not isinstance(batch_output, list):
+                        lines = [line for line in result.stdout.splitlines() if line.strip()]
+                        batch_output = []
+                        for line in lines:
+                            try:
+                                batch_output.append(json.loads(line))
+                            except Exception:
+                                batch_output.append({"error": "line_parse_error"})
+
+                    # 3) Map results back to row ids
+                    print(f"Batch output length: {len(batch_output)}, expected: {len(batch_ids)}, elapsed: {elapsed:.2f}s")
+                    for idx, row_id in enumerate(batch_ids):
+
+                        #print(f"Processing result for row {row_id}, index {idx}, {batch_output[idx]}")
+                        if idx >= len(batch_output):
+                            updates.append((row_id, "error", 3, "missing_output"))
+                            continue
+                        out = batch_output[idx]
+
+                        # out should be a list of topo dicts for this file; handle both list/dict
+                        topo_list = out if isinstance(out, list) else [out]
+                        dim, name, detail = parse_topology(topo_list)
+                        if name.startswith("FAILED"):
+                            name = '0-dimensional'
+
+                        # Optional verbose line for matches
+                        if dim == ref_dim:
+                            row = self.db.get(row_id)
+                            print(f"Row {row_id}: {row.space_group_number} {row.wps} dim={dim} {name}")
+
+                        updates.append((row_id, name, dim, detail))
+
+            except subprocess.TimeoutExpired:
+                self.logging.warning(f"Timeout for batch {start}-{end} after {timeout}s")
+                for row_id in batch_ids:
+                    updates.append((row_id, "timeout", 3, "timeout"))
+            except Exception as e:
+                self.logging.warning(f"Error processing batch {start}-{end}: {e}")
+                for row_id in batch_ids:
+                    updates.append((row_id, "error", 3, str(e)[:100]))
+            finally:
+                # 4) Clean up CIF files for this batch
+                cleanup_files(cif_files)
+
+            # 5) Write batch results to DB
+            if updates:
+                self.logging.info(f"Batch updating {len(updates)} rows")
+                with self.db:
+                    for (rid, tname, tdim, tdetail) in updates:
+                        self.db.update(rid, topology=tname, dimension=tdim, topology_detail=tdetail)
+                updates = []
+
+        # Clean up Julia script
+        if os.path.exists(script_path):
+            os.remove(script_path)
+
+        self.logging.info(f"Completed topology update for {len(rows_to_process)} structures")
 
     def update_db_description(self):
         """
