@@ -1950,7 +1950,82 @@ end
             folder = f"cpu0{i}"
         return folder
 
-    def get_db_unique(self, db_name=None, prec=3, update_topology=True, key='ff_energy'):
+    def get_db_unique(self, db_name=None, prec=3, key='ff_energy', max_N_atoms=64):
+        """
+        Get a database file containing only unique structures based on topology and energy.
+
+        Args:
+            db_name (str, optional): Filename for the new database.
+            If None, will use original name with '_unique' suffix.
+            prec (int, optional): Precision for rounding energy values. Default is 3.
+            key (str, optional): Energy attribute name to use for filtering.
+            Default is 'ff_energy'.
+            max_N_atoms (int, optional): Maximum n_atoms for pmg match. Default is 64.
+
+        Returns:
+            int: Number of unique structures in the new database.
+
+        Note:
+            Two structures are considered identical if they have:
+            - Same density value (within precision)
+            - Same energy value (within precision)
+            - Pymatgen match
+
+            When duplicates are found, the structure with lower DOF is kept.
+        """
+        from pymatgen.analysis.structure_matcher import StructureMatcher
+        matcher = StructureMatcher(stol=0.3, ltol=0.2, angle_tol=5)
+
+        print(f"The {self.db_name:s} has {self.db.count():d} strucs")
+        if db_name is None:
+            db_name = self.db_name[:-3] + "_unique.db"
+        if os.path.exists(db_name):
+            os.remove(db_name)
+
+        lists = []
+        for row in self.db.select():
+            if hasattr(row, key) and getattr(row, key) is not None:
+                dof, den, energy = row.dof, round(row.density, prec), round(getattr(row, key), prec)
+                spg, wps = row.space_group_number, row.wps
+                is_unique = True
+                pmg = ase2pymatgen(row.toatoms())
+                list_entry = (row.id, dof, den, energy, spg, wps, pmg)
+                for list_entry_existing in lists:
+                    (_id, _dof, _den, _energy, _spg, _wps, _pmg) = list_entry_existing
+                    if den == _den and energy == _energy:
+                        # check pymatgen match
+                        if len(_pmg) > max_N_atoms or len(pmg) > max_N_atoms:
+                            if spg == _spg and wps == _wps:
+                                is_unique = False
+                                print("Duplicate", row.id, den, energy)
+                                break
+                            # for large structures, skip pymatgen match to save time
+                        else:
+                            if matcher.fit(pmg, _pmg):
+                                is_unique = False
+                                if dof < _dof:
+                                    print("Updating", row.id, den, energy)
+                                    lists.remove(list_entry_existing)
+                                    lists.append(list_entry)
+                                else:
+                                    print("Duplicate", row.id, den, energy)
+                                break
+                if is_unique:
+                    print("Adding", row.id, den, energy)
+                    lists.append(list_entry)
+        ids = [entry[0] for entry in lists]
+        with connect(db_name, serial=True) as db:
+            for id in ids:
+                row = self.db.get(id)
+                kvp = {}
+                for key in self.keys:
+                    if hasattr(row, key):
+                        kvp[key] = getattr(row, key)
+                db.write(row.toatoms(), key_value_pairs=kvp)
+        print(f"Created {db_name:s} with {db.count():d} strucs")
+        return db.count()
+
+    def get_db_unique_topology(self, db_name=None, prec=3, update_topology=True, key='ff_energy'):
         """
         Get a database file containing only unique structures based on topology and energy.
 
