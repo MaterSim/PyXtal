@@ -716,8 +716,8 @@ class database_topology:
             xtal1 = pyxtal()
             #xtal1.from_seed('1.cif', tol=tol)#, hn=hn)
             atom = self.db.get_atoms(id=id)
-            print(row.Topology)
-            atom.write('1.cif', format='cif')#, direct=True, vasp5=True)
+            #print(row.topology)
+            #atom.write('1.cif', format='cif')#, direct=True, vasp5=True)
             xtal1.from_seed(atom, tol=tol)#, hn=hn)
             pmg = ase2pymatgen(atom)
 
