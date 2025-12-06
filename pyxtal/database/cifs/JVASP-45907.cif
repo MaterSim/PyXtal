@@ -1,0 +1,87 @@
+#############################################################
+#             ______       _    _          _                #
+#            (_____ \     \ \  / /        | |               #
+#             _____) )   _ \ \/ / |_  ____| |               #
+#            |  ____/ | | | )  (|  _)/ _  | |               #
+#            | |    | |_| |/ /\ \ |_( (_| | |___            #
+#            |_|     \__  /_/  \_\___)__|_|_____)           #
+#                   (____/                                  #
+#---------------------(version    1.1.1)--------------------#
+#       A Python package for random crystal generation      #
+#       url: https://github.com/qzhu2017/pyxtal             #
+#       @Zhu's group at U. North Carolina at Charlotte      #
+#############################################################
+data_from_pyxtal
+
+_symmetry_space_group_name_H-M 'R-3m'
+_symmetry_Int_Tables_number                  166
+_symmetry_cell_setting                  trigonal
+_cell_length_a            3.002400
+_cell_length_b            3.002400
+_cell_length_c           72.933336
+_cell_angle_alpha        90.000000
+_cell_angle_beta         90.000000
+_cell_angle_gamma       120.000000
+_cell_volume            569.368925
+
+loop_
+ _symmetry_equiv_pos_site_id
+ _symmetry_equiv_pos_as_xyz
+1 'x, y, z'
+2 '-y, x-y, z'
+3 '-x+y, -x, z'
+4 'y, x, -z'
+5 'x-y, -y, -z'
+6 '-x, -x+y, -z'
+7 '-x, -y, -z'
+8 'y, -x+y, -z'
+9 'x-y, x, -z'
+10 '-y, -x, z'
+11 '-x+y, y, z'
+12 'x, x-y, z'
+13 'x+2/3, y+1/3, z+1/3'
+14 '-y+2/3, x-y+1/3, z+1/3'
+15 '-x+y+2/3, -x+1/3, z+1/3'
+16 'y+2/3, x+1/3, -z+1/3'
+17 'x-y+2/3, -y+1/3, -z+1/3'
+18 '-x+2/3, -x+y+1/3, -z+1/3'
+19 '-x+2/3, -y+1/3, -z+1/3'
+20 'y+2/3, -x+y+1/3, -z+1/3'
+21 'x-y+2/3, x+1/3, -z+1/3'
+22 '-y+2/3, -x+1/3, z+1/3'
+23 '-x+y+2/3, y+1/3, z+1/3'
+24 'x+2/3, x-y+1/3, z+1/3'
+25 'x+1/3, y+2/3, z+2/3'
+26 '-y+1/3, x-y+2/3, z+2/3'
+27 '-x+y+1/3, -x+2/3, z+2/3'
+28 'y+1/3, x+2/3, -z+2/3'
+29 'x-y+1/3, -y+2/3, -z+2/3'
+30 '-x+1/3, -x+y+2/3, -z+2/3'
+31 '-x+1/3, -y+2/3, -z+2/3'
+32 'y+1/3, -x+y+2/3, -z+2/3'
+33 'x-y+1/3, x+2/3, -z+2/3'
+34 '-y+1/3, -x+2/3, z+2/3'
+35 '-x+y+1/3, y+2/3, z+2/3'
+36 'x+1/3, x-y+2/3, z+2/3'
+
+loop_
+ _atom_site_label
+ _atom_site_type_symbol
+ _atom_site_symmetry_multiplicity
+ _atom_site_fract_x
+ _atom_site_fract_y
+ _atom_site_fract_z
+ _atom_site_occupancy
+Zn     Zn       6     0.000000    0.000000    0.100609 1
+Zn     Zn       3     0.000000    0.000000    0.000000 1
+Ni     Ni       6     0.000000    0.000000    0.800990 1
+Ni     Ni       6     0.000000    0.000000    0.400147 1
+Ni     Ni       3     0.000000    0.000000    0.500000 1
+Ni     Ni       6     0.000000    0.000000    0.299534 1
+O      O        6     0.000000    0.000000    0.150554 1
+O      O        6     0.000000    0.000000    0.249977 1
+O      O        6     0.000000    0.000000    0.050310 1
+O      O        6     0.000000    0.000000    0.350596 1
+O      O        6     0.000000    0.000000    0.451229 1
+#END
+

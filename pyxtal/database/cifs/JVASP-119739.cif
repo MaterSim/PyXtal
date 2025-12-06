@@ -1,0 +1,55 @@
+#############################################################
+#             ______       _    _          _                #
+#            (_____ \     \ \  / /        | |               #
+#             _____) )   _ \ \/ / |_  ____| |               #
+#            |  ____/ | | | )  (|  _)/ _  | |               #
+#            | |    | |_| |/ /\ \ |_( (_| | |___            #
+#            |_|     \__  /_/  \_\___)__|_|_____)           #
+#                   (____/                                  #
+#---------------------(version    1.1.1)--------------------#
+#       A Python package for random crystal generation      #
+#       url: https://github.com/qzhu2017/pyxtal             #
+#       @Zhu's group at U. North Carolina at Charlotte      #
+#############################################################
+data_from_pyxtal
+
+_symmetry_space_group_name_H-M 'C2/m'
+_symmetry_Int_Tables_number                   12
+_symmetry_cell_setting                monoclinic
+_cell_length_a            9.685370
+_cell_length_b            5.633571
+_cell_length_c            5.773884
+_cell_angle_alpha        90.000000
+_cell_angle_beta        124.441562
+_cell_angle_gamma        90.000000
+_cell_volume            259.816010
+
+loop_
+ _symmetry_equiv_pos_site_id
+ _symmetry_equiv_pos_as_xyz
+1 'x, y, z'
+2 '-x, y, -z'
+3 '-x, -y, -z'
+4 'x, -y, z'
+5 'x+1/2, y+1/2, z'
+6 '-x+1/2, y+1/2, -z'
+7 '-x+1/2, -y+1/2, -z'
+8 'x+1/2, -y+1/2, z'
+
+loop_
+ _atom_site_label
+ _atom_site_type_symbol
+ _atom_site_symmetry_multiplicity
+ _atom_site_fract_x
+ _atom_site_fract_y
+ _atom_site_fract_z
+ _atom_site_occupancy
+Li     Li       4     0.250000    0.250000    0.500000 1
+Fe     Fe       2     0.000000    0.500000    0.000000 1
+Fe     Fe       4     0.250000    0.250000    0.000000 1
+Co     Co       2     0.000000    0.000000    0.000000 1
+O      O        8     0.486427    0.248883    0.205414 1
+O      O        4     0.738939    0.000000    0.215862 1
+O      O        4     0.237598    0.000000    0.215022 1
+#END
+

@@ -41,8 +41,9 @@ class WFS(GlobalOptimize):
         molecules (list): list of pyxtal_molecule objects
         sites (list): list of wp sites, e.g., [['4a']]
         use_hall (bool): whether or not use hall number (default: False)
-        skip_ani (bool): whether or not use ani or not (default: True)
-        output_ani (bool): whether or not output the ANI relaxed structure (default: True)
+        mlp (str): MACE | UMA | ANI
+        skip_mlp (bool): whether or not use ani or not (default: True)
+        output_mlp (bool): whether or not output the ANI relaxed structure (default: True)
         eng_cutoff (float): the cutoff energy for FF training
         E_max (float): maximum energy defined as an invalid structure
         verbose (bool): show more details
@@ -76,8 +77,9 @@ class WFS(GlobalOptimize):
         molecules: list[pyxtal_molecule] | None = None,
         sites: list[any] | None = None,
         use_hall: bool = False,
-        skip_ani: bool = True,
-        output_ani: bool = True,
+        mlp: str = "MACE",
+        skip_mlp: bool = True,
+        output_mlp: bool = True,
         factor: float = 1.1,
         eng_cutoff: float = 5.0,
         E_max: float = 1e10,
@@ -127,8 +129,9 @@ class WFS(GlobalOptimize):
             molecules,
             sites,
             use_hall,
-            skip_ani,
-            output_ani,
+            mlp,
+            skip_mlp,
+            output_mlp,
             factor,
             eng_cutoff,
             E_max,

@@ -42,7 +42,7 @@ def get_rmsd_with_timeout(matcher, ref_pmg, structure, timeout=10):
             print(f"RMSD calculation timed out after {timeout} seconds")
             return None
 
-def sweep(xtal, comp, c_info, w_dir, job_tag, skip_ani, optimizer, eps=[0.05, -0.02]):
+def sweep(xtal, comp, c_info, w_dir, job_tag, mlp, skip_mlp, optimizer, eps=[0.05, -0.02]):
     """
     Check the stability of input xtal based on 5% tension
 
@@ -52,7 +52,7 @@ def sweep(xtal, comp, c_info, w_dir, job_tag, skip_ani, optimizer, eps=[0.05, -0
         c_info: CHARMM info
         w_dir: working directory
         job_tag: job tag for CHARMM
-        skip_ani: skip ANI relaxation
+        skip_mlp: skip mlp relaxation
         optimizer: the optimizer function to use
         eps: list of tension and compression factors
 
@@ -63,7 +63,7 @@ def sweep(xtal, comp, c_info, w_dir, job_tag, skip_ani, optimizer, eps=[0.05, -0
     """
     N = sum(xtal.numMols)
     comp = xtal.get_1D_comp()
-    res = optimizer(xtal, c_info, w_dir, job_tag, skip_ani=skip_ani)
+    res = optimizer(xtal, c_info, w_dir, job_tag, mlp=mlp, skip_mlp=skip_mlp)
     if res is None: return None
 
     xtal0, eng0 = res["xtal"], res["energy"]
@@ -96,7 +96,7 @@ def sweep(xtal, comp, c_info, w_dir, job_tag, skip_ani, optimizer, eps=[0.05, -0
                     print("Problem in rep.to_pyxtal", rep1)
                     xtal1 = None
                 if xtal1 is not None:
-                    res = optimizer(xtal1, c_info, w_dir, job_tag, skip_ani=skip_ani)
+                    res = optimizer(xtal1, c_info, w_dir, job_tag, skip_mlp=skip_mlp)
                     if res is not None:
                         xtal2, eng = res["xtal"], res["energy"]
                         if eng < eng0 - 1e-2:
@@ -107,14 +107,14 @@ def sweep(xtal, comp, c_info, w_dir, job_tag, skip_ani, optimizer, eps=[0.05, -0
     return xtal0, eng0, stable
 
 
-def check_stable_structure(xtal, c_info, w_dir, job_tag, skip_ani, optimizer, disps=[0.5, 5.0], random=False):
+def check_stable_structure(xtal, c_info, w_dir, job_tag, mlp, skip_mlp, optimizer, disps=[0.5, 5.0], random=False):
     """
     Check the stability of input xtal based on lattice mutation
     """
     N = sum(xtal.numMols)
     comp = xtal.get_1D_comp()
     disp_cell, disp_ang = disps[0], disps[1]
-    res = optimizer(xtal, c_info, w_dir, job_tag, skip_ani=skip_ani)
+    res = optimizer(xtal, c_info, w_dir, job_tag, mlp=mlp, skip_mlp=skip_mlp)
     smiles = [m.smile for m in xtal.molecules]#; print(smiles)
     if res is not None:
         xtal0, eng0 = res["xtal"], res["energy"]
@@ -138,7 +138,8 @@ def check_stable_structure(xtal, c_info, w_dir, job_tag, skip_ani, optimizer, di
                 x.extend(wps)
                 rep1 = representation(x, smiles)
                 xtal1 = rep1.to_pyxtal(composition=comp)#; print(xtal1.lattice)
-                res = optimizer(xtal1, c_info, w_dir, job_tag, skip_ani=skip_ani)
+                res = optimizer(xtal1, c_info, w_dir, job_tag, mlp=mlp,
+                                skip_mlp=skip_mlp)
                 if res is not None:
                     xtal2, eng = res["xtal"], res["energy"]
                     if eng < eng0 + 1e-4:
@@ -315,8 +316,9 @@ def optimizer(
     opt_lat = True,
     calculators = None,
     max_time = 180,
-    skip_ani = False,
-    output_ani = True,
+    mlp = 'MACE',
+    skip_mlp = False,
+    output_mlp = True,
     pre_opt = False,
 ):
     """
@@ -330,8 +332,9 @@ def optimizer(
         opt_lat: whether to optimize the lattice
         calculators: e.g., `['CHARMM', 'GULP']`
         max_time: maximum time for the optimization
-        skip_ani: whether to skip ANI relaxation
-        output_ani: whether to output the ANI relaxed structure
+        mlp: MACE | UMA | ANI
+        skip_mlp: whether to skip mlp relaxation
+        output_mlp: whether to output the mlp relaxed structure
         pre_opt: whether to perform pre-relaxation
 
     Returns:
@@ -412,7 +415,7 @@ def optimizer(
     os.chdir(cwd)
 
     # density should not be too small
-    if not skip_ani:
+    if not skip_mlp:
         stress_tol = 10.0 if len(struc.mol_sites[0].molecule.mol) < 10 else 5.0
         if (
             struc.energy < 9999
@@ -421,7 +424,8 @@ def optimizer(
             and 0.25 < struc.get_density() < 3.0
         ):
             s = struc.to_ase()
-            s = ASE_relax(s, 'ANI', step=50, fmax=0.1, logfile="ase.log")
+            step = 50 if mlp in ['MACE', 'ANI'] else 10
+            s = ASE_relax(s, mlp, step=step, fmax=0.1, logfile="ase.log")
             if s is None: return None
             eng = s.get_potential_energy()
             stress = max(abs(s.get_stress())) / units.GPa
@@ -437,7 +441,7 @@ def optimizer(
                     return None
             elif stress < stress_tol:
                 results = {}
-                if output_ani:
+                if output_mlp:
                     xtal = pyxtal(molecular=True)
                     pmg = ase2pymatgen(s)
                     mols = [m.smile + ".smi" for m in struc.molecules]
@@ -485,8 +489,9 @@ def optimizer_par(
     matcher,
     ref_pxrd,
     use_hall,
-    skip_ani,
-    output_ani,
+    mlp,
+    skip_mlp,
+    output_mlp,
     check_stable,
     pre_opt,
 ):
@@ -525,8 +530,9 @@ def optimizer_par(
             matcher,
             ref_pxrd,
             use_hall,
-            skip_ani,
-            output_ani,
+            mlp,
+            skip_mlp,
+            output_mlp,
             check_stable,
             pre_opt,
         )
@@ -556,8 +562,9 @@ def optimizer_single(
     matcher,
     ref_pxrd,
     use_hall,
-    skip_ani,
-    output_ani,
+    mlp,
+    skip_mlp,
+    output_mlp,
     check_stable,
     pre_opt,
 ):
@@ -603,7 +610,8 @@ def optimizer_single(
         res = None
     else:
         res = optimizer(xtal, atom_info, workdir, job_tag, opt_lat,
-                        skip_ani=skip_ani, output_ani=output_ani, pre_opt=pre_opt)
+                        mlp=mlp, skip_mlp=skip_mlp, output_mlp=output_mlp,
+                        pre_opt=pre_opt)
 
     match = False # used for matching with reference
     stable = True # used for tagging if the structure is stable
@@ -612,7 +620,7 @@ def optimizer_single(
         N = sum(xtal.numMols)
         if check_stable and eng < 9999.:
             res = sweep(xtal, comp, atom_info, workdir, job_tag,
-                        skip_ani, optimizer)
+                        mlp, skip_mlp, optimizer)
             if res is not None:
                 xtal, eng, stable = res
                 if stable:
@@ -635,8 +643,8 @@ def optimizer_single(
                 # Further refine the structure
                 match = True
                 str1 = f"Match {rmsd[0]:6.2f} {rmsd[1]:6.2f} {eng / N:12.3f} "
-                if not skip_ani:
-                    xtal, eng1 = refine_struc(xtal, smiles, ASE_relax)
+                if not skip_mlp:
+                    xtal, eng1 = refine_struc(xtal, smiles, ASE_relax, mlp)
                     str1 += f"Full Relax -> {eng1 / N:12.3f}"
                     eng = eng1
                 print(str1)
@@ -654,7 +662,7 @@ def optimizer_single(
     else:
         return None, match, stable
 
-def refine_struc(xtal, smiles, calculator):
+def refine_struc(xtal, smiles, calculator, mlp):
     """
     refine the structure with the ML calculator
 
@@ -664,9 +672,9 @@ def refine_struc(xtal, smiles, calculator):
         calculator: ANI_relax or MACE_relax
     """
     s = xtal.to_ase()
-    s = calculator(s, 'ANI', step=50, fmax=0.1, logfile="ase.log")
-    s = calculator(s, 'ANI', step=250, opt_cell=True, logfile="ase.log")
-    s = calculator(s, 'ANI', step=50, fmax=0.1, logfile="ase.log")
+    s = calculator(s, mlp, step=50, fmax=0.1, logfile="ase.log")
+    s = calculator(s, mlp, step=250, opt_cell=True, logfile="ase.log")
+    s = calculator(s, mlp, step=50, fmax=0.1, logfile="ase.log")
     eng1 = s.get_potential_energy()  # /sum(xtal.numMols)
 
     xtal = pyxtal(molecular=True)
@@ -846,7 +854,7 @@ if __name__ == "__main__":
     for rep in reps:
         rep = representation.from_string(rep, [smile])
         xtal1 = rep.to_pyxtal()
-        check_stable_structure(xtal1, c_info, w_dir, skip_ani=True, optimizer=optimizer)
+        check_stable_structure(xtal1, c_info, w_dir, skip_mlp=True, optimizer=optimizer)
 """
  81 11.38 6.48 11.24 96.9 1 0 0.23 0.43 0.03 -44.6 25.0 34.4 -76.6 -5.2 171.5 0 -70594.48
  81 11.38 6.48 11.24 96.9 1 0 0.23 0.43 0.03 -44.6 25.0 34.4 -76.6 -5.2 171.5 0 -70594.48

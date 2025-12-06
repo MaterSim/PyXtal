@@ -41,8 +41,9 @@ class DFS(GlobalOptimize):
         molecules (list): list of pyxtal_molecule objects
         sites (list): list of wp sites, e.g., [['4a']]
         use_hall (bool): whether or not use hall number (default: False)
-        skip_ani (bool): whether or not use ani or not (default: True)
-        output_ani (bool): whether or not output the ANI relaxed structure (default: True)
+        mlp (str): MACE | UMA | ANI
+        skip_mlp (bool): whether or not use mlp or not (default: True)
+        output_mlp (bool): whether or not output the mlp relaxed structure (default: True)
         eng_cutoff (float): the cutoff energy for FF training
         E_max (float): maximum energy defined as an invalid structure
         verbose (bool): show more details
@@ -74,8 +75,9 @@ class DFS(GlobalOptimize):
         molecules: list[pyxtal_molecule] | None = None,
         sites: list[any] | None = None,
         use_hall: bool = False,
-        skip_ani: bool = True,
-        output_ani: bool = True,
+        mlp: str = "MACE",
+        skip_mlp: bool = True,
+        output_mlp: bool = True,
         factor: float = 1.1,
         eng_cutoff: float = 5.0,
         E_max: float = 1e10,
@@ -126,8 +128,9 @@ class DFS(GlobalOptimize):
             molecules,
             sites,
             use_hall,
-            skip_ani,
-            output_ani,
+            mlp,
+            skip_mlp,
+            output_mlp,
             factor,
             eng_cutoff,
             E_max,
@@ -277,7 +280,7 @@ class DFS(GlobalOptimize):
         'ff_parameters', 'reference_file', 'ref_criteria', 'N_gen',
         'N_pop', 'N_cpu', 'fracs', 'cif', 'block', 'num_block',
         'composition', 'lattice', 'torsions', 'molecules', 'sites',
-        'use_hall', 'skip_ani', 'output_ani', 'factor', 'eng_cutoff', 'E_max',
+        'use_hall', 'mlp', 'skip_mlp', 'output_mlp', 'factor', 'eng_cutoff', 'E_max',
         'verbose', 'random_state', 'max_time', 'matcher', 'early_quit',
         'check_stable', 'use_mpi', 'pre_opt']
 

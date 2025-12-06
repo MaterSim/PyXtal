@@ -105,8 +105,9 @@ class GlobalOptimize:
         molecules (list): list of pyxtal_molecule objects
         sites (list): list of wp sites, e.g., [['4a']]
         use_hall (bool): whether or not use hall number (default: False)
-        skip_ani (bool): whether or not use ani or not (default: True)
-        output_ani (bool): whether or not output the ANI relaxed structure (default: True)
+        mlp (str): MACE | UMA | ANI
+        skip_mlp (bool): whether or not use mlp or not (default: True)
+        output_mlp (bool): whether or not output mlp relaxed structure (default: True)
         eng_cutoff (float): the cutoff energy for FF training
         E_max (float): maximum energy defined as an invalid structure
         matcher : structurematcher from pymatgen
@@ -136,8 +137,9 @@ class GlobalOptimize:
         molecules: list[pyxtal_molecule] | None = None,
         sites: list[any] | None = None,
         use_hall: bool = False,
-        skip_ani: bool = True,
-        output_ani: bool = True,
+        mlp: str = 'MACE',
+        skip_mlp: bool = True,
+        output_mlp: bool = True,
         factor: float = 1.1,
         eng_cutoff: float = 5.0,
         E_max: float = 1e10,
@@ -207,8 +209,9 @@ class GlobalOptimize:
         self.log_file = self.workdir + "/loginfo"
         if self.rank > 0: self.log_file += f"-{self.rank}"
 
-        self.skip_ani = skip_ani
-        self.output_ani = output_ani
+        self.mlp = mlp
+        self.skip_mlp = skip_mlp
+        self.output_mlp = output_mlp
         self.check_stable = check_stable
         if not self.opt_lat:
             self.check_stable = False
@@ -216,7 +219,7 @@ class GlobalOptimize:
         # setup timeout for each optimization call
         self.max_time = max_time
         if max_time is None:
-            if not self.skip_ani:
+            if not self.skip_mlp:
                 max_time = 300.0
             elif self.check_stable:
                 max_time = 300.0
@@ -332,6 +335,7 @@ class GlobalOptimize:
         s += f"\ndiretory  : {self.workdir:s}"
         s += f"\nopt_lat   : {self.opt_lat!s:s}"
         s += f"\nusp_mpi   : {self.use_mpi!s:s}\n"
+        s += f"\nmlp       : {self.mlp!s:s}\n"
         if self.early_quit:
             s += f"Mode      : Production\n"
         else:
@@ -341,6 +345,7 @@ class GlobalOptimize:
             s += "forcefield: Sample-training\n"
         else:
             s += "forcefield: Predefined\n"
+
 
         if self.parameters is not None:
             s += f"ff_style  : {self.ff_style:s}\n"
@@ -814,8 +819,9 @@ class GlobalOptimize:
             self.matcher,
             self.ref_pxrd,
             self.use_hall,
-            self.skip_ani,
-            self.output_ani,
+            self.mlp,
+            self.skip_mlp,
+            self.output_mlp,
             self.check_stable,
             self.pre_opt,
         ]
@@ -1162,8 +1168,9 @@ class GlobalOptimize:
             ET.SubElement(root, "ff_opt").text = str(self.ff_opt)
             ET.SubElement(root, "use_mpi").text = str(self.use_mpi)
             ET.SubElement(root, "verbose").text = str(self.verbose)
-            ET.SubElement(root, "skip_ani").text = str(self.skip_ani)
-            ET.SubElement(root, "output_ani").text = str(self.output_ani)
+            ET.SubElement(root, "mlp").text = str(self.mlp)
+            ET.SubElement(root, "skip_mlp").text = str(self.skip_mlp)
+            ET.SubElement(root, "output_mlp").text = str(self.output_mlp)
             ET.SubElement(root, "check_stable").text = str(self.check_stable)
             ET.SubElement(root, "pre_opt").text = str(self.pre_opt)
             ET.SubElement(root, "use_hall").text = str(self.use_hall)
@@ -1206,8 +1213,9 @@ def load_xml(filename, tag='GO'):
         ff_opt = text_to_bool(basic.find("ff_opt").text)
         use_mpi = text_to_bool(basic.find("use_mpi").text)
         verbose = text_to_bool(basic.find("verbose").text)
-        skip_ani = text_to_bool(basic.find("skip_ani").text)
-        output_ani = text_to_bool(basic.find("output_ani").text)
+        mlp = text_to_bool(basic.find("mlp").text)
+        skip_mlp = text_to_bool(basic.find("skip_mlp").text)
+        output_mlp = text_to_bool(basic.find("output_mlp").text)
         check_stable = text_to_bool(basic.find("check_stable").text)
         pre_opt = text_to_bool(basic.find("pre_opt").text)
         use_hall = text_to_bool(basic.find("use_hall").text)
@@ -1230,7 +1238,7 @@ def load_xml(filename, tag='GO'):
                 ff_parameters, reference_file, None, N_gen,
                 N_pop, N_cpu, fracs, cif, None, None,
                 composition, lattice, None, None, None,
-                use_hall, skip_ani, output_ani, factor, eng_cutoff, E_max,
+                use_hall, mlp, skip_mlp, output_mlp, factor, eng_cutoff, E_max,
                 verbose, None, max_time, None, early_quit,
                 check_stable, use_mpi, pre_opt)
     else:

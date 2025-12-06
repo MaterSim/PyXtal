@@ -6,7 +6,6 @@ add_safe_globals([slice])
 # ------------------------------------------------------------------------
 
 from ase.io import read, write
-from fairchem.core import pretrained_mlip, FAIRChemCalculator
 import signal
 from time import time
 import numpy as np
@@ -21,14 +20,14 @@ from ase.atoms import Atoms
 # For now, we only care about FAIRChem.
 _cached_mace_mp = None  # keep this so get_calculator won't crash if 'MACE' is ever passed.
 _cached_uma = None
+_cached_ani = None
 
 def get_calculator(calculator):
     """
     Return an ASE calculator instance.
 
     Supported strings:
-      - 'FAIRChem'
-      - (optionally) 'ANI', 'MACE', 'MACEOFF' if you re-enable those blocks.
+      - 'FAIRChem', 'ANI', 'MACE', 'MACEOFF' if you re-enable those blocks.
     Or you can pass an ASE calculator instance directly.
     """
     global _cached_mace_mp, _cached_uma
@@ -36,13 +35,16 @@ def get_calculator(calculator):
     if isinstance(calculator, str):
         if calculator == "UMA":
             if _cached_uma is None:
-                predictor = pretrained_mlip.get_predict_unit("uma-s-1p1", device="cpu")
+                from fairchem.core import pretrained_mlip, FAIRChemCalculator
+                predictor = pretrained_mlip.get_predict_unit("uma-s-1p1")
                 _cached_uma = FAIRChemCalculator(predictor, task_name="omc")
             calc = _cached_uma
 
         elif calculator == "ANI":
-            import torchani
-            calc = torchani.models.ANI2x().ase()
+            if _cached_ani is None:
+                import torchani
+                _cached_ani = torchani.models.ANI2x().ase()
+            calc = _cached_ani
 
         elif calculator == "MACE":
             from mace.calculators import mace_mp
@@ -50,13 +52,15 @@ def get_calculator(calculator):
                 _cached_mace_mp = mace_mp(
                     model="small",
                     dispersion=True,
-                    device="cpu",
+                    #device="cpu",
                 )
             calc = _cached_mace_mp
 
         elif calculator == "MACEOFF":
-            from mace.calculators import mace_off
-            calc = mace_off(model="medium", device="cpu")
+            if _cached_mace_mp is None:
+                from mace.calculators import mace_off
+                calc = mace_off(model="medium", device="cpu")
+            calc = _cached_mace_mp
 
         else:
             raise ValueError(f"Unknown calculator: {calculator}")
