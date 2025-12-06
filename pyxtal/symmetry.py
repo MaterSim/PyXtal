@@ -521,14 +521,14 @@ class Group:
             one_hot: a (15, 26) numpy (0, 1) array
         """
         return self.lattice_id, self.get_spg_symmetry_object().to_one_hot()
-    
-    def get_subgroup_composition(self, ids=None, g_types=['t', 'k'], max_atoms=100, 
+
+    def get_subgroup_composition(self, ids, g_types=['t', 'k'], max_atoms=100,
                                  verbose=False):
         """
         Get the composition of the subgroup Wyckoff positions.
 
         Args:
-            ids (list, optional): List of Wyckoff position indices.
+            ids (list, optional): Nested list of Wyckoff position indices [[0]].
             verbose (bool): Whether to print debug information.
             g_types (list): List of subgroup types to consider ('t' for translationengleiche, 'k' for klassengleiche).
             max_atoms (int): Maximum number of atoms to consider for subgroup search.
@@ -538,13 +538,14 @@ class Group:
         """
         if verbose:
             strs = f"{self.number} ({self.symbol}): "
-            for id in ids:
-                wp = self[id]
-                strs += f"{wp.multiplicity}{wp.letter}"
+            for i in ids:
+                for id in i:
+                    wp = self[id]
+                    strs += f"{wp.multiplicity}{wp.letter} "
             print(strs)
         sub_symmetries = []
-        N_atoms = sum([self[id].multiplicity for id in ids])
-        
+        N_atoms = sum([self[id].multiplicity for i in ids for id in i])
+
         for g_type in g_types:
             if g_type == 't':
                 sub = self.get_max_t_subgroup()
@@ -556,21 +557,23 @@ class Group:
                     continue
                 sub_gg = Group(sub_g)
                 relation = sub['relations'][i]#; print(relation)
-                sub_ids = []
-                for id in ids:
-                    true_id = len(self)-id-1
-                    relation[true_id].sort()
-                    for r in relation[true_id]:
-                        letter = r[-1]#; print("test letter:", relation[true_id])
-                        sub_ids.append(len(sub_gg) - letters.index(letter) - 1)
+                sub_ids = [[] for _ in range(len(ids))]
+                for j, _ids in enumerate(ids):
+                    for id in _ids:
+                        true_id = len(self)-id-1
+                        relation[true_id].sort()
+                        for r in relation[true_id]:
+                            letter = r[-1]#; print("test letter:", relation[true_id])
+                            sub_ids[j].append(len(sub_gg) - letters.index(letter) - 1)
                 data = (sub_g, sub_ids)
                 if data not in sub_symmetries:
                     sub_symmetries.append(data)
                     if verbose:
                         strs = f"{sub_gg.number} ({sub_gg.symbol}): "
-                        for id in sub_ids:
-                            wp = sub_gg[id]
-                            strs += f"{wp.multiplicity}{wp.letter} "
+                        for i in sub_ids:
+                            for id in i:
+                                wp = sub_gg[id]
+                                strs += f"{wp.multiplicity}{wp.letter} "
                         print(strs, data)
         return sub_symmetries
 
