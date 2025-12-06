@@ -87,7 +87,7 @@ class TestGroup(unittest.TestCase):
 
     def test_subgroup_composition(self):
         g = Group(154)
-        comps = g.get_subgroup_composition([2, 0], g_types=["t", "k"])
+        comps = g.get_subgroup_composition([[2], [0]], g_types=["t", "k"])
         assert comps[0] == (5, [[2, 0], [0, 0, 0]])
         assert comps[1] == (145, [[0], [0, 0]])
         assert comps[2] == (152, [[0], [0, 0]])
