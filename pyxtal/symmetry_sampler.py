@@ -62,7 +62,7 @@ class Sampler:
 
         if self.verbose:
             print(f"Generated {len(self.base_symmetries)} valid (spg, wps) combinations.")
-        
+
 
     def augment_data(self, train_data, weight=10):
         """
@@ -79,10 +79,10 @@ class Sampler:
             self.add_composition(data, multiplier=weight)
             spg, wps = data
             g = Group(spg)
-            sub_comps = g.get_subgroup_composition(wps, 
+            sub_comps = g.get_subgroup_composition(wps,
                                                    max_atoms=self.max_atoms,
                                                    max_wps=self.max_wp)
-            
+
             for sub_comp in sub_comps:
                 # sum_comp: (125, [[2], [0, 1]])
                 self.add_composition(sub_comp, multiplier=weight//2)
@@ -119,7 +119,7 @@ class Sampler:
         """
         sorted_combinations = sorted(self.base_symmetries.items(), key=lambda item: item[1], reverse=True)
         return sorted_combinations[:top_n]
-    
+
     def sample(self, N=1):
         """
         Samples a (spg, wps) combination based on their weights.
@@ -133,7 +133,7 @@ class Sampler:
         # Use random.choices for efficient weighted sampling
         population = list(self.base_symmetries.keys())
         weights = list(self.base_symmetries.values())
-        
+
         if not population:
             return []
 
@@ -158,13 +158,12 @@ if __name__ == '__main__':
         print(f"Combination: {combo}, Weight: {weight}")
 
 
-    samples = sio2_sampler.sample(1000)
-    
+    samples = sio2_sampler.sample(5000)
+
     # Count the frequency of each sampled combination
     sample_counts = Counter(samples)
 
-    # Get the top 5 most frequent samples
-    print("\nTop 5 most frequent sampled combinations:")
-    sorted_samples = sample_counts.most_common(5)
+    print("\nTop 20 most frequent sampled combinations:")
+    sorted_samples = sample_counts.most_common(20)
     for combo, count in sorted_samples:
         print(f"Combination: {combo}, Count: {count}")
