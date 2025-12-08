@@ -1,4 +1,3 @@
-from random import random
 from typing import Counter
 from pyxtal.symmetry import Group
 import random
