@@ -523,7 +523,7 @@ class Group:
         return self.lattice_id, self.get_spg_symmetry_object().to_one_hot()
 
     def get_subgroup_composition(self, ids, g_types=['t', 'k'], max_atoms=100,
-                                 verbose=False):
+                                 max_wps=20, verbose=False):
         """
         Get the composition of the subgroup Wyckoff positions.
 
@@ -565,16 +565,17 @@ class Group:
                         for r in relation[true_id]:
                             letter = r[-1]#; print("test letter:", relation[true_id])
                             sub_ids[j].append(len(sub_gg) - letters.index(letter) - 1)
-                data = (sub_g, sub_ids)
-                if data not in sub_symmetries:
-                    sub_symmetries.append(data)
-                    if verbose:
-                        strs = f"{sub_gg.number} ({sub_gg.symbol}): "
-                        for i in sub_ids:
-                            for id in i:
-                                wp = sub_gg[id]
-                                strs += f"{wp.multiplicity}{wp.letter} "
-                        print(strs, data)
+                if sum(len(sublist) for sublist in sub_ids) <= max_wps:
+                    data = (sub_g, sub_ids)
+                    if data not in sub_symmetries:
+                        sub_symmetries.append(data)
+                        if verbose:
+                            strs = f"{sub_gg.number} ({sub_gg.symbol}): "
+                            for i in sub_ids:
+                                for id in i:
+                                    wp = sub_gg[id]
+                                    strs += f"{wp.multiplicity}{wp.letter} "
+                            print(strs, data)
         return sub_symmetries
 
     def get_lattice_id(self):
