@@ -10,7 +10,7 @@ contourpy==1.2.1
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
-fonttools==4.53.1
+fonttools==4.60.2
     # via matplotlib
 idna==3.7
     # via requests
