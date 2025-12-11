@@ -2,7 +2,8 @@
 Module for PXRD indexing and lattice parameter estimation.
 """
 import numpy as np
-from pyxtal.symmetry import get_bravais_lattice, get_lattice_type, generate_possible_hkls
+from itertools import combinations
+from pyxtal.symmetry import Group, get_bravais_lattice, get_lattice_type, generate_possible_hkls
 
 def get_cell_params(bravais, hkls, two_thetas, wave_length=1.54184):
     """
@@ -156,7 +157,7 @@ def get_d_hkl_from_cell(bravais, cells, h, k, l):
     elif ltype == 4:  # tetragonal
         a, c = cells[:, 0], cells[:, 1]
         d = 1 / np.sqrt((h**2 + k**2) / a**2 + l**2 / c**2)
-    elif ltype == 3:  # orthorhombic    
+    elif ltype == 3:  # orthorhombic
         a, b, c = cells[:, 0], cells[:, 1], cells[:, 2]
         d = 1 / np.sqrt(h**2 / a**2 + k**2 / b**2 + l**2 / c**2)
     elif ltype == 2:  # monoclinic
@@ -292,7 +293,6 @@ def get_seeds(bravais, hkls, two_thetas):
 
     return seed_hkls, seed_thetas
 
-
 def get_unique_thetas(xrd, bravais):
     ltype = get_lattice_type(bravais)
     if ltype == 6:  # cubic
@@ -333,11 +333,12 @@ def get_unique_thetas(xrd, bravais):
 
 
 def get_cell_from_multi_hkls(bravais, hkls, two_thetas, long_thetas=None, wave_length=1.54184,
-                             tolerance=0.1, use_seed=True, trial_hkls=None):
+                             tolerance=0.1, use_seed=True, trial_hkls=None,
+                             max_mismatch=20):
     """
     Estimate the cell parameters from multiple (hkl, two_theta) inputs.
-    The idea is to use the Bragg's law and the lattice spacing formula to estimate the lattice parameters.
-    It is possible to have mislabelled hkls, so we need to run multiple trials and select the best one.
+    The idea is to use the Bragg's law to estimate the lattice parameters.
+    We need to run multiple trials and select the best one.
 
     Args:
         bravais (int): Bravais lattice type (0-13)
@@ -348,6 +349,7 @@ def get_cell_from_multi_hkls(bravais, hkls, two_thetas, long_thetas=None, wave_l
         tolerance: tolerance for matching 2theta values, default is 0.1 degrees
         use_seed: whether to use seed hkls for initial cell estimation
         trial_hkls: pre-generated trial hkls to speed up calculation
+        max_mismatch: maximum number of mismatched peaks allowed
 
     Returns:
         cells: list of solutions
@@ -362,6 +364,7 @@ def get_cell_from_multi_hkls(bravais, hkls, two_thetas, long_thetas=None, wave_l
 
     if trial_hkls is None:
         trial_hkls = generate_possible_hkls(bravais, 100, 100, 100)
+
     #cells = np.array(cells)
     if len(cells) == 0: return []
     # keep cells up to 4 decimal places
@@ -392,11 +395,11 @@ def get_cell_from_multi_hkls(bravais, hkls, two_thetas, long_thetas=None, wave_l
         h_max, k_max, l_max = h_maxs[i], k_maxs[i], l_maxs[i]
         mask = (trial_hkls[:,0] <= h_max) & (trial_hkls[:,1] <= k_max) & (trial_hkls[:,2] <= l_max)
         test_hkls = trial_hkls[mask]
-        #print(len(test_hkls), h_max, k_max, l_max, trial_hkls.shape)
         exp_thetas, exp_hkls = calc_two_theta_from_cell(bravais, test_hkls, cell, wave_length)
         if len(exp_thetas) == 0: continue
 
-        errors_matrix = np.abs(long_thetas[:, np.newaxis] - exp_thetas[np.newaxis, :])
+        errors_matrix_raw = long_thetas[:, np.newaxis] - exp_thetas[np.newaxis, :]
+        errors_matrix = np.abs(errors_matrix_raw)
         within_tolerance = errors_matrix < tolerance
         has_obs_match = np.any(within_tolerance, axis=1)
         ids_matched = np.where(has_obs_match)[0]
@@ -408,7 +411,7 @@ def get_cell_from_multi_hkls(bravais, hkls, two_thetas, long_thetas=None, wave_l
                 errors = errors_matrix[id]
                 obs_theta = long_thetas[id]
                 hkl_id = np.argmin(errors)
-                error = errors[hkl_id]
+                error = errors_matrix_raw[id, hkl_id]
                 matched_peaks.append((exp_hkls[hkl_id], obs_theta, error))
 
             mis_obs_match = np.any(within_tolerance, axis=0)
@@ -421,7 +424,7 @@ def get_cell_from_multi_hkls(bravais, hkls, two_thetas, long_thetas=None, wave_l
                 if theta < long_thetas[-1] and abs(hkl).max() < 3:
                     mis_matched_peaks.append((hkl, theta))
 
-            if len(mis_matched_peaks) <= 15:
+            if len(mis_matched_peaks) <= max_mismatch:
                 solutions.append({
                     'cell': cell,
                     'matched_peaks': matched_peaks,
@@ -430,13 +433,171 @@ def get_cell_from_multi_hkls(bravais, hkls, two_thetas, long_thetas=None, wave_l
                 })
                 #if len(mis_matched_peaks) > 0:
                 #    print(cell, mis_matched_peaks)#; import sys; sys.exit()
-    
+
     return solutions
 
+def get_cell_from_thetas(spg, long_thetas, N_add=5, max_mismatch=20, theta_tol=0.25,
+                         cell_tol=0.2, hkl_max=(2, 3, 10), max_square=20,
+                         N_batch=20, verbose=False):
+    """
+    Estimate the cell parameters from multiple 2theta inputs.
+
+    Args:
+        spg (int): space group number (1-230)
+        long_thetas: list of 2theta values
+        N_add: number of extra peaks to consider beyond the number of hkls
+        max_mismatch: maximum number of mismatched peaks allowed
+        theta_tol: tolerance for matching 2theta values, default is 0.25 degrees
+        cell_tol: tolerance for considering two cells as the same, default is 0.2
+        N_batch: batch size for processing guesses
+        verbose: whether to print verbose output
+
+    Returns:
+        cells: list of solutions
+    """
+    bravais = get_bravais_lattice(spg)
+    trial_hkls = generate_possible_hkls(bravais, 50, 50, 50)
+    unique_thetas = long_thetas
+    group = Group(spg)
+    h, k, l = hkl_max
+    guesses = group.generate_hkl_guesses(h, k, l, max_square=max_square,
+                                         verbose=True)
+    guesses = np.array(guesses)
+    print("Total guesses:", len(guesses), unique_thetas)
+    sum_squares = np.sum(guesses**2, axis=(1,2))
+    sorted_indices = np.argsort(sum_squares)
+    guesses = guesses[sorted_indices]
+
+    n_peaks = len(guesses[0])
+    N = min([n_peaks + N_add, len(unique_thetas)])
+    available_peaks = long_thetas[:N]
+
+    thetas = []
+    for peak_combo in combinations(range(N), n_peaks):
+        thetas.extend(available_peaks[list(peak_combo)])
+    N_thetas = len(thetas) // n_peaks
+    thetas = np.array(thetas)
+    thetas = np.tile(thetas, N_batch)
+
+    results = []
+    cell_all = []
+
+    for i in range(len(guesses)//N_batch + 1):
+        if i == len(guesses)//N_batch:
+            N_batch = len(guesses) - N_batch * i
+            if N_batch == 0:
+                break
+            else:
+                thetas = thetas[:N_thetas * n_peaks * N_batch]
+        hkls_t = np.tile(guesses[N_batch*i:N_batch*(i+1)], (1, N_thetas, 1))
+        hkls_t = np.reshape(hkls_t, (-1, 3))
+        sols = get_cell_from_multi_hkls(bravais, hkls_t, thetas, long_thetas,
+                                        use_seed=False,
+                                        trial_hkls=trial_hkls,
+                                        tolerance=theta_tol,
+                                        max_mismatch=max_mismatch)
+        for sol in sols:
+            guess, match, mis_match = sol['id'], sol['matched_peaks'], sol['mis_matched_peaks']
+            if len(match) == len(long_thetas):
+                cell1 = np.sort(np.array(sol['cell']))
+                d2 = np.sum(guess**2)
+
+                if len(cell_all) == 0:
+                    cell_all = np.array([cell1])
+                    if verbose:
+                        print(f"Guess: {guess}, {d2}, {cell1}, {len(mis_match)}/{len(long_thetas)}")
+                    results.append(sol)
+                else:
+                    diffs = np.sum((cell_all - cell1)**2, axis=1)
+                    if len(cell_all[diffs < cell_tol]) == 0:
+                        if verbose:
+                            print(f"Guess: {guess}, {d2}, {cell1}, {len(mis_match)}/{len(long_thetas)}")
+                        results.append(sol)
+                        cell_all = np.vstack([cell_all, cell1])
+
+    return results
+
+class CellManager:
+    def __init__(self, params, missing):
+        # Store raw parameters
+        self.raw_params = params
+        # Sort dimensions immediately for consistent comparison (e.g. [5, 44] == [44, 5])
+        self.dims = np.sort(np.array(params))
+        self.missing = missing
+        # Proxy for size (Area for 2D, Volume for 3D) used for sorting
+        self.size_proxy = np.prod(self.dims)
+
+    def is_supercell_of(self, other, tol=0.05):
+        """Instance method: Check if 'self' is an integer multiple (supercell) of 'other'."""
+        ratios = self.dims / other.dims
+
+        # Check if ratios are close to integers (1, 2, 3...)
+        is_integer = np.all(np.abs(ratios - np.round(ratios)) < tol)
+        # Check if it is actually larger (at least one dimension is > 1.01x)
+        is_larger = np.any(np.round(ratios) > 1.01)
+
+        return is_integer and is_larger
+
+    def is_similar_to(self, other, tol=0.04):
+        """Instance method: Check if 'self' is nearly identical to 'other' (duplicate)."""
+        diff = np.abs(self.dims - other.dims) / other.dims
+        return np.all(diff < tol)
+
+    def __repr__(self):
+        return f"Cell: {self.dims}, Missing: {self.missing}"
+
+    @classmethod
+    def consolidate(cls, raw_data, merge_tol=0.04, supercell_tol=0.05, verbose=False):
+        """
+        Class method: Takes raw list of [dims, missing], instantiates objects,
+        sorts, merges duplicates, removes supercells, and returns the clean list.
+        """
+        # 1. Instantiate objects
+        solutions = [cls(d[0], d[1]) for d in raw_data]
+
+        # 2. Sort: Primary = Fewest Missing (Quality), Secondary = Smallest Size (Parsimony)
+        solutions.sort(key=lambda x: (x.missing, x.size_proxy))
+
+        kept_solutions = []
+        indices_to_skip = set()
+
+        print(f"{'Status':<10} | {'Dims (Sorted)':<28} | {'Missing':<8} | {'Note'}")
+        print("-" * 75)
+
+        for i in range(len(solutions)):
+            if i in indices_to_skip:
+                continue
+
+            base = solutions[i]
+            kept_solutions.append(base)
+            print(f"{'KEEP':<10} | {str(base.dims):<28} | {base.missing:<8} | Best candidate")
+
+            # Sweep through the rest of the list to find duplicates or supercells
+            for j in range(i + 1, len(solutions)):
+                if j in indices_to_skip:
+                    continue
+
+                candidate = solutions[j]
+
+                # CHECK 1: Merge (Duplicate)
+                if candidate.is_similar_to(base, tol=merge_tol):
+                    indices_to_skip.add(j)
+                    if verbose:
+                        print(f"{'  MERGE':<10} | {str(candidate.dims):<28} | {candidate.missing:<8} | Similar to above (dropped)")
+                    continue
+
+                # CHECK 2: Drop (Supercell Artifact)
+                if candidate.is_supercell_of(base, tol=supercell_tol):
+                    indices_to_skip.add(j)
+                    ratio = np.round(candidate.dims / base.dims, 1)
+                    if verbose:
+                        print(f"{'  DROP':<10} | {str(candidate.dims):<28} | {candidate.missing:<8} | Supercell {ratio}")
+        #if verbose:
+        print(f"Consolidation: {len(kept_solutions)} unique solutions retained from {len(raw_data)} entries.")
+        return kept_solutions
 
 if __name__ == "__main__":
     from pyxtal import pyxtal
-    from itertools import combinations
     from time import time
     np.set_printoptions(precision=4, suppress=True)
 
@@ -531,7 +692,7 @@ if __name__ == "__main__":
             hkls_t = np.tile(guesses[N_batch*i:N_batch*(i+1)], (1, N_thetas, 1))
             hkls_t = np.reshape(hkls_t, (-1, 3))#, order='F')
             solutions = get_cell_from_multi_hkls(bravais, hkls_t, thetas, long_thetas,
-                                                 tolerance=0.25,
+                                                 tolerance=0.2,
                                                  use_seed=False,
                                                  trial_hkls=trial_hkls)
             if i % 1000 == 0:

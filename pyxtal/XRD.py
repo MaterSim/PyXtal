@@ -9,7 +9,7 @@ import os
 import numpy as np
 from monty.serialization import loadfn
 from scipy.interpolate import interp1d
-from scipy.special import erf
+from scipy.special import erf, wofz
 from pyxtal.database.element import Element
 
 with importlib.resources.as_file(
@@ -558,10 +558,171 @@ class XRD:
             np.degrees(self.max2theta),
         )
 
+    def get_plot(self, grainsize=20, orientation=0.1, thermo=0.1,
+                 L=500, H=50, S=25, bg_order=6, bg_ratio=0.05,
+                 mix_ratio=0.02, dx=0.02):
+        """
+        Generate a simulated XRD plot with various parameters.
+        Inspired from Pysimxrd at PyPI.
+        Needs to double check the parameters.
+
+        Args:
+            grainsize (float): Grain size in micrometers.
+            orientation (float): Preferred orientation factor.
+            thermo (float): Thermal vibration factor.
+            L (float): Axial divergence length.
+            H (float): Axial divergence height.
+            S (float): Slit width.
+            bg_order (int): Order of the polynomial background.
+            bg_ratio (float): Ratio of background intensity.
+            mix_ratio (float): Ratio of random noise intensity.
+            dx (float): Step size for the simulated XRD.
+
+        Returns:
+            tuple: Simulated 2-theta values and corresponding intensities.
+        """
+
+        # Marked locations and intensities
+        x, y = self.pxrd[:, 0], self.pxrd[:, -1] * 100
+        thetas = np.radians(x/2)
+        gamma = 0.444 * self.wavelength / (grainsize * np.cos(thetas)) + 1e-8
+        sigma2 = gamma ** 2 / (2*np.sqrt(2))
+        ori_m, ori_p = 1 - orientation, 1 + orientation
+        ori = np.clip(np.random.normal(loc=1, scale=0.2), ori_m, ori_p)
+        deb = np.exp(-16/3 * np.pi**2 * thermo**2 * (np.sin(thetas) / self.wavelength)**2)
+        y *= ori * deb
+        #print(x, y, gamma, sigma2)
+
+        # Get profiles
+        theta_min, theta_max = np.degrees(self.min2theta), min(90.0, np.degrees(self.max2theta))
+        x_sim = np.arange(theta_min, theta_max, dx)
+        y_sim = 0
+        for k in range(len(x)):
+            if x[k] < 90:
+                y_sim += add_peak(x_sim, x[k], gamma[k], sigma2[k], L, H, S, dx) * y[k]
+
+        # normalization x_sim, y_sim
+        area = np.trapz(y_sim, x_sim)
+        y_sim /= area#; print(area, y_sim.max())
+
+        # Add background
+        bg_fun = np.poly1d(np.random.randn(bg_order + 1))
+        bg = bg_fun(x_sim)
+        bg -= bg.min()
+        bg_y = bg / bg.max() * y_sim.max() * bg_ratio
+        mixture = np.random.uniform(0, y_sim.max() * mix_ratio, size=len(x_sim))
+        y_sim +=  np.flip(bg_y) + mixture
+
+        # Scale to (0, 100)
+        y_sim -= y_sim.min()
+        y_sim /= y_sim.max()
+        y_sim *= 100
+
+        #import matplotlib.pyplot as plt
+        #plt.plot(x_sim, y_sim)
+        #plt.show()
+        return x_sim, y_sim
+
+def add_peak(twotheta, mu, gamma, sigma2, L, H, S, step=0.02, width=0.1, sigma2_distor=0.001):
+    """
+    Add a single peak to the XRD pattern using Voigt profile,
+    axial divergence, slit function, and lattice distortion.
+
+    Args:
+        twotheta (array-like): Array of 2-theta
+        mu (float): Peak center (2-theta) in degrees.
+        gamma (float): Lorentzian FWHM parameter.
+        sigma2 (float): Gaussian variance parameter.
+        L (float): Axial divergence length.
+        H (float): Axial divergence height.
+        S (float): Slit half-width.
+        step (float): Step size for the 2-theta array.
+        width (float): Width of the slit function in degrees.
+        sigma2_distor (float): Variance for lattice distortion Gaussian.
+    
+    Returns:
+        ndarray: Array of same shape as twotheta with the peak intensity.
+    """
+    # Determine l_gap based on mu value
+    if mu <= 10:
+        l_gap = 7.8
+    elif 10 < mu <= 15:
+        l_gap = 10
+    elif 15 < mu <= 20:
+        l_gap = 15
+    elif 20 < mu <= 30:
+        l_gap = 20
+    else:
+        l_gap = 30
+
+    # Ensure mu-l_gap and mu+l_gap are recorded in twotheta or its extension
+    x = np.arange(np.round(mu - l_gap, 2), np.round(mu + l_gap, 2), step)
+
+    # Voigt profile calculation
+    z = ((x - mu) + 1j * gamma) / (np.sqrt(sigma2) * np.sqrt(2))
+    voigt = np.real(wofz(z) / (np.sqrt(sigma2) * np.sqrt(2 * np.pi)))
+
+    # Axial divergence calculation
+    axial = axial_div(x, mu, L, H, S)
+
+    # Slit function calculation
+    height = 1.0 / width
+    slit = np.where((x >= mu - width / 2) & (x <= mu + width / 2), height, 0)
+
+    # Lattice distortion calculation
+    sigma = np.sqrt(sigma2_distor)
+    distor = (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mu) / sigma)**2)
+
+    # Convolve the peaks
+    combined = np.convolve(voigt, axial, mode='same')
+    combined = np.convolve(combined, slit, mode='same')
+    combined = np.convolve(combined, distor, mode='same')
+    if np.sum(combined) > 0:
+        combined /= np.sum(combined) * step  # Normalize peak and apply weight
+        # Map the peak to the original locations
+        return map_int(combined, x, twotheta)
+    else:
+        return np.zeros_like(twotheta)
+
+def axial_div(x, mu, L, H, S):
+    """
+    Calculate the axial divergence peak contribution using the Van Laar model.
+
+    Args:
+        x (array-like): Array of 2-theta values in degrees.
+        mu (float): Peak center (2-theta) in degrees.
+        L (float): Axial divergence length (same units as H and S).
+        H (float): Axial divergence height.
+        S (float): Slit half-width (same units as H).
+
+    Returns:
+        ndarray: Array of same shape as x with the axial divergence shape (unnormalized).
+    """
+    axial_divergence = np.zeros_like(x)  # Initialize axial_divergence to zeros
+    valid_indices = x <= mu  # Identify valid indices where x <= mu
+    x_valid = np.radians(x[valid_indices])  # Get valid x values
+
+    h = L * np.sqrt((np.cos(x_valid) / np.cos(np.radians(mu)))**2 - 1)  # Calculate h
+    W = np.where((H - S <= h) & (h <= H + S), H + S - h, 0)  # Calculate W for valid h
+    axial_divergence[valid_indices] = L / (2 * H * S * h * np.cos(np.radians(x_valid))) * W 
+    #print('debug axial_div', mu, x_valid[-1], axial_divergence[valid_indices].max())
+    axial_divergence /= (axial_divergence.max() + 1e-10 )# in case numerical err
+    cdf = np.zeros_like(x)
+    mask = x < mu
+    cdf[mask] = np.cumsum(axial_divergence[mask])
+    return cdf
+
+def map_int(peak, x, twotheta):
+    y_twotheta = np.zeros_like(twotheta) # Initialize y_twotheta array
+    _x = x[(x >= twotheta[0]) & (x <= twotheta[-1])]
+    _peak = peak[(x >= twotheta[0]) & (x <= twotheta[-1])]
+    for angle in range(len(_x)):
+        index = np.argmin(np.abs( twotheta- _x[angle]))  # Find index for each angle
+        if index.size > 0:  # Check if indices are not empty
+            y_twotheta[index] = _peak[angle]  # Map peak intensity
+    return y_twotheta
 
 # ----------------------------- Profile functions ------------------------------
-
-
 class Profile:
     """
     This class applies a profiling function to simulated or
