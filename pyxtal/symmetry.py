@@ -5071,6 +5071,177 @@ def get_canonical_hkl_series(hkl_series, spg):
 
         return tuple(best_canonical)
 
+def get_bravais_lattice(spg):
+    """
+    1: Triclinic-P
+    2: Monoclinic-P
+    3: Monoclinic-C
+    4: Orthorhombic-P
+    5: Orthorhombic-A
+    6: Orthorhombic-C
+    7: Orthorhombic-I
+    8: Orthorhombic-F
+    9: Tetragonal-P
+    10: Tetragonal-I
+    11: Hexagonal-P
+    12: Rhombohedral-R
+    13: Cubic-P
+    14: Cubic-I
+    15: Cubic-F
+    """
+    if spg < 3: # Triclinic-P
+        return 1
+    elif spg < 16: # Monoclinic
+        if spg in [3, 4, 6, 7, 10, 11, 13, 14]: #P
+            return 2
+        else: # C
+            return 3
+    elif spg < 75: # Orthorhombic
+        if spg in [38, 39, 40, 41]: #A
+            return 5
+        if spg in [20, 21, 35, 36, 37, 63, 64, 65, 66, 67, 68]: #C
+            return 6
+        elif spg in [23, 24, 44, 45, 46, 71, 72, 73, 74]:#I
+            return 7
+        elif spg in [22, 42, 43, 69, 70]: #F
+            return 8
+        else:
+            return 4
+    elif spg < 143: #Tetragonal
+        if spg in [79, 80, 82, 87, 88, 97, 98, 107, 108, 109, 110, 119, 120, 121, 122, 139, 140, 141, 142]: #I
+            return 10
+        else:
+            return 9
+    elif spg < 195: # Hexagonal
+        if spg in [146, 148, 155, 160, 161, 166, 167]:
+            return 12
+        else:
+            return 11
+    else: # Cubic
+        if spg in [197, 199, 204, 206, 211, 214, 217, 220, 229, 230]: # I
+            return 14
+        elif spg in [196, 202, 203, 209, 210, 216, 219, 225, 226, 227, 228]: # F
+            return 15
+        else:
+            return 13
+
+def get_lattice_type(bravais):
+    """
+    Get the lattice type string from bravais lattice number.
+    """
+    if bravais in [13, 14, 15]:
+        return 6
+    elif bravais in [11, 12]:
+        return 5
+    elif bravais in [9, 10]:
+        return 4
+    elif bravais in [4, 5, 6, 7, 8]:
+        return 3
+    elif bravais in [2, 3]:
+        return 2
+    else:
+        return 1
+
+def is_hkl_allowed_by_bravais(h, k, l, bravais):
+    """
+    Check if hkl is allowed based on systematic absences for the given space group.
+
+    Symmetry Element              | Affected Reflection | Condition for Reflection to Be Present
+    ------------------------------|---------------------|----------------------------------------
+    Lattice Centering:
+      primitive lattice (P)       | hkl                 | always present
+      body-centered lattice (I)   | hkl                 | h + k + l = even
+      end-centered lattice (A)    | hkl                 | k + l = even
+      end-centered lattice (B)    | hkl                 | h + l = even
+      end-centered lattice (C)    | hkl                 | h + k = even
+      face-centered lattice (F)   | hkl                 | h, k, l all odd or all even
+    """
+
+    # Lattice Centering (Table 2.2.13.1.)
+    if bravais in [1, 2, 4, 9, 11, 13]:
+        return True
+    elif bravais in [7, 10, 14]:
+        if not (h + k + l) % 2 == 0:  # I-centering
+            return False
+    elif bravais in [8, 15]:
+        if not (h%2 == k%2 == l%2):  # F-centering
+            return False
+    elif bravais in [3, 6]:
+        if not (h + k) % 2 == 0:  # C-centering
+            return False
+    elif bravais in [5]:
+        if not (k + l) % 2 == 0:  # A-centering
+            return False
+    return True
+
+def generate_possible_hkls(bravais, h_max=50, k_max=50, l_max=50):
+    """
+    Generate reasonable hkl indices within a cutoff for different crystal systems.
+
+    Args:
+        bravrais: bravais lattice type (1-15)
+        h_max: maximum absolute value for h
+        k_max: maximum absolute value for k
+        l_max: maximum absolute value for l
+        level: level of indexing (0 for triclinic; 1 for monoclinic; 2 for orthorhombic or higher)
+    """
+    if bravais in [4, 5, 6, 7, 8, 9, 10, 13, 14, 15]:
+        level = 3  # orthorhombic or higher
+    elif bravais in [11, 12]:
+        level = 2  # hexagonal
+    elif bravais in [2, 3]:
+        level = 1  # monoclinic
+    else:
+        level = 0  # triclinic
+
+    if level == 3: # orthorhombic or higher
+        base_signs = [(1, 1, 1)]
+    elif level == 2:  # hexagonal (110) (1-10)
+        base_signs = [(1, 1, 1), (1, -1, 1)]
+    elif level == 1: # monoclinic, baxis unique, (101) (10-1)
+        base_signs = [(1, 1, 1), (1, 1, -1)]
+    else:
+        base_signs = [(1, 1, 1), (1, 1, -1), (1, -1, 1), (-1, 1, 1),
+                      (1, -1, -1), (-1, 1, -1), (-1, -1, 1), (-1, -1, -1)]
+    # Create meshgrid for all h, k, l combinations
+    h_vals, k_vals, l_vals = np.meshgrid(
+        np.arange(h_max + 1),
+        np.arange(k_max + 1),
+        np.arange(l_max + 1),
+        indexing='ij'
+    )
+
+    # Flatten to get all combinations
+    h_flat = h_vals.flatten()
+    k_flat = k_vals.flatten()
+    l_flat = l_vals.flatten()
+
+    # Filter out (0,0,0)
+    non_zero_mask = (h_flat**2 + k_flat**2 + l_flat**2) > 0
+    h_flat = h_flat[non_zero_mask]
+    k_flat = k_flat[non_zero_mask]
+    l_flat = l_flat[non_zero_mask]
+
+    h1_flat, k1_flat, l1_flat = [], [], []
+    for h, k, l in zip(h_flat, k_flat, l_flat):
+        if is_hkl_allowed_by_bravais(h, k, l, bravais):
+            h1_flat.append(h)
+            k1_flat.append(k)
+            l1_flat.append(l)
+    h1_flat = np.array(h1_flat)
+    k1_flat = np.array(k1_flat)
+    l1_flat = np.array(l1_flat)
+    # Apply all sign combinations vectorized
+    all_hkls = []
+    for signs in base_signs:
+        sh = signs[0] * h1_flat
+        sk = signs[1] * k1_flat
+        sl = signs[2] * l1_flat
+        hkls_with_signs = np.column_stack([sh, sk, sl])
+        all_hkls.append(hkls_with_signs)
+
+    return np.vstack(all_hkls)
+
 if __name__ == "__main__":
     print("Test pyxtal.wp.site symmetry")
     spg_list = [14, 36, 62, 99, 143, 160, 182, 183, 191, 192, 193, 194, 225, 230]

@@ -2,62 +2,14 @@
 Module for PXRD indexing and lattice parameter estimation.
 """
 import numpy as np
+from pyxtal.symmetry import get_bravais_lattice, get_lattice_type, generate_possible_hkls
 
-def generate_possible_hkls(h_max, k_max, l_max, level=2):
-    """
-    Generate reasonable hkl indices within a cutoff for different crystal systems.
-
-    Args:
-        h_max: maximum absolute value for h
-        k_max: maximum absolute value for k
-        l_max: maximum absolute value for l
-        level: level of indexing (0 for triclinic; 1 for monoclinic; 2 for orthorhombic or higher)
-    """
-    if level == 3: # orthorhombic or higher
-        base_signs = [(1, 1, 1)]
-    elif level == 2:  # hexagonal (110) (1-10)
-        base_signs = [(1, 1, 1), (1, -1, 1)]
-    elif level == 1: # monoclinic, baxis unique, (101) (10-1)
-        base_signs = [(1, 1, 1), (1, 1, -1)]
-    else:
-        base_signs = [(1, 1, 1), (1, 1, -1), (1, -1, 1), (-1, 1, 1),
-                      (1, -1, -1), (-1, 1, -1), (-1, -1, 1), (-1, -1, -1)]
-    # Create meshgrid for all h, k, l combinations
-    h_vals, k_vals, l_vals = np.meshgrid(
-        np.arange(h_max + 1),
-        np.arange(k_max + 1),
-        np.arange(l_max + 1),
-        indexing='ij'
-    )
-
-    # Flatten to get all combinations
-    h_flat = h_vals.flatten()
-    k_flat = k_vals.flatten()
-    l_flat = l_vals.flatten()
-
-    # Filter out (0,0,0)
-    non_zero_mask = (h_flat**2 + k_flat**2 + l_flat**2) > 0
-    h_flat = h_flat[non_zero_mask]
-    k_flat = k_flat[non_zero_mask]
-    l_flat = l_flat[non_zero_mask]
-
-    # Apply all sign combinations vectorized
-    all_hkls = []
-    for signs in base_signs:
-        sh = signs[0] * h_flat
-        sk = signs[1] * k_flat
-        sl = signs[2] * l_flat
-        hkls_with_signs = np.column_stack([sh, sk, sl])
-        all_hkls.append(hkls_with_signs)
-
-    return np.vstack(all_hkls)
-
-def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
+def get_cell_params(bravais, hkls, two_thetas, wave_length=1.54184):
     """
     Calculate cell parameters for a given set of hkls.
 
     Args:
-        spg (int): space group number
+        bravais (int): Bravais lattice type (0-13)
         hkls: list of (h, k, l) tuples
         two_thetas: list of 2theta values
         wave_length: X-ray wavelength, default is Cu K-alpha
@@ -70,7 +22,8 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
     d_spacings = wave_length / (2 * np.sin(thetas))
 
     cells = []
-    if spg >= 195:  # cubic, only need a
+    ltype = get_lattice_type(bravais)
+    if ltype == 6:  # cubic, only need a
         h_sq_sum = np.sum(hkls**2, axis=1)
         cells = d_spacings * np.sqrt(h_sq_sum)
         #for m in range(len(cells)): print(cells[m], hkls[m], d_spacings[m], two_thetas[m])
@@ -79,7 +32,7 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
         cells = np.reshape(cells, [len(cells), 1])
         hkls_out = hkls[mask]
 
-    elif 143 <= spg <= 194:  #  hexagonal, need a and c
+    elif ltype == 5:  #  hexagonal, need a and c
         # need two hkls to determine a and c
         len_solutions = len(hkls) // 2
         ds = (2 * np.sin(thetas) / wave_length)**2
@@ -98,7 +51,7 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
         cells = cells[mask2]
         hkls_out = hkls_out[mask2]
 
-    elif 75 <= spg <= 142:  # tetragonal, need a and c
+    elif ltype == 4:  # tetragonal, need a and c
         # need two hkls to determine a and c
         len_solutions = len(hkls) // 2
         ds = (2 * np.sin(thetas) / wave_length)**2
@@ -117,7 +70,7 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
         cells = cells[mask2]
         hkls_out = hkls_out[mask2]
 
-    elif 16 <= spg <= 74:  # orthorhombic, need a, b, c
+    elif ltype == 3:  # orthorhombic, need a, b, c
         # need three hkls to determine a, b, c
         len_solutions = len(hkls) // 3
         ds = (2 * np.sin(thetas) / wave_length)**2
@@ -137,7 +90,7 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
         cells = cells[mask2]
         hkls_out = hkls_out[mask2]
 
-    elif 3 <= spg <= 15:  # monoclinic, need a, b, c, beta
+    elif ltype == 2:  # monoclinic, need a, b, c, beta
         # need four hkls to determine a, b, c, beta
         len_solutions = len(hkls) // 4
         thetas = np.radians(two_thetas/2)
@@ -183,29 +136,30 @@ def get_cell_params(spg, hkls, two_thetas, wave_length=1.54184):
 
     return cells, hkls_out
 
-def get_d_hkl_from_cell(spg, cells, h, k, l):
+def get_d_hkl_from_cell(bravais, cells, h, k, l):
     """
     Estimate the maximum hkl indices to consider based on the cell parameters and maximum 2theta.
 
     Args:
-        spg (int): space group number
+        bravais (int): Bravais lattice type (1-15)
         cells: cell parameters
         h: h index
         k: k index
         l: l index
     """
-    if spg >= 195:  # cubic
+    ltype = get_lattice_type(bravais)
+    if ltype == 6:  # cubic
         d = cells[:, 0] / np.sqrt(h**2 + k**2 + l**2)
-    elif spg >= 143:  # hexagonal
+    elif ltype == 5:  # hexagonal
         a, c = cells[:, 0], cells[:, 1]
         d = 1 / np.sqrt((4/3) * (h**2 + h*k + k**2) / a**2 + l**2 / c**2)
-    elif spg >= 75:  # tetragonal
+    elif ltype == 4:  # tetragonal
         a, c = cells[:, 0], cells[:, 1]
         d = 1 / np.sqrt((h**2 + k**2) / a**2 + l**2 / c**2)
-    elif spg >= 16:  # orthorhombic
+    elif ltype == 3:  # orthorhombic    
         a, b, c = cells[:, 0], cells[:, 1], cells[:, 2]
         d = 1 / np.sqrt(h**2 / a**2 + k**2 / b**2 + l**2 / c**2)
-    elif spg >= 3:  # monoclinic
+    elif ltype == 2:  # monoclinic
         a, b, c, beta = cells[:, 0], cells[:, 1], cells[:, 2], np.radians(cells[:, 3])
         sin_beta = np.sin(beta)
         d = 1 / np.sqrt((h**2 / (a**2 * sin_beta**2)) + (k**2 / b**2) + (l**2 / (c**2 * sin_beta**2)) -
@@ -214,50 +168,52 @@ def get_d_hkl_from_cell(spg, cells, h, k, l):
         raise NotImplementedError("triclinic systems are not supported.")
     return d
 
-def calc_two_theta_from_cell(spg, hkls, cells, wave_length=1.54184):
+def calc_two_theta_from_cell(bravais, hkls, cells, wave_length=1.54184):
     """
     Calculate expected 2theta values from hkls and cell parameters.
 
     Args:
-        spg (int): space group number
+        bravais (int): Bravais lattice type (1-15)
         hkls: hkl indices (np.array)
         cells: cell parameters
         wave_length: X-ray wavelength, default is Cu K-alpha
     """
     h, k, l = hkls[:, 0], hkls[:, 1], hkls[:, 2]
-    if spg >= 195:  # cubic
+    ltype = get_lattice_type(bravais)
+    if ltype == 6:  # cubic
         a = cells[0]
         d = a / np.sqrt(h**2 + k**2 + l**2)#; print('ddddd', d)
-    elif spg >= 143:  # hexagonal
+    elif ltype == 5:  # hexagonal
         a, c = cells[0], cells[1]
         d = 1 / np.sqrt((4/3) * (h**2 + h*k + k**2) / a**2 + l**2 / c**2)
-    elif spg >= 75:  # tetragonal
+    elif ltype == 4:  # tetragonal
         a, c = cells[0], cells[1]
         d = 1 / np.sqrt((h**2 + k**2) / a**2 + l**2 / c**2)
-    elif spg >= 16:  # orthorhombic
+    elif ltype == 3:  # orthorhombic
         a, b, c = cells[0], cells[1], cells[2]
         d = 1 / np.sqrt(h**2 / a**2 + k**2 / b**2 + l**2 / c**2)
-    elif spg >= 3:  # monoclinic
+    elif ltype == 2:  # monoclinic
         a, b, c, beta = cells[0], cells[1], cells[2], np.radians(cells[3])
         sin_beta = np.sin(beta)
         d = 1 / np.sqrt((h**2 / (a**2 * sin_beta**2)) + (k**2 / b**2) + (l**2 / (c**2 * sin_beta**2)) -
                 (2 * h * l * np.cos(beta) / (a * c * sin_beta**2)))
     else:
         raise NotImplementedError("triclinic systems are not supported.")
-    sin_theta = wave_length / (2 * d)
+
     # Handle cases where sin_theta > 1
+    sin_theta = wave_length / (2 * d)
     valid = sin_theta <= 1#; print(d[~valid])
     two_thetas = 2 * np.degrees(np.arcsin(sin_theta[valid]))
     two_thetas = np.round(two_thetas, decimals=3)
     two_thetas, ids = np.unique(two_thetas, return_index=True)
     return two_thetas, hkls[valid][ids]
 
-def get_seeds(spg, hkls, two_thetas):
+def get_seeds(bravais, hkls, two_thetas):
     """
     Select all possible seed hkls from the provided hkls based on the space group.
 
     Args:
-        spg (int): space group number
+        bravais (int): Bravais lattice type (0-13)
         hkls: list of (h, k, l) tuples
         two_thetas: list of 2theta values
 
@@ -268,10 +224,11 @@ def get_seeds(spg, hkls, two_thetas):
     seed_hkls = []
     seed_thetas = []
     # For cubic, we can select any hkl.
-    if spg >= 195:  # cubic
+    ltype = get_lattice_type(bravais)
+    if ltype == 6:  # cubic
         seed_hkls, seed_thetas = hkls, two_thetas
-    # For hexagonal/tetragonal, select two hkls and  avoid two (h,k,0) or (0,0,l) cases
-    elif spg >= 75:  # hexagonal or tetragonal
+    # For hexagonal/tetragonal, select two hkls and avoid two (h,k,0) or (0,0,l) cases
+    elif ltype in [4, 5]:
         # loop all possible pairs and exclude invalid ones
         for i in range(len(hkls)-1):
             h1, k1, l1 = hkls[i]
@@ -286,8 +243,8 @@ def get_seeds(spg, hkls, two_thetas):
                 seed_thetas.append(two_thetas[i])
                 seed_thetas.append(two_thetas[j])
 
-    # For tetragonal, two hkls are needed to determine a and c.
-    elif spg >= 16:  # tetragonal
+    # For orthororhombic, select three hkls and avoid (h,0,0), (0,k,0), (0,0,l)
+    elif ltype == 3:
         for i in range(len(hkls)-1):
             h1, k1, l1 = hkls[i]
             for j in range(i+1, len(hkls)):
@@ -307,7 +264,7 @@ def get_seeds(spg, hkls, two_thetas):
                     seed_thetas.append(two_thetas[i])
                     seed_thetas.append(two_thetas[j])
                     seed_thetas.append(two_thetas[k])
-    elif spg >= 3:  # monoclinic
+    elif ltype == 2:  # monoclinic
         for i in range(len(hkls)-1):
             h1, k1, l1 = hkls[i]
             for j in range(i+1, len(hkls)):
@@ -336,21 +293,21 @@ def get_seeds(spg, hkls, two_thetas):
     return seed_hkls, seed_thetas
 
 
-def get_unique_thetas(xrd, spg):
-
-    if spg >= 195:
+def get_unique_thetas(xrd, bravais):
+    ltype = get_lattice_type(bravais)
+    if ltype == 6:  # cubic
         unique_thetas = xrd.pxrd[:20,0]
     else:
         # deal with (001, 002, 003) for spg < 195
         int_counts = []
         for jj in range(1, 5):
-            ratio = np.sin(np.radians(xrd.pxrd[jj,0]/2))/np.sin(np.radians(xrd.pxrd[0,0]/2))
+            ratio = np.sin(np.radians(xrd.pxrd[jj, 0] / 2)) / np.sin(np.radians(xrd.pxrd[0, 0] / 2))
             if ratio > 1.1 and abs(ratio - round(ratio)) < 0.01:
                 int_counts.append(jj)
         # in case two are related
         if 1 not in int_counts:
             for jj in range(2, 10):
-                ratio = np.sin(np.radians(xrd.pxrd[jj,0]/2))/np.sin(np.radians(xrd.pxrd[1,0]/2))
+                ratio = np.sin(np.radians(xrd.pxrd[jj, 0] / 2)) / np.sin(np.radians(xrd.pxrd[1, 0] / 2))
                 if ratio > 1.1 and abs(ratio - round(ratio)) < 0.01:
                     int_counts.append(jj)
 
@@ -375,50 +332,43 @@ def get_unique_thetas(xrd, spg):
     return unique_thetas
 
 
-def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_length=1.54184,
-                             tolerance=0.1, use_seed=True, min_score=0.999):
+def get_cell_from_multi_hkls(bravais, hkls, two_thetas, long_thetas=None, wave_length=1.54184,
+                             tolerance=0.1, use_seed=True, trial_hkls=None):
     """
     Estimate the cell parameters from multiple (hkl, two_theta) inputs.
     The idea is to use the Bragg's law and the lattice spacing formula to estimate the lattice parameters.
     It is possible to have mislabelled hkls, so we need to run multiple trials and select the best one.
 
     Args:
+        bravais (int): Bravais lattice type (0-13)
         hkls: list of (h, k, l) tuples
         two_thetas: list of 2theta values
         long_thetas: array of  all observed 2theta values
-        spg (int): space group number
         wave_length: X-ray wavelength, default is Cu K-alpha
         tolerance: tolerance for matching 2theta values, default is 0.1 degrees
         use_seed: whether to use seed hkls for initial cell estimation
-        min_score: threshold score for consideration
+        trial_hkls: pre-generated trial hkls to speed up calculation
 
     Returns:
         cells: list of solutions
     """
     if long_thetas is None: long_thetas = two_thetas
-    #test_hkls_array = np.array(generate_possible_hkls(max_h=max_h))
-    if spg > 194 or 15 < spg < 143:
-        level = 3  # orthorhombic or higher
-    elif 142 < spg < 195:
-        level = 2  # hexagonal
-    elif 2 < spg < 16:
-        level = 1  # monoclinic
-    else:
-        level = 0  # triclinic
 
     if use_seed:
-        seed_hkls, seed_thetas = get_seeds(spg, hkls, two_thetas)#; print(seed_hkls, seed_thetas)
-        cells, hkls = get_cell_params(spg, seed_hkls, seed_thetas, wave_length)#; print(cells)
+        seed_hkls, seed_thetas = get_seeds(bravais, hkls, two_thetas)#; print(seed_hkls, seed_thetas)
+        cells, hkls = get_cell_params(bravais, seed_hkls, seed_thetas, wave_length)#; print(cells)
     else:
-        cells, hkls = get_cell_params(spg, hkls, two_thetas, wave_length)#; print(cells)
+        cells, hkls = get_cell_params(bravais, hkls, two_thetas, wave_length)#; print(cells)
 
+    if trial_hkls is None:
+        trial_hkls = generate_possible_hkls(bravais, 100, 100, 100)
     #cells = np.array(cells)
     if len(cells) == 0: return []
     # keep cells up to 4 decimal places
-    if spg < 16:
+    if bravais <= 3:
         cells[:, -1] = np.round(cells[:, -1], decimals=2)
         cells[:, :3] = np.round(cells[:, :3], decimals=4)
-    elif spg > 194:
+    elif bravais > 12:
         cells = np.round(cells, decimals=5)
 
     _, unique_ids = np.unique(cells, axis=0, return_index=True)
@@ -426,9 +376,9 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
     cells = cells[unique_ids]
 
     # get the maximum h from assuming the cell[-1] is (h00)
-    d_100s = get_d_hkl_from_cell(spg, cells, 1, 0, 0)
-    d_010s = get_d_hkl_from_cell(spg, cells, 0, 1, 0)
-    d_001s = get_d_hkl_from_cell(spg, cells, 0, 0, 1)
+    d_100s = get_d_hkl_from_cell(bravais, cells, 1, 0, 0)
+    d_010s = get_d_hkl_from_cell(bravais, cells, 0, 1, 0)
+    d_001s = get_d_hkl_from_cell(bravais, cells, 0, 0, 1)
     theta_100s = 2*np.degrees(np.arcsin(wave_length / (2 * d_100s)))
     theta_010s = 2*np.degrees(np.arcsin(wave_length / (2 * d_010s)))
     theta_001s = 2*np.degrees(np.arcsin(wave_length / (2 * d_001s)))
@@ -438,51 +388,49 @@ def get_cell_from_multi_hkls(spg, hkls, two_thetas, long_thetas=None, wave_lengt
 
     solutions = []
     for i, cell in enumerate(cells):
-        test_hkls = np.array(generate_possible_hkls(h_max=h_maxs[i],
-                                                    k_max=k_maxs[i],
-                                                    l_max=l_maxs[i],
-                                                    level=level))
-        exp_thetas, exp_hkls = calc_two_theta_from_cell(spg, test_hkls, cell, wave_length)
+        if cell.min() <= 2.0: continue  # skip too small cells
+        h_max, k_max, l_max = h_maxs[i], k_maxs[i], l_maxs[i]
+        mask = (trial_hkls[:,0] <= h_max) & (trial_hkls[:,1] <= k_max) & (trial_hkls[:,2] <= l_max)
+        test_hkls = trial_hkls[mask]
+        #print(len(test_hkls), h_max, k_max, l_max, trial_hkls.shape)
+        exp_thetas, exp_hkls = calc_two_theta_from_cell(bravais, test_hkls, cell, wave_length)
         if len(exp_thetas) == 0: continue
 
         errors_matrix = np.abs(long_thetas[:, np.newaxis] - exp_thetas[np.newaxis, :])
         within_tolerance = errors_matrix < tolerance
-        has_match = np.any(within_tolerance, axis=1)
-        best_errors = np.min(errors_matrix, axis=1)
-        #print('best errors', exp_thetas); import sys; sys.exit()
+        has_obs_match = np.any(within_tolerance, axis=1)
+        ids_matched = np.where(has_obs_match)[0]
 
-        # Filter to only those with valid matches
-        valid_matches = has_match & (best_errors < tolerance)
-        matched_peaks = []  # (index, hkl, obs_theta, error)
-        valid_peak_indices = np.where(valid_matches)[0]
+        if len(ids_matched) == len(long_thetas):
+            # Get the obs. peaks
+            matched_peaks = []
+            for id in ids_matched:
+                errors = errors_matrix[id]
+                obs_theta = long_thetas[id]
+                hkl_id = np.argmin(errors)
+                error = errors[hkl_id]
+                matched_peaks.append((exp_hkls[hkl_id], obs_theta, error))
 
-        for peak_idx in valid_peak_indices:
-            obs_theta = long_thetas[peak_idx]
-            error = best_errors[peak_idx]
-            matched_peaks.append((peak_idx, obs_theta, error))
-            #print(error)
+            mis_obs_match = np.any(within_tolerance, axis=0)
+            ids_mis_matched = np.where(~mis_obs_match)[0]
 
-        # Score this solution
-        n_matched = len(matched_peaks)
-        coverage = n_matched / len(long_thetas)
-        avg_error = np.mean([match[-1] for match in matched_peaks])
-        consistency_score = 1.0 / (1.0 + avg_error)
-        score = coverage * consistency_score
-        #unmatches = exp_thetas[~within_tolerance.all(axis=0)]
-        #mask = (unmatches > long_thetas[0]) & (unmatches < long_thetas[-1])
-        #unmatches = exp_hkls[mask]
-        #print(cell, score, hkls[i], two_thetas)
+            mis_matched_peaks = []
+            for id in ids_mis_matched:
+                hkl = exp_hkls[id]
+                theta = exp_thetas[id]
+                if theta < long_thetas[-1] and abs(hkl).max() < 3:
+                    mis_matched_peaks.append((hkl, theta))
 
-        if score > min_score:
-            solutions.append({
-                'cell': cell,
-                'n_matched': n_matched,
-                'score': score,
-                'id': hkls[i],
-                #'unmatched_thetas': unmatches,
-            })
-            #print(cell, len(unmatches), unmatches)
-
+            if len(mis_matched_peaks) <= 15:
+                solutions.append({
+                    'cell': cell,
+                    'matched_peaks': matched_peaks,
+                    'mis_matched_peaks': mis_matched_peaks,
+                    'id': hkls[i],
+                })
+                #if len(mis_matched_peaks) > 0:
+                #    print(cell, mis_matched_peaks)#; import sys; sys.exit()
+    
     return solutions
 
 
@@ -498,8 +446,8 @@ if __name__ == "__main__":
         #'pyxtal/database/cifs/JVASP-97915.cif', # Fm-3m, 0.9s
         #'pyxtal/database/cifs/JVASP-86205.cif', # Im-3 204, 0.1s
         #'pyxtal/database/cifs/JVASP-28634.cif', # P3m1, 0.1s
-        #'pyxtal/database/cifs/JVASP-85365.cif', # P4/mmm, 0.6s
-        #'pyxtal/database/cifs/JVASP-62168.cif', # Pnma, 33s
+        'pyxtal/database/cifs/JVASP-85365.cif', # P4/mmm, 0.6s
+        'pyxtal/database/cifs/JVASP-62168.cif', # Pnma, 33s
         #'pyxtal/database/cifs/JVASP-98225.cif', # P21/c, 14s
         #'pyxtal/database/cifs/JVASP-50935.cif', # Pm, 10s
         #'pyxtal/database/cifs/JVASP-28565.cif', # Cm, 100s
@@ -510,32 +458,33 @@ if __name__ == "__main__":
         #'pyxtal/database/cifs/JVASP-119184.cif', # Imm2 44
         #'pyxtal/database/cifs/JVASP-141590.cif', # R-3m 166
         #'pyxtal/database/cifs/JVASP-45907.cif', # R-3m 166
-        'pyxtal/database/cifs/JVASP-119739.cif', # C2/m 12
+        #'pyxtal/database/cifs/JVASP-119739.cif', # C2/m 12
         ]:
         t0 = time()
         xtal.from_seed(cif)
         xrd = xtal.get_XRD(thetas=[0, 120], SCALED_INTENSITY_TOL=0.5)
         cell_ref = np.sort(np.array(xtal.lattice.encode()))
-        long_thetas = xrd.pxrd[:15, 0]
+        long_thetas = xrd.pxrd[:20, 0]
         spg = xtal.group.number
-        print("\n", cif, xtal.lattice, xtal.group.symbol, xtal.group.number)
+        bravais = get_bravais_lattice(spg)
+        print("\n", cif, xtal.lattice, xtal.group.symbol, spg)
         print(xrd.by_hkl(N_max=20))
 
         # Get the a list of hkl guesses and sort them by d^2
-        if spg >= 195:
-            min_score, N_add, N_batch = 0.96, 3, 5
-        elif spg > 15:
-            min_score, N_add, N_batch = 0.999, 5, 20
+        if bravais > 10:
+            N_add, N_batch = 3, 5
+        elif bravais > 2:
+            N_add, N_batch = 5, 20
         else:
-            min_score, N_add, N_batch = 0.999, 8, 20
+            N_add, N_batch = 8, 20
 
-        if spg >= 75:
+        if bravais >= 7:
             guesses = xtal.group.generate_hkl_guesses(2, 3, 10, max_square=101, total_square=110, verbose=True)
-        elif spg >= 16:
+        elif spg >= 3:
             guesses = xtal.group.generate_hkl_guesses(2, 2, 5, max_square=29, total_square=40, verbose=True)
             #guesses = xtal.group.generate_hkl_guesses(2, 2, 2, max_square=29, total_square=40, verbose=True)
         else:
-            if spg in [5, 8, 12, 15]:
+            if bravais == 2:  # monoclinic-S
                 guesses = xtal.group.generate_hkl_guesses(3, 3, 5, max_square=29, total_square=40, verbose=True)
             else:
                 guesses = xtal.group.generate_hkl_guesses(4, 3, 4, max_square=29, total_square=35, verbose=True)
@@ -554,10 +503,11 @@ if __name__ == "__main__":
         # Check the quality of each (hkl, 2theta) solutions
         cell2 = np.sort(np.array(xtal.lattice.encode()))
         if spg <= 15 and cell2[3] > 90: cell2[3] = 180 - cell2[3]
-        cells_all = np.reshape(cell2, (1, len(cell2)))
+
+        trial_hkls = generate_possible_hkls(bravais, 100, 100, 100)
 
         # Try each combination of n peaks from the first n+1 peaks
-        unique_thetas = get_unique_thetas(xrd, spg)
+        unique_thetas = get_unique_thetas(xrd, bravais)
         n_peaks = len(guesses[0])
         N = min(n_peaks + N_add, len(unique_thetas))
         available_peaks = unique_thetas[:N]; print(available_peaks)
@@ -570,6 +520,7 @@ if __name__ == "__main__":
         thetas = np.tile(thetas, N_batch)
         found = False
         d2 = 0
+        cell_all = []
         for i in range(len(guesses)//N_batch + 1):
             if i == len(guesses)//N_batch:
                 N_batch = len(guesses) - N_batch * i
@@ -579,32 +530,34 @@ if __name__ == "__main__":
                     thetas = thetas[:N_thetas * n_peaks * N_batch]
             hkls_t = np.tile(guesses[N_batch*i:N_batch*(i+1)], (1, N_thetas, 1))
             hkls_t = np.reshape(hkls_t, (-1, 3))#, order='F')
-            solutions = get_cell_from_multi_hkls(spg, hkls_t, thetas, long_thetas, min_score=min_score, use_seed=False)
+            solutions = get_cell_from_multi_hkls(bravais, hkls_t, thetas, long_thetas,
+                                                 tolerance=0.25,
+                                                 use_seed=False,
+                                                 trial_hkls=trial_hkls)
             if i % 1000 == 0:
-                print(f"Processed {N_batch*i}/{d2}, found {len(cells_all)-1} cells.")
+                print(f"Processed {N_batch*i}/{d2}, found {len(cell_all)} cells.")
 
             for sol in solutions:
                 cell1 = np.sort(np.array(sol['cell']))
-
-                # Check if it is a new solution
-                diffs = np.sum((cells_all - cell1)**2, axis=1)
+                N_mis = len(sol['mis_matched_peaks'])
                 guess = sol['id']
-                score = sol['score']
                 d2 = np.sum(guess**2)
-                if len(cells_all[diffs < 0.1]) == 0:
-                    print(f"Guess: {guess}, {d2}/{len(cells_all)-1} -> {cell1}, {score:.6f}")
-                    cells_all = np.vstack((cells_all, cell1))
+                if len(cell_all) == 0:
+                    cell_all = np.array([np.sort(np.array(sol['cell']))])
+                    print(f"Guess: {guess}, {d2}/{N_mis}/0 -> {cell1}")
+                else:
+                    diffs = np.sum((cell_all - cell1)**2, axis=1)
+                    if len(cell_all[diffs < 0.1]) == 0:
+                        print(f"Guess: {guess}, {d2}/{N_mis}/{len(cell_all)} -> {cell1}")
+                        cell_all = np.vstack((cell_all, cell1))
+                        if len(cell_all) >= 100 or np.max(cell1) > 100: # stop if find very big cells
+                            found = True
+                            break
 
-                # Early stopping for getting high-quality solutions
-                if diffs[0] < 0.1:
-                    print(f"Guess: {guess}, {d2}/{len(cells_all)-1} -> {cell1}, {score:.6f}")
-                    print("High score, exiting early.")
-                    found = True
-                    break
             if found:
                 break
         t1 = time()
-        data.append((cif, spg, d2, i*N_batch, len(cells_all), score, t1-t0))
+        data.append((cif, bravais, d2, i*N_batch, len(cell_all), t1-t0))
 
     for d in data:
         print(d)
