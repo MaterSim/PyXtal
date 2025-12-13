@@ -1,9 +1,96 @@
 """
 Module for PXRD indexing and lattice parameter estimation.
 """
+from pyxtal import pyxtal
+from pyxtal.lattice import Lattice
 import numpy as np
 from itertools import combinations
-from pyxtal.symmetry import Group, get_bravais_lattice, get_lattice_type, generate_possible_hkls
+from pyxtal.symmetry import rf, Group, get_bravais_lattice, get_lattice_type, generate_possible_hkls
+from pyxtal.database.element import Element
+
+
+def find_wp_assignments(comp, ids, nums):
+    """
+    Assigns Wyckoff position IDs to a composition. This function can handle
+    cases where a composition number is a sum of multiple Wyckoff multiplicities.
+
+    Args:
+        comp (list): The target composition counts, e.g., [18, 6].
+        ids (list): The list of Wyckoff position IDs, e.g., [1, 1, 6, 8, 9].
+        nums (list): The corresponding multiplicities for each ID, e.g., [8, 8, 4, 2, 2].
+
+    Returns:
+        list: A list of all possible valid assignments. Each assignment is a list
+              of lists, where each inner list contains the WP IDs for an element.
+    """
+
+    # Pair IDs with their multiplicities and indices for unique tracking
+    wp_info = list(zip(ids, nums, range(len(ids))))
+
+    # --- Helper function to find all subsets that sum to a target ---
+    def find_subsets(target, available_wps, start_index=0, current_subset=[]):
+        if target == 0:
+            yield current_subset
+            return
+        if target < 0 or start_index == len(available_wps):
+            return
+
+        for i in range(start_index, len(available_wps)):
+            wp_id, wp_num, original_index = available_wps[i]
+
+            # To handle duplicate numbers, we only proceed if this is the first
+            # occurrence or if the previous identical element was not chosen.
+            #if i > start_index and available_wps[i][1] == available_wps[i-1][1]:
+            #    continue
+
+            # Recurse with the current element included
+            yield from find_subsets(
+                target - wp_num,
+                available_wps,
+                i + 1,
+                current_subset + [available_wps[i]]
+            )
+
+    # --- Main backtracking solver ---
+    solutions = []
+
+    def solve(comp_targets, current_assignment, available_wps):
+        if not comp_targets:
+            # Sort the assignment by the original index before storing
+            sorted_assignment = sorted(current_assignment, key=lambda x: x[0])
+            # Extract just the WP lists in the correct order
+            final_solution = [part for index, part in sorted_assignment]
+            solutions.append(final_solution)
+            return
+
+        original_index, target_comp = comp_targets[0]
+        remaining_comp = comp_targets[1:]
+
+        # Find all possible ways to form the target composition number
+        possible_subsets = list(find_subsets(target_comp, available_wps))
+
+        for subset in possible_subsets:
+            # For each valid subset, create a new assignment
+            new_assignment_part = [wp[0] for wp in subset] # Get just the IDs
+
+            # Determine the remaining available WPs for the next recursive call
+            used_indices = {wp[2] for wp in subset}
+            next_available_wps = [wp for wp in available_wps if wp[2] not in used_indices]
+
+            # Recurse, adding the original index along with the assignment part
+            solve(remaining_comp, current_assignment + [(original_index, new_assignment_part)], next_available_wps)
+
+    # Pair composition values with their original indices
+    indexed_comp = list(enumerate(comp))
+    # Sort by composition value (descending) to prune search space faster
+    sorted_indexed_comp = sorted(indexed_comp, key=lambda x: x[1], reverse=True)
+
+    solve(sorted_indexed_comp, [], wp_info)
+    #print(comp, ids, nums, solutions)
+    #if len(solutions) > 0: import sys; sys.exit()
+    return solutions
+
+
 
 def get_cell_params(bravais, hkls, two_thetas, wave_length=1.54184):
     """
@@ -499,7 +586,7 @@ def get_cell_from_thetas(spg, long_thetas, N_add=5, max_mismatch=20, theta_tol=0
         for sol in sols:
             guess, match, mis_match = sol['id'], sol['matched_peaks'], sol['mis_matched_peaks']
             if len(match) == len(long_thetas):
-                cell1 = np.sort(np.array(sol['cell']))
+                cell1 = sol['cell'] #np.sort(np.array(sol['cell']))
                 d2 = np.sum(guess**2)
 
                 if len(cell_all) == 0:
@@ -517,15 +604,150 @@ def get_cell_from_thetas(spg, long_thetas, N_add=5, max_mismatch=20, theta_tol=0
 
     return results
 
+class XtalManager:
+    def __init__(self, spg, species, numIons, cell, WPs):
+        """
+        Crystal Manager is used to handle crystal structure related operations.
+
+        Args:
+            spg (int): Space group number
+            WPs (list): Wyckoff positions
+            cell (list): Cell parameters
+        """
+        self.spg = Group(spg)
+        self.WPs = WPs
+        self.cell = cell
+        self.species = species
+        self.numIons = numIons
+        dof = 0
+        sites = [[] for _ in range(len(species))]
+        for i, wp in enumerate(WPs):
+            for _wp in wp:
+                dof += self.spg[_wp].get_dof()
+                sites[i].append(self.spg[_wp].get_label())
+        self.dof = dof
+        self.sites = sites
+        print(f"Space group: {spg}, Wyckoff positions: {sites}, DOF: {dof}")
+
+    def generate_structure(self):
+        """
+        Generate the crystal structure from the Wyckoff positions and cell parameters.
+        """
+        xtal = pyxtal()
+        xtal.from_random(3, self.spg, self.species, self.numIons,
+                         lattice = self.cell, sites=self.sites, force_pass=True)
+        return xtal
+
+class WPManager:
+    def __init__(self, spg, cell, composition={'Si': 1, 'O': 2}, max_wp=6, max_Z=8):
+        """
+        WP Manager is used to infer likely Wyckoff positions from the given space group,
+        cell, composition, and density constraint.
+
+        Args:
+            spg (int): Space group number
+            cell (list): Cell parameters
+            composition (dict): Elemental composition
+            max_wp (int): Maximum number of Wyckoff positions to consider
+            max_Z (int): Maximum Z value to consider for volume estimation
+        """
+        from pandas import read_csv
+        df = read_csv(rf("pyxtal", "database/spg_num_wps_raw.csv"))
+        self.spg = spg
+        self.df = df[df['spg'] == self.spg]
+        self.cell = cell
+        self.composition = composition
+        self.comp = [composition[key] for key in composition.keys()]
+        self.group = Group(spg)
+        self.orders = self.group.get_orders()
+        self.lattice = Lattice.from_1d_representation(cell, self.group.lattice_type)
+        volume = self.lattice.volume
+        self.max_wp = max_wp
+        vol = [0, 0]
+        for el in composition.keys():
+            sp = Element(el)
+            vol1, vol2 = 0.8*sp.covalent_radius**3, 2.5*sp.covalent_radius**3 #sp.vdw_radius**3
+            vol[0] += composition[el] * vol1 * np.pi * 4 / 3
+            vol[1] += composition[el] * vol2 * np.pi * 4 / 3
+
+        self.Zs = (int(np.round(volume / vol[1])), int(np.round(volume / vol[0])))
+        if self.Zs[1] > max_Z:
+            self.Zs = (self.Zs[0], max_Z)
+        #print(f"Estimated Z range: {self.Zs} {volume} {vol}")
+
+    def get_wyckoff_positions(self):
+        """
+        Infer possible Wyckoff position combinations based on the composition and Z range.
+        """
+        sols = []
+        for Z in range(self.Zs[0], self.Zs[1]+1):
+            comp = [n * Z for n in self.comp]
+            wps, _, ids = self.group.list_wyckoff_combinations(comp, numWp=(0, self.max_wp))
+            indices = sorted(range(len(ids)), key=lambda i: sum(len(x) for x in ids[i]))
+            ids = [ids[i] for i in indices]
+            wps = [wps[i] for i in indices]
+            if len(ids) > 0:
+                print(f"Z={Z}: Found {len(ids)} Wyckoff position combinations.")
+                wp_lists = []
+                for id in ids:
+                    # Check if the combination is alternative to existing ones
+                    duplicate = False
+                    tmp = [len(self.group)-1-item for sublist in id for item in sublist]
+                    for order in self.orders:
+                        tmp_list = order[tmp].tolist()
+                        #print("Checking order:", wps[i], tmp, tmp_list)
+                        if tmp_list in wp_lists:
+                            duplicate = True
+                            #print(wps[i], "is duplicate")
+                            break
+                    if not duplicate:
+                        dof = [self.group[wp].get_dof() for sublist in id for wp in sublist]
+                        wp_lists.append(tmp)
+                        sols.append((self.spg, comp, self.lattice, id, len(tmp), sum(dof)))
+            print(f"Z={Z}: Kept {len(sols)} Wyckoff position combinations.")
+            # sort sols by DOF and number of WPs
+            sols = sorted(sols, key=lambda x: (x[5], x[4]))
+        #import sys; sys.exit()
+        return sols
+
+    def get_wyckoff_positions(self):
+        """
+        Infer possible Wyckoff position combinations based on the composition and Z range.
+        """
+        sols = []
+        for Z in range(self.Zs[0], self.Zs[1]+1):
+            df_z = self.df[self.df['n_atoms'] == Z * sum(self.comp)]
+            if len(df_z) == 0: continue
+            #print(f"Z={Z}: Found {len(df_z)} Wyckoff position combinations.")
+            comp = [n * Z for n in self.comp]
+            for _, row in df_z.iterrows():
+                ids = [int(x) for x in row['wps'].split('-')]
+                nums = [self.group[id].multiplicity for id in ids]
+                solutions = find_wp_assignments(comp, ids, nums)
+                #print(comp, ids, nums, solutions)
+                for sol in solutions:
+                    dof = [self.group[w].get_dof() for wp in sol for w in wp]
+                    sols.append((self.spg, comp, self.lattice, sol, len(sol), sum(dof)))
+            print(f"Z={Z}: Kept {len(sols)} Wyckoff position combinations.")
+            # sort sols by DOF and number of WPs
+        sols = sorted(sols, key=lambda x: (x[5], x[4]))
+        #import sys; sys.exit()
+        return sols
+
+
+
 class CellManager:
-    def __init__(self, params, missing):
+    def __init__(self, spg, params, missing):
         # Store raw parameters
         self.raw_params = params
         # Sort dimensions immediately for consistent comparison (e.g. [5, 44] == [44, 5])
-        self.dims = np.sort(np.array(params))
+        #self.dims = np.sort(np.array(params))
+        self.dims = np.array(params)
         self.missing = missing
         # Proxy for size (Area for 2D, Volume for 3D) used for sorting
-        self.size_proxy = np.prod(self.dims)
+        self.group = Group(spg)
+        lattice = Lattice.from_1d_representation(self.dims, self.group.lattice_type)
+        self.size_proxy = lattice.volume
 
     def is_supercell_of(self, other, tol=0.05):
         """Instance method: Check if 'self' is an integer multiple (supercell) of 'other'."""
@@ -553,10 +775,10 @@ class CellManager:
         sorts, merges duplicates, removes supercells, and returns the clean list.
         """
         # 1. Instantiate objects
-        solutions = [cls(d[0], d[1]) for d in raw_data]
+        solutions = [cls(d[0], d[1], d[2]) for d in raw_data]
 
         # 2. Sort: Primary = Fewest Missing (Quality), Secondary = Smallest Size (Parsimony)
-        solutions.sort(key=lambda x: (x.missing, x.size_proxy))
+        solutions.sort(key=lambda x: (x.size_proxy, x.missing))
 
         kept_solutions = []
         indices_to_skip = set()

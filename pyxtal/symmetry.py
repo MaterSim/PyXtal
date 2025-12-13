@@ -511,6 +511,19 @@ class Group:
 
         return np.array([extract_dof(site) for site in sites])
 
+    def get_orders(self):
+        """
+        Get possible Wyckoff position orders based on the composition and Z range.
+        """
+        orders = []
+        for map_str in self.get_alternatives()['Transformed WP'][1:]:
+            original_list = map_str.split()
+            sorted_reference = sorted(original_list)
+            order = [sorted_reference.index(char) for char in original_list]
+            orders.append(order)
+        orders = np.array(orders, dtype=int)
+        return orders
+
     def get_spg_representation(self):
         """
         Get the one-hot encoding of the space group.
@@ -566,7 +579,7 @@ class Group:
                             letter = r[-1]#; print("test letter:", relation[true_id])
                             sub_ids[j].append(len(sub_gg) - letters.index(letter) - 1)
                 if sum(len(sublist) for sublist in sub_ids) <= max_wps:
-                    data = (sub_g, sub_ids)
+                    data = (sub_g, sub_ids, N_atoms * sub['index'][i])
                     if data not in sub_symmetries:
                         sub_symmetries.append(data)
                         if verbose:

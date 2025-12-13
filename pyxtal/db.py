@@ -1590,7 +1590,7 @@ end
 """
 
         # Save Julia script
-        script_path = "process_topology.jl"
+        script_path = prefix + "_process_topology.jl"
         with open(script_path, "w") as f:
             f.write(julia_script)
 
