@@ -639,7 +639,7 @@ def add_peak(twotheta, mu, gamma, sigma2, L, H, S, step=0.02, width=0.1, sigma2_
         step (float): Step size for the 2-theta array.
         width (float): Width of the slit function in degrees.
         sigma2_distor (float): Variance for lattice distortion Gaussian.
-    
+
     Returns:
         ndarray: Array of same shape as twotheta with the peak intensity.
     """
@@ -702,11 +702,11 @@ def axial_div(x, mu, L, H, S):
     valid_indices = x <= mu  # Identify valid indices where x <= mu
     x_valid = np.radians(x[valid_indices])  # Get valid x values
 
-    h = L * np.sqrt((np.cos(x_valid) / np.cos(np.radians(mu)))**2 - 1)  # Calculate h
+    h = L * np.sqrt((np.cos(x_valid) / np.cos(np.radians(mu)))**2 - 1) + 1e-10 # Calculate h
     W = np.where((H - S <= h) & (h <= H + S), H + S - h, 0)  # Calculate W for valid h
-    axial_divergence[valid_indices] = L / (2 * H * S * h * np.cos(np.radians(x_valid))) * W 
+    axial_divergence[valid_indices] = L / (2 * H * S * h * np.cos(x_valid)) * W
     #print('debug axial_div', mu, x_valid[-1], axial_divergence[valid_indices].max())
-    axial_divergence /= (axial_divergence.max() + 1e-10 )# in case numerical err
+    axial_divergence /= (axial_divergence.max() + 1e-10)# in case numerical err
     cdf = np.zeros_like(x)
     mask = x < mu
     cdf[mask] = np.cumsum(axial_divergence[mask])

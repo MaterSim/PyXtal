@@ -516,7 +516,7 @@ class Group:
         Get possible Wyckoff position orders based on the composition and Z range.
         """
         orders = []
-        for map_str in self.get_alternatives()['Transformed WP'][1:]:
+        for map_str in self.get_alternatives()['Transformed WP']: #[1:]:
             original_list = map_str.split()
             sorted_reference = sorted(original_list)
             order = [sorted_reference.index(char) for char in original_list]
