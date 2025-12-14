@@ -8,14 +8,18 @@ from pyxtal.XRD import Similarity
 from pyxtal.interface.ase_opt import ASE_relax
 from math import gcd
 
-database = connect('demo.db')
+database = connect('total.db')
 
 for row in database.select():
+    if row.id < 110: continue
     xtal0 = pyxtal()
     xtal0.from_seed(row.toatoms())
     spg = xtal0.group.number
     if spg < 75: continue
-    print(xtal0)
+    if xtal0.get_dof() > 8: continue
+    print('\n================================')
+    print(row.id, xtal0.formula, xtal0.get_xtal_string())
+    print(xtal0.lattice)
     found = False
 
     # Draw PXRD
@@ -32,7 +36,7 @@ for row in database.select():
     pxrd = np.zeros([len(x1), 2])
     pxrd[:, 0], pxrd[:, 1] = x1, y1
     peak_dicts = {'locations': x1[peaks], 'intensities': y1[peaks]}
-    print(peak_dicts)
+    print("Peaks used for indexing", peak_dicts['locations'])
     #print(my_pxrd.by_hkl(N_max=50))
 
     solutions = get_cell_from_thetas(spg, peak_dicts['locations'], max_mismatch=20,
@@ -40,11 +44,12 @@ for row in database.select():
                                      theta_tol=0.5, verbose=False)
 
     sols = [(spg, sol['cell'], len(sol['mis_matched_peaks'])) for sol in solutions]
-    cells = CellManager.consolidate(sols, merge_tol=0.15)
+    cells = CellManager.consolidate(sols, merge_tol=0.15)#, verbose=True)
 
     # Store all results
     eng_min = 1e10
-    for cell in cells[:2]:
+    sim_max = 0.95
+    for cell in cells[:3]:
         print(f"Trying cell: {cell.dims}, missing peaks: {cell.missing}")
         wp_manager = WPManager(spg, cell.dims, composition)
         sols = wp_manager.get_wyckoff_positions()
@@ -52,7 +57,7 @@ for row in database.select():
             (spg, comp, lattice, wp_ids, num_wps, dof) = sol
             #print(f"{comp}, {lattice}, {spg}, WPs: {wp_ids}")
             xm = XtalManager(spg, composition.keys(), comp, lattice, wp_ids)
-            for i in range(2*xm.dof + 1):
+            for i in range(xm.dof*2 + 1):
                 xtal = xm.generate_structure()
                 if not xtal.valid: continue
                 if xm.dof > 0:
@@ -62,19 +67,23 @@ for row in database.select():
                 else:
                     atoms = ASE_relax(xtal.to_ase(), opt_lat=False, fmax=0.05, step=10, logfile='ase.log')
                     if atoms is None: continue
+                eng = atoms.get_potential_energy()/len(atoms)
+                stress = abs(atoms.get_stress()[:3].mean())
+                if stress > 1.0: continue
+
                 xrd = xtal.get_XRD(thetas=[10, 80], SCALED_INTENSITY_TOL=0.01)
                 x2, y2 = xrd.get_plot(bg_ratio=0)
                 sim = Similarity((x1, y1), (x2, y2)).value
-                eng = atoms.get_potential_energy()/len(atoms)
-                stress = atoms.get_stress()[:3].mean()
-                print(xtal.get_xtal_string(), f"{sim:.3f}, {eng:.3f}, {stress:.3f}")
-                if eng < eng_min and abs(stress) < 0.5:
+                strs = f"{xtal.get_xtal_string()}, {sim:.3f}, {eng:.3f}, {stress:.3f}"
+                if eng < eng_min:
                     eng_min = eng
-                    print('+++++++++++++++++++++Update energy', eng_min)
+                    strs += '  <--- New Min Energy!'
+                print(strs)
 
-                if sim > 0.9:
+                if sim > sim_max: 
+                    sim_max = sim                        
                     plt.figure(figsize=(8, 3))
-                    strs = f'{xtal.get_xtal_string()}, Energy: {eng:.3f} eV/atom'
+                    strs = f'{row.id}: {xtal0.formula} {xtal.get_xtal_string()}, {eng:.3f} eV/atom'
                     plt.title(strs)
                     plt.plot(x1, y1, color='green', alpha=0.5, label='Observed')
                     plt.plot(x2, y2, color='blue', alpha=0.5, label=f'Match ({sim:.3f})')
@@ -82,11 +91,11 @@ for row in database.select():
                     plt.legend()
                     plt.xlabel('2θ (degrees)')
                     plt.ylabel('Intensity (a.u.)')
-                    plt.savefig(f'Match_{row.id}.png', dpi=300)
+                    plt.savefig(f'Results/Match_{row.id}.png', dpi=300)
                     plt.close()
-                    xtal.to_file(f'Match_{row.id}.cif')
-                    xtal0.to_file(f'Original_{row.id}.cif')
-                    if eng - eng_min < 1e-2:
+                    xtal.to_file(f'Results/Match_{row.id}.cif')
+                    xtal0.to_file(f'Results/Original_{row.id}.cif')
+                    if eng - eng_min < 1e-2 or sim > 0.989:
                         found = True
                         break
                         #import sys; sys.exit()

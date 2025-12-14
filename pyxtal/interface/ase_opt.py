@@ -110,8 +110,7 @@ def ASE_relax(
     _fmax = 1e5
 
     try:
-        calc = get_calculator(calculator)#; print("The current Path:", os.getcwd())
-        atoms.set_calculator(calc)
+        atoms.calc = get_calculator(calculator)#; print("The current Path:", os.getcwd())
         atoms.set_constraint(FixSymmetry(atoms))
 
         if opt_lat:
