@@ -25,18 +25,18 @@ class Tol_matrix:
         self.prototype = prototype
         if prototype == "atomic":
             f *= 0.5
-            attrindex = 5
+            attrindex = 6
             self.radius_type = "covalent"
         elif prototype == "molecular":
-            attrindex = 5
+            attrindex = 7
             self.radius_type = "covalent"
             f *= 1.2
         elif prototype == "metallic":
-            attrindex = 7
+            attrindex = 8
             self.radius_type = "metallic"
             f *= 0.5
         elif prototype == "vdW":
-            attrindex = 6
+            attrindex = 7
             self.radius_type = "vdW"
         else:
             self.radius_type = "N/A"
@@ -48,9 +48,9 @@ class Tol_matrix:
             m.append([0.0])
             for tup2 in H.elements_list:
                 # Get the appropriate atomic radii
-                val1 = tup1[5] if tup1[attrindex] is None else tup1[attrindex]
+                val1 = tup1[6] if tup1[attrindex] is None else tup1[attrindex]
                 # FIXME this is suspicious but matches exactly the original code
-                val2 = (tup1[5] if tup2[5] is not None else None) if tup2[attrindex] is None else tup2[attrindex]
+                val2 = (tup1[6] if tup2[6] is not None else None) if tup2[attrindex] is None else tup2[attrindex]
 
                 if val1 is not None and val2 is not None:
                     m[-1].append(f * (val1 + val2))
