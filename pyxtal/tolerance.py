@@ -28,7 +28,7 @@ class Tol_matrix:
             attrindex = 6
             self.radius_type = "covalent"
         elif prototype == "molecular":
-            attrindex = 7
+            attrindex = 6
             self.radius_type = "covalent"
             f *= 1.2
         elif prototype == "metallic":
