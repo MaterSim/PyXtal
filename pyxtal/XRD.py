@@ -585,10 +585,24 @@ class XRD:
         # Marked locations and intensities
         x, y = self.pxrd[:, 0], self.pxrd[:, -1] * 100
         thetas = np.radians(x/2)
-        gamma = 0.444 * self.wavelength / (grainsize * np.cos(thetas)) + 1e-8
-        sigma2 = gamma ** 2 / (2*np.sqrt(2))
+
+        # Calculate FWHM using Scherrer equation
+        # Standard Scherrer: FWHM_L = K*λ/(L*cosθ) where K≈0.9
+        # For Lorentzian HWHM: γ = FWHM/2
+        K = 0.9  # Scherrer constant (shape factor)
+        fwhm = K * self.wavelength / (grainsize * np.cos(thetas) + 1e-10)  # FWHM in radians
+        gamma = fwhm / 2  # Lorentzian HWHM
+
+        # Convert HWHM to Gaussian variance for Voigt profile
+        # For pure Gaussian: HWHM = sqrt(2*ln2) * σ
+        # Therefore: σ² = HWHM² / (2*ln2)
+        sigma2 = gamma ** 2 / (2 * np.log(2))  # Gaussian variance
+
+        # Apply preferred orientation and Debye-Waller factor
         ori_m, ori_p = 1 - orientation, 1 + orientation
         ori = np.clip(np.random.normal(loc=1, scale=0.2), ori_m, ori_p)
+
+        # Apply Debye-Waller factor
         deb = np.exp(-16/3 * np.pi**2 * thermo**2 * (np.sin(thetas) / self.wavelength)**2)
         y *= ori * deb
         #print(x, y, gamma, sigma2)
@@ -596,28 +610,35 @@ class XRD:
         # Get profiles
         theta_min, theta_max = np.degrees(self.min2theta), min(90.0, np.degrees(self.max2theta))
         x_sim = np.arange(theta_min, theta_max, dx)
-        y_sim = 0
+        y_sim = np.zeros_like(x_sim)
+
+        # Add each peak contribution
         for k in range(len(x)):
-            if x[k] < 90:
+            if x[k] < theta_max:
+                #print("Adding peak at 2theta =", x[k])
                 y_sim += add_peak(x_sim, x[k], gamma[k], sigma2[k], L, H, S, dx) * y[k]
 
-        # normalization x_sim, y_sim
+        # Add each peak contribution
         area = np.trapz(y_sim, x_sim)
         y_sim /= area#; print(area, y_sim.max())
 
         # Add background
-        bg_fun = np.poly1d(np.random.randn(bg_order + 1))
+        bg_coeffs = np.abs(np.random.randn(bg_order + 1))
+        bg_coeffs[0] = -bg_coeffs[0]  # Ensure decreasing trend
+        bg_fun = np.poly1d(bg_coeffs)
+        #bg_fun = np.poly1d(np.random.randn(bg_order + 1))
         bg = bg_fun(x_sim)
         bg -= bg.min()
         bg_y = bg / bg.max() * y_sim.max() * bg_ratio
         mixture = np.random.uniform(0, y_sim.max() * mix_ratio, size=len(x_sim))
-        y_sim +=  np.flip(bg_y) + mixture
+        y_sim +=  bg_y + mixture
 
         # Scale to (0, 100)
-        y_sim -= y_sim.min()
-        y_sim /= y_sim.max()
-        y_sim *= 100
-
+        y_min, y_max = y_sim.min(), y_sim.max()
+        if y_max > y_min:  # Avoid division by zero
+            y_sim = (y_sim - y_min) / (y_max - y_min) * 100
+        else:
+            y_sim = np.zeros_like(y_sim)
         #import matplotlib.pyplot as plt
         #plt.plot(x_sim, y_sim)
         #plt.show()
@@ -631,7 +652,7 @@ def add_peak(twotheta, mu, gamma, sigma2, L, H, S, step=0.02, width=0.1, sigma2_
     Args:
         twotheta (array-like): Array of 2-theta
         mu (float): Peak center (2-theta) in degrees.
-        gamma (float): Lorentzian FWHM parameter.
+        gamma (float): Lorentzian HWHM parameter.
         sigma2 (float): Gaussian variance parameter.
         L (float): Axial divergence length.
         H (float): Axial divergence height.
@@ -659,8 +680,9 @@ def add_peak(twotheta, mu, gamma, sigma2, L, H, S, step=0.02, width=0.1, sigma2_
     x = np.arange(np.round(mu - l_gap, 2), np.round(mu + l_gap, 2), step)
 
     # Voigt profile calculation
-    z = ((x - mu) + 1j * gamma) / (np.sqrt(sigma2) * np.sqrt(2))
-    voigt = np.real(wofz(z) / (np.sqrt(sigma2) * np.sqrt(2 * np.pi)))
+    sigma = np.sqrt(sigma2)
+    z = ((x - mu) + 1j * gamma) / (sigma * np.sqrt(2))
+    voigt = np.real(wofz(z) / (sigma * np.sqrt(2 * np.pi)))
 
     # Axial divergence calculation
     axial = axial_div(x, mu, L, H, S)
@@ -668,6 +690,10 @@ def add_peak(twotheta, mu, gamma, sigma2, L, H, S, step=0.02, width=0.1, sigma2_
     # Slit function calculation
     height = 1.0 / width
     slit = np.where((x >= mu - width / 2) & (x <= mu + width / 2), height, 0)
+
+    #slit = np.zeros_like(x)
+    #mask = np.abs(x - mu) <= width / 2
+    #slit[mask] = 1.0 / width  # Normalized rectangular function
 
     # Lattice distortion calculation
     sigma = np.sqrt(sigma2_distor)
@@ -679,12 +705,11 @@ def add_peak(twotheta, mu, gamma, sigma2, L, H, S, step=0.02, width=0.1, sigma2_
     combined = np.convolve(combined, distor, mode='same')
     if np.sum(combined) > 0:
         combined /= np.sum(combined) * step  # Normalize peak and apply weight
-        # Map the peak to the original locations
-        return map_int(combined, x, twotheta)
+        return map_intensity(combined, x, twotheta)
     else:
         return np.zeros_like(twotheta)
 
-def axial_div(x, mu, L, H, S):
+def axial_div_bak(x, mu, L, H, S):
     """
     Calculate the axial divergence peak contribution using the Van Laar model.
 
@@ -712,14 +737,108 @@ def axial_div(x, mu, L, H, S):
     cdf[mask] = np.cumsum(axial_divergence[mask])
     return cdf
 
-def map_int(peak, x, twotheta):
-    y_twotheta = np.zeros_like(twotheta) # Initialize y_twotheta array
-    _x = x[(x >= twotheta[0]) & (x <= twotheta[-1])]
-    _peak = peak[(x >= twotheta[0]) & (x <= twotheta[-1])]
-    for angle in range(len(_x)):
-        index = np.argmin(np.abs( twotheta- _x[angle]))  # Find index for each angle
-        if index.size > 0:  # Check if indices are not empty
-            y_twotheta[index] = _peak[angle]  # Map peak intensity
+def axial_div(x, mu, L, H, S):
+    """
+    Van Laar axial divergence PDF (not CDF!)
+    """
+    x = np.asarray(x)
+    f = np.zeros_like(x)
+
+    mask = x < mu
+    if not np.any(mask):
+        return f
+
+    x_m = np.radians(x[mask])
+    mu_r = np.radians(mu)
+    cos_mu = np.cos(mu_r)
+    cos_x = np.cos(x_m)
+
+    # Calculate h parameter with clipping to avoid negative square root
+    cos_ratio_sq = (cos_x / cos_mu) ** 2
+    h = L * np.sqrt(np.clip(cos_ratio_sq - 1, 0, None))
+
+    # Window function: non-zero only when H - S <= h <= H + S
+    W = np.clip(H + S - h, 0.0, 2 * S)
+
+    # Van Laar axial divergence formula
+    # Avoid division by zero
+    denom = 2 * H * S * np.clip(h, 1e-10, None) * np.clip(cos_x, 1e-10, None)
+    f[mask] = L * W / denom
+
+    # Remove numerical noise and ensure non-negative
+    f[~np.isfinite(f)] = 0.0
+    f[f < 0] = 0.0
+
+    # Normalize to unit area
+    # Integrate only the non-zero part
+    x_nonzero = x[mask]
+    f_nonzero = f[mask]
+    if len(x_nonzero) > 1 and np.sum(f_nonzero) > 0:
+        area = np.trapz(f_nonzero, x_nonzero)
+        if area > 0:
+            f[mask] /= area
+    return f
+
+def map_intensity(peak, x, twotheta):
+    """
+    Map peak intensities from fine grid (x) to coarse grid (twotheta).
+    Uses cubic spline interpolation to produce continuous, smooth profiles.
+
+    Args:
+        peak (array-like): Peak intensities on fine grid x.
+        x (array-like): Fine grid positions (degrees).
+        twotheta (array-like): Coarse grid positions (degrees).
+
+    Returns:
+        ndarray: Interpolated intensities on twotheta grid.
+    """
+    # Handle edge cases
+    if len(peak) == 0 or len(x) == 0:
+        return np.zeros_like(twotheta)
+
+    # Check if x is monotonically increasing
+    if not np.all(np.diff(x) > 0):
+        # Sort by x if not already sorted
+        sort_idx = np.argsort(x)
+        x = x[sort_idx]
+        peak = peak[sort_idx]
+
+    # Use cubic spline interpolation for smooth results
+    kind = 'linear' if len(x) < 4 else 'cubic'
+
+    try:
+        f_interp = interp1d(x, peak, kind=kind, bounds_error=False,
+                           fill_value=0.0, assume_sorted=True)
+        y_twotheta = f_interp(twotheta)
+        # Ensure non-negative intensities
+        y_twotheta[y_twotheta < 0] = 0.0
+        return y_twotheta
+    except (ValueError, RuntimeError) as e:
+        print(f"Interpolation failed: {e}. Falling back to nearest-neighbor.")
+        return _map_int_nearest_neighbor(peak, x, twotheta)
+
+
+def _map_int_nearest_neighbor(peak, x, twotheta):
+    """
+    Fallback nearest-neighbor mapping when interpolation fails.
+
+    Args:
+        peak (array-like): Peak intensities on fine grid.
+        x (array-like): Fine grid positions.
+        twotheta (array-like): Coarse grid positions.
+
+    Returns:
+        ndarray: Nearest-neighbor intensities.
+    """
+    y_twotheta = np.zeros_like(twotheta, dtype=float)
+
+    for x_val, peak_val in zip(x, peak):
+        idx = np.argmin(np.abs(twotheta - x_val))
+        if y_twotheta[idx] == 0:  # Only assign if not already set
+            y_twotheta[idx] = peak_val
+        else:
+            y_twotheta[idx] += peak_val * 0.5  # Average with existing value
+
     return y_twotheta
 
 # ----------------------------- Profile functions ------------------------------
