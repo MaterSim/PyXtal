@@ -13,6 +13,7 @@ from copy import deepcopy
 # Third-Party Libraries
 import numpy as np
 from ase import Atoms
+from math import gcd
 from pymatgen.core.structure import Molecule, Structure
 
 # PyXtal Modules
@@ -29,6 +30,7 @@ from pyxtal.version import __version__
 from pyxtal.viz import display_atomic, display_cluster, display_molecular
 from pyxtal.wyckoff_site import atom_site, mol_site
 from pyxtal.wyckoff_split import wyckoff_split
+from pyxtal.database.element import Element
 
 # Uncomment the following line to set the package name
 # name = "pyxtal"
@@ -1268,6 +1270,25 @@ class pyxtal:
             formula += f"{specie:s}{int(i):d}"
 
         self.formula = formula
+
+    def get_reduced_composition(self):
+        composition = {}
+        divisor = gcd(*self.numIons)
+        for i, el in enumerate(self.species):
+            composition[el] = self.numIons[i] // divisor
+        return composition
+
+    def get_min_values(self):
+        min_abc = 2.0
+        min_volume = 0.0
+        divisor = gcd(*self.numIons)
+        for i, el in enumerate(self.species):
+            num = self.numIons[i] // divisor
+            radius = Element(el).covalent_radius
+            if min_abc < radius * 2:
+                min_abc = 0.6 * Element(el).covalent_radius * 2
+            min_volume += (4/3) * np.pi * (radius ** 3) * num
+        return min_abc, min_volume
 
     def get_zprime(self, integer=False):
         """

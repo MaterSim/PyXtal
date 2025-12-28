@@ -796,7 +796,8 @@ class Group:
         return possible_hkls  # remove duplicates
 
     def generate_hkl_guesses(self, h_max=2, k_max=None, l_max=None, max_square=12,
-                             max_size=2000000, reduce=True, verbose=False):
+                             total_square=100, max_size=2000000, reduce=True,
+                             verbose=False):
         """
         Generate reasonable hkl indices within a cutoff for different crystal systems.
         This function considers the extinction conditions to limit the hkls.
@@ -874,11 +875,16 @@ class Group:
             #t1 = time()
             #if verbose: print("Time for generating quadruple hkl guesses:", t1 - t0, len(quadruples), len(guesses))
 
+        sums = np.sum(guesses**2, axis=(1, 2))#; print(len(sums))
+        ids = np.argsort(sums)
+        sums = sums[sums <= total_square]
+        ids = ids[:len(sums)]
+        guesses = guesses[ids]
+        #print("Debug", guesses[-1], total_square, max_square); import sys; sys.exit()
+
         if max_size is not None:
-            sums = np.sum(guesses**2, axis=(1, 2))#; print(len(sums))
-            ids = np.argsort(sums)
-            if len(ids) > max_size: ids = ids[:max_size]
-            guesses = guesses[ids]
+            if len(ids) > max_size:
+                guesses = guesses[:max_size]
 
         if reduce:
             if verbose: print("Reducing hkl guesses...", len(guesses))
