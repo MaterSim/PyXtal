@@ -58,9 +58,13 @@ class TestAtomic3D(unittest.TestCase):
         os.remove("tmp-3d.cif")
         assert struc.valid
 
+
     def test_mutiple_species(self):
         struc = pyxtal()
         struc.from_random(3, 99, ["Ba", "Ti", "O"], [1, 1, 3], 1.2)
+        assert struc.valid
+
+        struc.from_random(3, 99, ["Ba", "Ti", "O"], [1, 1, 3], 1.2, use_asu=True)
         assert struc.valid
 
     def test_preassigned_sites(self):
@@ -71,6 +75,12 @@ class TestAtomic3D(unittest.TestCase):
 
         struc = pyxtal()
         struc.from_random(3, 225, ["C"], [12], 1.0, sites=[["4a", "8c"]])
+        assert struc.valid
+
+        struc.from_random(3, 99, ["Ba", "Ti", "O"], [1, 1, 3], 1.0, sites=sites, use_asu=True)
+        assert struc.valid
+
+        struc.from_random(3, 225, ["C"], [12], 1.0, sites=[["4a", "8c"]], use_asu=True)
         assert struc.valid
 
     def test_read(self):

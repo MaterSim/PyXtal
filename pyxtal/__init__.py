@@ -292,6 +292,7 @@ class pyxtal:
         random_state=None,
         tm=None,
         use_hall=False,
+        use_asu=False,
     ):
         """
         The main function to generate random crystals.
@@ -318,6 +319,7 @@ class pyxtal:
             random_state (optional): numpy random state
             tm (optional): Tol_matrix define the distances
             use_hall (bool): whether to use Hall number. Default is False
+            use_asu (bool): whether to generate points within ASU. Default is False
 
         Returns:
             Crystal structure object if successful
@@ -370,6 +372,7 @@ class pyxtal:
                     tm=tm,
                     use_hall=use_hall,
                     random_state=random_state,
+                    use_asu=use_asu,
                 )
             if force_pass or struc.valid:
                 quit = True

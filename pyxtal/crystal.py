@@ -61,6 +61,7 @@ class random_crystal:
         tm=None,
         use_hall=False,
         random_state: int | None | Generator = None,
+        use_asu: bool = False,
     ):
         # Initialize
         self.rng = np.random.default_rng(random_state)
@@ -71,6 +72,7 @@ class random_crystal:
         self.valid = False
         self.factor = factor
         self.min_density = 0.75
+        self.use_asu = use_asu
 
         # Dimesion
         self.dim = dim
@@ -377,7 +379,13 @@ class random_crystal:
             else:
                 if site is not None:
                     wp = self.group[site]
-                    pt = self.lattice.generate_point()
+                    if self.use_asu:
+                        xmin, xmax, ymin, ymax, zmin, zmax = self.group.get_ASU()
+                        # Generate a random point based on (min, max) ranges
+                        pt = self.rng.uniform([xmin, ymin, zmin], [xmax, ymax, zmax])
+                    else:
+                        pt = self.lattice.generate_point()
+
                     # avoid using the merge function
                     if len(wp.short_distances(pt, cell, tol)) > 0:
                         # print('bad pt', pt, wp.short_distances(pt, cell, tol))
@@ -392,7 +400,12 @@ class random_crystal:
                     if wp is not False:
                         # print(wp.letter)
                         # Generate a list of coords from ops
-                        pt = self.lattice.generate_point()
+                        if self.use_asu:
+                            xmin, xmax, ymin, ymax, zmin, zmax = self.group.get_ASU()
+                            # Generate a random point based on (min, max) ranges
+                            pt = self.rng.uniform([xmin, ymin, zmin], [xmax, ymax, zmax])
+                        else:
+                            pt = self.lattice.generate_point()
                         pt, wp, _ = wp.merge(pt, cell, tol, group=self.group)
                 # print('good pt', pt)
                 if wp is not False:
