@@ -21,7 +21,7 @@ from monty.serialization import loadfn
 from numpy.random import Generator
 from pandas import read_csv
 
-from pyxtal.constants import all_sym_directions, hex_cell, letters
+from pyxtal.constants import all_sym_directions, hex_cell, letters, ASU
 from pyxtal.operations import (
     OperationAnalyzer,
     SymmOp,
@@ -654,6 +654,14 @@ class Group:
                 id = 15
         return id
 
+    def get_ASU(self):
+        """
+        Get the asymmetric unit for the space group.
+
+        Returns:
+            list: A list of inequalities defining the asymmetric unit.
+        """
+        return ASU[self.number-1]
     def get_lattice_dof(self):
         """
         Compute the degree of freedom for the lattice
@@ -5260,9 +5268,11 @@ def generate_possible_hkls(bravais, h_max=50, k_max=50, l_max=50):
 
     return np.vstack(all_hkls)
 
+
 if __name__ == "__main__":
     print("Test pyxtal.wp.site symmetry")
-    spg_list = [14, 36, 62, 99, 143, 160, 182, 183, 191, 192, 193, 194, 225, 230]
+    spg_list = [14, 36, 62, 99, 143, 160, 182, 183, 191, 192,
+                193, 194, 225, 230]
     spg_list = [191, 192]
     for i in spg_list:
         g = Group(i)
