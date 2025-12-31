@@ -415,7 +415,7 @@ class random_crystal:
                     new_site = atom_site(wp, pt, specie)
 
             # Check current WP against existing WP's
-            if self.check_wp(wyckoff_sites_tmp, wyks, cell, new_site):
+            if self.check_wp(wyckoff_sites_tmp, wyks, cell, new_site, tol):
                 if sites_list is not None and len(sites_list) > 0:
                     sites_list.pop(0)
                 wyckoff_sites_tmp.append(new_site)
@@ -430,12 +430,12 @@ class random_crystal:
 
         return None
 
-    def check_wp(self, wyckoff_sites_tmp, wyks, cell, new_site):
+    def check_wp(self, wyckoff_sites_tmp, wyks, cell, new_site, tol):
         # Check current WP against existing WP's
         if new_site is None:
             return False
 
-        return all(new_site.check_with_ws2(ws, cell, self.tol_matrix) for ws in wyckoff_sites_tmp + wyks)
+        return all(new_site.check_with_ws2(ws, cell, tol) for ws in wyckoff_sites_tmp + wyks)
 
     def _check_consistency(self, site, numIon):
         num = 0

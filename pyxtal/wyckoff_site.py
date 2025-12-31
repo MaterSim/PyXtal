@@ -247,7 +247,7 @@ class atom_site:
         # print("++++", id, dists[id], id, diffs[id], translation) #; import sys; sys.exit()
         return diffs[id], dists[id]
 
-    def check_with_ws2(self, ws2, lattice, tm, same_group=True):
+    def check_with_ws2(self, ws2, lattice, tol, same_group=True):
         """
         Given two Wyckoff sites, checks the inter-atomic distances between them.
 
@@ -255,8 +255,10 @@ class atom_site:
             - ws2: a different WP object (will always return False if
             two identical WS's are provided)
             - lattice: a 3x3 cell matrix
+            - tol: tolerance value for distance checking
             - same_group: whether or not two WS's are in the same structure.
             Default value True reduces the calculation cost
+
         Returns:
             True or False
         """
@@ -265,10 +267,8 @@ class atom_site:
         if self.PBC != ws2.PBC:
             raise ValueError("PBC values do not match between Wyckoff sites")
 
-        # Get tolerance
-        tol = tm.get_tol(self.specie, ws2.specie)
         # Symmetry shortcut method: check only some atoms
-        if same_group is True:
+        if same_group:
             # We can either check one atom in WS1 against all WS2, or vice-versa
             # Check which option is faster
             if self.multiplicity > ws2.multiplicity:
