@@ -21,7 +21,7 @@ from monty.serialization import loadfn
 from numpy.random import Generator
 from pandas import read_csv
 
-from pyxtal.constants import all_sym_directions, hex_cell, letters#, ASU
+from pyxtal.constants import all_sym_directions, hex_cell, letters, ASU_bounds
 from pyxtal.operations import (
     OperationAnalyzer,
     SymmOp,
@@ -663,7 +663,7 @@ class Group:
         Returns:
             list: A list of inequalities defining the asymmetric unit.
         """
-        return ASU[self.number-1]
+        return ASU_bounds[self.number-1]
 
     def get_ASU_instance(self):
         """

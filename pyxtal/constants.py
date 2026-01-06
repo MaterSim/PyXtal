@@ -92,7 +92,7 @@ References:
 """
 # Asymmetric unit bounds for 230 space groups
 # Format: space_group_number  x_min  x_max  y_min  y_max  z_min  z_max
-ASU = np.array([
+ASU_bounds = np.array([
      [       0,        1,        0,        1,        0,        1],  # SG 1
      [       0,      1/2,        0,        1,        0,        1],  # SG 2
      [       0,        1,        0,        1,        0,      1/2],  # SG 3
@@ -387,7 +387,7 @@ ASU_ADDITIONAL_CONDITIONS = {
     140: [("x <= y", "x ≤ y")],  # I4/mcm
     141: [("x <= y", "x ≤ y")],  # I4₁/amd
     142: [("x <= y", "x ≤ y")],  # I4₁/acd
-    
+
     # Trigonal Space Groups (with hexagonal axes)
     143: [("x <= y", "x ≤ y"), ("y <= 0.5", "y ≤ 1/2")],  # P3
     144: [("x <= y", "x ≤ y"), ("y <= 0.5", "y ≤ 1/2")],  # P3₁
@@ -406,13 +406,13 @@ ASU_ADDITIONAL_CONDITIONS = {
     163: [("x <= y", "x ≤ y"), ("y <= 0.5", "y ≤ 1/2")],  # P-31c
     164: [("x <= y", "x ≤ y"), ("y <= 0.5", "y ≤ 1/2")],  # P-3m1
     165: [("x <= y", "x ≤ y"), ("y <= 0.5", "y ≤ 1/2")],  # P-3c1
-    
+
     # Trigonal Space Groups with R centering
     146: [
         ("x <= (1 + y) / 2", "x ≤ (1+y)/2"),
         ("y <= min(1 - x, (1 + x) / 2)", "y ≤ min(1-x, (1+x)/2)")
     ],  # R3 (hexagonal)
-    
+
     # Hexagonal Space Groups
     168: [("x <= y", "x ≤ y"), ("y <= 0.5", "y ≤ 1/2")],  # P6
     169: [("x <= y", "x ≤ y"), ("y <= 0.5", "y ≤ 1/2")],  # P6₁
@@ -440,7 +440,7 @@ ASU_ADDITIONAL_CONDITIONS = {
     192: [("x <= y", "x ≤ y"), ("y <= 0.5", "y ≤ 1/2")],  # P6/mcc
     193: [("x <= y", "x ≤ y"), ("y <= 0.5", "y ≤ 1/2")],  # P6₃/mcm
     194: [("x <= y", "x ≤ y"), ("y <= 0.5", "y ≤ 1/2")],  # P6₃/mmc
-    
+
     # Cubic Space Groups
     195: [("x <= y", "x ≤ y"), ("y <= z", "y ≤ z")],  # P23
     196: [("x <= y", "x ≤ y"), ("y <= z", "y ≤ z")],  # F23
@@ -483,10 +483,10 @@ ASU_ADDITIONAL_CONDITIONS = {
 def get_additional_asu_conditions(space_group: int):
     """
     Get additional ASU conditions for a space group.
-    
+
     Args:
         space_group: Space group number (1-230)
-        
+
     Returns:
         List of tuples (condition_string, description) or empty list
     """
