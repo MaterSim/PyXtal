@@ -656,6 +656,14 @@ class Group:
                 id = 15
         return id
 
+    def get_ASU(self):
+        """
+        Get the asymmetric unit for the space group.
+
+        Returns:
+            list: A list of inequalities defining the asymmetric unit.
+        """
+        return ASU[self.number-1]
 
     def get_ASU_instance(self):
         """
