@@ -21,7 +21,7 @@ from monty.serialization import loadfn
 from numpy.random import Generator
 from pandas import read_csv
 
-from pyxtal.constants import all_sym_directions, hex_cell, letters, ASU
+from pyxtal.constants import all_sym_directions, hex_cell, letters#, ASU
 from pyxtal.operations import (
     OperationAnalyzer,
     SymmOp,
@@ -33,6 +33,7 @@ from pyxtal.operations import (
     filtered_coords,
     filtered_coords_euclidean,
 )
+from pyxtal.asu_constraints import ASU, ASUCondition, create_asu_for_space_group
 
 def rf(package_name, resource_path):
     package_path = importlib.util.find_spec(
@@ -152,6 +153,7 @@ body_centers = [23, 24, 44, 45, 46, 71, 72, 73, 74, 79,
                 204, 206, 211, 214, 217, 220, 229, 230]
 a_centers = [38, 39, 40, 41]
 c_centers = [5, 8, 9, 12, 15, 20, 21, 35, 36, 37, 63, 64, 65, 66, 67, 68]
+r_centers = [146, 148, 155, 160, 161, 166, 167]
 # screw axes
 screw_21a = [18, 19, 24, 51, 54, 55, 56, 58, 59, 60, 61, 62, 68, 72, 73,
              90, 92, 94, 96, 113, 114, 122, 127, 128, 129, 130, 135, 136,
@@ -654,14 +656,16 @@ class Group:
                 id = 15
         return id
 
-    def get_ASU(self):
-        """
-        Get the asymmetric unit for the space group.
 
-        Returns:
-            list: A list of inequalities defining the asymmetric unit.
+    def get_ASU_instance(self):
         """
-        return ASU[self.number-1]
+        Get the asymmetric unit (ASU) for the space group.
+        Available methods for ASU construction include:
+        - project_to_asu(coord): Project a given coordinate to the ASU.
+        - is_valid(coord): Check if a given coordinate is within the ASU.
+        """
+        return create_asu_for_space_group(self.number)
+
     def get_lattice_dof(self):
         """
         Compute the degree of freedom for the lattice
@@ -706,6 +710,7 @@ class Group:
                 "bcs (h+k+l=2n)": body_centers,
                 "acs (k+l=2n)": a_centers,
                 "ccs (h+k=2n)": c_centers,
+                "rcs (h-k-l=3n)": r_centers,
                 "screw_21a (h00), h=2n": screw_21a,
                 "screw_41a (h00), h=4n": screw_41a,
                 "screw_42a (h00), h=2n": screw_42a,
@@ -827,10 +832,10 @@ class Group:
         n_hkls = len(possible_hkls)
         if verbose: print([tuple(hkl) for hkl in possible_hkls])
 
-        if self.number > 195:
+        if self.number >= 195:
             guesses = np.reshape(possible_hkls, (len(possible_hkls), 1, 3))
 
-        elif self.number > 143:
+        elif self.number >= 143:
             double_indices = np.array(list(itertools.combinations(range(n_hkls), 2)))
             doubles = possible_hkls[double_indices]  # Shape: (n_doubles, 2, 3)
             base_signs = np.array([(1, 1, 1), (1, -1, 1)])
@@ -4894,6 +4899,9 @@ def is_hkl_allowed(h, k, l, spg):
     elif spg in a_centers:
         if not (k + l) % 2 == 0:  # A-centering
             return False
+    elif spg in r_centers:
+        if not (h - k - l) % 3 == 0:  # R-centering
+            return False
 
     # Check screw_axis (Table 2.2.13.2)
     if spg in screw_21a + screw_42a:  #
@@ -5181,6 +5189,7 @@ def is_hkl_allowed_by_bravais(h, k, l, bravais):
       end-centered lattice (B)    | hkl                 | h + l = even
       end-centered lattice (C)    | hkl                 | h + k = even
       face-centered lattice (F)   | hkl                 | h, k, l all odd or all even
+      r-centered lattice (R)      | hkl                 | h-k-l % 3
     """
 
     # Lattice Centering (Table 2.2.13.1.)
@@ -5197,6 +5206,9 @@ def is_hkl_allowed_by_bravais(h, k, l, bravais):
             return False
     elif bravais in [5]:
         if not (k + l) % 2 == 0:  # A-centering
+            return False
+    elif bravais in [12]:
+        if not (h - k - l) % 3 == 0: # R-centering
             return False
     return True
 
