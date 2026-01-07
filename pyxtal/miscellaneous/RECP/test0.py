@@ -1,4 +1,4 @@
-from pyxtal.xtal import RECP
+from pyxtal.reciprocal import RECP
 from pyxtal import pyxtal
 import matplotlib.pyplot as plt
 
