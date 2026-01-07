@@ -775,12 +775,21 @@ class Group:
 
         if self.number > 194:  # cubic
             base_signs = [(1, 1, 1)]
-        elif self.number >= 16:  # orthorhombic or higher
+        elif self.number >= 143:  # hexagonal/trigonal
             base_signs = [(1, 1, 1), (1, -1, 1)]
-        else:  # tetragonal or lower
+        elif self.number >= 16:  # orthorhombic
+            base_signs = [(1, 1, 1)]
+        elif self.number >= 9:  # 2/m
+            base_signs = [(1, 1, 1), (1, -1, 1)]
+        elif self.number >= 6:  # m
+            base_signs = [(1, 1, 1), (1, 1, -1), (-1, 1, 1), (-1, 1, -1)]
+        elif self.number >= 3:  # 2
+            base_signs = [(1, 1, 1), (1, -1, 1), (-1, 1, 1), (1, -1, -1)]
+        elif self.number >= 2:  # -1
+            base_signs = [(1, 1, 1), (1, 1, -1), (1, -1, 1), (-1, 1, 1)]
+        else:  # 1
             base_signs = [(1, 1, 1), (1, 1, -1), (1, -1, 1), (-1, 1, 1),
-                        (1, -1, -1), (-1, 1, -1), (-1, -1, 1), (-1, -1, -1)]
-
+                          (1, -1, -1), (-1, 1, -1), (-1, -1, 1), (-1, -1, -1)]
         # Generate all possible hkls and filter by extinction rules
         possible_hkls = []
         canonical_seen = set()  # Track canonical forms to avoid duplicates
@@ -809,7 +818,7 @@ class Group:
                                 valid_hkls.append((sh, sk, sl))
                     if valid_hkls:
                         canonical_seen.add(canonical)
-                        possible_hkls.append(canonical)
+                        possible_hkls.extend(valid_hkls)
 
         # Sort by h²+k²+l² in ascending order
         possible_hkls.sort(key=lambda hkl: hkl[0]**2 + hkl[1]**2 + hkl[2]**2)
