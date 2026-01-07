@@ -348,7 +348,7 @@ class RECP:
                 print(f"Step {step}, {loss_sum:.6f}, LR={scheduler.get_last_lr()[0]:.6f}")
             if step + 1 == num_steps:
                 print(f"stopping at last iteration")
-        xtal =
+        #xtal =
         return rep.detach(), losses.detach()
 
     def loss(self, spg, wps, elements, P_ref, RDF_ref):
