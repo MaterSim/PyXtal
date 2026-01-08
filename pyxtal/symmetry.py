@@ -779,14 +779,14 @@ class Group:
             base_signs = [(1, 1, 1), (1, -1, 1)]
         elif self.number >= 16:  # orthorhombic
             base_signs = [(1, 1, 1)]
-        elif self.number >= 9:  # 2/m
-            base_signs = [(1, 1, 1), (1, -1, 1)]
-        elif self.number >= 6:  # m
-            base_signs = [(1, 1, 1), (1, 1, -1), (-1, 1, 1), (-1, 1, -1)]
-        elif self.number >= 3:  # 2
-            base_signs = [(1, 1, 1), (1, -1, 1), (-1, 1, 1), (1, -1, -1)]
-        elif self.number >= 2:  # -1
-            base_signs = [(1, 1, 1), (1, 1, -1), (1, -1, 1), (-1, 1, 1)]
+        elif self.number >= 3:  # 2/m
+            base_signs = [(1, 1, 1), (1, 1, -1)]
+        #elif self.number >= 6:  # m
+        #    base_signs = [(1, 1, 1), (1, 1, -1), (-1, 1, 1), (-1, 1, -1)]
+        #elif self.number >= 3:  # 2
+        #    base_signs = [(1, 1, 1), (1, -1, 1), (-1, 1, 1), (1, -1, -1)]
+        #elif self.number >= 2:  # -1
+        #    base_signs = [(1, 1, 1), (1, 1, -1), (1, -1, 1), (-1, 1, 1)]
         else:  # 1
             base_signs = [(1, 1, 1), (1, 1, -1), (1, -1, 1), (-1, 1, 1),
                           (1, -1, -1), (-1, 1, -1), (-1, -1, 1), (-1, -1, -1)]
@@ -813,9 +813,12 @@ class Group:
                         # Add all permutations and sign variations
                         valid_hkls = []
                         for signs in base_signs:
+                            if 2 < self.number < 16 and h == 0 and signs[2]==-1: continue
                             sh, sk, sl = signs[0]*h, signs[1]*k, signs[2]*l
                             if is_hkl_allowed(sh, sk, sl, self.number):
-                                valid_hkls.append((sh, sk, sl))
+                                if (sh, sk, sl) not in valid_hkls:
+                                    valid_hkls.append((sh, sk, sl))
+                                    #print('AAAAAAAAAAAAAAAAAAA', h, k, l, sh, sk, sl)
                     if valid_hkls:
                         canonical_seen.add(canonical)
                         possible_hkls.extend(valid_hkls)
