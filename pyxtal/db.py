@@ -865,7 +865,7 @@ class database_topology:
 
     def check_new_structure(self, xtal, eng=None, same_group=False,
                             same_number=False, d_tol=2e-1, e_tol=1e-2,
-                            max_atoms=250, min_atoms=0):
+                            max_atoms=250, min_atoms=0, return_id=False):
         """
         Check if the input crystal structure already exists in the database.
 
@@ -907,9 +907,15 @@ class database_topology:
             ref_pmg = ase2pymatgen(ref)
             if self.matcher.fit(s_pmg, ref_pmg, symmetric=True):
                 print("skip the duplicate", xtal.get_xtal_string())
-                print(row.id, row.space_group_number, row.wps, row.mace_energy, row.density)
-                return False
-        return True
+                #print(row.id, row.space_group_number, row.wps, row.mace_energy, row.density)
+                if return_id:
+                    return False, row.id
+                else:
+                    return False
+        if return_id:
+            return True, None
+        else:
+            return True
 
     def clean_structures_spg_topology(self, dim=None):
         """
@@ -967,6 +973,11 @@ class database_topology:
         if len(to_delete) > 0:
             print(len(to_delete), "structures were deleted", to_delete)
         self.db.delete(to_delete)
+
+    def get_row(self, id):
+        for row in self.db.select(id=id):
+            return row
+        raise RuntimeError(msg)
 
     def clean_structures(self, ids=(None, None), dtol=2e-3, etol=1e-3, criteria=None, eng_key='mace_energy'):
         """
