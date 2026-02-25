@@ -48,7 +48,7 @@ class representation_atom:
 
         Args:
             smiles: list of smiles
-            compoisition: list of composition
+            composition: list of composition
         """
         from pyxtal import pyxtal
 
@@ -113,7 +113,7 @@ class representation_atom:
 
     def to_array(self):
         """
-        Export only varibles to a 1d numpy array
+        Export only variables to a 1d numpy array
         """
         cells, xyzs = self.x[0][1:], self.x[1:]
         x = cells
@@ -278,7 +278,7 @@ class representation:
 
         Args:
             smiles: list of smiles
-            compoisition: list of composition
+            composition: list of composition
         """
         from pyxtal import pyxtal
 
