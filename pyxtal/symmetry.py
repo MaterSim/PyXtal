@@ -1232,10 +1232,8 @@ class Group:
             elif bravis == "F":
                 ops = ops[: int(len(ops) / 4)]
 
-            return site_symmetry(ops, l_type, bravis, self.number, True)
-            # ss.to_beautiful_matrix_representation()
-        else:
-            raise ValueError("Only supports space group symmetry")
+            return site_symmetry(ops, l_type, bravis, self.number, wp_id=0, parse_trans=True)
+        raise ValueError("Only supports space group symmetry")
 
     def get_wyckoff_position(self, index):
         """
