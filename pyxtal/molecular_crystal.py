@@ -125,7 +125,7 @@ class molecular_crystal:
             compat, self.has_freedom = self.group.check_compatible(self.numMols) #self.valid_orientations)
 
         if not compat:
-            msg = f"Inincompatible compoisition {self.numMols} with symmetry {self.group.number}"
+            msg = f"Incompatible composition {self.numMols} with symmetry {self.group.number}"
             raise Comp_CompatibilityError(msg)
 
         self.set_volume()
