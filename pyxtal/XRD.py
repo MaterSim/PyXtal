@@ -536,7 +536,7 @@ class XRD:
             title="PXRD of " + self.name,
         )
 
-        if os.environ["_"].find("jupyter") == -1:
+        if os.environ.get("_", "").find("jupyter") == -1:
             if html is None:
                 return fig.to_html()
             else:

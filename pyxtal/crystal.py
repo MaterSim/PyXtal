@@ -119,7 +119,7 @@ class random_crystal:
         compat, self.has_freedom = self.group.check_compatible(self.numIons)
         if not compat:
             self.valid = False
-            msg = "Compoisition " + str(self.numIons)
+            msg = "Composition " + str(self.numIons)
             msg += " not compatible with symmetry "
             msg += str(self.group.number)
             raise Comp_CompatibilityError(msg)
