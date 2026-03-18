@@ -793,6 +793,28 @@ class Group:
         # Generate all possible hkls and filter by extinction rules
         possible_hkls = []
         canonical_seen = set()  # Track canonical forms to avoid duplicates
+        symmetry_seen = set()  # Track symmetry-equivalent hkls
+
+        # Build reciprocal-space rotation operators from the general Wyckoff position
+        reciprocal_ops = []
+        op_seen = set()
+        if len(self.wyckoffs) > 0 and len(self.wyckoffs[0]) > 0:
+            for op in self.wyckoffs[0]:
+                try:
+                    matrix = np.rint(np.linalg.inv(op.rotation_matrix).T).astype(int)
+                except np.linalg.LinAlgError:
+                    continue
+                key = tuple(matrix.flatten().tolist())
+                if key not in op_seen:
+                    op_seen.add(key)
+                    reciprocal_ops.append(matrix)
+        if len(reciprocal_ops) == 0:
+            reciprocal_ops = [np.eye(3, dtype=int)]
+
+        def get_symmetry_key(hkl):
+            vec = np.array(hkl, dtype=int)
+            orbit = [tuple((matrix @ vec).tolist()) for matrix in reciprocal_ops]
+            return max(orbit)
 
         for h in range(0, h_max + 1):
             # add permutation
@@ -821,7 +843,11 @@ class Group:
                                     #print('AAAAAAAAAAAAAAAAAAA', h, k, l, sh, sk, sl)
                     if valid_hkls:
                         canonical_seen.add(canonical)
-                        possible_hkls.extend(valid_hkls)
+                        for hkl in valid_hkls:
+                            symmetry_key = get_symmetry_key(hkl)
+                            if symmetry_key not in symmetry_seen:
+                                symmetry_seen.add(symmetry_key)
+                                possible_hkls.append(hkl)
 
         # Sort by h²+k²+l² in ascending order
         possible_hkls.sort(key=lambda hkl: hkl[0]**2 + hkl[1]**2 + hkl[2]**2)
@@ -961,14 +987,14 @@ class Group:
             # must follow the ordering constraints
             mask1 = np.all(hkls[:,0,:] >= hkls[:,1,:], axis=1) # (h1, k1, l1) >= (h2, k2, l2)
             hkls = hkls[~mask1]
-            print("Reducing order", len(hkls), "hkl guesses for space group", self.number)
+            #print("Reducing order", len(hkls), "hkl guesses for space group", self.number)
 
             # must be non-coplanar
             B = np.zeros([len(hkls), 2, 2])
             B[:,:,0] = hkls[:,:,0] ** 2 + hkls[:,:,1] ** 2
             B[:,:,1] = hkls[:,:,2] ** 2
             hkls = hkls[np.linalg.det(B) != 0]
-            print("Reducing colinear", len(hkls), "hkl guesses for space group", self.number)
+            # print("Reducing colinear", len(hkls), "hkl guesses for space group", self.number)
 
         elif 15 < self.number < 75:
             # must follow the ordering constraints
@@ -5017,13 +5043,33 @@ def get_canonical_hkl(h, k, l, spg):
     """
     hkl = [abs(h), abs(k), abs(l)]  # Take absolute values first
 
+    def canonical_hex_hkl(h, k, l):
+        """Canonicalize hkl for hexagonal systems using 6-fold in-plane symmetry."""
+        candidates = [
+            (h, k, l),
+            (-k, h + k, l),
+            (-h - k, h, l),
+            (-h, -k, l),
+            (k, -h - k, l),
+            (h + k, -h, l),
+        ]
+        candidates = [tuple(abs(x) for x in c) for c in candidates]
+        return max(candidates)
+
     if spg >= 195:  # cubic
         # For cubic: sort in descending order
         # (2,2,0), (2,0,2), (0,2,2) all become (2,2,0)
         hkl.sort(reverse=True)
         return tuple(hkl)
 
-    elif spg >= 75:  # tetragonal/hexagonal
+    elif spg >= 168:  # hexagonal
+        return canonical_hex_hkl(h, k, abs(l))
+
+    elif spg >= 143:  # trigonal
+        h_sorted = sorted([hkl[0], hkl[1]], reverse=True)
+        return tuple([h_sorted[0], h_sorted[1], hkl[2]])
+
+    elif spg >= 75:  # tetragonal
         # For tetragonal: h and k are equivalent, l is unique
         # (2,1,3) and (1,2,3) are equivalent -> (2,1,3)
         h_sorted = sorted([hkl[0], hkl[1]], reverse=True)
@@ -5047,6 +5093,19 @@ def get_canonical_hkl_series(hkl_series, spg):
         tuple: canonical_series as a tuple (hashable)
     """
     from itertools import permutations
+
+    def canonical_hex_hkl(h, k, l):
+        """Canonicalize hkl for hexagonal systems using 6-fold in-plane symmetry."""
+        candidates = [
+            (h, k, l),
+            (-k, h + k, l),
+            (-h - k, h, l),
+            (-h, -k, l),
+            (k, -h - k, l),
+            (h + k, -h, l),
+        ]
+        candidates = [tuple(abs(x) for x in c) for c in candidates]
+        return max(candidates)
 
     def apply_permutation_to_series(hkl_series, perm):
         """Apply the same permutation to all hkls in the series"""
@@ -5074,7 +5133,38 @@ def get_canonical_hkl_series(hkl_series, spg):
 
         return tuple(best_canonical)
 
-    elif spg >= 75:  # tetragonal/hexagonal - h and k equivalent, l unique
+    elif spg >= 168:  # hexagonal - 6-fold in-plane symmetry, l unique
+        canonical_series = [canonical_hex_hkl(h, k, l) for h, k, l in hkl_series]
+        return tuple(canonical_series)
+
+    elif spg >= 143:  # trigonal - h and k equivalent, l unique
+        best_canonical = None
+        best_score = None
+
+        # Try permutations that maintain crystallographic meaning
+        perms_to_try = [(0, 1, 2), (1, 0, 2)]  # Keep l in position, swap h,k
+
+        for perm in perms_to_try:
+            # Apply the same permutation to the entire series
+            canonical_series = apply_permutation_to_series(hkl_series, perm)
+
+            # For trigonal: sort h,k but keep l separate
+            canonical_series = [
+                tuple([*sorted([hkl[0], hkl[1]], reverse=True), hkl[2]])
+                for hkl in canonical_series
+            ]
+
+            # Score the result
+            score = sum(sum(h * (10**(3-i)) for i, h in enumerate(hkl))
+                       for hkl in canonical_series)
+
+            if best_score is None or score > best_score:
+                best_score = score
+                best_canonical = canonical_series
+
+        return tuple(best_canonical)
+
+    elif spg >= 75:  # tetragonal - h and k equivalent, l unique
         best_canonical = None
         best_score = None
 
@@ -5296,7 +5386,56 @@ def generate_possible_hkls(bravais, h_max=50, k_max=50, l_max=50):
         hkls_with_signs = np.column_stack([sh, sk, sl])
         all_hkls.append(hkls_with_signs)
 
-    return np.vstack(all_hkls)
+    all_hkls = np.vstack(all_hkls)
+
+    # Remove symmetry-equivalent hkls using representative space groups
+    bravais_to_spg = {
+        1: 1,    # triclinic P
+        2: 3,    # monoclinic P
+        3: 5,    # monoclinic C
+        4: 16,   # orthorhombic P
+        5: 16,   # orthorhombic A
+        6: 16,   # orthorhombic C
+        7: 16,   # orthorhombic I
+        8: 16,   # orthorhombic F
+        9: 75,   # tetragonal P
+        10: 79,  # tetragonal I
+        11: 168, # hexagonal P
+        12: 143, # rhombohedral/trigonal R
+        13: 195, # cubic P
+        14: 197, # cubic I
+        15: 196, # cubic F
+    }
+    spg = bravais_to_spg[bravais]
+
+    # Build reciprocal-space rotation operators from a representative space group
+    reciprocal_ops = []
+    op_seen = set()
+    group = Group(spg)
+    if len(group.wyckoffs) > 0 and len(group.wyckoffs[0]) > 0:
+        for op in group.wyckoffs[0]:
+            try:
+                matrix = np.rint(np.linalg.inv(op.rotation_matrix).T).astype(int)
+            except np.linalg.LinAlgError:
+                continue
+            key = tuple(matrix.flatten().tolist())
+            if key not in op_seen:
+                op_seen.add(key)
+                reciprocal_ops.append(matrix)
+    if len(reciprocal_ops) == 0:
+        reciprocal_ops = [np.eye(3, dtype=int)]
+
+    unique_hkls = []
+    seen = set()
+    for h, k, l in all_hkls:
+        vec = np.array([int(h), int(k), int(l)], dtype=int)
+        orbit = [tuple((matrix @ vec).tolist()) for matrix in reciprocal_ops]
+        symmetry_key = max(orbit)
+        if symmetry_key not in seen:
+            seen.add(symmetry_key)
+            unique_hkls.append(tuple(vec.tolist()))
+
+    return np.array(unique_hkls, dtype=int)
 
 
 if __name__ == "__main__":

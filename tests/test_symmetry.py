@@ -4,7 +4,7 @@ import os
 import unittest
 
 from pyxtal.lattice import Lattice
-from pyxtal.symmetry import Group, Wyckoff_position
+from pyxtal.symmetry import Group, Wyckoff_position, get_canonical_hkl, get_canonical_hkl_series
 
 def resource_filename(package_name, resource_path):
     package_path = importlib.util.find_spec(package_name).submodule_search_locations[0]
@@ -18,6 +18,31 @@ wp2 = Wyckoff_position.from_group_and_letter(36, "4a")
 
 
 class TestSymmetry(unittest.TestCase):
+    def test_hexagonal_canonical_hkl_equivalence(self):
+        # Hexagonal space groups: 168-194
+        for spg in [168, 194]:
+            # (100), (010), and (1-10) are symmetry-equivalent in hexagonal
+            c1 = get_canonical_hkl(1, 0, 0, spg)
+            c2 = get_canonical_hkl(0, 1, 0, spg)
+            c3 = get_canonical_hkl(1, -1, 0, spg)
+            assert c1 == c2 == c3
+
+            # General hkl pair related by a 60-degree in-plane rotation
+            c4 = get_canonical_hkl(2, 1, 3, spg)
+            c5 = get_canonical_hkl(-1, 3, 3, spg)
+            assert c4 == c5
+
+    def test_hexagonal_canonical_hkl_series_equivalence(self):
+        spg = 194
+
+        # Two equivalent series under hexagonal in-plane rotations
+        s1 = [(1, 0, 0), (2, 1, 3)]
+        s2 = [(0, 1, 0), (-1, 3, 3)]
+
+        c1 = get_canonical_hkl_series(s1, spg)
+        c2 = get_canonical_hkl_series(s2, spg)
+        assert c1 == c2
+
     def test_from_symops_wo_grou(self):
         data = [
         (["x, y, z", "-x, y+1/2, -z"], 4, 6),
