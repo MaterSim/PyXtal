@@ -153,13 +153,14 @@ def get_cif_str_for_pyxtal(struc, header: str = "", sym_num=None, style: str = "
                     coords, species = coord0s, specie0s
                     muls = [mul] * len(coords)
             else:
-                coords = None
+                coords_list = []
                 species = []
                 for id in range(sym_num):
                     mol = site.get_mol_object(id)
                     tmp = mol.cart_coords.dot(site.lattice.inv_matrix)
-                    coords = tmp if coords is None else np.append(coords, tmp, axis=0)
+                    coords_list.append(tmp)
                     species.extend([s.value for s in mol.species])
+                coords = np.concatenate(coords_list, axis=0)
                 muls = [mul] * len(coords)
                 # coords, species = site._get_coords_and_species(ids=sym_num)
         else:

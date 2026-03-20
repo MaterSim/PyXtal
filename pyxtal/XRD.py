@@ -371,23 +371,11 @@ class XRD:
             {hkl: multiplicity}: A dict with unique hkl and multiplicity.
         """
 
-        # TODO: Definitely speed it up.
-        def is_perm(hkl1, hkl2):
-            h1 = np.abs(hkl1)
-            h2 = np.abs(hkl2)
-            return all(i == j for i, j in zip(sorted(h1), sorted(h2)))
-
         unique = collections.defaultdict(list)
-        for hkl1 in hkls:
-            found = False
-            hkl1_tuple = tuple(hkl1)
-            for hkl2 in unique:
-                if is_perm(hkl1, hkl2):
-                    found = True
-                    unique[hkl2].append(hkl1_tuple)
-                    break
-            if not found:
-                unique[hkl1_tuple].append(hkl1_tuple)
+        for hkl in hkls:
+            hkl_tuple = tuple(hkl)
+            key = tuple(sorted(abs(int(i)) for i in hkl_tuple))
+            unique[key].append(hkl_tuple)
 
         pretty_unique = {}
         for v in unique.values():
