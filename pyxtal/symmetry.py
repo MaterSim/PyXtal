@@ -4052,26 +4052,7 @@ def get_wyckoffs(num, organized=False, dim=3):
     Returns:
         a list of Wyckoff positions, each of which is a list of SymmOp's
     """
-    if dim == 3:
-        df = SYMDATA.get_wyckoff_sg()
-    elif dim == 2:
-        df = SYMDATA.get_wyckoff_lg()
-    elif dim == 1:
-        df = SYMDATA.get_wyckoff_rg()
-    elif dim == 0:
-        df = SYMDATA.get_wyckoff_pg()
-
-    # Convert the string from df into a list of wyckoff strings
-    wyckoff_strings = literal_eval(df["0"][num])  # Use literal_eval instead of eval
-
-    wyckoffs = []
-    for x in wyckoff_strings:
-        wyckoffs.append([])
-        for y in x:
-            if dim == 0:
-                wyckoffs[-1].append(SymmOp(y))
-            else:
-                wyckoffs[-1].append(SymmOp.from_xyz_str(y))
+    wyckoffs = [list(wp) for wp in _get_wyckoffs_cached(num, dim)]
     if organized:
         wyckoffs_organized = [[]]  # 2D Array of WP's organized by multiplicity
         old = len(wyckoffs[0])
@@ -4085,6 +4066,29 @@ def get_wyckoffs(num, organized=False, dim=3):
     else:
         # Return Wyckoff positions without organization
         return wyckoffs
+
+
+@functools.lru_cache(maxsize=None)
+def _get_wyckoffs_cached(num, dim):
+    if dim == 3:
+        df = SYMDATA.get_wyckoff_sg()
+    elif dim == 2:
+        df = SYMDATA.get_wyckoff_lg()
+    elif dim == 1:
+        df = SYMDATA.get_wyckoff_rg()
+    elif dim == 0:
+        df = SYMDATA.get_wyckoff_pg()
+    else:
+        raise ValueError(f"Unsupported dimension: {dim}")
+
+    wyckoff_strings = literal_eval(df["0"][num])
+    wyckoffs = []
+    for x in wyckoff_strings:
+        wyckoffs.append([])
+        for y in x:
+            wyckoffs[-1].append(SymmOp(y) if dim == 0 else SymmOp.from_xyz_str(y))
+    return tuple(tuple(wp) for wp in wyckoffs)
+
 
 def get_wyckoff_symmetry(num, dim=3):
     """
@@ -4101,6 +4105,11 @@ def get_wyckoff_symmetry(num, dim=3):
         a 3d list of SymmOp objects representing the site symmetry of each
         point in each Wyckoff position
     """
+    return [[list(point) for point in wp] for wp in _get_wyckoff_symmetry_cached(num, dim)]
+
+
+@functools.lru_cache(maxsize=None)
+def _get_wyckoff_symmetry_cached(num, dim):
     if dim == 3:
         symmetry_df = SYMDATA.get_symmetry_sg()
     elif dim == 2:
@@ -4109,21 +4118,18 @@ def get_wyckoff_symmetry(num, dim=3):
         symmetry_df = SYMDATA.get_symmetry_rg()
     elif dim == 0:
         symmetry_df = SYMDATA.get_symmetry_pg()
+    else:
+        raise ValueError(f"Unsupported dimension: {dim}")
 
-    symmetry_strings = eval(symmetry_df["0"][num])
-
+    symmetry_strings = literal_eval(symmetry_df["0"][num])
     symmetry = []
-    # Loop over Wyckoff positions
     for x in symmetry_strings:
         symmetry.append([])
-        # Loop over points in WP
         for y in x:
             symmetry[-1].append([])
-            # Loop over ops
             for z in y:
-                op = SymmOp(z) if dim == 0 else SymmOp.from_xyz_str(z)
-                symmetry[-1][-1].append(op)
-    return symmetry
+                symmetry[-1][-1].append(SymmOp(z) if dim == 0 else SymmOp.from_xyz_str(z))
+    return tuple(tuple(tuple(point) for point in wp) for wp in symmetry)
 
 
 def get_generators(num, dim=3):
@@ -4145,6 +4151,11 @@ def get_generators(num, dim=3):
         a 2d list of symmop objects [[wp0], [wp1], ... ]
     """
 
+    return [list(wp) for wp in _get_generators_cached(num, dim)]
+
+
+@functools.lru_cache(maxsize=None)
+def _get_generators_cached(num, dim):
     if dim == 3:
         generators_df = SYMDATA.get_generator_sg()
     elif dim == 2:
@@ -4153,18 +4164,16 @@ def get_generators(num, dim=3):
         generators_df = SYMDATA.get_generator_rg()
     elif dim == 0:
         generators_df = SYMDATA.get_generator_pg()
+    else:
+        raise ValueError(f"Unsupported dimension: {dim}")
 
-    generator_strings = eval(generators_df["0"][num])
-
+    generator_strings = literal_eval(generators_df["0"][num])
     generators = []
-    # Loop over Wyckoff positions
     for x in generator_strings:
         generators.append([])
-        # Loop over ops
         for y in x:
-            op = SymmOp.from_xyz_str(y) if dim > 0 else SymmOp(y)
-            generators[-1].append(op)
-    return generators
+            generators[-1].append(SymmOp(y) if dim == 0 else SymmOp.from_xyz_str(y))
+    return tuple(tuple(wp) for wp in generators)
 
 
 def site_symm(point, gen_pos, tol=1e-3, lattice=None, PBC=None):
