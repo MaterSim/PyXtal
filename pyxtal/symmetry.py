@@ -747,7 +747,7 @@ class Group:
                 "c_glide_b (h0l), l=2n": c_glide_b,
                 "n_glide_b (h0l), h+l=2n": n_glide_b,
                 "d_glide_b (h0l), h+l=4n": d_glide_b,
-                "a_glide_c (0kl), h=2n": a_glide_c,
+                "a_glide_c (hk0), h=2n": a_glide_c,
                 "b_glide_c (0kl), l=2n": b_glide_c,
                 "n_glide_c (0kl), h+l=2n": n_glide_c,
                 "d_glide_c (0kl), l=2n": d_glide_c,
