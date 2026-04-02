@@ -761,7 +761,10 @@ class Group:
         print(f"Reflection condition applied")
         for key in dicts:
             if self.number in dicts[key]:
-                print(key)
+                strs = key
+                if self.number < 15 and key == 'c_glide_b (h0l), l=2n':
+                    strs += ' or h+l=2n'
+                print(strs)
 
     def generate_possible_hkls(self, h_max, k_max=None, l_max=None, max_square=12):
         """
@@ -5003,8 +5006,12 @@ def is_hkl_allowed(h, k, l, spg):
         if k == 0 and h % 2 == 1:
             return False
     if spg in c_glide_b:  # c-glide perpendicular to a: h0l with l odd forbidden
-        if k == 0 and l % 2 == 1:
-            return False
+        if spg > 15:
+            if k == 0 and l % 2 == 1:
+                return False
+        else:
+            if k == 0 and (l % 2 == 1 and (h + l) % 2 == 1):
+                return False
     if spg in n_glide_b:  # n-glide perpendicular to a: h0l with h+l odd forbidden
         if k == 0 and (h + l) % 2 == 1:
             return False
