@@ -3694,8 +3694,7 @@ class pyxtal:
 	        C @ [ 0.0000  0.7500  0.1250], WP [4a] Site [-4m2]
 	        C @ [ 0.0000  0.7500  0.1250], WP [4a] Site [-4m2]
         """
-        if elements is None:
-            elements = ["C"] * len(wps)
+        if elements is None: elements = ["C"] * len(wps)
         group = Group(spg)
         sites = []
         for i, _wp in enumerate(wps):
@@ -3708,6 +3707,29 @@ class pyxtal:
                         sites.append((elements[i], wp))
                         break
         self.from_1d_rep(x, sites)
+
+    def get_rep_bounds_from_spg_wps_cell(self, spg, wps, cell):
+        """
+        Determine the bounds of rep from the given spg/wps/cell
+
+        Example:
+            >>> c.get_rep_bounds_from_spg_wps_cell(180, [0, 2, 4], [8.0, 8.0, 10.0])
+            [8.0, 8.0, 10.0, 8.0, 8.0]
+        """
+        group = Group(spg)
+        bounds = []
+        for _wp in wps:
+            if type(_wp) is int:
+                wp = group[_wp]
+            else:
+                letter = _wp[-1]
+                for wp in group:
+                    if wp.letter == letter:
+                        break
+            for i in range(3):
+                if i not in wp.get_frozen_axis():
+                    bounds.append(cell[i])
+        return bounds
 
     def from_1d_rep(self, x, sites, dim=3):
         """
