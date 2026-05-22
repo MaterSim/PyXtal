@@ -1892,7 +1892,7 @@ def is_compatible_symmetry(mol, wp):
     return all(pga.is_valid_op(op) for op in wp.get_site_symm_wo_translation())
 
 
-def make_graph(mol, tol=0.2, ignore_HH=False):
+def make_graph(mol, tol=0.2, ignore_HH=False, debug=False):
     """
     make graph object for the input molecule
 
@@ -1905,6 +1905,7 @@ def make_graph(mol, tol=0.2, ignore_HH=False):
         G: a networkx Graph object representing the molecule's connectivity
     """
     # print("making graphs")
+    count = 0
     G = nx.Graph()
     names = {}
     for i, site in enumerate(mol._sites):
@@ -1923,13 +1924,15 @@ def make_graph(mol, tol=0.2, ignore_HH=False):
                     add = False
                 if add:
                     G.add_edge(i, j)
-                # print(key, site1.distance(site2))
+                    if debug:
+                        count += 1
+                        print(key, site1.distance(site2), count)
     nx.set_node_attributes(G, names, "name")
 
     return G
 
 
-def compare_mol_connectivity(mol1, mol2, ignore_name=False, ignore_HH=False):
+def compare_mol_connectivity(mol1, mol2, ignore_name=False, ignore_HH=False, debug=False):
     """
     Compare two molecules by connectivity
 
@@ -1945,8 +1948,8 @@ def compare_mol_connectivity(mol1, mol2, ignore_name=False, ignore_HH=False):
             - mapping (dict): A dictionary mapping nodes from mol1 to mol2
     """
 
-    G1 = make_graph(mol1, ignore_HH=ignore_HH)
-    G2 = make_graph(mol2, ignore_HH=ignore_HH)
+    G1 = make_graph(mol1, ignore_HH=ignore_HH, debug=debug)
+    G2 = make_graph(mol2, ignore_HH=ignore_HH, debug=debug)
     if ignore_name:
         GM = nx.isomorphism.GraphMatcher(G1, G2)
     else:
@@ -1977,3 +1980,10 @@ if __name__ == "__main__":
     ans1 = [(0, 1, 2, 9), (6, 5, 4, 7)]
     print(ans1)
     assert ans1 == ans2
+
+    mol1_file = "ref.xyz"
+    mol2_file = "wrong.xyz"
+
+    mol1 = Molecule.from_file(mol1_file)
+    mol2 = Molecule.from_file(mol2_file)
+    compare_mol_connectivity(mol1, mol2, debug=True)
