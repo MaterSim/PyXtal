@@ -474,7 +474,7 @@ class representation:
                     diffs.extend(diff_ori)
                     diffs.extend(diff_tor)
             return np.array(diffs)
-        
+
     def update_smiles(self, smiles):
         """
         Update the smiles of the representation

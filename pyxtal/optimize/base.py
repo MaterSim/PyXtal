@@ -856,16 +856,19 @@ class GlobalOptimize:
         gen_results = [(None, None, None)] * len(xtals)
         for pop in range(len(xtals)):
             xtal = xtals[pop][0]
+            orig_tag = xtals[pop][1]
             job_tag = self.tag + "-g" + str(gen) + "-p" + str(pop)
             if qrs:
                 mutated = False
+                label = orig_tag if orig_tag != "Random" else None
             else:
-                if xtals[pop][1] == "Mutation":
+                label = None
+                if orig_tag == "Mutation":
                     mutated = True
                 else:
                     mutated = False
             my_args = [xtal, pop, mutated, job_tag, *args]
-            xtal, match, stable = optimizer_single(*tuple(my_args))
+            xtal, match, stable = optimizer_single(*tuple(my_args), label=label)
             gen_results[pop] = (pop, xtal, match, stable)
         return gen_results
 

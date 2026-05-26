@@ -567,6 +567,7 @@ def optimizer_single(
     output_mlp,
     check_stable,
     pre_opt,
+    label=None,
 ):
     """
     A routine used for individual structure optimization
@@ -603,7 +604,7 @@ def optimizer_single(
             xtal = mutator(xtal, smiles, opt_lat, None)
             tag = "Mutation "
         else:
-            tag = "Kept "
+            tag = label if label is not None else "Kept "
 
     # 2. Optimization
     if xtal is None:

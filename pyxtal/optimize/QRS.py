@@ -209,6 +209,35 @@ class QRS(GlobalOptimize):
         s += f"\nPopulation: {self.N_pop:4d}"
         return s
 
+    def _init_qrs_params(self):
+        """
+        Bootstrap hall_number, wp_bounds, ltype, and the Sobol sampler from a
+        single randomly generated crystal using the fixed lattice.  Called once
+        before the main generation loop when self.lattice is not None, so that
+        generate_qrs_xtals can be used from gen 0 onwards.
+        """
+        from pyxtal import pyxtal
+        from pyxtal.symmetry import Group
+        tmp = pyxtal(molecular=True)
+        #print(self.smiles, self.sg, self.lattice); import sys; sys.exit()
+        smiles = [smi + ".smi" for smi in self.smiles]
+        sg = self.sg[0]
+        wp = Group(sg, use_hall=True)[0] if self.use_hall else Group(sg)[0]
+        mult = len(wp)
+        numIons = [int(c * mult) for c in self.composition]
+        for _ in range(20):
+            tmp.from_random(3, sg, smiles, numIons,
+                            lattice=self.lattice, use_hall=self.use_hall,
+                            sites=self.sites,   
+                            force_pass=True)  # skip structures with bad distances
+            if tmp.valid:
+                break
+        self.hall_number = sg
+        self.ltype = self.lattice.ltype
+        self.wp_bounds = [site.get_bounds() for site in tmp.mol_sites]
+        len_reps = sum(len(b) for b in self.wp_bounds)
+        self.sampler = qmc.Sobol(d=len_reps, scramble=False)
+
     def _run(self, pool=None):
         """
         The main code to run QRS prediction
@@ -220,6 +249,11 @@ class QRS(GlobalOptimize):
         success_rate = 0
         print(f"Rank {self.rank} starts QRS in {self.tag}")
 
+        # When the lattice is fixed, bootstrap QRS parameters before gen 0 so
+        # that the Sobol grid can be used for every generation (including gen 0).
+        if self.rank == 0 and self.lattice is not None:
+            self._init_qrs_params()
+
         for gen in range(self.N_gen):
             self.generation = gen
             cur_xtals = None
@@ -229,30 +263,36 @@ class QRS(GlobalOptimize):
                 self.logging.info(f"Generation {gen:d} starts")
                 t0 = time()
 
-                # Initialize
-                cur_xtals = [(None, "Random")] * self.N_pop
-
-                # QRS update
-                if gen > 0:
-                    if self.lattice is not None:
-                        cell = [self.hall_number] + self.lattice.encode()
-                        sampler = self.sampler
-                    else:
-                        cell = generate_qrs_cell(self.sampler,
-                                                 self.cell_bounds,
-                                                 self.ref_volumes[-1],
-                                                 self.ltype)
-                        cell = [self.hall_number] + cell
-                        sampler = None
-
+                if self.lattice is not None:
+                    # Fixed-lattice mode: use QRS sampling for every generation.
+                    # self.sampler is advanced progressively so each generation
+                    # draws the next block of the Sobol sequence without repeats.
+                    cell = [self.hall_number] + self.lattice.encode()
                     cur_xtals = generate_qrs_xtals(cell,
                                                    self.wp_bounds,
                                                    self.N_pop,
                                                    self.smiles,
                                                    self.composition,
-                                                   sampler)
+                                                   self.sampler)
                     strs = f"Cell parameters in Gen-{gen:d}: "
-                    print(strs, cell, self.ref_volumes[-1], len(cur_xtals))
+                    print(strs, cell, len(cur_xtals))
+                else:
+                    # Variable-lattice mode: gen 0 uses random crystals to
+                    # calibrate the cell bounds; gen > 0 uses QRS.
+                    cur_xtals = [(None, "Random")] * self.N_pop
+                    if gen > 0:
+                        cell = generate_qrs_cell(self.sampler,
+                                                 self.cell_bounds,
+                                                 self.ref_volumes[-1],
+                                                 self.ltype)
+                        cell = [self.hall_number] + cell
+                        cur_xtals = generate_qrs_xtals(cell,
+                                                       self.wp_bounds,
+                                                       self.N_pop,
+                                                       self.smiles,
+                                                       self.composition)
+                        strs = f"Cell parameters in Gen-{gen:d}: "
+                        print(strs, cell, self.ref_volumes[-1], len(cur_xtals))
 
 
             # Broadcast
@@ -275,17 +315,15 @@ class QRS(GlobalOptimize):
 
                 # update best volume
                 self.ref_volumes.append(np.array(vols).mean())
-                if gen == 0:
+                if gen == 0 and self.lattice is None:
+                    # Variable-lattice mode only: initialise cell and WP bounds
+                    # from the best structure found in the random gen-0 batch.
                     best_xtal = cur_xtals[0][0]
                     self.cell_bounds = best_xtal.lattice.get_bounds(2.5, 25)
                     self.ltype = best_xtal.lattice.ltype
                     self.wp_bounds = [site.get_bounds() for site in best_xtal.mol_sites]
                     self.hall_number = best_xtal.group.hall_number
-                    if self.lattice is not None:
-                        len_reps = sum(len(bound) for bound in self.wp_bounds)
-                    else:
-                        len_reps = len(self.cell_bounds)
-                    self.sampler = qmc.Sobol(d=len_reps, scramble=False)
+                    self.sampler = qmc.Sobol(d=len(self.cell_bounds), scramble=False)
 
                 if self.ref_pmg is not None:
                     success_rate = self.success_count(cur_xtals, matches)
@@ -308,4 +346,40 @@ class QRS(GlobalOptimize):
         return success_rate
 
 if __name__ == "__main__":
-    print("test")
+    from pyxtal.representation import representation
+    smiles = ["CC(=O)OC1=CC=CC=C1C(=O)O"]
+    string = "82 11.43  6.49 11.19 83.31 1  0 0.77  0.57  0.53 48.55 24.31 145.9 -77.85 -4.40 170.9 0"
+    rep3 = representation.from_string(string, smiles)
+    xtal_ref = rep3.to_pyxtal()
+    print(xtal_ref)
+
+    # ── Reproducibility check when the lattice is fixed ───────────────────────
+    # When a lattice is provided to QRS, the cell is frozen and only Wyckoff
+    # positions are sampled via a Sobol sequence (scramble=False).
+    # Because Sobol(scramble=False) is fully deterministic, two independent
+    # invocations with the same cell / wp_bounds / N_pop must produce
+    # exactly the same list of structures in the same order.
+    print("\n--- Reproducibility check (fixed lattice) ---")
+    cell = [xtal_ref.group.hall_number] + xtal_ref.lattice.encode()
+    wp_bounds = [site.get_bounds() for site in xtal_ref.mol_sites]
+    N_pop = 8
+    comp = [1]
+
+    xtals_a = generate_qrs_xtals(cell, wp_bounds, N_pop, smiles, comp,
+                                  sampler_wp=qmc.Sobol(d=sum(len(b) for b in wp_bounds), scramble=False))
+    xtals_b = generate_qrs_xtals(cell, wp_bounds, N_pop, smiles, comp,
+                                  sampler_wp=qmc.Sobol(d=sum(len(b) for b in wp_bounds), scramble=False))
+
+    assert len(xtals_a) == len(xtals_b), \
+        f"Different number of valid structures: {len(xtals_a)} vs {len(xtals_b)}"
+
+    all_match = True
+    for i, ((xa, _), (xb, _)) in enumerate(zip(xtals_a, xtals_b)):
+        ra = xa.get_1D_representation().to_string()
+        rb = xb.get_1D_representation().to_string()
+        if ra != rb:
+            print(f"  Structure {i}: MISMATCH\n  run-1: {ra}\n  run-2: {rb}")
+            all_match = False
+
+    if all_match:
+        print(f"  PASSED — both runs produced {len(xtals_a)} identical structures.")
