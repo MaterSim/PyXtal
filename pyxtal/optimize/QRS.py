@@ -301,7 +301,7 @@ class QRS(GlobalOptimize):
         from pyxtal import pyxtal
         from pyxtal.symmetry import Group
         from pyxtal.wyckoff_site import mol_site
-    
+
         tmp = pyxtal(molecular=True)
         #print(self.smiles, self.sg, self.lattice); import sys; sys.exit()
         smiles = [smi + ".smi" for smi in self.smiles]
@@ -313,7 +313,7 @@ class QRS(GlobalOptimize):
         for _ in range(200):
             tmp.from_random(3, sg, smiles, numIons,
                             lattice=self.lattice, use_hall=self.use_hall,
-                            sites=self.sites)  # skip structures with bad distances
+                            sites=self.sites, t_factor=0.2)  # skip structures with bad distances
             if tmp.valid:
                 break
         self.hall_number = sg
