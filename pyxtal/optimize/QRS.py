@@ -35,7 +35,7 @@ def generate_qrs_cell(sampler, cell_bounds, ref_volume, ltype):
         if count == 1000:
             raise ValueError("Cannot generate valid cell with 1000 attempts")
 
-def generate_qrs_xtals(cell, wp_bounds, N_pop, smiles, comp, sampler_wp=None, d_tol=0.85):
+def generate_qrs_xtals(cell, wp_bounds, N_pop, smiles, comp, sampler_wp=None, d_tol=0.9):
     """
     Get the qrs xtal samples
 
@@ -60,10 +60,13 @@ def generate_qrs_xtals(cell, wp_bounds, N_pop, smiles, comp, sampler_wp=None, d_
     if sampler_wp is None:
         sampler_wp = qmc.Sobol(d=len(lb), scramble=False)
 
-    m = max([int(np.log2(N_pop))+3, 9])
+    max_attempts = 2 ** max(int(np.log2(N_pop)) + 3, 9)
 
-    for i in range(2**m):
-        sample_wp = sampler_wp.random()#; print(sample_wp)
+    for i in range(max_attempts):
+        try:
+            sample_wp = sampler_wp.random()
+        except StopIteration:
+            break
         sample_wp = qmc.scale(sample_wp, lb, ub)[0].tolist()
         x = [cell]
         prev = 0
@@ -80,6 +83,79 @@ def generate_qrs_xtals(cell, wp_bounds, N_pop, smiles, comp, sampler_wp=None, d_
         #else:
         #    print(rep, len(xtal.check_short_distances(r=0.6)))
     return xtals
+
+
+def compute_wp_resolutions(wp_bounds, cell_lengths, delta_length=1.0, delta_angle=30.0):
+    """
+    Compute per-DOF grid resolution (number of levels) for an uneven QRS grid.
+
+    Rules:
+    - Fractional coordinate DOF (bounds [0, 1]): n = max(1, int(edge / delta_length))
+      Cell edges are assigned in order a, b, c as coordinate DOF are encountered.
+    - Angle DOF (any other bounds): n = max(1, round(span / delta_angle))
+
+    Args:
+        wp_bounds (list): per-site bounds from mol_site.get_bounds()
+        cell_lengths (list): [a, b, c] in Angstroms
+        delta_length (float): Angstrom resolution for coordinate dims
+        delta_angle (float): degree resolution for angle dims
+
+    Returns:
+        list[int]: number of levels per DOF (flat, same ordering as wp_bounds)
+    """
+    n_levels = []
+    for site_bounds in wp_bounds:
+        coord_idx = 0
+        for (lb, ub) in site_bounds:
+            span = ub - lb
+            if abs(span - 1.0) < 1e-6:  # fractional coordinate DOF
+                edge = cell_lengths[coord_idx] if coord_idx < len(cell_lengths) else 1.0
+                n = max(1, int(edge / delta_length))
+                coord_idx += 1
+            else:  # angle DOF (Euler or torsion)
+                n = max(1, int(round(span / delta_angle)))
+            n_levels.append(n)
+    return n_levels
+
+
+class GridSampler:
+    """
+    Quantized quasi-random sampler for uneven discrete grids.
+
+    Draws points from a Sobol sequence and snaps each coordinate to the centre
+    of the nearest bin defined by n_levels (the number of grid levels per
+    dimension).  This gives Sobol's multi-dimensional low-discrepancy coverage
+    from the very first sample — every dimension varies immediately — while
+    keeping all output values on a per-dimension discrete grid.
+
+    Has the same .random() interface as qmc.Sobol, so it is a drop-in
+    replacement.  self.current advances on every call; successive generation
+    runs automatically draw the next block of the Sobol sequence.
+    """
+
+    def __init__(self, n_levels):
+        self.n_levels = list(n_levels)
+        self.d = len(n_levels)
+        self.total = int(np.prod(n_levels)) if n_levels else 0
+        self.current = 0
+        self._sobol = qmc.Sobol(d=self.d, scramble=False)
+
+    @property
+    def exhausted(self):
+        return self.current >= self.total
+
+    def random(self):
+        """Return the next quantized Sobol point as a (1, d) array in [0, 1]^d."""
+        raw = self._sobol.random()[0]          # values in [0, 1)
+        snapped = [(min(int(v * n), n - 1) + 0.5) / n
+                   for v, n in zip(raw, self.n_levels)]
+        self.current += 1
+        return np.array([snapped])
+
+    def __repr__(self):
+        pct = 100.0 * self.current / self.total if self.total else 0.0
+        return (f"GridSampler(d={self.d}, total={self.total:,}, "
+                f"progress={self.current}/{self.total} [{pct:.1f}%])")
 
 
 class QRS(GlobalOptimize):
@@ -114,6 +190,8 @@ class QRS(GlobalOptimize):
         E_max (float): maximum energy defined as an invalid structure
         verbose (bool): show more details
         use_mpi (bool): whether or not use mpi for parallel calculation
+        delta_length (float): grid resolution in Å for fractional-coordinate DOF (0 = use Sobol)
+        delta_angle (float): grid resolution in degrees for angle DOF (0 = use Sobol)
     """
 
     def __init__(
@@ -152,6 +230,8 @@ class QRS(GlobalOptimize):
         early_quit: bool = False,
         check_stable: bool = False,
         use_mpi: bool = False,
+        delta_length: float = 1.0,
+        delta_angle: float = 60.0,
     ):
 
         # POPULATION parameters:
@@ -159,6 +239,8 @@ class QRS(GlobalOptimize):
         self.N_pop = N_pop # Number of wp varieties
         self.verbose = verbose
         self.name = 'QRS'
+        self.delta_length = delta_length
+        self.delta_angle = delta_angle
 
         # initialize other base parameters
         GlobalOptimize.__init__(
@@ -218,6 +300,8 @@ class QRS(GlobalOptimize):
         """
         from pyxtal import pyxtal
         from pyxtal.symmetry import Group
+        from pyxtal.wyckoff_site import mol_site
+    
         tmp = pyxtal(molecular=True)
         #print(self.smiles, self.sg, self.lattice); import sys; sys.exit()
         smiles = [smi + ".smi" for smi in self.smiles]
@@ -225,18 +309,30 @@ class QRS(GlobalOptimize):
         wp = Group(sg, use_hall=True)[0] if self.use_hall else Group(sg)[0]
         mult = len(wp)
         numIons = [int(c * mult) for c in self.composition]
-        for _ in range(20):
+
+        for _ in range(200):
             tmp.from_random(3, sg, smiles, numIons,
                             lattice=self.lattice, use_hall=self.use_hall,
-                            sites=self.sites,   
-                            force_pass=True)  # skip structures with bad distances
+                            sites=self.sites)  # skip structures with bad distances
             if tmp.valid:
                 break
         self.hall_number = sg
         self.ltype = self.lattice.ltype
         self.wp_bounds = [site.get_bounds() for site in tmp.mol_sites]
-        len_reps = sum(len(b) for b in self.wp_bounds)
-        self.sampler = qmc.Sobol(d=len_reps, scramble=False)
+
+        if self.delta_length > 0 or self.delta_angle > 0:
+            # Uneven grid: per-dim resolution derived from cell lengths / angle range
+            dl = self.delta_length if self.delta_length > 0 else 1.0
+            da = self.delta_angle  if self.delta_angle  > 0 else 30.0
+            a, b, c = self.lattice.get_para()[:3]
+            n_levels = compute_wp_resolutions(self.wp_bounds, [a, b, c], dl, da)
+            self.sampler = GridSampler(n_levels)
+            print(f"GridSampler initialised: {self.sampler}")
+        else:
+            len_reps = sum(len(b) for b in self.wp_bounds)
+            self.sampler = qmc.Sobol(d=len_reps, scramble=False)
+        #print(f"Bootstrap QRS parameters from random structure: hall={self.hall_number}, "
+        #      f"ltype={self.ltype}, wp_bounds={self.wp_bounds}")
 
     def _run(self, pool=None):
         """
@@ -259,8 +355,11 @@ class QRS(GlobalOptimize):
             cur_xtals = None
 
             if self.rank == 0:
-                print(f"\nGeneration {gen:d} starts")
-                self.logging.info(f"Generation {gen:d} starts")
+                gen_hdr = f"\nGeneration {gen:d} starts"
+                if self.lattice is not None and isinstance(self.sampler, GridSampler):
+                    gen_hdr += f"  [{self.sampler}]"
+                print(gen_hdr)
+                self.logging.info(gen_hdr)
                 t0 = time()
 
                 if self.lattice is not None:

@@ -19,7 +19,7 @@ with open(csv_path, "w", newline="") as fcsv:
     writer = csv.writer(fcsv)
     writer.writerow(["code", "smiles", "sg", "success_rate"])
 
-for code in db.get_all_codes():
+for code in db.get_all_codes()[3:]:
     # ── Molecule ──────────────────────────────────────────────────────────────────
     row = db.get_row(code=code)
     ref_xtal = db.get_pyxtal(code=code)
@@ -30,32 +30,32 @@ for code in db.get_all_codes():
 
     sites = [[] for _ in range(len(ref_xtal.numMols))]
     for site in ref_xtal.mol_sites:
-        print(site.type, site.wp.get_label())
         sites[site.type].append(site.wp.get_label())
-    print("Molecule sites:", sites)
 
     # ── QRS setup ─────────────────────────────────────────────────────────────────
     qrs = QRS(
-        smiles    = row.mol_smi,                    # molecule as SMILES string
-        workdir   = row.csd_code,                   # working directory for this QRS run
-        sg        = ref_xtal.group.hall_number,     # space group number (P2_1/c = 81)
-        tag       = row.csd_code.lower(),           # tag for output files
-        use_hall  = True,                           # interpret sg as a Hall number
-        lattice   = ref_xtal.lattice,               # fix the cell; only WP positions are sampled
-        N_gen     = 5,                              # number of QRS generations
-        N_pop     = 20,                             # structures per generation
-        N_cpu     = 1,
-        cif       = "all.cif",                      # save all relaxed structures
-        skip_mlp  = True,                           # no machine-learning potential relaxation
-        verbose   = False,
-        sites = sites,
+        smiles        = row.mol_smi,                # molecule as SMILES string
+        workdir       = row.csd_code,               # working directory for this QRS run
+        sg            = ref_xtal.group.hall_number, # space group number (P2_1/c = 81)
+        tag           = row.csd_code.lower(),       # tag for output files
+        use_hall      = True,                       # interpret sg as a Hall number
+        lattice       = ref_xtal.lattice,           # fix the cell; only WP positions are sampled
+        N_gen         = 10,                         # number of QRS generations
+        N_pop         = 50,                         # structures per generation
+        N_cpu         = 1,
+        cif           = "all.cif",                  # save all relaxed structures
+        skip_mlp      = True,                       # no machine-learning potential relaxation
+        verbose       = False,
+        sites         = sites,
+        delta_length  = 1.5,                        # grid spacing for fractional coords (Å)
+        delta_angle   = 60.0,                       # grid spacing for Euler/torsion angles (°)
     )
 
     # ── Run and check for match ───────────────────────────────────────────────────
     success_rate = qrs.run(ref_pmg=ref_pmg)
 
     if success_rate is not None and success_rate > 0:
-        print(f"\nMatch found! Success rate: {success_rate:.1%}")
+        print(f"\nMatch found! Success rate: {success_rate}%")
     else:
         print("\nNo match found within the given generations/population.")
 
