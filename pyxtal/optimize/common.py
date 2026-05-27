@@ -472,6 +472,7 @@ def optimizer_par(
     ids,
     mutates,
     job_tags,
+    labels,
     randomizer,
     optimizer,
     smiles,
@@ -535,6 +536,7 @@ def optimizer_par(
             output_mlp,
             check_stable,
             pre_opt,
+            label=labels[i] if labels is not None else None,
         )
         results.append((id, xtal, match, stable))
     return results

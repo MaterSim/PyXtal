@@ -946,16 +946,19 @@ class GlobalOptimize:
                             + "-p" + str(id) for id in _ids]
                 _xtals = [xtals[id][0] for id in range(id1, id2)]
                 mutates = []
+                labels = []
                 for i in range(id1, id2):
+                    orig_tag = xtals[i][1]
                     if qrs:
                         mutates.append(False)
+                        labels.append(orig_tag if orig_tag != "Random" else None)
                     else:
-                        if xtals[i][1] == "Mutation":
+                        if orig_tag == "Mutation":
                             mutates.append(True)
                         else:
                             mutates.append(False)
-                #mutates = [False if qrs else xtal is not None for xtal in _xtals]
-                my_args = [_xtals, _ids, mutates, job_tags, *args, self.rank, self.timeout]
+                        labels.append(None)
+                my_args = [_xtals, _ids, mutates, job_tags, labels, *args, self.rank, self.timeout]
                 yield tuple(my_args)  # Yield args instead of appending to a list
 
         gen_results = []

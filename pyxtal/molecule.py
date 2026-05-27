@@ -1251,8 +1251,12 @@ class pyxtal_molecule:
             id = np.argmin(dists)
             matrix = matrix * np.repeat(libs[id], 3, axis=0)
 
-            r = Rotation.from_matrix(np.linalg.inv(matrix).T)
-            ang = r.as_euler("zxy", degrees=True)
+            try:
+                r = Rotation.from_matrix(np.linalg.inv(matrix).T)
+                ang = r.as_euler("zxy", degrees=True)
+            except:
+                if len(matrix) == 3:
+                    ang = np.zeros(3)
             return ang, 0, False
 
     def to_ase(self):
