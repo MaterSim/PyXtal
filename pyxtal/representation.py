@@ -272,13 +272,14 @@ class representation:
         rep0 = representation.from_pyxtal(xtal)
         self.x = rep0.x
 
-    def to_pyxtal(self, smiles=None, composition=None):
+    def to_pyxtal(self, smiles=None, composition=None, molecules=None):
         """
         Export the pyxtal structure
 
         Args:
             smiles: list of smiles
             composition: list of composition
+            molecules: optional list of pyxtal_molecule objects aligned with smiles
         """
         from pyxtal import pyxtal
 
@@ -327,6 +328,7 @@ class representation:
         count = 1
         for i, comp in enumerate(composition):
             smile = smiles[i]
+            molecule = None if molecules is None else molecules[i]
             if smile.endswith(".smi"):
                 smile = smile[:-4]
             for _j in range(comp):
@@ -342,6 +344,7 @@ class representation:
                 dicts["lattice"] = struc.lattice.matrix
                 dicts["lattice_type"] = ltype
                 dicts["center"] = v[1:4]
+                dicts["molecule"] = molecule
                 if smile not in ["Cl-"]:
                     dicts["orientation"] = np.array(v[4:7])
                     dicts["rotor"] = v[7:-1]  # ; print('ro', dicts['rotor'])

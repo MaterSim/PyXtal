@@ -16,6 +16,19 @@ from pyxtal.lattice import Lattice
 if TYPE_CHECKING:
     from pyxtal.molecule import pyxtal_molecule
 
+
+def _format_cell_for_print(cell, precision=2):
+    """Convert a cell representation to a string with fixed numeric precision."""
+    values = []
+    for value in cell:
+        if isinstance(value, np.generic):
+            value = value.item()
+        if isinstance(value, float):
+            values.append(f"{value:.{precision}f}")
+        else:
+            values.append(str(value))
+    return "[" + ", ".join(values) + "]"
+
 def generate_qrs_cell(sampler, cell_bounds, ref_volume, ltype):
     """
     A routine to generate quasi random samples for lattice and wp
@@ -35,7 +48,17 @@ def generate_qrs_cell(sampler, cell_bounds, ref_volume, ltype):
         if count == 1000:
             raise ValueError("Cannot generate valid cell with 1000 attempts")
 
-def generate_qrs_xtals(cell, wp_bounds, N_pop, smiles, comp, sampler_wp=None, d_tol=0.9):
+def generate_qrs_xtals(
+    cell,
+    wp_bounds,
+    N_pop,
+    smiles,
+    comp,
+    sampler_wp=None,
+    d_tol=0.9,
+    molecules=None,
+    max_grid_attempts=None,
+):
     """
     Get the qrs xtal samples
 
@@ -47,12 +70,43 @@ def generate_qrs_xtals(cell, wp_bounds, N_pop, smiles, comp, sampler_wp=None, d_
         comp (list): [1]
         sampler_wp: sampler
         d_tol (float): short distance tolerance value
+        molecules: optional conformer pools aligned with smiles
+        max_grid_attempts: optional cap on number of grid points sampled
     """
     #cell = [81, 11.38,  6.48, 11.24,  96.9]
     xtals = []
+    attempted = 0
+    valid = 0
+    skipped_special = 0
+    skipped_short = 0
+    max_combinations = None
+    mol_pools = None
+    if molecules is not None:
+        mol_pools = []
+        for mol_group in molecules:
+            if isinstance(mol_group, (list, tuple)):
+                mol_pools.append(list(mol_group))
+            else:
+                mol_pools.append([mol_group])
+        max_combinations = int(np.prod([len(pool) for pool in mol_pools]))
+
+    if mol_pools is None:
+        trimmed_wp_bounds = wp_bounds
+    else:
+        trimmed_wp_bounds = []
+        site_idx = 0
+        for type_idx, count in enumerate(comp):
+            pool = mol_pools[type_idx]
+            torsion_count = len(pool[0].torsionlist) if pool and pool[0].torsionlist is not None else 0
+            for _ in range(int(count)):
+                site_bounds = wp_bounds[site_idx]
+                if torsion_count > 0:
+                    site_bounds = site_bounds[:-torsion_count]
+                trimmed_wp_bounds.append(site_bounds)
+                site_idx += 1
     lb, ub = [], []
     seqs = []
-    for wp_bound in wp_bounds:
+    for wp_bound in trimmed_wp_bounds:
         lb += [b[0] for b in wp_bound]
         ub += [b[1] for b in wp_bound]
         seqs.append(len(wp_bound))
@@ -60,13 +114,37 @@ def generate_qrs_xtals(cell, wp_bounds, N_pop, smiles, comp, sampler_wp=None, d_
     if sampler_wp is None:
         sampler_wp = qmc.Sobol(d=len(lb), scramble=False)
 
-    max_attempts = 2 ** max(int(np.log2(N_pop)) + 3, 9)
+    if mol_pools is None:
+        comb_per_grid = 1
+    else:
+        comb_per_grid = max_combinations
 
-    for i in range(max_attempts):
+    if hasattr(sampler_wp, "total") and hasattr(sampler_wp, "current"):
+        remaining_grid_points = max(int(sampler_wp.total) - int(sampler_wp.current), 0)
+        grid_budget = remaining_grid_points
+    else:
+        # Fallback for samplers without finite-state metadata.
+        grid_budget = 2 ** max(int(np.log2(N_pop)) + 3, 10)
+
+    if max_grid_attempts is not None:
+        grid_budget = min(grid_budget, int(max_grid_attempts))
+
+    sampled_grid_points = 0
+
+    def _finalize_stats():
+        generate_qrs_xtals.last_attempted = attempted
+        generate_qrs_xtals.last_valid = valid
+        generate_qrs_xtals.last_skipped_special = skipped_special
+        generate_qrs_xtals.last_skipped_short = skipped_short
+        generate_qrs_xtals.last_sampled_grid_points = sampled_grid_points
+        generate_qrs_xtals.last_possible = sampled_grid_points * comb_per_grid
+
+    for _i in range(grid_budget):
         try:
             sample_wp = sampler_wp.random()
         except StopIteration:
             break
+        sampled_grid_points += 1
         sample_wp = qmc.scale(sample_wp, lb, ub)[0].tolist()
         x = [cell]
         prev = 0
@@ -75,13 +153,42 @@ def generate_qrs_xtals(cell, wp_bounds, N_pop, smiles, comp, sampler_wp=None, d_
             x.append(wp) # print(x)
             prev = seq
         rep = representation(x, smiles)
-        xtal = rep.to_pyxtal(composition=comp)
-        if not xtal.has_special_site() and len(xtal.check_short_distances(r=d_tol)) == 0:
+        if mol_pools is None:
+            attempted += 1
+            xtal = rep.to_pyxtal(composition=comp)
+            if xtal.has_special_site():
+                skipped_special += 1
+                continue
+            if len(xtal.check_short_distances(r=d_tol)) > 0:
+                skipped_short += 1
+                continue
+
+            valid += 1
             xtals.append((xtal, "QRandom"))
             if len(xtals) == N_pop:
+                _finalize_stats()
                 return xtals
+        else:
+            from itertools import product
+
+            for chosen_molecules in product(*mol_pools):
+                attempted += 1
+                xtal = rep.to_pyxtal(composition=comp, molecules=list(chosen_molecules))
+                if xtal.has_special_site():
+                    skipped_special += 1
+                    continue
+                if len(xtal.check_short_distances(r=d_tol)) > 0:
+                    skipped_short += 1
+                    continue
+
+                valid += 1
+                xtals.append((xtal, "QRandom"))
+                if len(xtals) == N_pop:
+                    _finalize_stats()
+                    return xtals
         #else:
         #    print(rep, len(xtal.check_short_distances(r=0.6)))
+    _finalize_stats()
     return xtals
 
 
@@ -116,6 +223,32 @@ def compute_wp_resolutions(wp_bounds, cell_lengths, delta_length=1.0, delta_angl
                 n = max(1, int(round(span / delta_angle)))
             n_levels.append(n)
     return n_levels
+
+
+def trim_wp_bounds_for_molecules(wp_bounds, composition, molecules):
+    """Remove torsion DOFs from wp bounds when fixed conformer pools are provided."""
+    if molecules is None:
+        return wp_bounds
+
+    mol_pools = []
+    for mol_group in molecules:
+        if isinstance(mol_group, (list, tuple)):
+            mol_pools.append(list(mol_group))
+        else:
+            mol_pools.append([mol_group])
+
+    trimmed_wp_bounds = []
+    site_idx = 0
+    for type_idx, count in enumerate(composition):
+        pool = mol_pools[type_idx]
+        torsion_count = len(pool[0].torsionlist) if pool and pool[0].torsionlist is not None else 0
+        for _ in range(int(count)):
+            site_bounds = wp_bounds[site_idx]
+            if torsion_count > 0:
+                site_bounds = site_bounds[:-torsion_count]
+            trimmed_wp_bounds.append(site_bounds)
+            site_idx += 1
+    return trimmed_wp_bounds
 
 
 class GridSampler:
@@ -154,8 +287,7 @@ class GridSampler:
 
     def __repr__(self):
         pct = 100.0 * self.current / self.total if self.total else 0.0
-        return (f"GridSampler(d={self.d}, total={self.total:,}, "
-                f"progress={self.current}/{self.total} [{pct:.1f}%])")
+        return (f"GridSampler(d={self.d}, progress={self.current}/{self.total} [{pct:.1f}%])")
 
 
 class QRS(GlobalOptimize):
@@ -232,6 +364,7 @@ class QRS(GlobalOptimize):
         use_mpi: bool = False,
         delta_length: float = 1.0,
         delta_angle: float = 60.0,
+        max_grid_attempts: int | None = None,
     ):
 
         # POPULATION parameters:
@@ -241,6 +374,7 @@ class QRS(GlobalOptimize):
         self.name = 'QRS'
         self.delta_length = delta_length
         self.delta_angle = delta_angle
+        self.max_grid_attempts = max_grid_attempts
 
         # initialize other base parameters
         GlobalOptimize.__init__(
@@ -289,6 +423,8 @@ class QRS(GlobalOptimize):
         s += "\nMethod    : Deterministic Quasi-Random Sampling"
         s += f"\nGeneration: {self.N_gen:4d}"
         s += f"\nPopulation: {self.N_pop:4d}"
+        if self.max_grid_attempts is not None:
+            s += f"\nGrid cap   : {self.max_grid_attempts:4d}"
         return s
 
     def _init_qrs_params(self):
@@ -319,17 +455,18 @@ class QRS(GlobalOptimize):
         self.hall_number = sg
         self.ltype = self.lattice.ltype
         self.wp_bounds = [site.get_bounds() for site in tmp.mol_sites]
+        grid_wp_bounds = trim_wp_bounds_for_molecules(self.wp_bounds, self.composition, self.molecules)
 
         if self.delta_length > 0 or self.delta_angle > 0:
             # Uneven grid: per-dim resolution derived from cell lengths / angle range
             dl = self.delta_length if self.delta_length > 0 else 1.0
             da = self.delta_angle  if self.delta_angle  > 0 else 30.0
             a, b, c = self.lattice.get_para()[:3]
-            n_levels = compute_wp_resolutions(self.wp_bounds, [a, b, c], dl, da)
+            n_levels = compute_wp_resolutions(grid_wp_bounds, [a, b, c], dl, da)
             self.sampler = GridSampler(n_levels)
             print(f"GridSampler initialised: {self.sampler}")
         else:
-            len_reps = sum(len(b) for b in self.wp_bounds)
+            len_reps = sum(len(b) for b in grid_wp_bounds)
             self.sampler = qmc.Sobol(d=len_reps, scramble=False)
         #print(f"Bootstrap QRS parameters from random structure: hall={self.hall_number}, "
         #      f"ltype={self.ltype}, wp_bounds={self.wp_bounds}")
@@ -372,9 +509,22 @@ class QRS(GlobalOptimize):
                                                    self.N_pop,
                                                    self.smiles,
                                                    self.composition,
-                                                   self.sampler)
+                                                   self.sampler,
+                                                   molecules=self.molecules,
+                                                   max_grid_attempts=self.max_grid_attempts)
                     strs = f"Cell parameters in Gen-{gen:d}: "
-                    print(strs, cell, len(cur_xtals))
+                    print(strs, _format_cell_for_print(cell, precision=3), len(cur_xtals))
+                    if self.molecules is not None:
+                        attempted = getattr(generate_qrs_xtals, "last_attempted", 0)
+                        valid = getattr(generate_qrs_xtals, "last_valid", 0)
+                        skipped_special = getattr(generate_qrs_xtals, "last_skipped_special", 0)
+                        skipped_short = getattr(generate_qrs_xtals, "last_skipped_short", 0)
+                        sampled_grid = getattr(generate_qrs_xtals, "last_sampled_grid_points", 0)
+                        possible = getattr(generate_qrs_xtals, "last_possible", None)
+                        if possible is None:
+                            print(f"QRS trial stats in Gen-{gen:d}: sampled_grid={sampled_grid}, attempted={attempted}, valid={valid}, skipped_special={skipped_special}, skipped_short={skipped_short}")
+                        else:
+                            print(f"QRS trial stats in Gen-{gen:d}: sampled_grid={sampled_grid}, attempted={attempted}/{possible}, valid={valid}, skipped_special={skipped_special}, skipped_short={skipped_short}")
                 else:
                     # Variable-lattice mode: gen 0 uses random crystals to
                     # calibrate the cell bounds; gen > 0 uses QRS.
@@ -389,9 +539,22 @@ class QRS(GlobalOptimize):
                                                        self.wp_bounds,
                                                        self.N_pop,
                                                        self.smiles,
-                                                       self.composition)
+                                                       self.composition,
+                                                       molecules=self.molecules,
+                                                       max_grid_attempts=self.max_grid_attempts)
                         strs = f"Cell parameters in Gen-{gen:d}: "
-                        print(strs, cell, self.ref_volumes[-1], len(cur_xtals))
+                        print(strs, _format_cell_for_print(cell, precision=2), self.ref_volumes[-1], len(cur_xtals))
+                        if self.molecules is not None:
+                            attempted = getattr(generate_qrs_xtals, "last_attempted", 0)
+                            valid = getattr(generate_qrs_xtals, "last_valid", 0)
+                            skipped_special = getattr(generate_qrs_xtals, "last_skipped_special", 0)
+                            skipped_short = getattr(generate_qrs_xtals, "last_skipped_short", 0)
+                            sampled_grid = getattr(generate_qrs_xtals, "last_sampled_grid_points", 0)
+                            possible = getattr(generate_qrs_xtals, "last_possible", None)
+                            if possible is None:
+                                print(f"QRS trial stats in Gen-{gen:d}: sampled_grid={sampled_grid}, attempted={attempted}, valid={valid}, skipped_special={skipped_special}, skipped_short={skipped_short}")
+                            else:
+                                print(f"QRS trial stats in Gen-{gen:d}: sampled_grid={sampled_grid}, attempted={attempted}/{possible}, valid={valid}, skipped_special={skipped_special}, skipped_short={skipped_short}")
 
 
             # Broadcast

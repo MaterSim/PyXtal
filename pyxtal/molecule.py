@@ -176,6 +176,7 @@ def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5, use_uff=Fa
     from rdkit.Chem import AllChem
 
     torsionlist = find_rotor_from_smile(smile)
+    Num = 1
     if len(torsionlist) == 0:
         if has_non_aromatic_ring(smile):
             Num = 10
@@ -187,7 +188,7 @@ def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5, use_uff=Fa
         mol = Chem.AddHs(mol)
         ps = AllChem.ETKDGv3()
         ps.randomSeed = seed
-        ps.runeRmsThresh = tol
+        ps.pruneRmsThresh = tol
         AllChem.EmbedMultipleConfs(mol, max([4, Num]), ps)
         return mol
 

@@ -820,30 +820,36 @@ class mol_site:
     def from_1D_dicts(cls, dicts):
         from pyxtal.molecule import Orientation, pyxtal_molecule
 
-        mol = pyxtal_molecule(mol=dicts["smile"] + ".smi", fix=True)
-        if len(mol.mol) > 1:
-            if len(dicts["smile"]) > 1:
-                conf = mol.rdkit_mol().GetConformer(0)
-                if dicts["reflect"]:
-                    mol.set_torsion_angles(conf, dicts["rotor"], False)
-                xyz = mol.set_torsion_angles(
-                    conf, dicts["rotor"], dicts["reflect"])
-            else:
-                # for H2O, use the standard one
-                xyz = np.array(
-                    [
-                        [-0.00111384, 0.36313718, 0.0],
-                        [-0.82498189, -0.18196256, 0.0],
-                        [0.82609573, -0.18117463, 0.0],
-                    ]
-                )
-
-            mol.reset_positions(xyz)
-            matrix = R.from_euler(
-                "zxy", dicts["orientation"], degrees=True).as_matrix()
-            orientation = Orientation(matrix)
+        if dicts.get("molecule") is not None:
+            mol = dicts["molecule"].copy()
+            orientation = Orientation(
+                R.from_euler("zxy", dicts["orientation"], degrees=True).as_matrix()
+            )
         else:
-            orientation = Orientation(np.eye(3))
+            mol = pyxtal_molecule(mol=dicts["smile"] + ".smi", fix=True)
+            if len(mol.mol) > 1:
+                if len(dicts["smile"]) > 1:
+                    conf = mol.rdkit_mol().GetConformer(0)
+                    if dicts["reflect"]:
+                        mol.set_torsion_angles(conf, dicts["rotor"], False)
+                    xyz = mol.set_torsion_angles(
+                        conf, dicts["rotor"], dicts["reflect"])
+                else:
+                    # for H2O, use the standard one
+                    xyz = np.array(
+                        [
+                            [-0.00111384, 0.36313718, 0.0],
+                            [-0.82498189, -0.18196256, 0.0],
+                            [0.82609573, -0.18117463, 0.0],
+                        ]
+                    )
+
+                mol.reset_positions(xyz)
+                matrix = R.from_euler(
+                    "zxy", dicts["orientation"], degrees=True).as_matrix()
+                orientation = Orientation(matrix)
+            else:
+                orientation = Orientation(np.eye(3))
 
         g = dicts["hn"]
         index = int(dicts["index"])
