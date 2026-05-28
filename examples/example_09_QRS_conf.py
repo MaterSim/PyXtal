@@ -76,6 +76,20 @@ def get_match_points(qrs):
     return match_ids, match_energies
 
 
+def get_visited_energies(qrs):
+    """Return visited energies in the same (gen, pop) order used for match IDs."""
+    if not hasattr(qrs, "stats"):
+        return []
+
+    energies = []
+    for gen in range(qrs.N_gen):
+        for pop in range(qrs.N_pop):
+            energy = float(qrs.stats[gen, pop, 0])
+            if energy < qrs.E_max:
+                energies.append(energy)
+    return energies
+
+
 def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_dir="qrs_plots", time_cost_s=None):
     """Save a plot of visited-structure ID vs energy for one QRS run."""
     if not energies:
@@ -115,7 +129,7 @@ def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_d
         margin = max(abs(ymin) * 0.05, 1.0)
         ax.set_ylim(ymin - margin, ymax + margin)
     else:
-        y_max = min(ymin + 50, ymax)
+        y_max = min(ymin + 30, ymax)
         ax.set_ylim(ymin - 1, y_max)
     fig.tight_layout()
 
@@ -127,8 +141,9 @@ def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_d
 
 if __name__ == "__main__":
     db = database("pyxtal/database/test.db")
-    os.makedirs("Tests", exist_ok=True)
-    csv_path = "Tests/qrs_results_pregen_mols.csv"
+    out_dir = "Tests_0"
+    os.makedirs(out_dir, exist_ok=True)
+    csv_path = os.path.join(out_dir, "qrs_results_pregen_mols.csv")
 
     with open(csv_path, "w", newline="") as fcsv:
         writer = csv.writer(fcsv)
@@ -158,7 +173,7 @@ if __name__ == "__main__":
         print(f"\n=== {code} ===")
         print(ref_xtal)
 
-        workdir = os.path.join("Tests", row.csd_code)
+        workdir = os.path.join(out_dir, row.csd_code)
         os.makedirs(workdir, exist_ok=True)
         sites = build_sites_from_reference(ref_xtal)
 
@@ -219,9 +234,9 @@ if __name__ == "__main__":
             composition = [int(a) for a in ref_xtal.get_zprime()],
             molecules=molecules,
             sites=sites,
-            N_gen=20,
-            N_pop=50,
-            N_cpu=2,
+            N_gen=100,
+            N_pop=24,
+            N_cpu=24,
             cif="all.cif",
             skip_mlp=True,
             verbose=False,
@@ -238,13 +253,14 @@ if __name__ == "__main__":
         else:
             print("No match found within the given generations/population.")
         print(f"Time cost: {time_cost_s:.2f} s")
+        visited_energies = get_visited_energies(qrs)
         match_ids, match_energies = get_match_points(qrs)
         plot_id_vs_energy(
             code,
-            qrs.engs,
+            visited_energies,
             match_ids=match_ids,
             match_energies=match_energies,
-            out_dir="Tests/qrs_plots",
+            out_dir=os.path.join(out_dir, "qrs_plots"),
             time_cost_s=time_cost_s,
         )
 
