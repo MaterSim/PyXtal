@@ -210,7 +210,12 @@ def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5, use_uff=Fa
             m = m0.copy()
             xyz = m.align(conf)
             m.reset_positions(xyz)
-            m.get_symmetry(symmetrize=True)
+            try:
+                m.get_symmetry(symmetrize=True)
+            except Exception:
+                # Some pymatgen PointGroupAnalyzer paths can fail for edge cases.
+                # Keep the conformer and continue with unsymmetrized coordinates.
+                m.get_symmetry(symmetrize=False)
             m.energy = res[id][1]
             _, valid = m.get_orientations_in_wps(wps)
             add = bool(valid)
@@ -303,26 +308,28 @@ class pyxtal_molecule:
 
         # Parse molecules: either file or molecule name
         if isinstance(mol, str):
-            tmp = mol.split(".")
-            self.name = tmp[0]
-            if len(tmp) > 1:
+            parts = mol.rsplit(".", 1)
+            self.name = parts[0]
+            if len(parts) > 1:
                 # Load the molecule from the given file
-                if tmp[-1] in ["xyz", "gjf", "g03", "json"]:
+                ext = parts[-1]
+                if ext in ["xyz", "gjf", "g03", "json"]:
                     if os.path.exists(mol):
                         mo = Molecule.from_file(mol)
                     else:
                         raise NameError(f"{mol:s} is not a valid path")
-                elif tmp[-1] == "smi":
-                    self.smile = tmp[0]
+                elif ext == "smi":
+                    # Keep the full SMILES body even when it contains '.'
+                    self.smile = parts[0]
                     # force the use of UFF for SMILES containing P or p
                     if 'P' in self.smile or 'p' in self.smile:
                         self.use_uff = True
-                    res = self.rdkit_mol_init(tmp[0], fix, torsions)
+                    res = self.rdkit_mol_init(self.smile, fix, torsions)
                     (symbols, xyz, self.torsionlist) = res
                     mo = Molecule(symbols, xyz)
                     symmetrize = False
                 else:
-                    raise NameError(f"{tmp[-1]:s} is not a supported format")
+                    raise NameError(f"{ext:s} is not a supported format")
             else:
                 # print('\nLoad the molecule {:s} from collections'.format(mol))
                 mo = molecule_collection[mol]

@@ -248,9 +248,26 @@ class GlobalOptimize:
             atom_info = None
             if self.rank == 0:
                 from pyocse.parameters import ForceFieldParameters
-                self.parameters = ForceFieldParameters(self.smiles,
-                                                       style=ff_style,
-                                                       ncpu=self.ncpu)
+                try:
+                    self.parameters = ForceFieldParameters(
+                        self.smiles,
+                        style=ff_style,
+                        ncpu=self.ncpu,
+                    )
+                except ValueError as exc:
+                    msg = str(exc)
+                    if "assign_partial_charges" in msg or "No registered toolkits" in msg:
+                        self.print(
+                            "AM1-BCC charge assignment unavailable; retry with gasteiger charges"
+                        )
+                        self.parameters = ForceFieldParameters(
+                            self.smiles,
+                            style=ff_style,
+                            chargemethod="gasteiger",
+                            ncpu=self.ncpu,
+                        )
+                    else:
+                        raise
                 if self.ff_opt:
                     self.parameters.set_ref_evaluator('mace')
 

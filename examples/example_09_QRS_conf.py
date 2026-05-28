@@ -13,6 +13,8 @@ import csv
 import os
 from time import perf_counter
 
+import matplotlib.pyplot as plt
+
 from pyxtal.db import database
 from pyxtal.molecule import generate_molecules
 from pyxtal.optimize import QRS
@@ -46,6 +48,83 @@ def filter_similar_molecules(mols, rmsd_tol=0.5):
     return unique_mols
 
 
+def get_match_points(qrs):
+    """Map QRS match (gen, pop) records to visited-structure IDs and energies."""
+    if not hasattr(qrs, "matches") or not hasattr(qrs, "stats"):
+        return [], []
+
+    match_keys = set()
+    for match in qrs.matches:
+        if len(match) >= 2:
+            match_keys.add((int(match[0]), int(match[1])))
+
+    if not match_keys:
+        return [], []
+
+    match_ids = []
+    match_energies = []
+    visited_id = 0
+    for gen in range(qrs.N_gen):
+        for pop in range(qrs.N_pop):
+            energy = float(qrs.stats[gen, pop, 0])
+            if energy < qrs.E_max:
+                visited_id += 1
+                if (gen, pop) in match_keys:
+                    match_ids.append(visited_id)
+                    match_energies.append(energy)
+
+    return match_ids, match_energies
+
+
+def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_dir="qrs_plots", time_cost_s=None):
+    """Save a plot of visited-structure ID vs energy for one QRS run."""
+    if not energies:
+        print(f"No energies collected for {code}; skipping plot.")
+        return
+
+    os.makedirs(out_dir, exist_ok=True)
+    ids = list(range(1, len(energies) + 1))
+
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    ax.scatter(ids, energies, s=20, alpha=0.8, label="Visited")
+    ax.plot(ids, energies, linewidth=0.8, alpha=0.6)
+    if match_ids and match_energies:
+        ax.scatter(
+            match_ids,
+            match_energies,
+            s=70,
+            marker="*",
+            c="crimson",
+            edgecolors="black",
+            linewidths=0.6,
+            zorder=3,
+            label="Match",
+        )
+    ax.set_xlabel("Visited Structure ID")
+    ax.set_ylabel("Energy (kcal/mol)")
+    if time_cost_s is not None:
+        ax.set_title(f"{code}: visited structure ID vs energy (time: {time_cost_s:.2f} s)")
+    else:
+        ax.set_title(f"{code}: visited structure ID vs energy")
+    ax.grid(alpha=0.25, linestyle="--", linewidth=0.6)
+    ax.legend(loc="best")
+
+    ymin = min(energies)
+    ymax = max(energies)
+    if ymin == ymax:
+        margin = max(abs(ymin) * 0.05, 1.0)
+        ax.set_ylim(ymin - margin, ymax + margin)
+    else:
+        y_max = min(ymin + 50, ymax)
+        ax.set_ylim(ymin - 1, y_max)
+    fig.tight_layout()
+
+    fig_path = os.path.join(out_dir, f"{code}_id_vs_energy.png")
+    fig.savefig(fig_path, dpi=200)
+    plt.close(fig)
+    print(f"Saved plot: {fig_path}")
+
+
 if __name__ == "__main__":
     db = database("pyxtal/database/test.db")
     os.makedirs("Tests", exist_ok=True)
@@ -65,7 +144,8 @@ if __name__ == "__main__":
             ]
         )
 
-    for code in db.get_all_codes()[5:8]:
+    for code in db.get_all_codes():
+        #if code not in ['KONTIQ']: continue
         row = db.get_row(code=code)
         ref_xtal = db.get_pyxtal(code=code)
         if ref_xtal.has_special_site():
@@ -82,31 +162,53 @@ if __name__ == "__main__":
         os.makedirs(workdir, exist_ok=True)
         sites = build_sites_from_reference(ref_xtal)
 
-        # Pregenerate molecular conformers that are compatible with the target WP.
-        # We provide the resulting conformer pool to QRS so torsions are fixed per
-        # sampled molecule choice and QRS only samples WP xyz + orientation DOFs.
-        target_wps = [site.wp for site in ref_xtal.mol_sites]
-        p_mols = generate_molecules(
-            row.mol_smi,
-            wps=target_wps,
-            N_iter=8,
-            N_conf=50,
-            tol=0.5,
-        )
-        if len(p_mols) == 0:
-            print("No valid pregenerated conformers; skipping this entry.")
+        # Pregenerate per-component conformer pools aligned with site.type.
+        # QRS expects one pool per molecular component in row.mol_smi.split('.').
+        smiles_parts = row.mol_smi.split(".")
+        n_types = len(ref_xtal.numMols)
+        if len(smiles_parts) != n_types:
+            print(
+                f"SMILES/component mismatch for {code}: "
+                f"{len(smiles_parts)} smiles parts vs {n_types} crystal components; skipping."
+            )
             continue
-        p_mols = filter_similar_molecules(p_mols, rmsd_tol=0.5)
-        print(f"Unique conformers after filtering: {len(p_mols)}")
-        if len(p_mols) == 0:
-            print("All pregenerated conformers were filtered out; skipping this entry.")
+
+        type_wps = [[] for _ in range(n_types)]
+        for site in ref_xtal.mol_sites:
+            type_wps[site.type].append(site.wp)
+
+        molecules = []
+        n_pregen_total = 0
+        for type_idx, smi in enumerate(smiles_parts):
+            p_mols = generate_molecules(
+                smi,
+                wps=type_wps[type_idx],
+                N_iter=8,
+                N_conf=50,
+                tol=0.5,
+            )
+            if len(p_mols) == 0:
+                print(f"No valid pregenerated conformers for component {type_idx} ({smi}); skipping.")
+                molecules = None
+                break
+
+            p_mols = filter_similar_molecules(p_mols, rmsd_tol=0.5)
+            print(f"Component {type_idx} ({smi}) unique conformers: {len(p_mols)}")
+            if len(p_mols) == 0:
+                print(f"All conformers filtered out for component {type_idx} ({smi}); skipping.")
+                molecules = None
+                break
+
+            molecules.append(p_mols)
+            n_pregen_total += len(p_mols)
+
+        if molecules is None:
             continue
-        print(f"Pregenerated conformers: {len(p_mols)}")
+        print(f"Total pregenerated conformers across components: {n_pregen_total}")
 
         param_xml = os.path.join(workdir, "parameters.xml")
         if os.path.exists(param_xml):
             os.remove(param_xml)
-
         qrs = QRS(
             smiles=row.mol_smi,
             workdir=workdir,
@@ -114,7 +216,8 @@ if __name__ == "__main__":
             tag=row.csd_code.lower(),
             use_hall=True,
             lattice=ref_xtal.lattice,  # Fixed cell.
-            molecules=[p_mols],        # One molecular component with many conformers.
+            composition = [int(a) for a in ref_xtal.get_zprime()],
+            molecules=molecules,
             sites=sites,
             N_gen=20,
             N_pop=50,
@@ -135,6 +238,15 @@ if __name__ == "__main__":
         else:
             print("No match found within the given generations/population.")
         print(f"Time cost: {time_cost_s:.2f} s")
+        match_ids, match_energies = get_match_points(qrs)
+        plot_id_vs_energy(
+            code,
+            qrs.engs,
+            match_ids=match_ids,
+            match_energies=match_energies,
+            out_dir="Tests/qrs_plots",
+            time_cost_s=time_cost_s,
+        )
 
         with open(csv_path, "a", newline="") as fcsv:
             writer = csv.writer(fcsv)
@@ -144,7 +256,7 @@ if __name__ == "__main__":
                     row.mol_smi,
                     ref_xtal.group.number,
                     vector_dim,
-                    len(p_mols),
+                    n_pregen_total,
                     f"{time_cost_s:.2f}",
                     f"{success_rate:.4f}" if success_rate is not None else "",
                 ]
