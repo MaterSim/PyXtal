@@ -621,6 +621,8 @@ def optimizer_single(
     if res is not None:
         xtal, eng = res["xtal"], res["energy"]
         N = sum(xtal.numMols)
+        if not np.isfinite(eng) or eng >= 9999.:
+            return None, match, stable
         if check_stable and eng < 9999.:
             res = sweep(xtal, comp, atom_info, workdir, job_tag,
                         mlp, skip_mlp, optimizer)
