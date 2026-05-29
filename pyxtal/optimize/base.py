@@ -30,6 +30,29 @@ from pyxtal.lattice import Lattice
 from pyxtal.symmetry import Group
 
 
+ION_SMILES_MAP = {
+    "Cl-": "[Cl-]",
+    "F-": "[F-]",
+    "Br-": "[Br-]",
+    "I-": "[I-]",
+    "Li+": "[Li+]",
+    "Na+": "[Na+]",
+    "Cs+": "[Cs+]",
+    "Rb+": "[Rb+]",
+}
+
+
+def _normalize_smiles_for_forcefield(smiles: list[str]) -> list[str]:
+    """Convert short ionic labels to valid bracketed SMILES for FF builders."""
+    return [ION_SMILES_MAP.get(smi.strip(), smi.strip()) for smi in smiles]
+
+
+def _contains_simple_ions(smiles: list[str]) -> bool:
+    """Return True if any component is a supported monoatomic ion token."""
+    ionic_tokens = set(ION_SMILES_MAP.keys()) | set(ION_SMILES_MAP.values())
+    return any(smi.strip() in ionic_tokens for smi in smiles)
+
+
 
 def setup_worker_logger(log_file):
     """
@@ -248,20 +271,35 @@ class GlobalOptimize:
             atom_info = None
             if self.rank == 0:
                 from pyocse.parameters import ForceFieldParameters
+                ff_smiles = _normalize_smiles_for_forcefield(self.smiles)
+                force_gasteiger = _contains_simple_ions(self.smiles)
                 try:
-                    self.parameters = ForceFieldParameters(
-                        self.smiles,
-                        style=ff_style,
-                        ncpu=self.ncpu,
-                    )
-                except ValueError as exc:
-                    msg = str(exc)
-                    if "assign_partial_charges" in msg or "No registered toolkits" in msg:
+                    kwargs = {
+                        "style": ff_style,
+                        "ncpu": self.ncpu,
+                    }
+                    if force_gasteiger:
                         self.print(
-                            "AM1-BCC charge assignment unavailable; retry with gasteiger charges"
+                            "Detected ionic components; using gasteiger charges for force-field setup"
+                        )
+                        kwargs["chargemethod"] = "gasteiger"
+                    self.parameters = ForceFieldParameters(
+                        ff_smiles,
+                        **kwargs,
+                    )
+                except Exception as exc:
+                    msg = str(exc)
+                    if (
+                        "assign_partial_charges" in msg
+                        or "No registered toolkits" in msg
+                        or "Unable to parse the SMILES string" in msg
+                        or "Failed parsing SMILES" in msg
+                    ):
+                        self.print(
+                            "Force-field setup failed with default charge workflow; retry with gasteiger charges"
                         )
                         self.parameters = ForceFieldParameters(
-                            self.smiles,
+                            ff_smiles,
                             style=ff_style,
                             chargemethod="gasteiger",
                             ncpu=self.ncpu,

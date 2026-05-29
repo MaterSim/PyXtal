@@ -735,12 +735,13 @@ class mol_site:
         dof = np.linalg.matrix_rank(self.wp.ops[0].rotation_matrix)
         for i in range(dof):
             self.bounds.append([0.0, 1.0])
-        self.bounds.append([-180.0, 180.0])
-        self.bounds.append([-90.0, 90.0])
-        self.bounds.append([-180.0, 180.0])
-        if self.molecule.torsionlist is not None:
-            for i in range(len(self.molecule.torsionlist)):
-                self.bounds.append([0, 180.0])
+        if len(self.molecule.mol) > 1:
+            self.bounds.append([-180.0, 180.0])
+            self.bounds.append([-90.0, 90.0])
+            self.bounds.append([-180.0, 180.0])
+            if self.molecule.torsionlist is not None:
+                for i in range(len(self.molecule.torsionlist)):
+                    self.bounds.append([0, 180.0])
         return self.bounds
 
     def save_dict(self):
@@ -822,9 +823,13 @@ class mol_site:
 
         if dicts.get("molecule") is not None:
             mol = dicts["molecule"].copy()
-            orientation = Orientation(
-                R.from_euler("zxy", dicts["orientation"], degrees=True).as_matrix()
-            )
+            if "orientation" in dicts:
+                orientation = Orientation(
+                    R.from_euler("zxy", dicts["orientation"], degrees=True).as_matrix()
+                )
+            else:
+                # Fixed single-atom entries may not carry Euler angles.
+                orientation = Orientation(np.eye(3))
         else:
             mol = pyxtal_molecule(mol=dicts["smile"] + ".smi", fix=True)
             if len(mol.mol) > 1:

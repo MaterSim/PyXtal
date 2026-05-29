@@ -15,8 +15,9 @@ from time import perf_counter
 
 import matplotlib.pyplot as plt
 
+from pyxtal.constants import single_smiles
 from pyxtal.db import database
-from pyxtal.molecule import generate_molecules
+from pyxtal.molecule import generate_molecules, pyxtal_molecule
 from pyxtal.optimize import QRS
 
 
@@ -148,7 +149,7 @@ def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_d
 
 if __name__ == "__main__":
     db = database("pyxtal/database/test.db")
-    out_dir = "Tests_0"
+    out_dir = "Tests"
     os.makedirs(out_dir, exist_ok=True)
     csv_path = os.path.join(out_dir, "qrs_results_pregen_mols.csv")
 
@@ -172,7 +173,7 @@ if __name__ == "__main__":
     for code in db.get_all_codes():
         #if code not in ['ACSALA']: continue
         #if code not in ['FUNZOE']: continue
-        #if code not in ['CAYKUJ']: continue
+        if code not in ['XAFQON']: continue
         row = db.get_row(code=code)
         ref_xtal = db.get_pyxtal(code=code)
         if ref_xtal.has_special_site():
@@ -207,13 +208,53 @@ if __name__ == "__main__":
         molecules = []
         n_pregen_total = 0
         for type_idx, smi in enumerate(smiles_parts):
-            p_mols = generate_molecules(
-                smi,
-                wps=type_wps[type_idx],
-                N_iter=10,
-                N_conf=100,
-                tol=0.5,
-            )
+            smi = smi.strip()
+            if not smi:
+                print(f"Empty SMILES for component {type_idx}; skipping {code}.")
+                molecules = None
+                break
+
+            if smi in single_smiles:
+                # Monoatomic ions (e.g., Cl-) have no conformer degrees of freedom.
+                # Use one fixed molecule instead of running conformer generation.
+                try:
+                    m0 = pyxtal_molecule(smi + ".smi", fix=True)
+                    _, valid = m0.get_orientations_in_wps(type_wps[type_idx])
+                except Exception as exc:
+                    print(
+                        f"Failed to build single-component molecule for component {type_idx} ({smi}) in {code}: "
+                        f"{exc}; skipping."
+                    )
+                    molecules = None
+                    break
+
+                if not valid:
+                    print(
+                        f"Single-component molecule {smi} has no valid orientation in component {type_idx}; "
+                        f"skipping {code}."
+                    )
+                    molecules = None
+                    break
+
+                p_mols = [m0]
+                print(f"Component {type_idx} ({smi}) single-species pool: 1")
+            else:
+                try:
+                    p_mols = generate_molecules(
+                        smi,
+                        wps=type_wps[type_idx],
+                        N_iter=10,
+                        N_conf=100,
+                        tol=0.5,
+                    )
+                except Exception as exc:
+                    print(
+                        f"Failed to pregenerate conformers for component {type_idx} ({smi}) in {code}: "
+                        f"{exc}; skipping."
+                    )
+                    molecules = None
+                    break
+
             if len(p_mols) == 0:
                 print(f"No valid pregenerated conformers for component {type_idx} ({smi}); skipping.")
                 molecules = None
@@ -248,7 +289,7 @@ if __name__ == "__main__":
             sites=sites,
             N_gen=100,
             N_pop=48,
-            N_cpu=24,
+            N_cpu=2,#4,
             cif="all.cif",
             skip_mlp=True,
             verbose=False,
@@ -300,3 +341,4 @@ if __name__ == "__main__":
             )
 
     print(f"\nSaved summary CSV: {csv_path}")
+

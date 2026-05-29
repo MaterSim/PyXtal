@@ -58,6 +58,8 @@ def generate_qrs_xtals(
     d_tol=0.9,
     molecules=None,
     max_grid_attempts=None,
+    attempt_log_interval=None,
+    log_grid_rejections=False,
 ):
     """
     Get the qrs xtal samples
@@ -72,6 +74,8 @@ def generate_qrs_xtals(
         d_tol (float): short distance tolerance value
         molecules: optional conformer pools aligned with smiles
         max_grid_attempts: optional cap on number of grid points sampled
+        attempt_log_interval: optional periodic logging interval for attempt status
+        log_grid_rejections: whether to log precheck-rejected grids
     """
     #cell = [81, 11.38,  6.48, 11.24,  96.9]
     xtals = []
@@ -79,6 +83,7 @@ def generate_qrs_xtals(
     valid = 0
     skipped_special = 0
     skipped_short = 0
+    skipped_pattern = 0
     max_combinations = None
     mol_pools = None
     if molecules is not None:
@@ -118,6 +123,14 @@ def generate_qrs_xtals(
         comb_per_grid = 1
     else:
         comb_per_grid = max_combinations
+    probe_molecules = [pool[0] for pool in mol_pools] if mol_pools is not None else None
+
+    log_attempts = (
+        attempt_log_interval is not None
+        and int(attempt_log_interval) > 0
+    )
+    if log_attempts:
+        attempt_log_interval = int(attempt_log_interval)
 
     if hasattr(sampler_wp, "total") and hasattr(sampler_wp, "current"):
         remaining_grid_points = max(int(sampler_wp.total) - int(sampler_wp.current), 0)
@@ -130,12 +143,14 @@ def generate_qrs_xtals(
         grid_budget = min(grid_budget, int(max_grid_attempts))
 
     sampled_grid_points = 0
+    bad_center_signatures = [set() for _ in seqs]
 
     def _finalize_stats():
         generate_qrs_xtals.last_attempted = attempted
         generate_qrs_xtals.last_valid = valid
         generate_qrs_xtals.last_skipped_special = skipped_special
         generate_qrs_xtals.last_skipped_short = skipped_short
+        generate_qrs_xtals.last_skipped_pattern = skipped_pattern
         generate_qrs_xtals.last_sampled_grid_points = sampled_grid_points
         generate_qrs_xtals.last_possible = sampled_grid_points * comb_per_grid
 
@@ -148,10 +163,13 @@ def generate_qrs_xtals(
         sample_wp = qmc.scale(sample_wp, lb, ub)[0].tolist()
         x = [cell]
         prev = 0
+        site_chunks = []
         for seq in seqs:
-            wp = [0] + sample_wp[prev:prev+seq] + [0]#; print('DDDD', prev, prev+seq, sample_wp[prev:prev+seq], wp)
+            chunk = sample_wp[prev:prev + seq]
+            site_chunks.append(chunk)
+            wp = [0] + chunk + [0]#; print('DDDD', prev, prev+seq, sample_wp[prev:prev+seq], wp)
             x.append(wp) # print(x)
-            prev = seq
+            prev += seq
         rep = representation(x, smiles)
         if mol_pools is None:
             attempted += 1
@@ -169,15 +187,56 @@ def generate_qrs_xtals(
                 _finalize_stats()
                 return xtals
         else:
+            # Fast pattern pre-prune: if this site-center signature is known to
+            # always collapse into a special WP, skip the entire conformer grid.
+            matched_signature = None
+            for site_id, chunk in enumerate(site_chunks):
+                if len(chunk) < 3:
+                    continue
+                signature = tuple(np.round(chunk[:3], 8))
+                if signature in bad_center_signatures[site_id]:
+                    matched_signature = (site_id, signature)
+                    break
+
+            if matched_signature is not None:
+                attempted += comb_per_grid
+                skipped_special += comb_per_grid
+                skipped_pattern += comb_per_grid
+                if log_grid_rejections:
+                    site_id, signature = matched_signature
+                    print(
+                        f"  Grid pattern-pruned: site={site_id}, center={signature}, "
+                        f"skipped_combinations={comb_per_grid}"
+                    )
+                continue
+
+            # Precheck once per grid point: if WP coordinates already collapse to
+            # special sites, all conformer combinations for this grid are invalid.
+            probe_xtal = rep.to_pyxtal(composition=comp, molecules=probe_molecules)
+            if probe_xtal.has_special_site():
+                for site_id, site in enumerate(probe_xtal.mol_sites):
+                    if site.wp.index > 0 and site_id < len(site_chunks) and len(site_chunks[site_id]) >= 3:
+                        signature = tuple(np.round(site_chunks[site_id][:3], 8))
+                        bad_center_signatures[site_id].add(signature)
+                attempted += comb_per_grid
+                skipped_special += comb_per_grid
+                if log_grid_rejections:
+                    wp_labels = [site.wp.get_label() for site in probe_xtal.mol_sites]
+                    print(
+                        f"  Grid precheck rejected: special=True, wp={wp_labels}, "
+                        f"skipped_combinations={comb_per_grid}"
+                    )
+                continue
+
             from itertools import product
 
             for chosen_molecules in product(*mol_pools):
                 attempted += 1
                 xtal = rep.to_pyxtal(composition=comp, molecules=list(chosen_molecules))
-                if xtal.has_special_site():
-                    skipped_special += 1
-                    continue
-                if len(xtal.check_short_distances(r=d_tol)) > 0:
+                has_short = len(xtal.check_short_distances(r=d_tol)) > 0
+                if log_attempts and (attempted % attempt_log_interval == 0):
+                    print(f"  Attempt {attempted}: short={has_short}")
+                if has_short:
                     skipped_short += 1
                     continue
 
@@ -189,6 +248,13 @@ def generate_qrs_xtals(
         #else:
         #    print(rep, len(xtal.check_short_distances(r=0.6)))
     _finalize_stats()
+    if len(xtals) < N_pop:
+        print(
+            f"QRS grid exhausted: sampled_grid={sampled_grid_points}, "
+            f"attempted={attempted}, valid={valid}, "
+            f"skipped_special={skipped_special}, skipped_short={skipped_short}, "
+            f"skipped_pattern={skipped_pattern}"
+        )
     return xtals
 
 
@@ -272,6 +338,11 @@ class GridSampler:
         self.total = int(np.prod(n_levels)) if n_levels else 0
         self.current = 0
         self._sobol = qmc.Sobol(d=self.d, scramble=False)
+        if self.d > 0 and self.total > 0:
+            # Skip the all-0.5 Sobol point, which is a poor first seed for
+            # symmetry-constrained molecular sites and can land on special positions.
+            self._sobol.fast_forward(1)
+            self.current = 1
 
     @property
     def exhausted(self):
@@ -511,7 +582,9 @@ class QRS(GlobalOptimize):
                                                    self.composition,
                                                    self.sampler,
                                                    molecules=self.molecules,
-                                                   max_grid_attempts=self.max_grid_attempts)
+                                                   max_grid_attempts=self.max_grid_attempts,
+                                                   attempt_log_interval=(50 if self.verbose else None),
+                                                   log_grid_rejections=self.verbose)
                     strs = f"Cell parameters in Gen-{gen:d}: "
                     print(strs, _format_cell_for_print(cell, precision=3), len(cur_xtals))
                     if self.molecules is not None:
@@ -541,7 +614,9 @@ class QRS(GlobalOptimize):
                                                        self.smiles,
                                                        self.composition,
                                                        molecules=self.molecules,
-                                                       max_grid_attempts=self.max_grid_attempts)
+                                                       max_grid_attempts=self.max_grid_attempts,
+                                                       attempt_log_interval=(50 if self.verbose else None),
+                                                       log_grid_rejections=self.verbose)
                         strs = f"Cell parameters in Gen-{gen:d}: "
                         print(strs, _format_cell_for_print(cell, precision=2), self.ref_volumes[-1], len(cur_xtals))
                         if self.molecules is not None:
