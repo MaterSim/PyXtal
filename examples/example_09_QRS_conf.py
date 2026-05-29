@@ -90,7 +90,7 @@ def get_visited_energies(qrs):
     return energies
 
 
-def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_dir="qrs_plots", time_cost_s=None):
+def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_dir="qrs_plots", time_cost_s=None, coverage=None, n_conformers=None):
     """Save a plot of visited-structure ID vs energy for one QRS run."""
     if not energies:
         print(f"No energies collected for {code}; skipping plot.")
@@ -116,10 +116,17 @@ def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_d
         )
     ax.set_xlabel("Visited Structure ID")
     ax.set_ylabel("Energy (kcal/mol)")
+    title_parts = [f"{code}: "]
+    if n_conformers is not None:
+        title_parts.append(f"conformers: {n_conformers}")
     if time_cost_s is not None:
-        ax.set_title(f"{code}: visited structure ID vs energy (time: {time_cost_s:.2f} s)")
+        title_parts.append(f"time: {time_cost_s:.2f} s")
+    if coverage is not None:
+        title_parts.append(f"coverage: {coverage}")
+    if len(title_parts) > 1:
+        ax.set_title(f"{title_parts[0]} ({', '.join(title_parts[1:])})")
     else:
-        ax.set_title(f"{code}: visited structure ID vs energy")
+        ax.set_title(title_parts[0])
     ax.grid(alpha=0.25, linestyle="--", linewidth=0.6)
     ax.legend(loc="best")
 
@@ -160,7 +167,7 @@ if __name__ == "__main__":
         )
 
     for code in db.get_all_codes():
-        #if code not in ['KONTIQ']: continue
+        #if code not in ['ACSALA']: continue
         row = db.get_row(code=code)
         ref_xtal = db.get_pyxtal(code=code)
         if ref_xtal.has_special_site():
@@ -198,8 +205,8 @@ if __name__ == "__main__":
             p_mols = generate_molecules(
                 smi,
                 wps=type_wps[type_idx],
-                N_iter=8,
-                N_conf=50,
+                N_iter=10,
+                N_conf=100,
                 tol=0.5,
             )
             if len(p_mols) == 0:
@@ -235,7 +242,7 @@ if __name__ == "__main__":
             molecules=molecules,
             sites=sites,
             N_gen=100,
-            N_pop=24,
+            N_pop=48,
             N_cpu=24,
             cif="all.cif",
             skip_mlp=True,
@@ -255,6 +262,10 @@ if __name__ == "__main__":
         print(f"Time cost: {time_cost_s:.2f} s")
         visited_energies = get_visited_energies(qrs)
         match_ids, match_energies = get_match_points(qrs)
+        coverage = None
+        if hasattr(qrs, "sampler") and hasattr(qrs.sampler, "current") and qrs.sampler.total:
+            pct = 100.0 * qrs.sampler.current / qrs.sampler.total
+            coverage = f"{qrs.sampler.current}/{qrs.sampler.total} [{pct:.1f}%]"
         plot_id_vs_energy(
             code,
             visited_energies,
@@ -262,6 +273,8 @@ if __name__ == "__main__":
             match_energies=match_energies,
             out_dir=os.path.join(out_dir, "qrs_plots"),
             time_cost_s=time_cost_s,
+            coverage=coverage,
+            n_conformers=n_pregen_total,
         )
 
         with open(csv_path, "a", newline="") as fcsv:

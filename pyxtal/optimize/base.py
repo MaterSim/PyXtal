@@ -508,7 +508,8 @@ class GlobalOptimize:
                 self.logging.info(msg)
                 return True
 
-            elif success_rate > 2.5 or len(self.matches) >= self.N_min_matches:
+            #elif success_rate > 2.5 or len(self.matches) >= self.N_min_matches:
+            elif len(self.matches) >= self.N_min_matches:
                 msg = f"Early termination with a high success rate"
                 print(msg)
                 self.logging.info(msg)
