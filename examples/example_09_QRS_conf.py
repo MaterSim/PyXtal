@@ -163,11 +163,16 @@ if __name__ == "__main__":
                 "n_pregenerated_confs",
                 "time_cost_s",
                 "success_rate",
+                "result",
+                "coverage",
+                "n_conformers",
             ]
         )
 
     for code in db.get_all_codes():
         #if code not in ['ACSALA']: continue
+        #if code not in ['FUNZOE']: continue
+        #if code not in ['CAYKUJ']: continue
         row = db.get_row(code=code)
         ref_xtal = db.get_pyxtal(code=code)
         if ref_xtal.has_special_site():
@@ -288,6 +293,9 @@ if __name__ == "__main__":
                     n_pregen_total,
                     f"{time_cost_s:.2f}",
                     f"{success_rate:.4f}" if success_rate is not None else "",
+                    "success" if success_rate is not None and success_rate > 0 else "failure",
+                    coverage if coverage is not None else "",
+                    n_pregen_total,
                 ]
             )
 
