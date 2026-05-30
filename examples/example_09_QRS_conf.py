@@ -141,7 +141,7 @@ def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_d
         ax.set_ylim(ymin - 1, y_max)
     fig.tight_layout()
 
-    fig_path = os.path.join(out_dir, f"{code}_id_vs_energy.png")
+    fig_path = os.path.join(out_dir, f"{code}.png")
     fig.savefig(fig_path, dpi=200)
     plt.close(fig)
     print(f"Saved plot: {fig_path}")
@@ -149,7 +149,7 @@ def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_d
 
 if __name__ == "__main__":
     db = database("pyxtal/database/test.db")
-    out_dir = "Tests"
+    out_dir = "Tests-All"
     os.makedirs(out_dir, exist_ok=True)
     csv_path = os.path.join(out_dir, "qrs_results_pregen_mols.csv")
 
@@ -173,7 +173,7 @@ if __name__ == "__main__":
     for code in db.get_all_codes():
         #if code not in ['ACSALA']: continue
         #if code not in ['FUNZOE']: continue
-        if code not in ['XAFQON']: continue
+        #if code not in ['XAFQON']: continue
         row = db.get_row(code=code)
         ref_xtal = db.get_pyxtal(code=code)
         if ref_xtal.has_special_site():
@@ -288,8 +288,8 @@ if __name__ == "__main__":
             molecules=molecules,
             sites=sites,
             N_gen=100,
-            N_pop=48,
-            N_cpu=2,#4,
+            N_pop=96,
+            N_cpu=24,
             cif="all.cif",
             skip_mlp=True,
             verbose=False,
