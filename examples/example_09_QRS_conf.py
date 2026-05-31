@@ -171,8 +171,8 @@ if __name__ == "__main__":
         )
 
     for code in db.get_all_codes():
-        #if code not in ['ACSALA']: continue
-        if code not in ['OBEQIX']: continue
+        if code not in ['ACSALA']: continue
+        #if code not in ['OBEQIX']: continue
         #if code not in ['XAFQON']: continue
         #if code not in ['NACJAF']: continue
         row = db.get_row(code=code)

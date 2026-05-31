@@ -662,7 +662,7 @@ def optimizer_single(
             strs += f" {match:.3f}"
 
         xtal.energy = eng
-        print(f"{id:3d} " + strs)#; import sys; sys.exit()
+        print(f"{id:3d} " + strs)
         return xtal, match, stable
     else:
         return None, match, stable
