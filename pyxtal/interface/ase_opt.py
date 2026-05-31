@@ -1,10 +1,18 @@
-# --- Optional fix for PyTorch weights_only change (harmless if unused) ---
-from torch.serialization import add_safe_globals
-add_safe_globals([slice])
-# ------------------------------------------------------------------------
+# --- Temporary fix for PyTorch 2.6 weights_only change ---
+import torch as _torch
+import functools as _functools
+_original_torch_load = _torch.load
+@_functools.wraps(_original_torch_load)
+def _patched_torch_load(*args, **kwargs):
+    kwargs.setdefault('weights_only', False)
+    return _original_torch_load(*args, **kwargs)
+_torch.load = _patched_torch_load
+# ----------------------------------------------------------
 
 import signal
 import numpy as np
+import os
+import contextlib
 from ase.constraints import FixSymmetry
 from ase.filters import UnitCellFilter
 from ase.optimize.fire import FIRE
@@ -14,6 +22,13 @@ from ase.atoms import Atoms
 _cached_mace = None
 _cached_uma = None
 _cached_ani = None
+
+@contextlib.contextmanager
+def _suppress_stdout_stderr():
+    """Redirect stdout and stderr to /dev/null."""
+    with open(os.devnull, 'w') as devnull:
+        with contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
+            yield
 
 def get_calculator(calculator):
     """
@@ -28,28 +43,32 @@ def get_calculator(calculator):
     if isinstance(calculator, str):
         if calculator == "UMA":
             if _cached_uma is None:
-                from fairchem.core import pretrained_mlip, FAIRChemCalculator
-                predictor = pretrained_mlip.get_predict_unit("uma-s-1p1")
-                _cached_uma = FAIRChemCalculator(predictor,
-                                                 task_name="omc")
+                with _suppress_stdout_stderr():
+                    from fairchem.core import pretrained_mlip, FAIRChemCalculator
+                    predictor = pretrained_mlip.get_predict_unit("uma-s-1p1")
+                    _cached_uma = FAIRChemCalculator(predictor,
+                                                     task_name="omc")
             calc = _cached_uma
 
         elif calculator == "ANI":
             if _cached_ani is None:
-                import torchani
-                _cached_ani = torchani.models.ANI2x().ase()
+                with _suppress_stdout_stderr():
+                    import torchani
+                    _cached_ani = torchani.models.ANI2x().ase()
             calc = _cached_ani
 
         elif calculator == "MACE":
             if _cached_mace is None:
-                from mace.calculators import mace_mp
-                _cached_mace = mace_mp(model="small", dispersion=True)
+                with _suppress_stdout_stderr():
+                    from mace.calculators import mace_mp
+                    _cached_mace = mace_mp(model="small", dispersion=True)
             calc = _cached_mace
 
         elif calculator == "MACEOFF":
             if _cached_mace is None:
-                from mace.calculators import mace_off
-                _cached_mace = mace_off(model="medium")#, device="cpu")
+                with _suppress_stdout_stderr():
+                    from mace.calculators import mace_off
+                    _cached_mace = mace_off(model="medium")#, device="cpu")
             calc = _cached_mace
 
         else:
