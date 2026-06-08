@@ -91,7 +91,7 @@ def get_visited_energies(qrs):
     return energies
 
 
-def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_dir="qrs_plots", time_cost_s=None, coverage=None, n_conformers=None, energy_unit="kcal/mol"):
+def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_dir="qrs_plots", time_cost_s=None, coverage=None, n_conformers=None):
     """Save a plot of visited-structure ID vs energy for one QRS run."""
     if not energies:
         print(f"No energies collected for {code}; skipping plot.")
@@ -101,7 +101,7 @@ def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_d
     ids = list(range(1, len(energies) + 1))
 
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    ax.scatter(ids, energies, s=10, alpha=0.8, label="Visited")
+    ax.scatter(ids, energies, s=20, alpha=0.8, label="Visited")
     ax.plot(ids, energies, linewidth=0.8, alpha=0.6)
     if match_ids and match_energies:
         ax.scatter(
@@ -116,12 +116,12 @@ def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_d
             label="Match",
         )
     ax.set_xlabel("Visited Structure ID")
-    ax.set_ylabel(f"Energy ({energy_unit})")
+    ax.set_ylabel("Energy (kcal/mol)")
     title_parts = [f"{code}: "]
     if n_conformers is not None:
         title_parts.append(f"conf: {n_conformers}")
     if time_cost_s is not None:
-        title_parts.append(f"time: {time_cost_s:.2f} s")
+        title_parts.append(f"time: {time_cost_s:.1f} s")
     if coverage is not None:
         title_parts.append(f"coverage: {coverage}")
     if len(title_parts) > 1:
@@ -138,7 +138,7 @@ def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_d
         ax.set_ylim(ymin - margin, ymax + margin)
     else:
         y_max = min(ymin + 30, ymax)
-        ax.set_ylim(ymin - 0.25, y_max)
+        ax.set_ylim(ymin - 1, y_max)
     fig.tight_layout()
 
     fig_path = os.path.join(out_dir, f"{code}.png")
@@ -173,7 +173,8 @@ if __name__ == "__main__":
     for code in db.get_all_codes():
         #if code not in ['ACSALA']: continue
         #if code not in ['FUNZOE']: continue
-        if code not in ['XAFQON']: continue
+        if code in ['ACEMID02']: continue
+        #if code not in ['XAFPAY', 'OBEQIX', 'UJIRIO02']: continue
         row = db.get_row(code=code)
         ref_xtal = db.get_pyxtal(code=code)
         if ref_xtal.has_special_site():
@@ -287,12 +288,11 @@ if __name__ == "__main__":
             composition = [int(a) for a in ref_xtal.get_zprime()],
             molecules=molecules,
             sites=sites,
-            N_gen=100,
-            N_pop=48,
-            N_cpu=2,#4,
+            N_gen=200,
+            N_pop=96,
+            N_cpu=48,
             cif="all.cif",
-            skip_mlp=False,#True,
-            mlp='MACEOFF',
+            skip_mlp=True,
             verbose=False,
             delta_length=1.0,
             delta_angle=15.0,
@@ -322,7 +322,6 @@ if __name__ == "__main__":
             time_cost_s=time_cost_s,
             coverage=coverage,
             n_conformers=n_pregen_total,
-            energy_unit="eV/atom" if not qrs.skip_mlp else "kcal/mol",
         )
 
         with open(csv_path, "a", newline="") as fcsv:
