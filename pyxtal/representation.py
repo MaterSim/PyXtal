@@ -58,7 +58,7 @@ class representation_atom:
         struc.group, _number = Group(v[0], use_hall=True), v[0]
 
         # lattice
-        ltype = struc.group.lattice_type
+        ltype = struc.group.lattice_type #; print(ltype)
         if ltype == "triclinic":
             a, b, c, alpha, beta, gamma = v[1], v[2], v[3], v[4], v[5], v[6]
         elif ltype == "monoclinic":
@@ -67,7 +67,7 @@ class representation_atom:
             a, b, c, alpha, beta, gamma = v[1], v[2], v[3], 90, 90, 90
         elif ltype == "tetragonal":
             a, b, c, alpha, beta, gamma = v[1], v[1], v[2], 90, 90, 90
-        elif ltype == "hexagonal":
+        elif ltype in ["trigonal", "hexagonal"]:
             a, b, c, alpha, beta, gamma = v[1], v[1], v[2], 90, 90, 120
         else:
             a, b, c, alpha, beta, gamma = v[1], v[1], v[1], 90, 90, 90
@@ -310,7 +310,7 @@ class representation:
             a, b, c, alpha, beta, gamma = v[1], v[2], v[3], 90, 90, 90
         elif ltype == "tetragonal":
             a, b, c, alpha, beta, gamma = v[1], v[1], v[2], 90, 90, 90
-        elif ltype == "hexagonal":
+        elif ltype in ["trigonal", "hexagonal"]:
             a, b, c, alpha, beta, gamma = v[1], v[1], v[2], 90, 90, 120
         else:
             a, b, c, alpha, beta, gamma = v[1], v[1], v[1], 90, 90, 90
