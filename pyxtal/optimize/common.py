@@ -424,8 +424,8 @@ def optimizer(
             and 0.25 < struc.get_density() < 3.0
         ):
             s = struc.to_ase()
-            step = 50 if mlp in ['MACE', 'ANI'] else 10
-            s = ASE_relax(s, mlp, step=step, fmax=0.1, logfile="ase.log")
+            step = 50 if mlp in ['MACE', 'ANI'] else 25
+            s = ASE_relax(s, mlp, opt_lat=opt_lat, step=step, fmax=0.1, logfile="ase.log")
             if s is None: return None
             eng = s.get_potential_energy()
             stress = max(abs(s.get_stress())) / units.GPa
@@ -662,7 +662,7 @@ def optimizer_single(
             strs += f" {match:.3f}"
 
         xtal.energy = eng
-        print(f"{id:3d} " + strs)#; import sys; sys.exit()
+        print(f"{id:3d} " + strs)
         return xtal, match, stable
     else:
         return None, match, stable
@@ -677,9 +677,9 @@ def refine_struc(xtal, smiles, calculator, mlp):
         calculator: ANI_relax or MACE_relax
     """
     s = xtal.to_ase()
-    s = calculator(s, mlp, step=50, fmax=0.1, logfile="ase.log")
-    s = calculator(s, mlp, step=250, opt_cell=True, logfile="ase.log")
-    s = calculator(s, mlp, step=50, fmax=0.1, logfile="ase.log")
+    s = calculator(s, mlp, opt_lat=False, step=50, fmax=0.1, logfile="ase.log")
+    s = calculator(s, mlp, opt_lat=True, step=250, logfile="ase.log")
+    s = calculator(s, mlp, opt_lat=False, step=50, fmax=0.1, logfile="ase.log")
     eng1 = s.get_potential_energy()  # /sum(xtal.numMols)
 
     xtal = pyxtal(molecular=True)

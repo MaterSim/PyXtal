@@ -991,38 +991,33 @@ class GlobalOptimize:
         if ids is None:
             ids = range(len(xtals))
 
-        N_cycle = int(np.ceil(len(xtals) / ncpu))
-        # Generator to create arg_lists for multiprocessing tasks
+        # Interleaved assignment: worker i handles indices i, i+ncpu, i+2*ncpu, …
+        # so all workers stay busy and results can be sorted to 0,1,2,3… order.
         def generate_args_lists():
             for i in range(ncpu):
-                id1 = i * N_cycle
-                id2 = min([id1 + N_cycle, len(xtals)])
-                _ids = ids[id1: id2]
+                _indices = list(range(i, len(xtals), ncpu))
+                _ids = [ids[j] for j in _indices]
                 job_tags = [self.tag + "-g" + str(gen)
                             + "-p" + str(id) for id in _ids]
-                _xtals = [xtals[id][0] for id in range(id1, id2)]
+                _xtals = [xtals[j][0] for j in _indices]
                 mutates = []
                 labels = []
-                for i in range(id1, id2):
-                    orig_tag = xtals[i][1]
+                for j in _indices:
+                    orig_tag = xtals[j][1]
                     if qrs:
                         mutates.append(False)
                         labels.append(orig_tag if orig_tag != "Random" else None)
                     else:
-                        if orig_tag == "Mutation":
-                            mutates.append(True)
-                        else:
-                            mutates.append(False)
+                        mutates.append(orig_tag == "Mutation")
                         labels.append(None)
                 my_args = [_xtals, _ids, mutates, job_tags, labels, *args, self.rank, self.timeout]
-                yield tuple(my_args)  # Yield args instead of appending to a list
+                yield tuple(my_args)
 
         gen_results = []
         for result in pool.imap_unordered(process_task, generate_args_lists()):
             if result is not None:
                 for _res in result:
                     gen_results.append(_res)
-
         return gen_results
 
     def gen_summary(self, t0, gen_results, xtals):
