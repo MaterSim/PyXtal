@@ -91,7 +91,68 @@ def get_visited_energies(qrs):
     return energies
 
 
-def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_dir="qrs_plots", time_cost_s=None, coverage=None, n_conformers=None):
+def select_delta_angle(molecules, composition=None):
+    """Return delta_angle(s) based on molecule sizes.
+
+    If `composition` is provided and has multiple components, return a list
+    of delta angles (one per component). Otherwise return a single float.
+
+    Rules (per component):
+      - max_atoms < 5 -> 60.0
+      - 5 <= max_atoms < 10 -> 45.0
+      - max_atoms < 30 -> 30.0
+      - else           -> 15.0
+    """
+    # Default fallback
+    DEFAULT = 15.0
+    if not molecules:
+        if composition is None or len(composition) <= 1:
+            return DEFAULT
+        return [DEFAULT for _ in composition]
+
+    # If composition provided and multi-component, compute per-component
+    if composition is not None and len(composition) > 1:
+        delta_list = []
+        for idx, count in enumerate(composition):
+            # guard when molecules list does not align with composition
+            pool = molecules[idx] if idx < len(molecules) else None
+            if not pool:
+                delta_list.append(DEFAULT)
+                continue
+            mol = pool[0]
+            try:
+                atom_count = len(mol.mol)
+            except Exception:
+                atom_count = len(getattr(mol, "atoms", []))
+            if atom_count <= 3:
+                delta_list.append(90.0)
+            elif atom_count < 5:
+                delta_list.append(60.0)
+            elif atom_count < 10:
+                delta_list.append(45.0)
+            elif atom_count < 30:
+                delta_list.append(30.0)
+            else:
+                delta_list.append(15.0)
+        return delta_list
+
+    # Single-component fallback
+    pool = molecules[0] if isinstance(molecules, (list, tuple)) and molecules else None
+    if not pool:
+        return DEFAULT
+    mol = pool[0]
+    try:
+        atom_count = len(mol.mol)
+    except Exception:
+        atom_count = len(getattr(mol, "atoms", []))
+    if atom_count < 10:
+        return 45.0
+    if atom_count < 30:
+        return 30.0
+    return 15.0
+
+
+def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_dir="qrs_plots", time_cost_s=None, coverage=None, n_conformers=None, energy_unit="kcal/mol"):
     """Save a plot of visited-structure ID vs energy for one QRS run."""
     if not energies:
         print(f"No energies collected for {code}; skipping plot.")
@@ -101,7 +162,7 @@ def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_d
     ids = list(range(1, len(energies) + 1))
 
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    ax.scatter(ids, energies, s=20, alpha=0.8, label="Visited")
+    ax.scatter(ids, energies, s=10, alpha=0.8, label="Visited")
     ax.plot(ids, energies, linewidth=0.8, alpha=0.6)
     if match_ids and match_energies:
         ax.scatter(
@@ -116,12 +177,12 @@ def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_d
             label="Match",
         )
     ax.set_xlabel("Visited Structure ID")
-    ax.set_ylabel("Energy (kcal/mol)")
+    ax.set_ylabel(f"Energy ({energy_unit})")
     title_parts = [f"{code}: "]
     if n_conformers is not None:
         title_parts.append(f"conf: {n_conformers}")
     if time_cost_s is not None:
-        title_parts.append(f"time: {time_cost_s:.1f} s")
+        title_parts.append(f"time: {time_cost_s:.2f} s")
     if coverage is not None:
         title_parts.append(f"coverage: {coverage}")
     if len(title_parts) > 1:
@@ -138,7 +199,7 @@ def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_d
         ax.set_ylim(ymin - margin, ymax + margin)
     else:
         y_max = min(ymin + 30, ymax)
-        ax.set_ylim(ymin - 1, y_max)
+        ax.set_ylim(ymin - 0.25, y_max)
     fig.tight_layout()
 
     fig_path = os.path.join(out_dir, f"{code}.png")
@@ -173,8 +234,8 @@ if __name__ == "__main__":
     for code in db.get_all_codes():
         #if code not in ['ACSALA']: continue
         #if code not in ['FUNZOE']: continue
-        if code in ['ACEMID02']: continue
-        #if code not in ['XAFPAY', 'OBEQIX', 'UJIRIO02']: continue
+        if code not in ['XAFQON']: continue
+        #if code not in ['ACEMID02']: continue
         row = db.get_row(code=code)
         ref_xtal = db.get_pyxtal(code=code)
         if ref_xtal.has_special_site():
@@ -278,6 +339,12 @@ if __name__ == "__main__":
         param_xml = os.path.join(workdir, "parameters.xml")
         if os.path.exists(param_xml):
             os.remove(param_xml)
+        print(f"Initialized QRS workdir: {workdir}", ref_xtal.lattice)
+        composition = [int(a) for a in ref_xtal.get_zprime()]
+        # determine per-component delta angles and show them
+        selected_deltas = select_delta_angle(molecules, composition)
+        print(f"Selected delta_angle(s) for components: {selected_deltas}")
+
         qrs = QRS(
             smiles=row.mol_smi,
             workdir=workdir,
@@ -285,17 +352,20 @@ if __name__ == "__main__":
             tag=row.csd_code.lower(),
             use_hall=True,
             lattice=ref_xtal.lattice,  # Fixed cell.
-            composition = [int(a) for a in ref_xtal.get_zprime()],
+            composition = composition,
             molecules=molecules,
             sites=sites,
-            N_gen=200,
-            N_pop=96,
-            N_cpu=48,
+            N_gen=1, #00,
+            N_pop=4, #8,
+            N_cpu=1, #2,#4,
             cif="all.cif",
             skip_mlp=True,
+            mlp='MACEOFF',
             verbose=False,
             delta_length=1.0,
-            delta_angle=15.0,
+            # Pass per-component delta_angle (scalar or list). QRS will
+            # expand per-component values to per-site internally.
+            delta_angle=selected_deltas,
         )
 
         t0 = perf_counter()
@@ -322,6 +392,7 @@ if __name__ == "__main__":
             time_cost_s=time_cost_s,
             coverage=coverage,
             n_conformers=n_pregen_total,
+            energy_unit="eV/atom" if not qrs.skip_mlp else "kcal/mol",
         )
 
         with open(csv_path, "a", newline="") as fcsv:
