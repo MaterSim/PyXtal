@@ -6,7 +6,7 @@ of pyxtal_molecule conformers via generate_molecules, and passes them to QRS.
 With the lattice fixed and conformers pregenerated, QRS samples only Wyckoff-site
 fractional coordinates and molecular orientations for each trial crystal.
 
-Results are appended to Tests/qrs_results_pregen_mols.csv.
+Results are appended to Tests/qrs_results.csv.
 """
 
 import csv
@@ -119,9 +119,9 @@ def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_d
     ax.set_ylabel("Energy (kcal/mol)")
     title_parts = [f"{code}: "]
     if n_conformers is not None:
-        title_parts.append(f"conformers: {n_conformers}")
+        title_parts.append(f"conf: {n_conformers}")
     if time_cost_s is not None:
-        title_parts.append(f"time: {time_cost_s:.2f} s")
+        title_parts.append(f"time: {time_cost_s:.1f} s")
     if coverage is not None:
         title_parts.append(f"coverage: {coverage}")
     if len(title_parts) > 1:
@@ -149,9 +149,9 @@ def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_d
 
 if __name__ == "__main__":
     db = database("pyxtal/database/test.db")
-    out_dir = "Tests-All"
+    out_dir = "Tests-0607"
     os.makedirs(out_dir, exist_ok=True)
-    csv_path = os.path.join(out_dir, "qrs_results_pregen_mols.csv")
+    csv_path = os.path.join(out_dir, "qrs_results.csv")
 
     with open(csv_path, "w", newline="") as fcsv:
         writer = csv.writer(fcsv)
@@ -173,7 +173,8 @@ if __name__ == "__main__":
     for code in db.get_all_codes():
         #if code not in ['ACSALA']: continue
         #if code not in ['FUNZOE']: continue
-        #if code not in ['XAFQON']: continue
+        if code in ['ACEMID02']: continue
+        #if code not in ['XAFPAY', 'OBEQIX', 'UJIRIO02']: continue
         row = db.get_row(code=code)
         ref_xtal = db.get_pyxtal(code=code)
         if ref_xtal.has_special_site():
@@ -243,8 +244,8 @@ if __name__ == "__main__":
                     p_mols = generate_molecules(
                         smi,
                         wps=type_wps[type_idx],
-                        N_iter=10,
-                        N_conf=100,
+                        N_iter=20,
+                        N_conf=200,
                         tol=0.5,
                     )
                 except Exception as exc:
@@ -287,14 +288,14 @@ if __name__ == "__main__":
             composition = [int(a) for a in ref_xtal.get_zprime()],
             molecules=molecules,
             sites=sites,
-            N_gen=100,
+            N_gen=200,
             N_pop=96,
-            N_cpu=24,
+            N_cpu=48,
             cif="all.cif",
             skip_mlp=True,
             verbose=False,
-            delta_length=1.5,
-            delta_angle=45.0,
+            delta_length=1.0,
+            delta_angle=15.0,
         )
 
         t0 = perf_counter()
