@@ -98,9 +98,11 @@ def select_delta_angle(molecules, composition=None):
     of delta angles (one per component). Otherwise return a single float.
 
     Rules (per component):
-      - max_atoms < 5 -> 60.0
-      - 5 <= max_atoms < 10 -> 45.0
+      - max_atoms <= 3 -> 90.0
+      - max_atoms < 10 -> 60.0
+      - max_atoms < 20 -> 45.0
       - max_atoms < 30 -> 30.0
+      - max_atoms < 40 -> 20.0
       - else           -> 15.0
     """
     # Default fallback
@@ -126,12 +128,14 @@ def select_delta_angle(molecules, composition=None):
                 atom_count = len(getattr(mol, "atoms", []))
             if atom_count <= 3:
                 delta_list.append(90.0)
-            elif atom_count < 5:
-                delta_list.append(60.0)
             elif atom_count < 10:
+                delta_list.append(60.0)
+            elif atom_count < 20:
                 delta_list.append(45.0)
             elif atom_count < 30:
                 delta_list.append(30.0)
+            elif atom_count < 40:
+                delta_list.append(20.0)
             else:
                 delta_list.append(15.0)
         return delta_list
@@ -145,11 +149,18 @@ def select_delta_angle(molecules, composition=None):
         atom_count = len(mol.mol)
     except Exception:
         atom_count = len(getattr(mol, "atoms", []))
-    if atom_count < 10:
+    if atom_count <= 3:
+        return 90.0
+    elif atom_count < 10:
+        return 60.0
+    elif atom_count < 20:
         return 45.0
-    if atom_count < 30:
+    elif atom_count < 30:
         return 30.0
-    return 15.0
+    elif atom_count < 40:
+        return 20.0
+    else:
+        return 15.0
 
 
 def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_dir="qrs_plots", time_cost_s=None, coverage=None, n_conformers=None, energy_unit="kcal/mol"):
@@ -355,9 +366,9 @@ if __name__ == "__main__":
             composition = composition,
             molecules=molecules,
             sites=sites,
-            N_gen=1, #00,
-            N_pop=4, #8,
-            N_cpu=1, #2,#4,
+            N_gen=100,
+            N_pop=48,
+            N_cpu=4,
             cif="all.cif",
             skip_mlp=True,
             mlp='MACEOFF',
