@@ -157,6 +157,23 @@ def guess_ref_code_from_cif(path):
     return ref_code
 
 
+def _configure_worker_threads():
+    """Avoid CPU oversubscription when running multiple PyTorch workers."""
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+    os.environ.setdefault("MKL_NUM_THREADS", "1")
+    try:
+        import torch
+        torch.set_num_threads(1)
+    except ImportError:
+        pass
+
+
+def _init_worker(calculator, model, quick):
+    """Load the calculator once per worker process (safe with spawn)."""
+    _configure_worker_threads()
+    get_calculator(calculator, model=model, quick=quick)
+
+
 def worker_relax(args):
     """Worker to relax a single CIF block.
     args: (label, block_text, orig_energy, step, fmax, label_idx, calculator, model, quick)
@@ -331,13 +348,19 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
     chunksize = max(1, len(tasks) // nproc)
     print(f'Running {len(tasks)} relaxation tasks for {len(unique_selected)} unique structures with calculator={calculator}, model={model}')
     print(f'Using chunksize={chunksize} for {nproc} workers')
-    print('Preloading calculator...')
-    get_calculator(calculator, model=model, quick=quick)
-    # fork shares the preloaded model across workers on macOS/Linux.
-    ctx = mp.get_context('fork')
-    pool = ctx.Pool(processes=nproc)
-    results = pool.map(worker_relax, tasks, chunksize=chunksize)
-    pool.close(); pool.join()
+    if nproc == 1:
+        _configure_worker_threads()
+        get_calculator(calculator, model=model, quick=quick)
+        results = [worker_relax(task) for task in tasks]
+    else:
+        # spawn avoids macOS fork crashes after MPS/PyTorch init in the parent.
+        ctx = mp.get_context("spawn")
+        with ctx.Pool(
+            processes=nproc,
+            initializer=_init_worker,
+            initargs=(calculator, model, quick),
+        ) as pool:
+            results = pool.map(worker_relax, tasks, chunksize=chunksize)
     print(f'Completed {len(results)} relaxation results')
     total_relax_time = sum([r[6] for r in results if len(r) > 6 and r[6] is not None])
     print(f'Total relaxation wall time: {total_relax_time:.1f} s')
@@ -486,8 +509,11 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
 
 
 if __name__ == '__main__':
-    # On macOS, use 'fork' method to preserve conda environment in worker processes
-    mp.set_start_method('fork', force=True)
+    # spawn is required on macOS when PyTorch/MPS calculators are used with multiprocessing.
+    try:
+        mp.set_start_method('spawn', force=True)
+    except RuntimeError:
+        pass
     
     parser = argparse.ArgumentParser(description='Relax QRS CIF blocks with MACE and compare energies')
     parser.add_argument('cif', help='Path to QRS multi-block CIF or directory containing QRS-openffall.cif')
