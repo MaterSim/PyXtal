@@ -214,6 +214,56 @@ def worker_relax(args):
         return (label, label_idx, orig_energy, None, f'relax_exception: {e}', None, time.time() - start_time)
 
 
+def find_qrs_job_dirs(root):
+    """Return (input_dir, output_dir) pairs under root that contain QRS-openffall.cif."""
+    root = os.path.abspath(root)
+    direct_cif = os.path.join(root, 'QRS-openffall.cif')
+    if os.path.isfile(direct_cif):
+        return [(root, root)]
+
+    jobs = []
+    for name in sorted(os.listdir(root)):
+        sub = os.path.join(root, name)
+        if os.path.isdir(sub) and os.path.isfile(os.path.join(sub, 'QRS-openffall.cif')):
+            jobs.append((sub, sub))
+    return jobs
+
+
+def collect_jobs(cif_path, out_dir=None):
+    """Resolve one or many QRS jobs from a CIF path and optional output directory."""
+    cif_path = os.path.abspath(cif_path)
+
+    if os.path.isfile(cif_path):
+        parent = os.path.dirname(cif_path)
+        job_out = os.path.abspath(out_dir) if out_dir else parent
+        return [(parent, job_out)]
+
+    if out_dir is not None:
+        out_dir = os.path.abspath(out_dir)
+        if os.path.isdir(out_dir) and not os.path.isfile(os.path.join(out_dir, 'QRS-openffall.cif')):
+            jobs = []
+            for sub, _ in find_qrs_job_dirs(out_dir):
+                jobs.append((sub, sub))
+            if jobs:
+                return jobs
+
+    if os.path.isdir(cif_path):
+        if not os.path.isfile(os.path.join(cif_path, 'QRS-openffall.cif')):
+            jobs = find_qrs_job_dirs(cif_path)
+            if jobs:
+                if out_dir is not None:
+                    out_root = os.path.abspath(out_dir)
+                    return [
+                        (sub, os.path.join(out_root, os.path.basename(sub)))
+                        for sub, _ in jobs
+                    ]
+                return jobs
+        job_out = out_dir if out_dir is not None else cif_path
+        return [(cif_path, os.path.abspath(job_out))]
+
+    raise FileNotFoundError(f"No QRS-openffall.cif found in {cif_path}")
+
+
 def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_code=None, matched_cif=None, cutoff_pct=50.0, e_tol=1e-3, calculator='MACE', model=None, quick=False):
     main_start = time.time()
     input_folder = None
@@ -516,7 +566,7 @@ if __name__ == '__main__':
         pass
     
     parser = argparse.ArgumentParser(description='Relax QRS CIF blocks with MACE and compare energies')
-    parser.add_argument('cif', help='Path to QRS multi-block CIF or directory containing QRS-openffall.cif')
+    parser.add_argument('cif', help='Path to QRS multi-block CIF, a case folder, or a parent folder of case folders')
     parser.add_argument('--nproc', type=int, default=4, help='Number of parallel workers')
     parser.add_argument('--pct', type=float, default=10.0, help='Energy percentile cutoff (e.g. 10 for 10%%)')
     parser.add_argument('--db', default="pyxtal/database/test.db", help='Path to test.db for reference matching')
@@ -535,17 +585,15 @@ if __name__ == '__main__':
         action='store_true',
         help='Use a cheaper/faster model preset for quick testing (ORB: direct-20-omat, MACEOFF: small)',
     )
-    parser.add_argument('--out-dir', default=None, help='Output directory (defaults to input folder)')
+    parser.add_argument('--out-dir', default=None, help='Output directory (defaults to input folder; if set without QRS-openffall.cif, process all subdirs)')
     args = parser.parse_args()
     if args.quick and args.model is not None:
         parser.error('Use only one of --quick or --model')
 
-    main(
-        args.cif,
+    common_kwargs = dict(
         nproc=args.nproc,
         step=args.step,
         fmax=args.fmax,
-        out_dir=args.out_dir,
         db_file=args.db,
         ref_code=None,
         matched_cif=args.matched_cif,
@@ -555,3 +603,16 @@ if __name__ == '__main__':
         model=args.model,
         quick=args.quick,
     )
+
+    jobs = collect_jobs(args.cif, args.out_dir)
+    if not jobs:
+        parser.error(f'No QRS-openffall.cif found under {args.cif}')
+
+    for i, (job_dir, job_out_dir) in enumerate(jobs, start=1):
+        if len(jobs) > 1:
+            print(f'\n=== [{i}/{len(jobs)}] Processing {job_dir} ===')
+        main(
+            job_dir,
+            out_dir=job_out_dir,
+            **common_kwargs,
+        )
