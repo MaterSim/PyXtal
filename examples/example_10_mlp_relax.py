@@ -19,6 +19,7 @@ from ase.io import read, write
 import warnings
 
 # Suppress specific noisy warnings from ASE CIF parser and torch_dftd
+warnings.filterwarnings('ignore', category=DeprecationWarning)
 warnings.filterwarnings(
     "ignore",
     message="crystal system 'monoclinic' is not interpreted",
@@ -29,6 +30,7 @@ warnings.filterwarnings(
     message="Creating a tensor from a list of numpy.ndarrays is extremely slow",
     category=UserWarning,
 )
+
 
 from pyxtal.interface.ase_opt import ASE_relax, resolve_model, DEFAULT_MODELS, get_calculator
 from pyxtal.util import ase2pymatgen
@@ -170,6 +172,8 @@ def _configure_worker_threads():
 
 def _init_worker(calculator, model, quick):
     """Load the calculator once per worker process (safe with spawn)."""
+    import warnings
+    warnings.filterwarnings('ignore', category=DeprecationWarning, module='spglib')
     _configure_worker_threads()
     get_calculator(calculator, model=model, quick=quick)
 
@@ -311,8 +315,8 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
     print(f'Parsed {len(entries)} blocks, {cutoff_pct:.1f} percentile energy = {threshold:.6f} eV')
 
     # select those with energy < threshold
-    selected = [e for e in entries if e['energy'] is not None and e['energy'] < threshold]
-    print(f'{len(selected)} selected (energy < {cutoff_pct:.1f} percentile)')
+    selected = [e for e in entries if e['energy'] is not None and e['energy'] <= threshold]
+    print(f'{len(selected)} selected (energy <= {cutoff_pct:.1f} percentile)')
 
     # Use a single StructureMatcher across deduplication and reference matching.
     matcher = StructureMatcher(ltol=0.3, stol=0.3, angle_tol=5.0)
@@ -510,7 +514,7 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
     sel_x = sorted(selected_ids)
     sel_y = [model_energies[i] for i in sel_x]
     ax_bot.plot(sel_x, sel_y, 's-', color='#008B8B', 
-                label=f'{calculator} energy ({len(selected_ids)})', 
+                label=f'{calculator} energy ({len(unique_selected)} unique)', 
                 markersize=6, zorder=1)
     # Highlight relaxed structure matches on bottom if present
     if sel_x:

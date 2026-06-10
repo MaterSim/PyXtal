@@ -366,16 +366,13 @@ if __name__ == "__main__":
             composition = composition,
             molecules=molecules,
             sites=sites,
-            N_gen=100,
+            N_gen=200,
             N_pop=48,
-            N_cpu=4,
+            N_cpu=24,
             cif="all.cif",
-            skip_mlp=True,
-            mlp='MACEOFF',
+            skip_mlp=False
             verbose=False,
-            delta_length=1.0,
-            # Pass per-component delta_angle (scalar or list). QRS will
-            # expand per-component values to per-site internally.
+            delta_length=1.2,
             delta_angle=selected_deltas,
         )
 
