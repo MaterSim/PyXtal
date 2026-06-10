@@ -19,9 +19,23 @@ from ase.optimize.fire import FIRE
 import logging
 from ase.atoms import Atoms
 
-_cached_mace = None
-_cached_uma = None
-_cached_ani = None
+_calc_cache = {}
+
+DEFAULT_MODELS = {
+    "MACE": "small",
+    "MACEOFF": "medium",
+    "ORB": "conservative-inf-omat",
+    "ORB-V3": "conservative-inf-omat",
+    "ORBV3": "conservative-inf-omat",
+}
+
+QUICK_MODELS = {
+    "MACE": "small",
+    "MACEOFF": "small",
+    "ORB": "direct-20-omat",
+    "ORB-V3": "direct-20-omat",
+    "ORBV3": "direct-20-omat",
+}
 
 @contextlib.contextmanager
 def _suppress_stdout_stderr():
@@ -30,59 +44,97 @@ def _suppress_stdout_stderr():
         with contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
             yield
 
-def get_calculator(calculator):
+def resolve_model(calculator, model=None, quick=False):
+    """Return the model name to use for a calculator."""
+    if quick:
+        return QUICK_MODELS.get(calculator, DEFAULT_MODELS.get(calculator))
+    if model is None:
+        return DEFAULT_MODELS.get(calculator)
+    return model
+
+
+def get_calculator(calculator, model=None, quick=False):
     """
     Return an ASE calculator instance.
 
     Supported strings:
-      - 'FAIRChem', 'ANI', 'MACE', 'MACEOFF' if you re-enable those blocks.
+      - 'UMA', 'ANI', 'MACE', 'MACEOFF', 'ORB' / 'ORB-V3' / 'ORBV3'
     Or you can pass an ASE calculator instance directly.
-    """
-    global _cached_mace, _cached_uma, _cached_ani
 
-    if isinstance(calculator, str):
+    model: optional model variant (e.g. MACE 'small'/'medium'/'large',
+           ORB 'conservative-inf-omat'/'direct-20-omat'/'direct-inf-omat').
+    quick: use a cheaper/faster model preset for testing.
+    """
+    if not isinstance(calculator, str):
+        return calculator
+
+    model = resolve_model(calculator, model=model, quick=quick)
+    cache_key = (calculator, model)
+    if cache_key in _calc_cache:
+        return _calc_cache[cache_key]
+
+    with _suppress_stdout_stderr():
         if calculator == "UMA":
-            if _cached_uma is None:
-                with _suppress_stdout_stderr():
-                    from fairchem.core import pretrained_mlip, FAIRChemCalculator
-                    predictor = pretrained_mlip.get_predict_unit("uma-s-1p1")
-                    _cached_uma = FAIRChemCalculator(predictor,
-                                                     task_name="omc")
-            calc = _cached_uma
+            from fairchem.core import pretrained_mlip, FAIRChemCalculator
+            predictor = pretrained_mlip.get_predict_unit("uma-s-1p1")
+            calc = FAIRChemCalculator(predictor, task_name="omc")
 
         elif calculator == "ANI":
-            if _cached_ani is None:
-                with _suppress_stdout_stderr():
-                    import torchani
-                    _cached_ani = torchani.models.ANI2x().ase()
-            calc = _cached_ani
+            import torchani
+            calc = torchani.models.ANI2x().ase()
 
         elif calculator == "MACE":
-            if _cached_mace is None:
-                with _suppress_stdout_stderr():
-                    from mace.calculators import mace_mp
-                    _cached_mace = mace_mp(model="small", dispersion=True)
-            calc = _cached_mace
+            from mace.calculators import mace_mp
+            calc = mace_mp(model=model, dispersion=True)
 
         elif calculator == "MACEOFF":
-            if _cached_mace is None:
-                with _suppress_stdout_stderr():
-                    from mace.calculators import mace_off
-                    _cached_mace = mace_off(model="medium")#, device="cpu")
-            calc = _cached_mace
+            from mace.calculators import mace_off
+            calc = mace_off(model=model)
+
+        elif calculator in ("ORB-V3", "ORBV3", "ORB"):
+            try:
+                from orb_models.forcefield import pretrained
+                from orb_models.forcefield.calculator import ORBCalculator
+            except ImportError as e:
+                raise ImportError(
+                    "Please install ORB-V3 from https://github.com/orbital-materials/orb-models "
+                    "or pip install orb-models to use the 'ORB-V3' calculator. Error: " + str(e)
+                )
+            orb_loaders = {
+                "conservative-inf-omat": pretrained.orb_v3_conservative_inf_omat,
+                "direct-20-omat": pretrained.orb_v3_direct_20_omat,
+                "direct-inf-omat": pretrained.orb_v3_direct_inf_omat,
+            }
+            if model not in orb_loaders:
+                raise ValueError(
+                    f"Unknown ORB model '{model}'. Choose from: {', '.join(orb_loaders)}"
+                )
+            device = "cpu"
+            # ORB defaults to torch.compile on CPU, which is slow and can fail on macOS.
+            orbff = orb_loaders[model](
+                device=device,
+                precision="float32-high",
+                compile=False,
+            )
+            orb_calc_kwargs = {"device": device}
+            if model.startswith("direct"):
+                orb_calc_kwargs["conservative"] = False
+            if model == "direct-20-omat":
+                orb_calc_kwargs["max_num_neighbors"] = 20
+            calc = ORBCalculator(orbff, **orb_calc_kwargs)
 
         else:
             raise ValueError(f"Unknown calculator: {calculator}")
-    else:
-        # already an ASE calculator instance
-        calc = calculator
 
+    _calc_cache[cache_key] = calc
     return calc
 
 
 def ASE_relax(
     struc,
     calculator="MACE",
+    model=None,
+    quick=False,
     opt_lat=True,
     step=300,
     fmax=0.5,
@@ -129,7 +181,7 @@ def ASE_relax(
     _fmax = 1e5
 
     try:
-        atoms.calc = get_calculator(calculator)#; print("The current Path:", os.getcwd())
+        atoms.calc = get_calculator(calculator, model=model, quick=quick)
         atoms.set_constraint(FixSymmetry(atoms))
 
         if opt_lat:
