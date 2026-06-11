@@ -58,7 +58,7 @@ pandas==2.2.2
     # via
     #   pyxtal (setup.py)
     #   pymatgen
-pillow==10.4.0
+pillow==12.2.0
     # via matplotlib
 plotly==5.22.0
     # via pymatgen
@@ -76,7 +76,7 @@ pytz==2024.1
     # via pandas
 pyyaml==6.0.1
     # via pybtex
-requests==2.32.4
+requests==2.33.0
     # via pymatgen
 ruamel-yaml==0.18.6
     # via pymatgen
@@ -111,7 +111,7 @@ tzdata==2024.1
     # via pandas
 uncertainties==3.2.2
     # via pymatgen
-urllib3==2.6.3
+urllib3==2.7.0
     # via requests
 zipp==3.19.2
     # via importlib-metadata
