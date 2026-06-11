@@ -221,7 +221,7 @@ def plot_id_vs_energy(code, energies, match_ids=None, match_energies=None, out_d
 
 if __name__ == "__main__":
     db = database("pyxtal/database/test.db")
-    out_dir = "Tests-0607"
+    out_dir = "Tests-0611"
     os.makedirs(out_dir, exist_ok=True)
     csv_path = os.path.join(out_dir, "qrs_results.csv")
 
@@ -245,7 +245,7 @@ if __name__ == "__main__":
     for code in db.get_all_codes():
         #if code not in ['ACSALA']: continue
         #if code not in ['FUNZOE']: continue
-        if code not in ['XAFQON']: continue
+        #if code not in ['XAFQON']: continue
         #if code not in ['ACEMID02']: continue
         row = db.get_row(code=code)
         ref_xtal = db.get_pyxtal(code=code)
@@ -367,10 +367,10 @@ if __name__ == "__main__":
             molecules=molecules,
             sites=sites,
             N_gen=200,
-            N_pop=48,
-            N_cpu=24,
+            N_pop=96,
+            N_cpu=48,
             cif="all.cif",
-            skip_mlp=False
+            skip_mlp=True,
             verbose=False,
             delta_length=1.2,
             delta_angle=selected_deltas,

@@ -18,21 +18,17 @@ import matplotlib.pyplot as plt
 from ase.io import read, write
 import warnings
 
-# Suppress specific noisy warnings from ASE CIF parser and torch_dftd
-warnings.filterwarnings('ignore', category=DeprecationWarning)
-warnings.filterwarnings(
-    "ignore",
-    message="crystal system 'monoclinic' is not interpreted",
-    category=UserWarning,
-)
-warnings.filterwarnings(
-    "ignore",
-    message="Creating a tensor from a list of numpy.ndarrays is extremely slow",
-    category=UserWarning,
-)
+warnings.filterwarnings('ignore', category=DeprecationWarning, module='spglib')
+warnings.filterwarnings('ignore', category=UserWarning, module=r'ase\.io')
+warnings.filterwarnings('ignore', category=UserWarning, module='torch_dftd')
 
-
-from pyxtal.interface.ase_opt import ASE_relax, resolve_model, DEFAULT_MODELS, get_calculator
+from pyxtal.interface.ase_opt import (
+    ASE_relax,
+    resolve_model,
+    DEFAULT_MODELS,
+    get_calculator,
+    ensure_mace_model_cached,
+)
 from pyxtal.util import ase2pymatgen
 from pymatgen.analysis.structure_matcher import StructureMatcher
 from pyxtal.db import database as PyDatabase
@@ -159,6 +155,101 @@ def guess_ref_code_from_cif(path):
     return ref_code
 
 
+def _get_pmg_no_h(entry, cache):
+    idx = entry['idx']
+    if idx not in cache:
+        atoms = read(StringIO(entry['text']), format='cif')
+        pmg = ase2pymatgen(atoms)
+        if hasattr(pmg, 'remove_species'):
+            pmg.remove_species(['H'])
+        cache[idx] = pmg
+    return cache[idx]
+
+
+def _pmg_for_matching(pmg, max_sites=50):
+    """Return a pymatgen structure truncated for fast StructureMatcher comparisons."""
+    if max_sites is None or max_sites <= 0 or len(pmg) <= max_sites:
+        return pmg
+    from pymatgen.core import Structure
+    return Structure.from_sites(pmg.sites[:max_sites], validate_proximity=False)
+
+
+def _structures_likely_match(pmg1, pmg2, volume_tol=0.05, max_sites=50):
+    m1 = _pmg_for_matching(pmg1, max_sites)
+    m2 = _pmg_for_matching(pmg2, max_sites)
+    if len(m1) != len(m2):
+        return False
+    if m1.composition.reduced_formula != m2.composition.reduced_formula:
+        return False
+    v1, v2 = pmg1.volume, pmg2.volume
+    if v1 <= 0 or v2 <= 0:
+        return False
+    return abs(v1 - v2) / max(v1, v2) <= volume_tol
+
+
+def _deduplicate_selected(selected, matcher, e_tol=1e-3, progress_every=25, match_max_sites=50):
+    """Drop duplicate structures among selected entries (lowest energy kept)."""
+    import bisect
+
+    unique_selected = []
+    rep_energies = []
+    dup_map = {}
+    pmg_cache = {}
+    n_fit = 0
+    dedup_start = time.perf_counter()
+    if match_max_sites and match_max_sites > 0:
+        print(f'Deduplication uses first {match_max_sites} sites per structure for matching')
+
+    for i, ent in enumerate(sorted(selected, key=lambda x: x['energy']), start=1):
+        if progress_every and i % progress_every == 0:
+            elapsed = time.perf_counter() - dedup_start
+            print(
+                f'Deduplicating [{i}/{len(selected)}]: '
+                f'{len(unique_selected)} unique so far, {n_fit} structure matches, '
+                f'elapsed {elapsed:.1f}s',
+                flush=True,
+            )
+
+        try:
+            pmg1 = _get_pmg_no_h(ent, pmg_cache)
+        except Exception:
+            unique_selected.append(ent)
+            rep_energies.append(ent['energy'])
+            continue
+
+        lo = bisect.bisect_left(rep_energies, ent['energy'] - e_tol)
+        hi = bisect.bisect_right(rep_energies, ent['energy'] + e_tol)
+        is_dup = False
+        for rep in unique_selected[lo:hi]:
+            try:
+                pmg2 = _get_pmg_no_h(rep, pmg_cache)
+            except Exception:
+                continue
+            if not _structures_likely_match(pmg1, pmg2, max_sites=match_max_sites):
+                continue
+            n_fit += 1
+            if matcher.fit(
+                _pmg_for_matching(pmg1, match_max_sites),
+                _pmg_for_matching(pmg2, match_max_sites),
+            ):
+                dup_map[ent['idx']] = rep['idx']
+                is_dup = True
+                break
+
+        if not is_dup:
+            unique_selected.append(ent)
+            rep_energies.append(ent['energy'])
+
+    if len(selected) >= progress_every:
+        elapsed = time.perf_counter() - dedup_start
+        print(
+            f'Deduplication done: {len(unique_selected)} unique from {len(selected)} selected '
+            f'({n_fit} structure matches), elapsed {elapsed:.1f}s',
+            flush=True,
+        )
+    return unique_selected, dup_map
+
+
 def _configure_worker_threads():
     """Avoid CPU oversubscription when running multiple PyTorch workers."""
     os.environ.setdefault("OMP_NUM_THREADS", "1")
@@ -170,12 +261,24 @@ def _configure_worker_threads():
         pass
 
 
+def _worker_ping(_):
+    return os.getpid()
+
+
 def _init_worker(calculator, model, quick):
     """Load the calculator once per worker process (safe with spawn)."""
     import warnings
     warnings.filterwarnings('ignore', category=DeprecationWarning, module='spglib')
+    warnings.filterwarnings('ignore', category=UserWarning, module=r'ase\.io')
+    warnings.filterwarnings('ignore', category=UserWarning, module='torch_dftd')
+
     _configure_worker_threads()
+    t0 = time.perf_counter()
     get_calculator(calculator, model=model, quick=quick)
+    print(
+        f'Worker {os.getpid()} loaded {calculator} model={model} in {time.perf_counter() - t0:.2f}s',
+        flush=True,
+    )
 
 
 def worker_relax(args):
@@ -268,7 +371,7 @@ def collect_jobs(cif_path, out_dir=None):
     raise FileNotFoundError(f"No QRS-openffall.cif found in {cif_path}")
 
 
-def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_code=None, matched_cif=None, cutoff_pct=50.0, e_tol=1e-3, calculator='MACE', model=None, quick=False):
+def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_code=None, matched_cif=None, cutoff_pct=50.0, e_tol=1e-3, calculator='MACE', model=None, quick=False, max_unique=None, match_max_sites=50, pool=None):
     main_start = time.time()
     input_folder = None
     if os.path.isdir(cif_path):
@@ -320,29 +423,17 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
 
     # Use a single StructureMatcher across deduplication and reference matching.
     matcher = StructureMatcher(ltol=0.3, stol=0.3, angle_tol=5.0)
-    unique_selected = []
-    dup_map = {}  # idx -> rep_idx
-    for ent in sorted(selected, key=lambda x: x['energy']):
-        is_dup = False
-        for rep in unique_selected:
-            if abs(ent['energy'] - rep['energy']) <= e_tol:
-                # energy close, test structural similarity
-                try:
-                    a1 = read(StringIO(ent['text']), format='cif')
-                    a2 = read(StringIO(rep['text']), format='cif')
-                    pmg1 = ase2pymatgen(a1); pmg1.remove_species(['H']) if hasattr(pmg1, 'remove_species') else None
-                    pmg2 = ase2pymatgen(a2); pmg2.remove_species(['H']) if hasattr(pmg2, 'remove_species') else None
-                    if matcher.fit(pmg1, pmg2):
-                        dup_map[ent['idx']] = rep['idx']
-                        is_dup = True
-                        break
-                except Exception:
-                    # if reading/matching fails, conservatively keep as unique
-                    continue
-        if not is_dup:
-            unique_selected.append(ent)
+    unique_selected, dup_map = _deduplicate_selected(
+        selected, matcher, e_tol=e_tol, match_max_sites=match_max_sites,
+    )
 
     print(f'{len(unique_selected)} unique structures after deduplication (e_tol={e_tol})')
+
+    if max_unique is not None and len(unique_selected) > max_unique:
+        print(f'Limiting to first {max_unique} lowest-energy unique structures (from {len(unique_selected)})')
+        kept_ids = {e['idx'] for e in unique_selected[:max_unique]}
+        unique_selected = unique_selected[:max_unique]
+        dup_map = {dup: rep for dup, rep in dup_map.items() if rep in kept_ids}
 
     os.makedirs(out_dir, exist_ok=True)
 
@@ -399,10 +490,13 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
     for i, task in enumerate(sorted_tasks):
         buckets[i % nproc].append(task)
     tasks = [task for bucket in buckets for task in bucket]
-    chunksize = max(1, len(tasks) // nproc)
+    chunksize = max(1, len(tasks) // max(nproc, 1))
+    workers = min(nproc, len(tasks))
     print(f'Running {len(tasks)} relaxation tasks for {len(unique_selected)} unique structures with calculator={calculator}, model={model}')
-    print(f'Using chunksize={chunksize} for {nproc} workers')
-    if nproc == 1:
+    print(f'Using chunksize={chunksize} for {workers} workers')
+    if pool is not None:
+        results = pool.map(worker_relax, tasks, chunksize=chunksize)
+    elif workers <= 1:
         _configure_worker_threads()
         get_calculator(calculator, model=model, quick=quick)
         results = [worker_relax(task) for task in tasks]
@@ -410,11 +504,11 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
         # spawn avoids macOS fork crashes after MPS/PyTorch init in the parent.
         ctx = mp.get_context("spawn")
         with ctx.Pool(
-            processes=nproc,
+            processes=workers,
             initializer=_init_worker,
             initargs=(calculator, model, quick),
-        ) as pool:
-            results = pool.map(worker_relax, tasks, chunksize=chunksize)
+        ) as job_pool:
+            results = job_pool.map(worker_relax, tasks, chunksize=chunksize)
     print(f'Completed {len(results)} relaxation results')
     total_relax_time = sum([r[6] for r in results if len(r) > 6 and r[6] is not None])
     print(f'Total relaxation wall time: {total_relax_time:.1f} s')
@@ -477,7 +571,7 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
             [ys[i] for i in below_x],
             'o-',
             markersize=6,
-            label=f'OpenFF (< {cutoff_pct:.1f}%)',
+            label=f'OpenFF (<= {cutoff_pct:.1f}%)',
         )
     if above_x:
         ax_top.scatter(
@@ -486,7 +580,7 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
             marker='o',
             color='grey',
             s=36,
-            label=f'OpenFF (>= {cutoff_pct:.1f}%)',
+            label=f'OpenFF (> {cutoff_pct:.1f}%)',
         )
     # highlight original CIF matches on top if present
     if original_match_ids:
@@ -562,6 +656,18 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
     print(f'Total workflow elapsed time: {time.time() - main_start:.1f} s')
 
 
+def default_nproc():
+    """Use SLURM cpus-per-task when available, else local CPU count."""
+    for key in ("SLURM_CPUS_PER_TASK", "SLURM_JOB_CPUS_PER_NODE"):
+        val = os.environ.get(key)
+        if val and val.isdigit() and int(val) > 0:
+            return int(val)
+    try:
+        return len(os.sched_getaffinity(0))
+    except (AttributeError, NotImplementedError):
+        return mp.cpu_count() or 1
+
+
 if __name__ == '__main__':
     # spawn is required on macOS when PyTorch/MPS calculators are used with multiprocessing.
     try:
@@ -571,18 +677,30 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='Relax QRS CIF blocks with MACE and compare energies')
     parser.add_argument('cif', help='Path to QRS multi-block CIF, a case folder, or a parent folder of case folders')
-    parser.add_argument('--nproc', type=int, default=4, help='Number of parallel workers')
+    parser.add_argument(
+        '--nproc',
+        type=int,
+        default=None,
+        help='Number of parallel workers (default: SLURM_CPUS_PER_TASK or available CPUs)',
+    )
     parser.add_argument('--pct', type=float, default=10.0, help='Energy percentile cutoff (e.g. 10 for 10%%)')
     parser.add_argument('--db', default="pyxtal/database/test.db", help='Path to test.db for reference matching')
     parser.add_argument('--matched-cif', default=None, help='Path to file listing matched CIF labels, one per line')
     parser.add_argument('--e-tol', type=float, default=1e-3, help='Energy tolerance (eV) for grouping duplicates')
+    parser.add_argument('--max-unique', type=int, default=None, help='Maximum number of unique structures to relax (lowest energy first)')
+    parser.add_argument(
+        '--match-max-sites',
+        type=int,
+        default=50,
+        help='Compare only the first N sites during deduplication (default: 50; 0 = use full structure)',
+    )
     parser.add_argument('--step', type=int, default=200, help='FIRE steps for relaxation')
     parser.add_argument('--fmax', type=float, default=0.1, help='Fmax for FIRE relax')
     parser.add_argument('--calculator', default='MACE', choices=['MACE', 'MACEOFF', 'ORB-V3', 'ORBV3', 'ORB'], help='MLP calculator to use for relaxation')
     parser.add_argument(
         '--model',
         default=None,
-        help='Model variant (MACE/MACEOFF: small|medium|large; ORB: conservative-inf-omat|direct-20-omat|direct-inf-omat)',
+        help='Model variant (MACE/MACEOFF: small|medium|large; ORB v3: conservative-inf-omat|direct-20-omat|direct-inf-omat; ORB v2: orb-v2|orb-d3-v2|orb-d3-sm-v2|orb-d3-xs-v2)',
     )
     parser.add_argument(
         '--quick',
@@ -591,6 +709,9 @@ if __name__ == '__main__':
     )
     parser.add_argument('--out-dir', default=None, help='Output directory (defaults to input folder; if set without QRS-openffall.cif, process all subdirs)')
     args = parser.parse_args()
+    if args.nproc is None:
+        args.nproc = default_nproc()
+    print(f'Using {args.nproc} parallel workers')
     if args.quick and args.model is not None:
         parser.error('Use only one of --quick or --model')
 
@@ -603,8 +724,9 @@ if __name__ == '__main__':
         matched_cif=args.matched_cif,
         cutoff_pct=args.pct,
         e_tol=args.e_tol,
+        max_unique=args.max_unique,
+        match_max_sites=args.match_max_sites,
         calculator=args.calculator,
-        model=args.model,
         quick=args.quick,
     )
 
@@ -612,11 +734,36 @@ if __name__ == '__main__':
     if not jobs:
         parser.error(f'No QRS-openffall.cif found under {args.cif}')
 
-    for i, (job_dir, job_out_dir) in enumerate(jobs, start=1):
-        if len(jobs) > 1:
-            print(f'\n=== [{i}/{len(jobs)}] Processing {job_dir} ===')
-        main(
-            job_dir,
-            out_dir=job_out_dir,
-            **common_kwargs,
+    model = resolve_model(args.calculator, model=args.model, quick=args.quick)
+    _configure_worker_threads()
+    t0 = time.perf_counter()
+    cache_path = ensure_mace_model_cached(args.calculator, model=model, quick=args.quick)
+    cache_elapsed = time.perf_counter() - t0
+    if cache_path:
+        print(f'Model cache ready in {cache_elapsed:.2f}s: {cache_path}')
+    else:
+        print(f'Model cache check finished in {cache_elapsed:.2f}s')
+
+    ctx = mp.get_context("spawn")
+    with ctx.Pool(
+        processes=args.nproc,
+        initializer=_init_worker,
+        initargs=(args.calculator, model, args.quick),
+    ) as pool:
+        t0 = time.perf_counter()
+        pool.map(_worker_ping, range(args.nproc), chunksize=1)
+        pool_elapsed = time.perf_counter() - t0
+        print(
+            f'Worker pool ready in {pool_elapsed:.1f}s '
+            f'({args.nproc} workers; model loaded once per worker, reused across all jobs)'
         )
+        for i, (job_dir, job_out_dir) in enumerate(jobs, start=1):
+            if len(jobs) > 1:
+                print(f'\n=== [{i}/{len(jobs)}] Processing {job_dir} ===')
+            main(
+                job_dir,
+                out_dir=job_out_dir,
+                pool=pool,
+                model=model,
+                **common_kwargs,
+            )
