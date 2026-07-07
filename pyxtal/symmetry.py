@@ -3213,7 +3213,7 @@ def choose_wyckoff_mol(
 
     wyckoffs = G.wyckoffs_organized
 
-    if gen_site or np.random.random() > 0.5:  # choose from high to low
+    if gen_site or random_state.random() > 0.5:  # choose from high to low
         for j, wyckoff in enumerate(wyckoffs):
             if len(wyckoff[0]) <= number:
                 good_wyckoffs = []

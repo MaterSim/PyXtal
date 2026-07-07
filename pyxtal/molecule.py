@@ -1525,7 +1525,7 @@ class pyxtal_molecule:
         for c1 in constraints_m:
             v1 = c1[0].axis
             v2 = constraint1.axis
-            T = rotate_vector(v1, v2)
+            T = rotate_vector(v1, v2, random_state=self.random_state)
             # If there is only one constraint
             if c1[1] == []:
                 o = Orientation(T, degrees=1, axis=constraint1.axis, random_state=self.random_state)
@@ -1680,7 +1680,14 @@ class Orientation:
         return str(self)
 
     def copy(self):
-        return deepcopy(self)
+        new = deepcopy(self)
+        # deepcopy clones the Generator with identical internal state, so the
+        # copy would reproduce the exact same random draws. Spawn an
+        # independent stream to keep copies decorrelated while remaining
+        # reproducible from the parent seed.
+        if isinstance(self.random_state, Generator):
+            new.random_state = self.random_state.spawn(1)[0]
+        return new
 
     def save_dict(self):
         return {"matrix": self.matrix, "degrees": self.degrees, "axis": self.axis}
@@ -1713,16 +1720,14 @@ class Orientation:
 
             # Parse the angle
             if angle == "random":
-                #angle = (self.random_state.random() - 1) * np.pi * 2
-                angle = (np.random.rand() - 1) * np.pi * 2
+                angle = (self.random_state.random() - 1) * np.pi * 2
             #self.angle = angle
 
             # Update the matrix
             r1 = Rotation.from_rotvec(angle * self.axis)
 
             # Optionally flip the molecule
-            #if self.degrees == 2 and flip and self.random_state.random() > 0.5:
-            if self.degrees == 2 and flip and np.random.random() > 0.5:
+            if self.degrees == 2 and flip and self.random_state.random() > 0.5:
                 ax = self.random_state.choice(["x", "y", "z"])
                 angle0 = self.random_state.choice([90, 180, 270])
                 r2 = Rotation.from_euler(ax, angle0, degrees=True)
@@ -1740,8 +1745,7 @@ class Orientation:
 
     def set_axis(self):
         if self.degrees == 2:
-            #axis = self.random_state.random(3) - 0.5
-            axis = np.random.rand(3) - 0.5
+            axis = self.random_state.random(3) - 0.5
             self.axis = axis / np.linalg.norm(axis)
             self.angle = 0
 
@@ -1785,7 +1789,7 @@ class Orientation:
         """
         if self.degrees == 2:
             if angle == "random":
-                axis = self.random_state.sample(3)
+                axis = self.random_state.random(3)
                 axis = axis / np.linalg.norm(axis)
                 angle = self.random_state.random() * np.pi * 2
             else:

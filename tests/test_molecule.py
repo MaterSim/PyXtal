@@ -3,13 +3,14 @@ import importlib.util
 import os
 import unittest
 
+import numpy as np
 import pymatgen.analysis.structure_matcher as sm
 from pymatgen.core.structure import Molecule
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from pyxtal import pyxtal
 from pyxtal.lattice import Lattice
-from pyxtal.molecule import pyxtal_molecule
+from pyxtal.molecule import Orientation, pyxtal_molecule
 from pyxtal.symmetry import Group, Wyckoff_position
 
 
@@ -23,6 +24,125 @@ l01 = Lattice.from_matrix([[4.08, 0, 0], [0, 9.13, 0], [0, 0, 5.50]])
 l02 = Lattice.from_para(4.08, 9.13, 5.50, 90, 90, 90)
 wp1 = Wyckoff_position.from_group_and_index(36, 0)
 wp2 = Wyckoff_position.from_group_and_letter(36, "4a")
+
+REPRODUCIBILITY_SEEDS = [0, 1, 7, 42, 123, 456]
+REPRODUCIBILITY_REPEATS = 5
+REPRODUCIBILITY_CASES = [
+    {"group": 14, "species": ["aspirin"], "numIons": [4]},
+    {"group": 19, "species": ["H2O"], "numIons": [4]},
+    {"group": 36, "species": ["Benzene"], "numIons": [4]},
+]
+
+
+def fingerprint_molecular_crystal(crystal):
+    """Return arrays that should match across repeated runs with the same seed."""
+    lattice = np.array(crystal.lattice.get_para(), dtype=float)
+    positions = np.array([site.position for site in crystal.mol_sites], dtype=float)
+    orientations = np.array([site.orientation.matrix for site in crystal.mol_sites], dtype=float)
+    return lattice, positions, orientations
+
+
+def generate_molecular_crystal(seed, group, species, numIons):
+    crystal = pyxtal(molecular=True)
+    crystal.from_random(3, group, species, numIons, random_state=seed)
+    assert crystal.valid
+    return crystal
+
+
+class TestOrientationRandomState(unittest.TestCase):
+    def test_copy_spawns_independent_rng(self):
+        base = Orientation(np.eye(3), degrees=2, random_state=np.random.default_rng(42))
+        o1 = base.copy()
+        o2 = base.copy()
+        m1 = o1.change_orientation(flip=True)
+        m2 = o2.change_orientation(flip=True)
+        assert not np.allclose(m1, m2)
+
+    def test_change_orientation_reproducible(self):
+        def orient_matrix(seed):
+            ori = Orientation(np.eye(3), degrees=2, random_state=np.random.default_rng(seed))
+            return ori.copy().change_orientation(flip=True)
+
+        assert np.allclose(orient_matrix(7), orient_matrix(7))
+        assert not np.allclose(orient_matrix(7), orient_matrix(8))
+
+    def test_set_axis_and_get_matrix_use_local_rng(self):
+        ori = Orientation(np.eye(3), degrees=2, random_state=np.random.default_rng(0))
+        ori.set_axis()
+        assert ori.axis.shape == (3,)
+        assert np.linalg.norm(ori.axis) > 0
+        assert ori.get_matrix().shape == (3, 3)
+
+    def test_seeded_molecular_generation_reproducible(self):
+        lat1, pos1, _ = fingerprint_molecular_crystal(generate_molecular_crystal(123, 14, ["aspirin"], [4]))
+        lat2, pos2, _ = fingerprint_molecular_crystal(generate_molecular_crystal(123, 14, ["aspirin"], [4]))
+        lat3, pos3, _ = fingerprint_molecular_crystal(generate_molecular_crystal(456, 14, ["aspirin"], [4]))
+        assert np.allclose(lat1, lat2, lat3)
+        assert np.allclose(pos1, pos2, pos3)
+        assert not (np.allclose(lat1, lat3) and np.allclose(pos1, pos3))
+
+    def test_repeated_generation_with_random_states(self):
+        """Run several seeds multiple times and require identical fingerprints."""
+        fingerprints_by_seed = {}
+
+        for case in REPRODUCIBILITY_CASES:
+            for seed in REPRODUCIBILITY_SEEDS:
+                runs = []
+                for _ in range(REPRODUCIBILITY_REPEATS):
+                    crystal = generate_molecular_crystal(
+                        seed,
+                        case["group"],
+                        case["species"],
+                        case["numIons"],
+                    )
+                    runs.append(fingerprint_molecular_crystal(crystal))
+
+                reference = runs[0]
+                for i, result in enumerate(runs[1:], start=2):
+                    assert np.allclose(reference[0], result[0]), (
+                        f"lattice mismatch for seed={seed}, case={case}, run={i}"
+                    )
+                    assert np.allclose(reference[1], result[1]), (
+                        f"position mismatch for seed={seed}, case={case}, run={i}"
+                    )
+                    assert np.allclose(reference[2], result[2]), (
+                        f"orientation mismatch for seed={seed}, case={case}, run={i}"
+                    )
+
+                key = (case["group"], tuple(case["species"]), seed)
+                fingerprints_by_seed[key] = reference
+
+        # Different seeds should not all collapse to the same structure.
+        unique_lattices = {
+            tuple(np.round(fp[0], 6)) for fp in fingerprints_by_seed.values()
+        }
+        assert len(unique_lattices) > 1
+
+    def test_repeated_orientation_changes_with_random_states(self):
+        """Orientation copy/rotate path should be reproducible across repeated runs."""
+        seeds = REPRODUCIBILITY_SEEDS
+        repeats = REPRODUCIBILITY_REPEATS
+
+        for seed in seeds:
+            matrices = []
+            for _ in range(repeats):
+                ori = Orientation(np.eye(3), degrees=2, random_state=np.random.default_rng(seed))
+                matrices.append(ori.copy().change_orientation(flip=True))
+
+            reference = matrices[0]
+            for i, matrix in enumerate(matrices[1:], start=2):
+                assert np.allclose(reference, matrix), (
+                    f"orientation mismatch for seed={seed}, run={i}"
+                )
+
+            other_seed = seed + 1000
+            other = Orientation(
+                np.eye(3),
+                degrees=2,
+                random_state=np.random.default_rng(other_seed),
+            ).copy().change_orientation(flip=True)
+            if seed not in (0, other_seed):
+                assert not np.allclose(reference, other)
 
 
 class TestMolecule(unittest.TestCase):

@@ -10,6 +10,7 @@ constraints.
 from copy import deepcopy
 
 import numpy as np
+from numpy.random import Generator
 from pymatgen.core import Element
 from pymatgen.core.operations import SymmOp
 from scipy.spatial.distance import cdist
@@ -561,7 +562,7 @@ def aa2matrix(axis, angle, radians=True, random=False):
     return Q
 
 
-def rotate_vector(v1, v2, rtol=1e-4):
+def rotate_vector(v1, v2, random_state=None, rtol=1e-4):
     # TODO: Verify that multiplication order is correct
     # (matrix should come after vector in np.dot)
     """
@@ -571,11 +572,18 @@ def rotate_vector(v1, v2, rtol=1e-4):
     Args:
         v1: a 1x3 vector (list or array) of floats
         v2: a 1x3 vector (list or array) of floats
+        random_state: numpy Generator or seed for antiparallel-vector branch
+        rtol: tolerance for collinearity checks
 
     Returns:
         a 3x3 matrix corresponding to a rotation which
         can be applied to v1 to obtain v2
     """
+    if isinstance(random_state, Generator):
+        random_state = random_state.spawn(1)[0]
+    else:
+        random_state = np.random.default_rng(random_state)
+
     v1 = v1 / np.linalg.norm(v1)
     v2 = v2 / np.linalg.norm(v2)
     dot = np.dot(v1, v2)
@@ -583,7 +591,7 @@ def rotate_vector(v1, v2, rtol=1e-4):
     if np.abs(dot - 1) < rtol:
         return np.identity(3)
     elif np.abs(dot + 1) < rtol:
-        r = np.random.sample(3) #[np.random.random(), np.random.random(), np.random.random()]
+        r = random_state.random(3)
         v3 = np.cross(v1, r)
         v3 /= np.linalg.norm(v3)
         # return aa2matrix(v3, np.pi)
