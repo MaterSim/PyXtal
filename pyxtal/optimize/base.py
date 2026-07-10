@@ -236,8 +236,6 @@ class GlobalOptimize:
         self.skip_mlp = skip_mlp
         self.output_mlp = output_mlp
         self.check_stable = check_stable
-        if not self.opt_lat:
-            self.check_stable = False
 
         # setup timeout for each optimization call
         self.max_time = max_time
@@ -420,7 +418,7 @@ class GlobalOptimize:
     def new_struc(self, xtal, xtals):
         return new_struc(xtal, xtals)
 
-    def run(self, ref_pmg=None, ref_pxrd=None):
+    def run(self, ref_pmg=None, ref_pxrd=None, max_rmsd=0.5):
         """
         The main code to run Sampling
 
@@ -436,6 +434,7 @@ class GlobalOptimize:
         if ref_pmg is not None: ref_pmg.remove_species("H")
         self.ref_pmg = ref_pmg
         self.ref_pxrd = ref_pxrd
+        self.max_rmsd = max_rmsd
 
         if self.ncpu > 1:
             ctx = get_context("spawn")  # safer than fork
@@ -845,7 +844,7 @@ class GlobalOptimize:
                     xtal.to_file(filename, header=header, permission="a+")
                     strs = rep0.to_string(eng=eng1)
                     rmsd = self.matcher.get_rms_dist(pmg0, pmg_s1)
-                    if rmsd is not None:
+                    if rmsd is not None and rmsd[1] < self.max_rmsd:
                         strs += f"{rmsd[0]:6.3f}{rmsd[1]:6.3f} True"
                         print(strs)
                         return True
@@ -873,6 +872,7 @@ class GlobalOptimize:
             self.sites,
             self.ref_pmg,
             self.matcher,
+            self.max_rmsd,
             self.ref_pxrd,
             self.use_hall,
             self.mlp,
@@ -880,6 +880,9 @@ class GlobalOptimize:
             self.output_mlp,
             self.check_stable,
             self.pre_opt,
+            self.opt_lat,
+            getattr(self, 'delta_length', 1.0),
+            getattr(self, 'delta_angle', 15.0),
         ]
         return args
 

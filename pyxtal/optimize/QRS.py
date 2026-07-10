@@ -258,6 +258,64 @@ def generate_qrs_xtals(
     return xtals
 
 
+def expand_delta_angle_per_dof(delta_spec, composition, wp_bounds, default=30.0):
+    """Expand per-component delta specs to a flat per-DOF angle resolution list.
+
+    Each component entry may be:
+      - a scalar (same resolution for all angle DOFs at that site)
+      - a length-3 sequence ``[alpha, beta, gamma]`` for Euler angles
+    """
+    flat = []
+    site_idx = 0
+    comp_specs = delta_spec if isinstance(delta_spec, (list, tuple)) else [delta_spec]
+
+    for comp_idx, count in enumerate(composition):
+        if comp_idx < len(comp_specs):
+            spec = comp_specs[comp_idx]
+        elif comp_specs:
+            spec = comp_specs[-1]
+        else:
+            spec = default
+
+        for _ in range(int(count)):
+            bounds = wp_bounds[site_idx]
+            euler = None
+            if isinstance(spec, (list, tuple)) and len(spec) == 3:
+                euler = [float(d) for d in spec]
+            elif isinstance(spec, (list, tuple)) and len(spec) == 1:
+                spec = float(spec[0])
+
+            euler_idx = 0
+            for lb, ub in bounds:
+                span = ub - lb
+                if abs(span - 1.0) < 1e-6:
+                    flat.append(float(default))
+                elif euler is not None:
+                    da = euler[euler_idx] if euler_idx < len(euler) else euler[-1]
+                    flat.append(float(da))
+                    euler_idx += 1
+                else:
+                    flat.append(float(spec))
+            site_idx += 1
+
+    return flat
+
+
+def _delta_angle_enabled(delta_angle, delta_length):
+    """Return True when uneven-grid angle resolution should be used."""
+    if delta_length > 0:
+        return True
+    if isinstance(delta_angle, (int, float)):
+        return delta_angle > 0
+    if isinstance(delta_angle, (list, tuple)):
+        def _positive(spec):
+            if isinstance(spec, (list, tuple)):
+                return any(_positive(x) for x in spec)
+            return float(spec) > 0
+        return any(_positive(d) for d in delta_angle)
+    return False
+
+
 def compute_wp_resolutions(wp_bounds, cell_lengths, delta_length=1.0, delta_angle=30.0):
     """
     Compute per-DOF grid resolution (number of levels) for an uneven QRS grid.
@@ -277,15 +335,15 @@ def compute_wp_resolutions(wp_bounds, cell_lengths, delta_length=1.0, delta_angl
         list[int]: number of levels per DOF (flat, same ordering as wp_bounds)
     """
     n_levels = []
+    total_dofs = sum(len(site_bounds) for site_bounds in wp_bounds)
 
-    # delta_angle may be a scalar (float) or an iterable providing a per-site
-    # angle resolution. If iterable and length matches wp_bounds, use the
-    # corresponding per-site delta; otherwise broadcast the scalar value.
+    per_dof_delta = None
     if isinstance(delta_angle, (list, tuple, np.ndarray)):
-        if len(delta_angle) == len(wp_bounds):
-            per_site_delta = list(delta_angle)
+        if len(delta_angle) == total_dofs:
+            per_dof_delta = [float(d) for d in delta_angle]
+        elif len(delta_angle) == len(wp_bounds):
+            per_site_delta = [float(d) for d in delta_angle]
         else:
-            # Unexpected shape: fall back to first element or treat as scalar
             try:
                 per_site_delta = [float(delta_angle[0])] * len(wp_bounds)
             except Exception:
@@ -293,9 +351,10 @@ def compute_wp_resolutions(wp_bounds, cell_lengths, delta_length=1.0, delta_angl
     else:
         per_site_delta = [float(delta_angle)] * len(wp_bounds)
 
+    dof_idx = 0
     for site_idx, site_bounds in enumerate(wp_bounds):
+        site_delta = per_site_delta[site_idx] if per_dof_delta is None else None
         coord_idx = 0
-        site_delta = per_site_delta[site_idx]
         for (lb, ub) in site_bounds:
             span = ub - lb
             if abs(span - 1.0) < 1e-6:  # fractional coordinate DOF
@@ -303,7 +362,10 @@ def compute_wp_resolutions(wp_bounds, cell_lengths, delta_length=1.0, delta_angl
                 n = max(1, int(edge / delta_length))
                 coord_idx += 1
             else:  # angle DOF (Euler or torsion)
+                if per_dof_delta is not None:
+                    site_delta = per_dof_delta[dof_idx]
                 n = max(1, int(round(span / site_delta)))
+            dof_idx += 1
             n_levels.append(n)
     return n_levels
 
@@ -544,22 +606,38 @@ class QRS(GlobalOptimize):
         self.ltype = self.lattice.ltype
         self.wp_bounds = [site.get_bounds() for site in tmp.mol_sites]
         grid_wp_bounds = trim_wp_bounds_for_molecules(self.wp_bounds, self.composition, self.molecules)
-        if self.delta_length > 0 or (isinstance(self.delta_angle, (int, float)) and self.delta_angle > 0) or (isinstance(self.delta_angle, (list, tuple)) and any([d > 0 for d in self.delta_angle])):
+        if _delta_angle_enabled(self.delta_angle, self.delta_length):
             # Uneven grid: per-dim resolution derived from cell lengths / angle range
             dl = self.delta_length if self.delta_length > 0 else 1.0
             da = self.delta_angle if self.delta_angle is not None else 30.0
             a, b, c = self.lattice.get_para()[:3]
 
             # If da is a per-component list (one value per composition entry),
-            # expand it into a per-site list matching grid_wp_bounds.
+            # expand it into a per-site or per-DOF list matching grid_wp_bounds.
             if isinstance(da, (list, tuple)) and len(da) == len(self.composition):
-                per_site_da = []
-                for comp_idx, cnt in enumerate(self.composition):
-                    per_site_da.extend([da[comp_idx]] * int(cnt))
+                has_euler_spec = any(
+                    isinstance(entry, (list, tuple)) and len(entry) == 3
+                    for entry in da
+                )
+                if has_euler_spec:
+                    per_dof_da = expand_delta_angle_per_dof(
+                        da, self.composition, grid_wp_bounds, default=30.0,
+                    )
+                else:
+                    per_site_da = []
+                    for comp_idx, cnt in enumerate(self.composition):
+                        per_site_da.extend([da[comp_idx]] * int(cnt))
+                    per_dof_da = None
             else:
                 per_site_da = da
+                per_dof_da = None
 
-            n_levels = compute_wp_resolutions(grid_wp_bounds, [a, b, c], dl, per_site_da)
+            n_levels = compute_wp_resolutions(
+                grid_wp_bounds,
+                [a, b, c],
+                dl,
+                per_dof_da if per_dof_da is not None else per_site_da,
+            )
             print(f"Computed per-DOF grid levels: {n_levels}")
             self.sampler = GridSampler(n_levels)
             print(f"GridSampler initialised: {self.sampler}")

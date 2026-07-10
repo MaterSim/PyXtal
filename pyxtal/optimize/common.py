@@ -42,6 +42,161 @@ def get_rmsd_with_timeout(matcher, ref_pmg, structure, timeout=10):
             print(f"RMSD calculation timed out after {timeout} seconds")
             return None
 
+
+def _resolve_delta_angle(delta_angle, default=15.0):
+    """Return a scalar perturbation step from a scalar or nested delta_angle spec."""
+    if isinstance(delta_angle, (int, float, np.floating)):
+        return float(delta_angle)
+    if isinstance(delta_angle, (list, tuple, np.ndarray)):
+        flat = []
+        for item in delta_angle:
+            if isinstance(item, (list, tuple, np.ndarray)):
+                flat.extend(float(x) for x in item)
+            else:
+                flat.append(float(item))
+        return min(flat) if flat else default
+    return default
+
+
+def _wrap_dof(value, lb, ub):
+    """Wrap a DOF value into [lb, ub), handling periodic fractional coords."""
+    span = float(ub - lb)
+    if span <= 0:
+        return float(value)
+    v = float(value)
+    if abs(span - 1.0) < 1e-6:
+        v = (v - lb) % span
+        if v < 0:
+            v += span
+        return lb + v
+    while v < lb:
+        v += span
+    while v >= ub:
+        v -= span
+    return v
+
+
+def _qrs_dof_steps(bounds, cell_lengths, delta_length, delta_angle):
+    """Deterministic single-DOF perturbations: (dof_idx, signed_delta)."""
+    steps = []
+    coord_idx = 0
+    angle_step = _resolve_delta_angle(delta_angle)
+    for dof_idx, (lb, ub) in enumerate(bounds):
+        span = float(ub - lb)
+        if abs(span - 1.0) < 1e-6:
+            edge = float(cell_lengths[coord_idx]) if coord_idx < len(cell_lengths) else 1.0
+            eps = 0.5 * float(delta_length) / max(edge, 1e-6)
+            coord_idx += 1
+        else:
+            eps = 0.5 * angle_step
+        if eps <= 0:
+            continue
+        steps.append((dof_idx, eps))
+        steps.append((dof_idx, -eps))
+    return steps
+
+
+def _perturbable_bounds(site, skip_torsions=True):
+    """Return Wyckoff bounds to perturb, optionally excluding fixed-conformer torsions."""
+    bounds = site.get_bounds()
+    if not skip_torsions:
+        return bounds
+    torsionlist = getattr(site.molecule, "torsionlist", None)
+    n_torsion = len(torsionlist) if torsionlist is not None else 0
+    if n_torsion <= 0 or n_torsion >= len(bounds):
+        return bounds
+    return bounds[:-n_torsion]
+
+
+def sweep_qrs(
+    xtal,
+    comp,
+    c_info,
+    w_dir,
+    job_tag,
+    mlp,
+    skip_mlp,
+    optimizer,
+    delta_length=1.0,
+    delta_angle=5.0,
+    eng_tol=0.01,
+    opt_lat=False,
+    eng0=None,
+    skip_torsions=True,
+):
+    """
+    Deterministically perturb Wyckoff DOFs on a fixed lattice and re-relax.
+
+    Each DOF is shifted by +/- half of the QRS grid spacing (delta_length for
+    fractional coordinates, delta_angle for Euler angles).  Torsion DOFs are
+    skipped by default so fixed pregenerated conformers are not perturbed.
+    Perturbations are applied in a fixed site/DOF/sign order for reproducibility.
+
+    Returns:
+        xtal0: best relaxed structure found
+        eng0: its total energy
+        stable: True if no lower-energy basin was found
+    """
+    N = sum(xtal.numMols)
+    comp = xtal.get_1D_comp()
+    smiles = [m.smile for m in xtal.molecules]
+    xtal0 = xtal
+    eng0 = float(xtal.energy if eng0 is None else eng0)
+    stable = True
+    cell_lengths = list(xtal0.lattice.get_para()[:3])
+
+    rep = representation.from_pyxtal(xtal0)
+    base_x = [list(row) for row in rep.x]
+
+    for site_idx, site in enumerate(xtal0.mol_sites):
+        bounds = _perturbable_bounds(site, skip_torsions=skip_torsions)
+        steps = _qrs_dof_steps(bounds, cell_lengths, delta_length, delta_angle)
+        if site_idx + 1 >= len(base_x):
+            continue
+
+        for dof_idx, delta in steps:
+            if 1 + dof_idx >= len(base_x[site_idx + 1]):
+                continue
+            x_try = [list(row) for row in base_x]
+            lb, ub = bounds[dof_idx]
+            old_val = x_try[site_idx + 1][1 + dof_idx]
+            new_val = _wrap_dof(old_val + delta, lb, ub)
+            if abs(new_val - old_val) < 1e-12:
+                continue
+            x_try[site_idx + 1][1 + dof_idx] = new_val
+            try:
+                xtal1 = representation(x_try, smiles).to_pyxtal(composition=comp)
+            except Exception:
+                continue
+            if xtal1 is None or len(xtal1.check_short_distances(exclude_H=True)) > 0:
+                continue
+            res = optimizer(
+                xtal1,
+                c_info,
+                w_dir,
+                job_tag,
+                opt_lat,
+                mlp=mlp,
+                skip_mlp=skip_mlp,
+            )
+            if res is None:
+                continue
+            xtal2, eng = res["xtal"], res["energy"]
+            if eng < eng0 - eng_tol:
+                rep2 = xtal2.get_1D_representation()
+                print(
+                    rep2.to_string(None, eng / N) + f" <- {eng0 / N:.3f} "
+                    f"(site{site_idx} dof{dof_idx} {delta:+.3g})",
+                    flush=True,
+                )
+                xtal0, eng0 = xtal2, eng
+                stable = False
+                rep = representation.from_pyxtal(xtal0)
+                base_x = [list(row) for row in rep.x]
+
+    return xtal0, eng0, stable
+
+
 def sweep(xtal, comp, c_info, w_dir, job_tag, mlp, skip_mlp, optimizer, eps=[0.05, -0.02]):
     """
     Check the stability of input xtal based on 5% tension
@@ -488,6 +643,7 @@ def optimizer_par(
     sites,
     ref_pmg,
     matcher,
+    max_rmsd,
     ref_pxrd,
     use_hall,
     mlp,
@@ -495,6 +651,9 @@ def optimizer_par(
     output_mlp,
     check_stable,
     pre_opt,
+    opt_lat=True,
+    delta_length=1.0,
+    delta_angle=15.0,
 ):
     """
     A routine used for parallel structure optimization
@@ -529,6 +688,7 @@ def optimizer_par(
             sites,
             ref_pmg,
             matcher,
+            max_rmsd,
             ref_pxrd,
             use_hall,
             mlp,
@@ -536,6 +696,9 @@ def optimizer_par(
             output_mlp,
             check_stable,
             pre_opt,
+            opt_lat=opt_lat,
+            delta_length=delta_length,
+            delta_angle=delta_angle,
             label=labels[i] if labels is not None else None,
         )
         results.append((id, xtal, match, stable))
@@ -562,6 +725,7 @@ def optimizer_single(
     sites,
     ref_pmg,
     matcher,
+    max_rmsd,
     ref_pxrd,
     use_hall,
     mlp,
@@ -569,6 +733,9 @@ def optimizer_single(
     output_mlp,
     check_stable,
     pre_opt,
+    opt_lat=True,
+    delta_length=1.0,
+    delta_angle=15.0,
     label=None,
 ):
     """
@@ -624,8 +791,26 @@ def optimizer_single(
         if not np.isfinite(eng) or eng >= 9999.:
             return None, match, stable
         if check_stable and eng < 9999.:
-            res = sweep(xtal, comp, atom_info, workdir, job_tag,
-                        mlp, skip_mlp, optimizer)
+            if opt_lat:
+                res = sweep(
+                    xtal, comp, atom_info, workdir, job_tag,
+                    mlp, skip_mlp, optimizer,
+                )
+            else:
+                res = sweep_qrs(
+                    xtal,
+                    comp,
+                    atom_info,
+                    workdir,
+                    job_tag,
+                    mlp,
+                    skip_mlp,
+                    optimizer,
+                    delta_length=delta_length,
+                    delta_angle=delta_angle,
+                    opt_lat=opt_lat,
+                    eng0=eng,
+                )
             if res is not None:
                 xtal, eng, stable = res
                 if stable:
@@ -644,7 +829,7 @@ def optimizer_single(
                 rmsd = get_rmsd_with_timeout(matcher, ref_pmg, pmg_s1)
             except:
                 rmsd = None
-            if rmsd is not None:
+            if rmsd is not None and rmsd[1] < max_rmsd:
                 # Further refine the structure
                 match = True
                 str1 = f"Match {rmsd[0]:6.2f} {rmsd[1]:6.2f} {eng / N:12.3f} "
