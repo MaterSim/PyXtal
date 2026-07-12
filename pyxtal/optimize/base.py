@@ -418,13 +418,15 @@ class GlobalOptimize:
     def new_struc(self, xtal, xtals):
         return new_struc(xtal, xtals)
 
-    def run(self, ref_pmg=None, ref_pxrd=None, max_rmsd=0.5):
+    def run(self, ref_pmg=None, ref_pxrd=None, max_rmsd=None):
         """
         The main code to run Sampling
 
         Args:
             ref_pmg: reference pmg structure
             ref_pxrd: reference pxrd profile in 2D array
+            max_rmsd: RMSD cutoff for matching (default 0.5, or keep
+                ``self.max_rmsd`` if already set)
 
         Returns:
             success_rate or None
@@ -434,7 +436,10 @@ class GlobalOptimize:
         if ref_pmg is not None: ref_pmg.remove_species("H")
         self.ref_pmg = ref_pmg
         self.ref_pxrd = ref_pxrd
-        self.max_rmsd = max_rmsd
+        if max_rmsd is not None:
+            self.max_rmsd = max_rmsd
+        elif not hasattr(self, "max_rmsd"):
+            self.max_rmsd = 0.5
 
         if self.ncpu > 1:
             ctx = get_context("spawn")  # safer than fork

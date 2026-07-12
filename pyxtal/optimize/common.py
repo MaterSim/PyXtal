@@ -78,24 +78,37 @@ def _wrap_dof(value, lb, ub):
     return v
 
 
-def _qrs_dof_steps(bounds, cell_lengths, delta_length, delta_angle):
-    """Deterministic single-DOF perturbations: (dof_idx, signed_delta)."""
-    steps = []
+def _qrs_dof_steps(bounds, cell_lengths, delta_length, delta_angle, skip_frac=True, both_signs=False):
+    """Deterministic single-DOF perturbations: (dof_idx, signed_delta).
+
+    Angle DOFs are listed first.  Fractional coords are omitted when
+    ``skip_frac`` is True.  By default only +eps is used (``both_signs=False``)
+    to cut the number of re-relaxations roughly in half.
+    """
+    angle_steps = []
+    frac_steps = []
     coord_idx = 0
     angle_step = _resolve_delta_angle(delta_angle)
+    signs = (1.0, -1.0) if both_signs else (1.0,)
     for dof_idx, (lb, ub) in enumerate(bounds):
         span = float(ub - lb)
         if abs(span - 1.0) < 1e-6:
             edge = float(cell_lengths[coord_idx]) if coord_idx < len(cell_lengths) else 1.0
-            eps = 0.5 * float(delta_length) / max(edge, 1e-6)
             coord_idx += 1
+            if skip_frac:
+                continue
+            eps = 0.5 * float(delta_length) / max(edge, 1e-6)
+            if eps <= 0:
+                continue
+            for s in signs:
+                frac_steps.append((dof_idx, s * eps))
         else:
             eps = 0.5 * angle_step
-        if eps <= 0:
-            continue
-        steps.append((dof_idx, eps))
-        steps.append((dof_idx, -eps))
-    return steps
+            if eps <= 0:
+                continue
+            for s in signs:
+                angle_steps.append((dof_idx, s * eps))
+    return angle_steps + frac_steps
 
 
 def _perturbable_bounds(site, skip_torsions=True):
@@ -108,6 +121,25 @@ def _perturbable_bounds(site, skip_torsions=True):
     if n_torsion <= 0 or n_torsion >= len(bounds):
         return bounds
     return bounds[:-n_torsion]
+
+
+def _light_charmm_relax(xtal, atom_info, workdir, job_tag, steps=1000):
+    """Cheap fixed-lattice re-relax used by sweep_qrs (far fewer CHARMM steps)."""
+    cwd = os.getcwd()
+    os.chdir(workdir)
+    try:
+        calc = CHARMM(xtal, job_tag, steps=[int(steps)], atom_info=atom_info)
+        calc.run()
+        if calc.error or calc.structure is None:
+            return None
+        eng = getattr(calc.structure, "energy", None)
+        if eng is None or not np.isfinite(eng):
+            return None
+        return {"xtal": calc.structure, "energy": float(eng)}
+    except Exception:
+        return None
+    finally:
+        os.chdir(cwd)
 
 
 def sweep_qrs(
@@ -125,14 +157,24 @@ def sweep_qrs(
     opt_lat=False,
     eng0=None,
     skip_torsions=True,
+    skip_frac=True,
+    both_signs=True,
+    max_trials=None,
+    light_steps=2500,
 ):
     """
     Deterministically perturb Wyckoff DOFs on a fixed lattice and re-relax.
 
-    Each DOF is shifted by +/- half of the QRS grid spacing (delta_length for
-    fractional coordinates, delta_angle for Euler angles).  Torsion DOFs are
-    skipped by default so fixed pregenerated conformers are not perturbed.
-    Perturbations are applied in a fixed site/DOF/sign order for reproducibility.
+    Each DOF is shifted by half the QRS grid spacing.  Defaults are tuned for
+    speed while still detecting shallow minima:
+
+    - orientation (angle) DOFs only (``skip_frac=True``)
+    - +eps only (``both_signs=False``) — set True to also try -eps
+    - short CHARMM re-relax (``light_steps``) when ``skip_mlp`` is True
+
+    Torsion DOFs are skipped by default so fixed pregenerated conformers are
+    not perturbed.  ``max_trials`` caps re-relaxations per structure
+    (None = unlimited).
 
     Returns:
         xtal0: best relaxed structure found
@@ -146,17 +188,30 @@ def sweep_qrs(
     eng0 = float(xtal.energy if eng0 is None else eng0)
     stable = True
     cell_lengths = list(xtal0.lattice.get_para()[:3])
+    n_trials = 0
+
+    # Prefer the cheap CHARMM path for FF-only QRS; fall back to full optimizer.
+    use_light = bool(skip_mlp) and light_steps is not None and light_steps > 0
 
     rep = representation.from_pyxtal(xtal0)
     base_x = [list(row) for row in rep.x]
 
     for site_idx, site in enumerate(xtal0.mol_sites):
         bounds = _perturbable_bounds(site, skip_torsions=skip_torsions)
-        steps = _qrs_dof_steps(bounds, cell_lengths, delta_length, delta_angle)
+        steps = _qrs_dof_steps(
+            bounds,
+            cell_lengths,
+            delta_length,
+            delta_angle,
+            skip_frac=skip_frac,
+            both_signs=both_signs,
+        )
         if site_idx + 1 >= len(base_x):
             continue
 
         for dof_idx, delta in steps:
+            if max_trials is not None and n_trials >= max_trials:
+                return xtal0, eng0, stable
             if 1 + dof_idx >= len(base_x[site_idx + 1]):
                 continue
             x_try = [list(row) for row in base_x]
@@ -172,15 +227,22 @@ def sweep_qrs(
                 continue
             if xtal1 is None or len(xtal1.check_short_distances(exclude_H=True)) > 0:
                 continue
-            res = optimizer(
-                xtal1,
-                c_info,
-                w_dir,
-                job_tag,
-                opt_lat,
-                mlp=mlp,
-                skip_mlp=skip_mlp,
-            )
+
+            if use_light:
+                res = _light_charmm_relax(
+                    xtal1, c_info, w_dir, job_tag, steps=light_steps,
+                )
+            else:
+                res = optimizer(
+                    xtal1,
+                    c_info,
+                    w_dir,
+                    job_tag,
+                    opt_lat,
+                    mlp=mlp,
+                    skip_mlp=skip_mlp,
+                )
+            n_trials += 1
             if res is None:
                 continue
             xtal2, eng = res["xtal"], res["energy"]
