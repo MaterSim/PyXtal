@@ -721,11 +721,16 @@ class mol_site:
     def _get_dof(self):
         """
         get the number of dof for the given wyckoff site:
+
+        Fractional Wyckoff freedom plus orientation/torsions for multi-atom
+        molecules.  Monoatomic species have no orientation DOFs.
         """
         dof = np.linalg.matrix_rank(self.wp.ops[0].rotation_matrix)
-        self.dof = dof + 3
-        if self.molecule.torsionlist is not None:
-            self.dof += len(self.molecule.torsionlist)
+        if len(self.molecule.mol) > 1:
+            dof += 3
+            if self.molecule.torsionlist is not None:
+                dof += len(self.molecule.torsionlist)
+        self.dof = dof
 
     def get_bounds(self):
         """

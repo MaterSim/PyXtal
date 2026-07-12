@@ -370,7 +370,19 @@ def ASE_relax(
 
     try:
         atoms.calc = get_calculator(calculator, model=model, quick=quick)
-        atoms.set_constraint(FixSymmetry(atoms))
+        try:
+            atoms.set_constraint(FixSymmetry(atoms))
+        except (TypeError, AttributeError, RuntimeError) as exc:
+            # spglib can return None for some lattices; continue without symmetry constraint
+            try:
+                logger.warning(
+                    f"Warning {label} FixSymmetry failed ({exc}); relaxing without symmetry constraint"
+                )
+            except Exception:
+                print(
+                    f"Warning {label} FixSymmetry failed ({exc}); relaxing without symmetry constraint",
+                    flush=True,
+                )
 
         if opt_lat:
             ecf = UnitCellFilter(atoms)
@@ -394,11 +406,10 @@ def ASE_relax(
             atoms = None
 
     except TimeoutError:
-        logger.warning(f"Warning {label} timed out after {timeout} seconds.")
-        atoms = None
-
-    except TypeError:
-        logger.warning(f"Warning {label} spglib error in getting the lattice")
+        try:
+            logger.warning(f"Warning {label} timed out after {timeout} seconds.")
+        except Exception:
+            print(f"Warning {label} timed out after {timeout} seconds.", flush=True)
         atoms = None
 
     finally:

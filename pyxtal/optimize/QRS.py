@@ -262,6 +262,7 @@ def expand_delta_angle_per_dof(delta_spec, composition, wp_bounds, default=30.0)
     """Expand per-component delta specs to a flat per-DOF angle resolution list.
 
     Each component entry may be:
+      - ``None`` (monoatomic / no orientation DOFs; frac slots get ``default``)
       - a scalar (same resolution for all angle DOFs at that site)
       - a length-3 sequence ``[alpha, beta, gamma]`` for Euler angles
     """
@@ -280,10 +281,15 @@ def expand_delta_angle_per_dof(delta_spec, composition, wp_bounds, default=30.0)
         for _ in range(int(count)):
             bounds = wp_bounds[site_idx]
             euler = None
-            if isinstance(spec, (list, tuple)) and len(spec) == 3:
+            if spec is None:
+                site_scalar = None
+            elif isinstance(spec, (list, tuple)) and len(spec) == 3:
                 euler = [float(d) for d in spec]
+                site_scalar = None
             elif isinstance(spec, (list, tuple)) and len(spec) == 1:
-                spec = float(spec[0])
+                site_scalar = float(spec[0])
+            else:
+                site_scalar = float(spec)
 
             euler_idx = 0
             for lb, ub in bounds:
@@ -294,8 +300,11 @@ def expand_delta_angle_per_dof(delta_spec, composition, wp_bounds, default=30.0)
                     da = euler[euler_idx] if euler_idx < len(euler) else euler[-1]
                     flat.append(float(da))
                     euler_idx += 1
+                elif site_scalar is None:
+                    # No orientation expected for this component; keep placeholder.
+                    flat.append(float(default))
                 else:
-                    flat.append(float(spec))
+                    flat.append(float(site_scalar))
             site_idx += 1
 
     return flat
@@ -305,10 +314,14 @@ def _delta_angle_enabled(delta_angle, delta_length):
     """Return True when uneven-grid angle resolution should be used."""
     if delta_length > 0:
         return True
+    if delta_angle is None:
+        return False
     if isinstance(delta_angle, (int, float)):
         return delta_angle > 0
     if isinstance(delta_angle, (list, tuple)):
         def _positive(spec):
+            if spec is None:
+                return False
             if isinstance(spec, (list, tuple)):
                 return any(_positive(x) for x in spec)
             return float(spec) > 0
@@ -340,12 +353,14 @@ def compute_wp_resolutions(wp_bounds, cell_lengths, delta_length=1.0, delta_angl
     per_dof_delta = None
     if isinstance(delta_angle, (list, tuple, np.ndarray)):
         if len(delta_angle) == total_dofs:
-            per_dof_delta = [float(d) for d in delta_angle]
+            per_dof_delta = [None if d is None else float(d) for d in delta_angle]
         elif len(delta_angle) == len(wp_bounds):
-            per_site_delta = [float(d) for d in delta_angle]
+            per_site_delta = [None if d is None else float(d) for d in delta_angle]
         else:
             try:
-                per_site_delta = [float(delta_angle[0])] * len(wp_bounds)
+                first = delta_angle[0]
+                fill = None if first is None else float(first)
+                per_site_delta = [fill] * len(wp_bounds)
             except Exception:
                 per_site_delta = [float(delta_angle)] * len(wp_bounds)
     else:
@@ -364,10 +379,57 @@ def compute_wp_resolutions(wp_bounds, cell_lengths, delta_length=1.0, delta_angl
             else:  # angle DOF (Euler or torsion)
                 if per_dof_delta is not None:
                     site_delta = per_dof_delta[dof_idx]
-                n = max(1, int(round(span / site_delta)))
+                if site_delta is None or float(site_delta) <= 0:
+                    n = 1
+                else:
+                    n = max(1, int(round(span / float(site_delta))))
             dof_idx += 1
             n_levels.append(n)
     return n_levels
+
+
+def budget_grid_levels(n_levels, max_product, min_level=1):
+    """
+    Reduce per-DOF grid levels so that prod(n_levels) <= max_product.
+
+    Uses a uniform log-space scale first (preserves relative fineness), then
+    decrements the currently largest remaining levels until the product fits.
+    Levels never drop below ``min_level``.
+
+    Args:
+        n_levels: per-DOF bin counts
+        max_product: maximum allowed product (None / <=0 disables budgeting)
+        min_level: minimum bins per DOF (default 1)
+
+    Returns:
+        list[int]: budgeted levels (same length as input)
+    """
+    import math
+
+    levels = [max(int(min_level), int(n)) for n in n_levels]
+    if not levels or max_product is None or max_product <= 0:
+        return levels
+
+    def _log_prod(lv):
+        return sum(math.log(x) for x in lv)
+
+    log_budget = math.log(float(max_product))
+    if _log_prod(levels) <= log_budget + 1e-12:
+        return levels
+
+    # Uniform scale in log space so relative resolution is roughly preserved.
+    scale = math.exp((log_budget - _log_prod(levels)) / len(levels))
+    levels = [max(int(min_level), int(round(n * scale))) for n in levels]
+
+    # Trim residual overshoot from the largest dimensions first.
+    while _log_prod(levels) > log_budget + 1e-12:
+        candidates = [i for i, n in enumerate(levels) if n > min_level]
+        if not candidates:
+            break
+        i_max = max(candidates, key=lambda j: levels[j])
+        levels[i_max] -= 1
+
+    return levels
 
 
 def trim_wp_bounds_for_molecules(wp_bounds, composition, molecules):
@@ -474,6 +536,8 @@ class QRS(GlobalOptimize):
         use_mpi (bool): whether or not use mpi for parallel calculation
         delta_length (float): grid resolution in Å for fractional-coordinate DOF (0 = use Sobol)
         delta_angle (float): grid resolution in degrees for angle DOF (0 = use Sobol)
+        max_grid_product (float or None): cap on prod(n_levels); levels are scaled down
+            if the raw product exceeds this (default: 1e9; None disables)
     """
 
     def __init__(
@@ -515,6 +579,7 @@ class QRS(GlobalOptimize):
         delta_length: float = 1.0,
         delta_angle: float = 60.0,
         max_grid_attempts: int | None = None,
+        max_grid_product: float | None = 1e9,
     ):
 
         # POPULATION parameters:
@@ -525,6 +590,7 @@ class QRS(GlobalOptimize):
         self.delta_length = delta_length
         self.delta_angle = delta_angle
         self.max_grid_attempts = max_grid_attempts
+        self.max_grid_product = max_grid_product
 
         # initialize other base parameters
         GlobalOptimize.__init__(
@@ -575,6 +641,8 @@ class QRS(GlobalOptimize):
         s += f"\nPopulation: {self.N_pop:4d}"
         if self.max_grid_attempts is not None:
             s += f"\nGrid cap   : {self.max_grid_attempts:4d}"
+        if self.max_grid_product is not None and self.max_grid_product > 0:
+            s += f"\nGrid budget: {self.max_grid_product:.3g}"
         return s
 
     def _init_qrs_params(self):
@@ -626,7 +694,9 @@ class QRS(GlobalOptimize):
                 else:
                     per_site_da = []
                     for comp_idx, cnt in enumerate(self.composition):
-                        per_site_da.extend([da[comp_idx]] * int(cnt))
+                        # None = monoatomic (no orientation); unused for angle bins.
+                        val = da[comp_idx]
+                        per_site_da.extend([val] * int(cnt))
                     per_dof_da = None
             else:
                 per_site_da = da
@@ -638,7 +708,17 @@ class QRS(GlobalOptimize):
                 dl,
                 per_dof_da if per_dof_da is not None else per_site_da,
             )
-            print(f"Computed per-DOF grid levels: {n_levels}")
+            raw_product = int(np.prod(n_levels)) if n_levels else 0
+            print(f"Computed per-DOF grid levels: {n_levels} (product={raw_product})")
+            if self.max_grid_product is not None and self.max_grid_product > 0:
+                budgeted = budget_grid_levels(n_levels, self.max_grid_product)
+                if budgeted != list(n_levels):
+                    budgeted_product = int(np.prod(budgeted)) if budgeted else 0
+                    print(
+                        f"Budgeted grid levels to product <= {self.max_grid_product:.3g}: "
+                        f"{budgeted} (product={budgeted_product})"
+                    )
+                    n_levels = budgeted
             self.sampler = GridSampler(n_levels)
             print(f"GridSampler initialised: {self.sampler}")
         else:

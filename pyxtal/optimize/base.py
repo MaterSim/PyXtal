@@ -385,7 +385,7 @@ class GlobalOptimize:
         s += f"\nN_torsion : {self.N_torsion:d}"
         s += f"\nsg        : {self.sg!s:s}"
         s += f"\nncpu      : {self.size:d}"
-        s += f"\ndiretory  : {self.workdir:s}"
+        s += f"\ndirectory : {self.workdir:s}"
         s += f"\nopt_lat   : {self.opt_lat!s:s}"
         s += f"\nusp_mpi   : {self.use_mpi!s:s}\n"
         s += f"\nmlp       : {self.mlp!s:s}\n"

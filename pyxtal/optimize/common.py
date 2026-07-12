@@ -50,8 +50,10 @@ def _resolve_delta_angle(delta_angle, default=15.0):
     if isinstance(delta_angle, (list, tuple, np.ndarray)):
         flat = []
         for item in delta_angle:
+            if item is None:
+                continue
             if isinstance(item, (list, tuple, np.ndarray)):
-                flat.extend(float(x) for x in item)
+                flat.extend(float(x) for x in item if x is not None)
             else:
                 flat.append(float(item))
         return min(flat) if flat else default
