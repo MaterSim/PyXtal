@@ -18,9 +18,19 @@ import matplotlib.pyplot as plt
 from ase.io import read, write
 import warnings
 
-warnings.filterwarnings('ignore', category=DeprecationWarning, module='spglib')
-warnings.filterwarnings('ignore', category=UserWarning, module=r'ase\.io')
-warnings.filterwarnings('ignore', category=UserWarning, module='torch_dftd')
+# Suppress specific noisy warnings from ASE CIF parser and torch_dftd
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+warnings.filterwarnings(
+    "ignore",
+    message="crystal system 'monoclinic' is not interpreted",
+    category=UserWarning,
+)
+warnings.filterwarnings(
+    "ignore",
+    message="Creating a tensor from a list of numpy.ndarrays is extremely slow",
+    category=UserWarning,
+)
+
 
 from pyxtal.interface.ase_opt import (
     ASE_relax,
@@ -283,18 +293,30 @@ def _init_worker(calculator, model, quick):
 
 def worker_relax(args):
     """Worker to relax a single CIF block.
-    args: (label, block_text, orig_energy, step, fmax, label_idx, calculator, model, quick)
+    args: (label, block_text, orig_energy, step, fmax, label_idx, calculator, model, quick, relax_timeout_min)
     Returns (label, label_idx, original_energy, model_energy or None, status, relaxed_cif, elapsed_s)
     """
-    label, block_text, orig_energy, step, fmax, label_idx, calculator, model, quick = args
+    (
+        label,
+        block_text,
+        orig_energy,
+        step,
+        fmax,
+        label_idx,
+        calculator,
+        model,
+        quick,
+        relax_timeout_min,
+    ) = args
     start_time = time.time()
+    short_label = label[-45:] if len(label) > 45 else label
+    print(f'Relax start idx={label_idx:5d} pid={os.getpid()} {short_label}', flush=True)
     try:
         atoms = read(StringIO(block_text), format='cif')
     except Exception as e:
         return (label, label_idx, orig_energy, None, f"read_error: {e}", None, time.time() - start_time)
 
     try:
-        # Run chosen MLP relaxation with no lattice optimization
         relaxed = ASE_relax(
             atoms,
             calculator=calculator,
@@ -303,7 +325,7 @@ def worker_relax(args):
             opt_lat=False,
             step=step,
             fmax=fmax,
-            max_time=30.0,
+            max_time=relax_timeout_min,
             label=label,
             logfile=os.devnull,
         )
@@ -311,14 +333,131 @@ def worker_relax(args):
         if relaxed is None:
             return (label, label_idx, orig_energy, None, 'relax_failed', None, elapsed)
         model_energy = relaxed.get_potential_energy()
-        print(f'{label[-45:]} idx={label_idx:5d}, {calculator} {model_energy:.3f}, time {elapsed:.1f}s')
-        # export relaxed structure as CIF text for downstream matching
+        print(
+            f'Relax done  idx={label_idx:5d}, {calculator} {model_energy:.3f}, time {elapsed:.1f}s {short_label}',
+            flush=True,
+        )
         sio = BytesIO()
         write(sio, relaxed, format='cif')
         relaxed_cif = sio.getvalue().decode('utf-8')
         return (label, label_idx, orig_energy, model_energy, 'ok', relaxed_cif, elapsed)
     except Exception as e:
         return (label, label_idx, orig_energy, None, f'relax_exception: {e}', None, time.time() - start_time)
+
+
+def _log_relax_result(completed, total, result, batch_start):
+    lbl, idx, _orig, mace, status, _cif, elapsed = result
+    short = lbl[-45:] if len(lbl) > 45 else lbl
+    detail = f'{mace:.3f} eV' if mace is not None else status
+    elapsed_s = f'{elapsed:.1f}s' if elapsed is not None else 'n/a'
+    print(
+        f'Relax [{completed}/{total}] idx={idx:5d} {detail} '
+        f'task={elapsed_s} batch={time.perf_counter() - batch_start:.1f}s {short}',
+        flush=True,
+    )
+
+
+def _relax_tasks(
+    tasks,
+    *,
+    pool=None,
+    workers=1,
+    chunksize=1,
+    relax_timeout_min=15.0,
+    stall_timeout_min=20.0,
+    heartbeat_s=60.0,
+):
+    """Run relaxations with per-task logging and stall detection."""
+    total = len(tasks)
+    if total == 0:
+        return [], False
+
+    batch_start = time.perf_counter()
+    last_done = batch_start
+    last_heartbeat = batch_start
+    completed = 0
+    results = []
+    stall_limit = stall_timeout_min * 60.0
+    pool_needs_restart = False
+
+    print(
+        f'Relax batch: {total} tasks, relax_timeout={relax_timeout_min:.1f} min, '
+        f'stall_timeout={stall_timeout_min:.1f} min',
+        flush=True,
+    )
+
+    if pool is None or workers <= 1:
+        for task in tasks:
+            result = worker_relax(task)
+            completed += 1
+            last_done = time.perf_counter()
+            _log_relax_result(completed, total, result, batch_start)
+            results.append(result)
+        return results, False
+
+    async_map = {}
+    for task in tasks:
+        ar = pool.apply_async(worker_relax, (task,))
+        async_map[ar] = task
+    pending = set(async_map.keys())
+
+    while pending:
+        made_progress = False
+        for ar in list(pending):
+            if not ar.ready():
+                continue
+            result = ar.get()
+            pending.remove(ar)
+            completed += 1
+            last_done = time.perf_counter()
+            _log_relax_result(completed, total, result, batch_start)
+            results.append(result)
+            made_progress = True
+
+        if not pending:
+            break
+
+        if made_progress:
+            continue
+
+        now = time.perf_counter()
+        stall = now - last_done
+        if stall >= heartbeat_s and now - last_heartbeat >= heartbeat_s:
+            print(
+                f'Relax [{completed}/{total}] waiting... no finish for {stall:.0f}s '
+                f'(stall limit {stall_limit:.0f}s)',
+                flush=True,
+            )
+            last_heartbeat = now
+
+        if stall < stall_limit:
+            time.sleep(min(5.0, max(1.0, heartbeat_s - (now - last_heartbeat))))
+            continue
+
+        ar = next(iter(pending))
+        task = async_map[ar]
+        label, _, orig_energy, _, _, label_idx, *_ = task
+        pending.remove(ar)
+        completed += 1
+        last_done = time.perf_counter()
+        pool_needs_restart = True
+        skip_result = (label, label_idx, orig_energy, None, 'stall_skipped', None, None)
+        results.append(skip_result)
+        print(
+            f'Relax stall: skipping stuck task idx={label_idx} '
+            f'({len(pending)} still running in pool)',
+            flush=True,
+        )
+        _log_relax_result(completed, total, skip_result, batch_start)
+
+    if pool_needs_restart:
+        print(
+            f'WARNING: Skipped {sum(1 for r in results if r[4] == "stall_skipped")} stuck tasks; '
+            f'worker pool will be recreated for the next job.',
+            flush=True,
+        )
+
+    return results, pool_needs_restart
 
 
 def find_qrs_job_dirs(root):
@@ -371,7 +510,42 @@ def collect_jobs(cif_path, out_dir=None):
     raise FileNotFoundError(f"No QRS-openffall.cif found in {cif_path}")
 
 
-def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_code=None, matched_cif=None, cutoff_pct=50.0, e_tol=1e-3, calculator='MACE', model=None, quick=False, max_unique=None, match_max_sites=50, pool=None):
+def _result_paths(out_dir, model_tag, cutoff_pct):
+    base = f'{model_tag}_energy_{cutoff_pct:.1f}'
+    return (
+        os.path.join(out_dir, f'{base}.png'),
+        os.path.join(out_dir, f'{base}.csv'),
+    )
+
+
+def _select_for_relaxation(entries, cutoff_pct, min_selected=1000):
+    """Select lowest-energy entries, starting at cutoff_pct and raising if needed."""
+    valid = [e for e in entries if e['energy'] is not None]
+    if not valid:
+        return [], None, cutoff_pct
+
+    energies = [e['energy'] for e in valid]
+    initial_threshold = float(np.percentile(energies, cutoff_pct))
+    selected = [e for e in valid if e['energy'] <= initial_threshold]
+
+    if len(selected) >= min_selected or len(valid) <= len(selected):
+        return selected, initial_threshold, cutoff_pct
+
+    target = min(min_selected, len(valid))
+    selection_threshold = sorted(valid, key=lambda x: x['energy'])[target - 1]['energy']
+    selected = [e for e in valid if e['energy'] <= selection_threshold]
+    effective_pct = 100.0 * len(selected) / len(valid)
+    print(
+        f'Only {len([e for e in valid if e["energy"] <= initial_threshold])} structures '
+        f'at or below {cutoff_pct:.1f} percentile; '
+        f'raising cutoff to {effective_pct:.1f} percentile '
+        f'({len(selected)} structures, threshold {selection_threshold:.6f} eV)',
+        flush=True,
+    )
+    return selected, selection_threshold, effective_pct
+
+
+def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_code=None, matched_cif=None, cutoff_pct=50.0, e_tol=1e-3, calculator='MACE', model=None, quick=False, max_unique=None, match_max_sites=50, pool=None, relax_timeout_min=15.0, stall_timeout_min=20.0, force=False):
     main_start = time.time()
     input_folder = None
     if os.path.isdir(cif_path):
@@ -396,13 +570,21 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
     model = resolve_model(calculator, model=model, quick=quick)
     default_model = DEFAULT_MODELS.get(calculator)
     model_tag = f'{calculator}_{model}' if model != default_model else calculator
+    out_png, out_csv = _result_paths(out_dir, model_tag, cutoff_pct)
+    if not force and os.path.isfile(out_png) and os.path.isfile(out_csv):
+        case = os.path.basename(out_dir.rstrip(os.sep))
+        print(
+            f'Skipping {case}: {os.path.basename(out_png)} and {os.path.basename(out_csv)} already exist',
+            flush=True,
+        )
+        return False
     print(f'Output directory: {out_dir}')
     print(f'Calculator: {calculator}, model: {model}' + (' (quick preset)' if quick else ''))
 
     blocks = parse_qrs_cif(cif_path)
     if not blocks:
         print('No blocks found in', cif_path)
-        return
+        return False
 
     # Extract energies and labels
     entries = []
@@ -412,14 +594,17 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
     energies = [e['energy'] for e in entries if e['energy'] is not None]
     if not energies:
         print('No energies parsed')
-        return
-    # compute percentile cutoff (default 50% median)
-    threshold = float(np.percentile(energies, cutoff_pct))
-    print(f'Parsed {len(entries)} blocks, {cutoff_pct:.1f} percentile energy = {threshold:.6f} eV')
-
-    # select those with energy < threshold
-    selected = [e for e in entries if e['energy'] is not None and e['energy'] <= threshold]
-    print(f'{len(selected)} selected (energy <= {cutoff_pct:.1f} percentile)')
+        return False
+    print(
+        f'Parsed {len(entries)} blocks, {cutoff_pct:.1f} percentile energy = '
+        f'{float(np.percentile(energies, cutoff_pct)):.6f} eV',
+        flush=True,
+    )
+    selected, threshold, plot_pct = _select_for_relaxation(entries, cutoff_pct)
+    if not selected:
+        print('No energies parsed')
+        return False
+    print(f'{len(selected)} structures selected for relaxation', flush=True)
 
     # Use a single StructureMatcher across deduplication and reference matching.
     matcher = StructureMatcher(ltol=0.3, stol=0.3, angle_tol=5.0)
@@ -481,7 +666,18 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
     # a large chunksize so each worker receives a balanced block.
     sorted_tasks = sorted(
         [
-            (e['label'], e['text'], e['energy'], step, fmax, e['idx'], calculator, model, quick)
+            (
+                e['label'],
+                e['text'],
+                e['energy'],
+                step,
+                fmax,
+                e['idx'],
+                calculator,
+                model,
+                quick,
+                relax_timeout_min,
+            )
             for e in unique_selected
         ],
         key=lambda x: x[2]
@@ -494,24 +690,54 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
     workers = min(nproc, len(tasks))
     print(f'Running {len(tasks)} relaxation tasks for {len(unique_selected)} unique structures with calculator={calculator}, model={model}')
     print(f'Using chunksize={chunksize} for {workers} workers')
+    pool_terminated = False
     if pool is not None:
-        results = pool.map(worker_relax, tasks, chunksize=chunksize)
+        results, pool_terminated = _relax_tasks(
+            tasks,
+            pool=pool,
+            workers=workers,
+            chunksize=chunksize,
+            relax_timeout_min=relax_timeout_min,
+            stall_timeout_min=stall_timeout_min,
+        )
     elif workers <= 1:
         _configure_worker_threads()
         get_calculator(calculator, model=model, quick=quick)
-        results = [worker_relax(task) for task in tasks]
+        results, pool_terminated = _relax_tasks(
+            tasks,
+            pool=None,
+            workers=1,
+            relax_timeout_min=relax_timeout_min,
+            stall_timeout_min=stall_timeout_min,
+        )
     else:
-        # spawn avoids macOS fork crashes after MPS/PyTorch init in the parent.
         ctx = mp.get_context("spawn")
         with ctx.Pool(
             processes=workers,
             initializer=_init_worker,
             initargs=(calculator, model, quick),
         ) as job_pool:
-            results = job_pool.map(worker_relax, tasks, chunksize=chunksize)
+            results, pool_terminated = _relax_tasks(
+                tasks,
+                pool=job_pool,
+                workers=workers,
+                chunksize=chunksize,
+                relax_timeout_min=relax_timeout_min,
+                stall_timeout_min=stall_timeout_min,
+            )
     print(f'Completed {len(results)} relaxation results')
     total_relax_time = sum([r[6] for r in results if len(r) > 6 and r[6] is not None])
     print(f'Total relaxation wall time: {total_relax_time:.1f} s')
+
+    task_idxs = {task[5] for task in tasks}
+    completed_idxs = {r[1] for r in results}
+    stall_skipped_idxs = task_idxs - completed_idxs
+    if stall_skipped_idxs:
+        print(
+            f'Skipped {len(stall_skipped_idxs)} relaxation tasks due to stall timeout: '
+            f'{sorted(stall_skipped_idxs)}',
+            flush=True,
+        )
 
     # collect results
     id_all = [i for i in range(len(entries))]
@@ -538,7 +764,9 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
                 time_costs[dup] = elapsed_s
                 relaxed_cifs[dup] = relaxed_cif
         else:
-            print(f'Relax failed for {lbl} idx={idx}: {status}, time {elapsed_s:.1f}s')
+            if status != 'stall_skipped':
+                elapsed_str = f'{elapsed_s:.1f}s' if elapsed_s is not None else 'n/a'
+                print(f'Relax failed for {lbl} idx={idx}: {status}, time {elapsed_str}')
 
     # Prepare relaxed match IDs set (may be empty)
     if ref_pmg is not None:
@@ -563,15 +791,15 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
     # Top: ID vs original energy (all entries)
     xs = id_all
     ys = orig_energy_all
-    below_x = [i for i in xs if ys[i] is not None and ys[i] < threshold]
-    above_x = [i for i in xs if ys[i] is not None and ys[i] >= threshold]
+    below_x = [i for i in xs if ys[i] is not None and ys[i] <= threshold]
+    above_x = [i for i in xs if ys[i] is not None and ys[i] > threshold]
     if below_x:
         ax_top.plot(
             below_x,
             [ys[i] for i in below_x],
             'o-',
             markersize=6,
-            label=f'OpenFF (<= {cutoff_pct:.1f}%)',
+            label=f'OpenFF (<= {plot_pct:.1f}%)',
         )
     if above_x:
         ax_top.scatter(
@@ -580,7 +808,7 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
             marker='o',
             color='grey',
             s=36,
-            label=f'OpenFF (> {cutoff_pct:.1f}%)',
+            label=f'OpenFF (> {plot_pct:.1f}%)',
         )
     # highlight original CIF matches on top if present
     if original_match_ids:
@@ -624,14 +852,12 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
     ax_bot.legend(loc=2)
 
     fig.tight_layout()
-    out_png = os.path.join(out_dir, f'{model_tag}_energy_{cutoff_pct:.1f}.png')
     fig.savefig(out_png, dpi=200)
     print('Saved plot to', out_png) 
 
     # Also save CSV of results
     import csv
-    csvp = os.path.join(out_dir, f'{model_tag}_energy_{cutoff_pct:.1f}.csv')
-    with open(csvp, 'w', newline='') as f:
+    with open(out_csv, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['idx','label','orig_energy','mace_energy','time_cost_s','status','original_matched','relaxed_matched'])
         res_map = {r[1]: r for r in results}
@@ -650,13 +876,16 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
                 status = 'propagated'
                 elapsed_s = time_costs.get(idx, None)
                 writer.writerow([ii, lbl, orig, mace if mace is not None else '', f'{elapsed_s:.3f}' if elapsed_s is not None else '', status, orig_matched, relaxed_matched])
+            elif idx in stall_skipped_idxs:
+                writer.writerow([idx, e['label'], e['energy'], '', '', 'stall_skipped', orig_matched, relaxed_matched])
             else:
                 writer.writerow([idx, e['label'], e['energy'], '', '', 'not_selected', orig_matched, relaxed_matched])
-    print('Saved CSV to', csvp)
+    print('Saved CSV to', out_csv)
     print(f'Total workflow elapsed time: {time.time() - main_start:.1f} s')
+    return pool_terminated
 
 
-def default_nproc():
+def _cpu_limit():
     """Use SLURM cpus-per-task when available, else local CPU count."""
     for key in ("SLURM_CPUS_PER_TASK", "SLURM_JOB_CPUS_PER_NODE"):
         val = os.environ.get(key)
@@ -666,6 +895,45 @@ def default_nproc():
         return len(os.sched_getaffinity(0))
     except (AttributeError, NotImplementedError):
         return mp.cpu_count() or 1
+
+
+def _slurm_total_mem_mb():
+    """Return allocated node memory in MB from SLURM, if available."""
+    node_mem = os.environ.get("SLURM_MEM_PER_NODE")
+    if node_mem and node_mem.isdigit() and int(node_mem) > 0:
+        return int(node_mem)
+
+    cpu_mem = os.environ.get("SLURM_MEM_PER_CPU")
+    cpus = os.environ.get("SLURM_CPUS_PER_TASK") or os.environ.get("SLURM_JOB_CPUS_PER_NODE")
+    if cpu_mem and cpu_mem.isdigit() and cpus and cpus.isdigit():
+        total = int(cpu_mem) * int(cpus)
+        if total > 0:
+            return total
+    return None
+
+
+def resolve_nproc(requested=None, mem_per_worker_gb=4.0):
+    """Resolve worker count from CPU limit and SLURM memory allocation."""
+    cpu_limit = _cpu_limit()
+    nproc = cpu_limit if requested is None else min(requested, cpu_limit)
+
+    mem_mb = _slurm_total_mem_mb()
+    if mem_mb is not None and mem_per_worker_gb > 0:
+        mem_per_worker_mb = int(mem_per_worker_gb * 1024)
+        mem_limit = max(1, mem_mb // mem_per_worker_mb)
+        if nproc > mem_limit:
+            print(
+                f'Capping workers from {nproc} to {mem_limit} based on '
+                f'SLURM memory ({mem_mb} MB, {mem_per_worker_gb:g} GB/worker)',
+                flush=True,
+            )
+            nproc = mem_limit
+    return nproc
+
+
+def default_nproc(mem_per_worker_gb=4.0):
+    """Use SLURM cpus and memory when available, else local CPU count."""
+    return resolve_nproc(None, mem_per_worker_gb=mem_per_worker_gb)
 
 
 if __name__ == '__main__':
@@ -681,7 +949,13 @@ if __name__ == '__main__':
         '--nproc',
         type=int,
         default=None,
-        help='Number of parallel workers (default: SLURM_CPUS_PER_TASK or available CPUs)',
+        help='Number of parallel workers (default: SLURM_CPUS_PER_TASK, capped by SLURM memory)',
+    )
+    parser.add_argument(
+        '--mem-per-worker-gb',
+        type=float,
+        default=4.0,
+        help='Estimated peak RAM per worker in GB for SLURM memory capping (default: 4.0)',
     )
     parser.add_argument('--pct', type=float, default=10.0, help='Energy percentile cutoff (e.g. 10 for 10%%)')
     parser.add_argument('--db', default="pyxtal/database/test.db", help='Path to test.db for reference matching')
@@ -696,6 +970,18 @@ if __name__ == '__main__':
     )
     parser.add_argument('--step', type=int, default=200, help='FIRE steps for relaxation')
     parser.add_argument('--fmax', type=float, default=0.1, help='Fmax for FIRE relax')
+    parser.add_argument(
+        '--relax-timeout',
+        type=float,
+        default=15.0,
+        help='Max wall time per structure relaxation in minutes (default: 15)',
+    )
+    parser.add_argument(
+        '--stall-timeout',
+        type=float,
+        default=20.0,
+        help='Abort batch if no relaxation finishes within this many minutes (default: 20)',
+    )
     parser.add_argument('--calculator', default='MACE', choices=['MACE', 'MACEOFF', 'ORB-V3', 'ORBV3', 'ORB'], help='MLP calculator to use for relaxation')
     parser.add_argument(
         '--model',
@@ -707,28 +993,17 @@ if __name__ == '__main__':
         action='store_true',
         help='Use a cheaper/faster model preset for quick testing (ORB: direct-20-omat, MACEOFF: small)',
     )
+    parser.add_argument(
+        '--force',
+        action='store_true',
+        help='Recompute even if the output PNG and CSV already exist',
+    )
     parser.add_argument('--out-dir', default=None, help='Output directory (defaults to input folder; if set without QRS-openffall.cif, process all subdirs)')
     args = parser.parse_args()
-    if args.nproc is None:
-        args.nproc = default_nproc()
+    args.nproc = resolve_nproc(args.nproc, mem_per_worker_gb=args.mem_per_worker_gb)
     print(f'Using {args.nproc} parallel workers')
     if args.quick and args.model is not None:
         parser.error('Use only one of --quick or --model')
-
-    common_kwargs = dict(
-        nproc=args.nproc,
-        step=args.step,
-        fmax=args.fmax,
-        db_file=args.db,
-        ref_code=None,
-        matched_cif=args.matched_cif,
-        cutoff_pct=args.pct,
-        e_tol=args.e_tol,
-        max_unique=args.max_unique,
-        match_max_sites=args.match_max_sites,
-        calculator=args.calculator,
-        quick=args.quick,
-    )
 
     jobs = collect_jobs(args.cif, args.out_dir)
     if not jobs:
@@ -744,26 +1019,69 @@ if __name__ == '__main__':
     else:
         print(f'Model cache check finished in {cache_elapsed:.2f}s')
 
-    ctx = mp.get_context("spawn")
-    with ctx.Pool(
-        processes=args.nproc,
-        initializer=_init_worker,
-        initargs=(args.calculator, model, args.quick),
-    ) as pool:
+    common_kwargs = dict(
+        nproc=args.nproc,
+        step=args.step,
+        fmax=args.fmax,
+        db_file=args.db,
+        ref_code=None,
+        matched_cif=args.matched_cif,
+        cutoff_pct=args.pct,
+        e_tol=args.e_tol,
+        max_unique=args.max_unique,
+        match_max_sites=args.match_max_sites,
+        calculator=args.calculator,
+        quick=args.quick,
+        relax_timeout_min=args.relax_timeout,
+        stall_timeout_min=args.stall_timeout,
+        force=args.force,
+    )
+
+    def make_worker_pool():
+        worker_pool = ctx.Pool(
+            processes=args.nproc,
+            initializer=_init_worker,
+            initargs=(args.calculator, model, args.quick),
+        )
         t0 = time.perf_counter()
-        pool.map(_worker_ping, range(args.nproc), chunksize=1)
+        worker_pool.map(_worker_ping, range(args.nproc), chunksize=1)
         pool_elapsed = time.perf_counter() - t0
         print(
             f'Worker pool ready in {pool_elapsed:.1f}s '
             f'({args.nproc} workers; model loaded once per worker, reused across all jobs)'
         )
+        return worker_pool
+
+    ctx = mp.get_context("spawn")
+    pool = make_worker_pool()
+    try:
         for i, (job_dir, job_out_dir) in enumerate(jobs, start=1):
             if len(jobs) > 1:
                 print(f'\n=== [{i}/{len(jobs)}] Processing {job_dir} ===')
-            main(
-                job_dir,
-                out_dir=job_out_dir,
-                pool=pool,
-                model=model,
-                **common_kwargs,
-            )
+            try:
+                pool_terminated = main(
+                    job_dir,
+                    out_dir=job_out_dir,
+                    pool=pool,
+                    model=model,
+                    **common_kwargs,
+                )
+            except RuntimeError as exc:
+                if 'stalled' not in str(exc).lower():
+                    raise
+                print(f'WARNING: {exc}', flush=True)
+                pool_terminated = True
+            if pool_terminated:
+                print('Recreating worker pool after stall timeout.', flush=True)
+                try:
+                    pool.terminate()
+                    pool.join()
+                except Exception:
+                    pass
+                pool = make_worker_pool()
+    finally:
+        try:
+            pool.terminate()
+            pool.join()
+        except Exception:
+            pass

@@ -160,7 +160,7 @@ def sweep_qrs(
     skip_frac=True,
     both_signs=True,
     max_trials=None,
-    light_steps=2500,
+    light_steps=5000,
 ):
     """
     Deterministically perturb Wyckoff DOFs on a fixed lattice and re-relax.
