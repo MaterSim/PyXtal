@@ -442,6 +442,15 @@ if __name__ == "__main__":
         help="Maximum RMSD for structure matching (default: 0.5)",
     )
     parser.add_argument(
+        "--min-matches",
+        default=5,
+        type=int,
+        help=(
+            "Quit early after this many matched structures "
+            "(default: 5; set very large to disable)"
+        ),
+    )
+    parser.add_argument(
         "--check-stable",
         action="store_true",
         help=(
@@ -568,6 +577,7 @@ if __name__ == "__main__":
                         N_iter=20,
                         N_conf=200,
                         tol=0.5,
+                        torsion_extras=True,
                     )
                 except Exception as exc:
                     print(
@@ -634,6 +644,7 @@ if __name__ == "__main__":
             matcher=matcher,
             check_stable=args.check_stable,
             max_grid_product=max_grid_product,
+            N_min_matches=args.min_matches,
         )
         t0 = perf_counter()
         success_rate = qrs.run(ref_pmg=ref_pmg, max_rmsd=args.max_rmsd)

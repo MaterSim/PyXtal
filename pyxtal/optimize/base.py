@@ -136,6 +136,8 @@ class GlobalOptimize:
         matcher : structurematcher from pymatgen
         early_quit: whether quit the program early when the target is found
         pre_opt: whether pre_optimize the structure or not
+        N_min_matches (int): quit when this many matches are found if
+            ``early_quit`` is False (default: 10)
     """
 
     def __init__(
@@ -173,6 +175,7 @@ class GlobalOptimize:
         check_stable: bool = False,
         use_mpi: bool = False,
         pre_opt: bool = False,
+        N_min_matches: int = 10,
     ):
 
         self.ncpu = N_cpu
@@ -349,7 +352,7 @@ class GlobalOptimize:
 
         # I/O stuff
         self.early_quit = early_quit
-        self.N_min_matches = 10  # The min_num_matches for early termination
+        self.N_min_matches = int(N_min_matches)
         self.E_max = E_max
         self.tag = tag.lower()
         self.suffix = f"{self.workdir}/{self.name}-{self.ff_style}"
@@ -552,7 +555,10 @@ class GlobalOptimize:
 
             #elif success_rate > 2.5 or len(self.matches) >= self.N_min_matches:
             elif len(self.matches) >= self.N_min_matches:
-                msg = f"Early termination with a high success rate"
+                msg = (
+                    f"Early termination after {len(self.matches)} matches "
+                    f"(N_min_matches={self.N_min_matches})"
+                )
                 print(msg)
                 self.logging.info(msg)
                 return True
@@ -1094,8 +1100,17 @@ class GlobalOptimize:
         # Store the best structures
         count = 0
         ref_xtals = []
+        if len(new_xtals) == 0:
+            t2 = time()
+            gen_out = f"Gen{gen:3d} time usage: "
+            gen_out += f"{t1 - t0:5.1f}[Calc] {t2 - t1:5.1f}[Proc]"
+            print(gen_out)
+            return new_xtals, matches, engs
+
         ids = np.argsort(engs)
         for id in ids:
+            if id >= len(new_xtals):
+                continue
             (xtal, tag) = new_xtals[id]
             rep, eng = reps[id], eng0s[id]
             if self.new_struc(xtal, ref_xtals):

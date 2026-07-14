@@ -491,6 +491,8 @@ class GridSampler:
 
     def random(self):
         """Return the next quantized Sobol point as a (1, d) array in [0, 1]^d."""
+        if self.exhausted:
+            raise StopIteration("GridSampler exhausted")
         raw = self._sobol.random()[0]          # values in [0, 1)
         snapped = [(min(int(v * n), n - 1) + 0.5) / n
                    for v, n in zip(raw, self.n_levels)]
@@ -538,6 +540,7 @@ class QRS(GlobalOptimize):
         delta_angle (float): grid resolution in degrees for angle DOF (0 = use Sobol)
         max_grid_product (float or None): cap on prod(n_levels); levels are scaled down
             if the raw product exceeds this (default: 1e9; None disables)
+        N_min_matches (int): quit early after this many matches (default: 10)
     """
 
     def __init__(
@@ -580,6 +583,7 @@ class QRS(GlobalOptimize):
         delta_angle: float = 60.0,
         max_grid_attempts: int | None = None,
         max_grid_product: float | None = 1e9,
+        N_min_matches: int = 10,
     ):
 
         # POPULATION parameters:
@@ -627,6 +631,7 @@ class QRS(GlobalOptimize):
             early_quit,
             check_stable,
             use_mpi,
+            N_min_matches=N_min_matches,
         )
 
         if self.rank == 0:
@@ -819,6 +824,31 @@ class QRS(GlobalOptimize):
 
             # Broadcast
             if self.use_mpi: cur_xtals = self.comm.bcast(cur_xtals, root=0)
+
+            # Fixed-lattice QRS: stop cleanly once the discrete grid is used up.
+            # An empty population would crash gen_summary (N_pop argsort vs len 0).
+            quit = False
+            if self.rank == 0 and self.lattice is not None:
+                n_valid = 0 if cur_xtals is None else len(cur_xtals)
+                grid_done = (
+                    isinstance(getattr(self, "sampler", None), GridSampler)
+                    and self.sampler.exhausted
+                )
+                if n_valid == 0:
+                    msg = (
+                        f"Stopping QRS: no valid structures in Gen-{gen:d}"
+                        + (" (grid exhausted)" if grid_done else "")
+                    )
+                    print(msg)
+                    self.logging.info(msg)
+                    quit = True
+
+            if self.use_mpi:
+                quit = self.comm.bcast(quit, root=0)
+
+            if quit:
+                self.logging.info(f"Early Termination in Rank {self.rank}")
+                return success_rate
 
             # Local optimization
             gen_results = self.local_optimization(cur_xtals, qrs=True, pool=pool)

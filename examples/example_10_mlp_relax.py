@@ -184,6 +184,19 @@ def _pmg_for_matching(pmg, max_sites=50):
     return Structure.from_sites(pmg.sites[:max_sites], validate_proximity=False)
 
 
+def _rms_match(matcher, pmg1, pmg2, max_rmsd=0.3):
+    """True only if StructureMatcher max site distance is strictly below ``max_rmsd``.
+
+    Uses ``get_rms_dist`` → ``(rms, max_dist)``. A pair with ``max_dist >= max_rmsd``
+    (or no mapping) is treated as not a match — same criterion as QRS.
+    """
+    try:
+        rmsd = matcher.get_rms_dist(pmg1, pmg2)
+    except Exception:
+        return False
+    return rmsd is not None and rmsd[1] < max_rmsd
+
+
 def _structures_likely_match(pmg1, pmg2, volume_tol=0.05, max_sites=50):
     m1 = _pmg_for_matching(pmg1, max_sites)
     m2 = _pmg_for_matching(pmg2, max_sites)
@@ -197,7 +210,14 @@ def _structures_likely_match(pmg1, pmg2, volume_tol=0.05, max_sites=50):
     return abs(v1 - v2) / max(v1, v2) <= volume_tol
 
 
-def _deduplicate_selected(selected, matcher, e_tol=1e-3, progress_every=25, match_max_sites=50):
+def _deduplicate_selected(
+    selected,
+    matcher,
+    e_tol=1e-3,
+    progress_every=25,
+    match_max_sites=50,
+    max_rmsd=0.3,
+):
     """Drop duplicate structures among selected entries (lowest energy kept)."""
     import bisect
 
@@ -209,6 +229,7 @@ def _deduplicate_selected(selected, matcher, e_tol=1e-3, progress_every=25, matc
     dedup_start = time.perf_counter()
     if match_max_sites and match_max_sites > 0:
         print(f'Deduplication uses first {match_max_sites} sites per structure for matching')
+    print(f'Deduplication max_rmsd cutoff: {max_rmsd} (not a match if max site dist >= {max_rmsd})')
 
     for i, ent in enumerate(sorted(selected, key=lambda x: x['energy']), start=1):
         if progress_every and i % progress_every == 0:
@@ -238,9 +259,11 @@ def _deduplicate_selected(selected, matcher, e_tol=1e-3, progress_every=25, matc
             if not _structures_likely_match(pmg1, pmg2, max_sites=match_max_sites):
                 continue
             n_fit += 1
-            if matcher.fit(
+            if _rms_match(
+                matcher,
                 _pmg_for_matching(pmg1, match_max_sites),
                 _pmg_for_matching(pmg2, match_max_sites),
+                max_rmsd=max_rmsd,
             ):
                 dup_map[ent['idx']] = rep['idx']
                 is_dup = True
@@ -545,7 +568,7 @@ def _select_for_relaxation(entries, cutoff_pct, min_selected=1000):
     return selected, selection_threshold, effective_pct
 
 
-def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_code=None, matched_cif=None, cutoff_pct=50.0, e_tol=1e-3, calculator='MACE', model=None, quick=False, max_unique=None, match_max_sites=50, pool=None, relax_timeout_min=15.0, stall_timeout_min=20.0, force=False):
+def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_code=None, matched_cif=None, cutoff_pct=50.0, e_tol=1e-3, calculator='MACE', model=None, quick=False, max_unique=None, match_max_sites=50, max_rmsd=0.3, pool=None, relax_timeout_min=15.0, stall_timeout_min=20.0, force=False):
     main_start = time.time()
     input_folder = None
     if os.path.isdir(cif_path):
@@ -610,6 +633,7 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
     matcher = StructureMatcher(ltol=0.3, stol=0.3, angle_tol=5.0)
     unique_selected, dup_map = _deduplicate_selected(
         selected, matcher, e_tol=e_tol, match_max_sites=match_max_sites,
+        max_rmsd=max_rmsd,
     )
 
     print(f'{len(unique_selected)} unique structures after deduplication (e_tol={e_tol})')
@@ -655,7 +679,7 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
                 atoms_orig = read(StringIO(entry['text']), format='cif')
                 pmg_orig = ase2pymatgen(atoms_orig)
                 pmg_orig.remove_species(["H"]) if hasattr(pmg_orig, 'remove_species') else None
-                if matcher.fit(pmg_orig, ref_pmg):
+                if _rms_match(matcher, pmg_orig, ref_pmg, max_rmsd=max_rmsd):
                     original_match_ids.add(entry['idx'])
             print(f'Loaded reference {ref_code} and found {len(original_match_ids)} original CIF matches')
         else:
@@ -776,7 +800,7 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
                     atoms_rel = read(StringIO(relaxed_cif), format='cif')
                     pmg_rel = ase2pymatgen(atoms_rel)
                     pmg_rel.remove_species(["H"]) if hasattr(pmg_rel, 'remove_species') else None
-                    if matcher.fit(pmg_rel, ref_pmg):
+                    if _rms_match(matcher, pmg_rel, ref_pmg, max_rmsd=max_rmsd):
                         relaxed_match_ids.add(idx)
                 except Exception:
                     continue
@@ -968,6 +992,15 @@ if __name__ == '__main__':
         default=50,
         help='Compare only the first N sites during deduplication (default: 50; 0 = use full structure)',
     )
+    parser.add_argument(
+        '--max-rmsd',
+        type=float,
+        default=0.3,
+        help=(
+            'Max site distance from StructureMatcher.get_rms_dist for a match '
+            '(default: 0.3; not a match if max_dist >= this value)'
+        ),
+    )
     parser.add_argument('--step', type=int, default=200, help='FIRE steps for relaxation')
     parser.add_argument('--fmax', type=float, default=0.1, help='Fmax for FIRE relax')
     parser.add_argument(
@@ -1030,6 +1063,7 @@ if __name__ == '__main__':
         e_tol=args.e_tol,
         max_unique=args.max_unique,
         match_max_sites=args.match_max_sites,
+        max_rmsd=args.max_rmsd,
         calculator=args.calculator,
         quick=args.quick,
         relax_timeout_min=args.relax_timeout,

@@ -156,17 +156,204 @@ def has_non_aromatic_ring(smiles):
     )  # No non-aromatic rings found
 
 
-def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5, use_uff=False):
+def _is_charged_smiles(smile):
+    """True if SMILES encodes a formal charge (e.g. [NH2+], [O-])."""
+    return ("+" in smile) or ("-" in smile and any(c in smile for c in "[]"))
+
+
+def _default_n_extra(n_tor, charged=False):
+    if n_tor >= 10:
+        return 32
+    if n_tor >= 6:
+        return 24
+    if n_tor >= 3 or charged:
+        return 24
+    return 12
+
+
+def _append_torsion_extras(
+    mols,
+    m0,
+    smile,
+    torsionlist,
+    wps=None,
+    n_extra=24,
+    grid_step=90,
+    dedupe_tol=0.35,
+    max_grid=400,
+    seed0=99,
+    keep_raw=None,
+):
     """
-    generate pyxtal_molecules from smiles codes.
+    Append crystal-like conformers that FF minimization often discards.
+
+    Strategy (does not remove existing ``mols``):
+      1. Coarse {-180, 0}^n torsion grid (when small)
+      2. Discrete torsion grid / parent-torsion perturbations (no MMFF)
+      3. Optional raw ETKDG embeddings for charged molecules
+    """
+    import itertools
+
+    import numpy as np
+    from rdkit import Chem
+    from rdkit.Chem import AllChem
+    from rdkit.Geometry import Point3D
+
+    if n_extra <= 0 or not torsionlist:
+        return mols
+
+    n_tor = len(torsionlist)
+    charged = _is_charged_smiles(smile)
+    if keep_raw is None:
+        keep_raw = charged or n_tor >= 3
+
+    extras = []
+
+    def _try_add(m, xyz):
+        _, ok = m.get_orientations_in_wps(wps)
+        if not ok:
+            return False
+        for existing in list(mols) + extras:
+            try:
+                rms, _ = existing.get_rmsd2(xyz, existing.mol.cart_coords)
+            except Exception:
+                continue
+            if rms < dedupe_tol:
+                return False
+        extras.append(m)
+        return True
+
+    def _apply_angles(angs, xyz_src=None):
+        m = m0.copy()
+        rdmol = m.rdkit_mol(1)
+        conf = rdmol.GetConformer(0)
+        if xyz_src is None:
+            xyz_src = np.array(m0.mol.cart_coords, dtype=float)
+        for ai in range(min(len(xyz_src), rdmol.GetNumAtoms())):
+            conf.SetAtomPosition(ai, Point3D(*xyz_src[ai]))
+        xyz = m.set_torsion_angles(conf, list(angs))
+        m.reset_positions(xyz)
+        # Skip get_symmetry: can hang for some small acids (e.g. oxalic at -90°)
+        _try_add(m, xyz)
+
+    # 1) Coarse {-180, 0}^n — catches crystal torsions near 0/180 (e.g. XAFQON)
+    coarse = (-180.0, 0.0)
+    if n_tor <= 6 and (2 ** n_tor) <= max_grid:
+        for angs in itertools.product(coarse, repeat=n_tor):
+            _apply_angles(angs)
+            if len(extras) >= n_extra * 3:
+                break
+
+    # 2) Full / sampled grid at ``grid_step``
+    levels = [float(x) for x in range(-180, 180, int(grid_step))]
+    n_levels = len(levels)
+    total = n_levels ** n_tor
+    rng = np.random.default_rng(seed0)
+
+    if total <= max_grid:
+        for angs in itertools.product(levels, repeat=n_tor):
+            _apply_angles(angs)
+            if len(extras) >= n_extra * 3:
+                break
+    else:
+        parents = mols[: min(16, len(mols))]
+        for k in range(max_grid):
+            if parents and (k % 2 == 0):
+                parent = parents[int(rng.integers(0, len(parents)))]
+                try:
+                    angs0 = parent.get_torsion_angles()
+                    if not angs0:
+                        continue
+                    angs = [
+                        float(a) + float(rng.choice([-90.0, 90.0, 180.0]))
+                        for a in angs0
+                    ]
+                    _apply_angles(angs, xyz_src=np.array(parent.mol.cart_coords, dtype=float))
+                except Exception:
+                    continue
+            else:
+                angs = [levels[int(rng.integers(0, n_levels))] for _ in range(n_tor)]
+                _apply_angles(angs)
+            if len(extras) >= n_extra * 3:
+                break
+
+    # 3) Raw ETKDG (no MMFF) — useful when crystal packs off FF minima
+    if keep_raw:
+        n_embed = max(4, n_tor)
+        for i in range(max(4, n_tor)):
+            mol = Chem.MolFromSmiles(smile)
+            mol = Chem.AddHs(mol)
+            ps = AllChem.ETKDGv3()
+            ps.randomSeed = int(seed0 + 1000 + i)
+            ps.pruneRmsThresh = max(0.2, dedupe_tol)
+            ps.numThreads = 1
+            if charged:
+                ps.useRandomCoords = True
+            AllChem.EmbedMultipleConfs(mol, n_embed, ps)
+            for conf in mol.GetConformers():
+                m = m0.copy()
+                try:
+                    xyz = m.align(conf)
+                    m.reset_positions(xyz)
+                except Exception:
+                    continue
+                _try_add(m, xyz)
+                if len(extras) >= n_extra * 3:
+                    break
+            if len(extras) >= n_extra * 3:
+                break
+
+    # Keep baseline order; append unique extras up to n_extra
+    n_added = 0
+    for m in extras:
+        if n_added >= n_extra:
+            break
+        keep = True
+        for ref in mols:
+            try:
+                rms, _ = m.get_rmsd2(m.mol.cart_coords, ref.mol.cart_coords)
+            except Exception:
+                continue
+            if rms < dedupe_tol:
+                keep = False
+                break
+        if keep:
+            mols.append(m)
+            n_added += 1
+    return mols
+
+
+def generate_molecules(
+    smile,
+    wps=None,
+    N_iter=5,
+    N_conf=10,
+    tol=0.5,
+    use_uff=False,
+    torsion_extras=True,
+    n_extra=None,
+    grid_step=90,
+):
+    """
+    Generate :class:`pyxtal_molecule` conformers from a SMILES string.
+
+    Pipeline:
+
+    1. ETKDG + MMFF/UFF (baseline force-field pool)
+    2. Optional torsion-grid / raw-ETKDG extras **without** MMFF — important when
+       the crystal conformation sits off the gas-phase FF minimum (e.g. charged
+       organics). Baseline conformers are never discarded.
 
     Args:
         smile: smiles code
         wps: list of wps
-        N_iter: rdkit parameter
-        N_conf: number of conformers
-        tol: rdkit parameter
+        N_iter: number of ETKDG seeds
+        N_conf: maximum number of FF-optimized conformers
+        tol: RMSD prune threshold for EmbedMultipleConfs / dedupe
         use_uff: whether to use UFF for force field optimization
+        torsion_extras: if True, append torsion-grid/raw extras after FF pool
+        n_extra: max extras to keep (default scales with rotatable-bond count)
+        grid_step: torsion grid spacing in degrees (default 90)
 
     Returns:
         a list of pyxtal molecules
@@ -183,12 +370,16 @@ def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5, use_uff=Fa
     else:
         Num = len(torsionlist)
 
+    charged = _is_charged_smiles(smile)
+
     def get_conformers(smile, seed):
         mol = Chem.MolFromSmiles(smile)
         mol = Chem.AddHs(mol)
         ps = AllChem.ETKDGv3()
         ps.randomSeed = seed
         ps.pruneRmsThresh = tol
+        if charged:
+            ps.useRandomCoords = True
         AllChem.EmbedMultipleConfs(mol, max([4, Num]), ps)
         return mol
 
@@ -199,6 +390,7 @@ def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5, use_uff=Fa
         # print('torsion', m0.get_torsion_angles())
         mols.append(m0)
 
+    done = False
     for i in range(N_iter):
         mol = get_conformers(smile, seed=i)
         if use_uff:
@@ -215,14 +407,18 @@ def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5, use_uff=Fa
             except Exception:
                 # Some pymatgen PointGroupAnalyzer paths can fail for edge cases.
                 # Keep the conformer and continue with unsymmetrized coordinates.
-                m.get_symmetry(symmetrize=False)
-            m.energy = res[id][1]
+                try:
+                    m.get_symmetry(symmetrize=False)
+                except Exception:
+                    pass
+            if isinstance(res, list) and id < len(res):
+                m.energy = res[id][1]
             _, valid = m.get_orientations_in_wps(wps)
             add = bool(valid)
             if add:
                 match = False
-                for mol in mols:
-                    rms, _ = mol.get_rmsd2(xyz, mol.mol.cart_coords)
+                for mol_ref in mols:
+                    rms, _ = mol_ref.get_rmsd2(xyz, mol_ref.mol.cart_coords)
                     # print("rms", mol.get_torsion_angles(), rms)
                     if rms < tol:
                         match = True
@@ -230,8 +426,29 @@ def generate_molecules(smile, wps=None, N_iter=5, N_conf=10, tol=0.5, use_uff=Fa
                 if not match:
                     # print(len(mols)+1, m.get_torsion_angles(xyz))
                     mols.append(m)
-                    if len(mols) == N_conf:
-                        return mols
+                    if len(mols) >= N_conf:
+                        done = True
+                        break
+        if done:
+            break
+
+    if torsion_extras and torsionlist:
+        if n_extra is None:
+            n_extra = _default_n_extra(len(torsionlist), charged)
+        _append_torsion_extras(
+            mols,
+            m0,
+            smile,
+            torsionlist,
+            wps=wps,
+            n_extra=n_extra,
+            grid_step=grid_step,
+            dedupe_tol=min(tol, 0.35),
+            max_grid=400 if len(torsionlist) >= 6 else 300,
+            seed0=99,
+            keep_raw=charged or len(torsionlist) >= 3,
+        )
+
     # for m in mols:
     #    print(m.energy, m.pga.sch_symbol, len(torsionlist))
     return mols
