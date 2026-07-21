@@ -58,7 +58,7 @@ pandas==2.2.2
     # via
     #   pyxtal (setup.py)
     #   pymatgen
-pillow==12.2.0
+pillow==12.3.0
     # via matplotlib
 plotly==5.22.0
     # via pymatgen
