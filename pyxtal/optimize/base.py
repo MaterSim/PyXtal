@@ -386,6 +386,11 @@ class GlobalOptimize:
         s += f"\nsmile     : {self.smile:s}"
         s += f"\nZprime    : {self.composition!s:s}"
         s += f"\nN_torsion : {self.N_torsion:d}"
+        if self.molecules is not None:
+            n_confs = [len(pool) for pool in self.molecules]
+            s += f"\nN_conformers: {n_confs!s} (total {sum(n_confs):d})"
+        else:
+            s += "\nN_conformers: None"
         s += f"\nsg        : {self.sg!s:s}"
         s += f"\nncpu      : {self.size:d}"
         s += f"\ndirectory : {self.workdir:s}"
@@ -462,8 +467,9 @@ class GlobalOptimize:
 
         if self.rank == 0:
             t = (time() - t0)/60
+            n_struc = getattr(self, "N_struc", 0)
             strs = f"{self.name:s} {self.workdir} COMPLETED "
-            strs += f"in {t:.1f} mins {self.N_struc:d} strucs."
+            strs += f"in {t:.1f} mins {n_struc:d} strucs."
             print(strs)
 
         if self.use_mpi: self.comm.Barrier()

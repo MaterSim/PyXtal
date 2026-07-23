@@ -142,6 +142,15 @@ def _light_charmm_relax(xtal, atom_info, workdir, job_tag, steps=1000):
         os.chdir(cwd)
 
 
+def _is_zprime_ge2(xtal):
+    """True when any molecular component has Z' >= 2."""
+    try:
+        zp = xtal.get_zprime()
+        return bool(zp) and max(int(z) for z in zp) >= 2
+    except Exception:
+        return len(getattr(xtal, "mol_sites", []) or []) >= 2
+
+
 def sweep_qrs(
     xtal,
     comp,
@@ -158,9 +167,10 @@ def sweep_qrs(
     eng0=None,
     skip_torsions=True,
     skip_frac=True,
-    both_signs=True,
+    both_signs=False,
     max_trials=None,
     light_steps=5000,
+    max_sites=None,
 ):
     """
     Deterministically perturb Wyckoff DOFs on a fixed lattice and re-relax.
@@ -174,7 +184,8 @@ def sweep_qrs(
 
     Torsion DOFs are skipped by default so fixed pregenerated conformers are
     not perturbed.  ``max_trials`` caps re-relaxations per structure
-    (None = unlimited).
+    (None = unlimited).  ``max_sites`` limits how many mol_sites are probed
+    (None = all); Z'>=2 callers typically pass 1.
 
     Returns:
         xtal0: best relaxed structure found
@@ -195,8 +206,11 @@ def sweep_qrs(
 
     rep = representation.from_pyxtal(xtal0)
     base_x = [list(row) for row in rep.x]
+    site_limit = len(xtal0.mol_sites)
+    if max_sites is not None:
+        site_limit = max(0, min(site_limit, int(max_sites)))
 
-    for site_idx, site in enumerate(xtal0.mol_sites):
+    for site_idx, site in enumerate(xtal0.mol_sites[:site_limit]):
         bounds = _perturbable_bounds(site, skip_torsions=skip_torsions)
         steps = _qrs_dof_steps(
             bounds,
@@ -611,19 +625,19 @@ def optimizer(
                             os.chdir(cwd)
                             return None
 
-                # Check if there exists a 2nd FF model for better energy ranking
-                if os.path.exists("pyxtal1.prm"):
-                    calc = CHARMM(
-                        calc.structure,
-                        tag,
-                        prefix="pyxtal1",
-                        steps=[2000],
-                        atom_info=atom_info,
-                    )
-                    calc.run()
-                    if calc.error:
-                        os.chdir(cwd)
-                        return None
+            # Check if there exists a 2nd FF model for better energy ranking
+            if os.path.exists("pyxtal1.prm"):
+                calc = CHARMM(
+                    calc.structure,
+                    tag,
+                    prefix="pyxtal1",
+                    steps=[2000],
+                    atom_info=atom_info,
+                )
+                calc.run()
+                if calc.error:
+                    os.chdir(cwd)
+                    return None
 
         if calc.error:
             os.chdir(cwd)
@@ -861,20 +875,42 @@ def optimizer_single(
                     mlp, skip_mlp, optimizer,
                 )
             else:
-                res = sweep_qrs(
-                    xtal,
-                    comp,
-                    atom_info,
-                    workdir,
-                    job_tag,
-                    mlp,
-                    skip_mlp,
-                    optimizer,
-                    delta_length=delta_length,
-                    delta_angle=delta_angle,
-                    opt_lat=opt_lat,
-                    eng0=eng,
-                )
+                # Z'>=2: site 0 Euler angles only (±eps → 6 light CHARMM runs).
+                # Full per-site ±eps on all sites scales as ~6*Z'.
+                if _is_zprime_ge2(xtal):
+                    res = sweep_qrs(
+                        xtal,
+                        comp,
+                        atom_info,
+                        workdir,
+                        job_tag,
+                        mlp,
+                        skip_mlp,
+                        optimizer,
+                        delta_length=delta_length,
+                        delta_angle=delta_angle,
+                        opt_lat=opt_lat,
+                        eng0=eng,
+                        both_signs=True,
+                        max_sites=1,
+                        max_trials=6,
+                        light_steps=5000,
+                    )
+                else:
+                    res = sweep_qrs(
+                        xtal,
+                        comp,
+                        atom_info,
+                        workdir,
+                        job_tag,
+                        mlp,
+                        skip_mlp,
+                        optimizer,
+                        delta_length=delta_length,
+                        delta_angle=delta_angle,
+                        opt_lat=opt_lat,
+                        eng0=eng,
+                    )
             if res is not None:
                 xtal, eng, stable = res
                 if stable:

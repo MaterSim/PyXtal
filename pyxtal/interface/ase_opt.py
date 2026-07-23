@@ -20,7 +20,6 @@ except ImportError:
 from ase.constraints import FixSymmetry
 from ase.filters import UnitCellFilter
 from ase.optimize.fire import FIRE
-import logging
 from ase.atoms import Atoms
 
 _calc_cache = {}
@@ -339,7 +338,8 @@ def ASE_relax(
         opt_lat (bool): optimize lattice (cell) or not.
         step (int): maximum FIRE steps.
         fmax (float): force convergence criterion (eV/Å).
-        logfile (str or None): FIRE log file.
+        logfile (str or None): FIRE log file. ``None`` discards FIRE step logs
+            (writes to ``os.devnull``).
         max_time (float): wall time limit in minutes.
         label (str): label for logging.
 
@@ -350,8 +350,18 @@ def ASE_relax(
     def handler(signum, frame):
         raise TimeoutError("Optimization timed out")
 
-    logger = logging.getLogger()
+    def _warn(msg):
+        # Avoid logging.getLogger(): in multiprocessing workers the root
+        # logger may point at a closed stream, which produces
+        # "--- Logging error ---" instead of a useful message.
+        try:
+            print(msg, flush=True)
+        except Exception:
+            pass
+
     timeout = int(max_time * 60)  # seconds
+    # Discard FIRE per-step output unless the caller passed a real path.
+    fire_logfile = logfile if logfile is not None else os.devnull
 
     # Start wall-clock timeout
     signal.signal(signal.SIGALRM, handler)
@@ -374,21 +384,16 @@ def ASE_relax(
             atoms.set_constraint(FixSymmetry(atoms))
         except (TypeError, AttributeError, RuntimeError) as exc:
             # spglib can return None for some lattices; continue without symmetry constraint
-            try:
-                logger.warning(
-                    f"Warning {label} FixSymmetry failed ({exc}); relaxing without symmetry constraint"
-                )
-            except Exception:
-                print(
-                    f"Warning {label} FixSymmetry failed ({exc}); relaxing without symmetry constraint",
-                    flush=True,
-                )
+            _warn(
+                f"Warning {label} FixSymmetry failed ({exc}); "
+                "relaxing without symmetry constraint"
+            )
 
         if opt_lat:
             ecf = UnitCellFilter(atoms)
-            dyn = FIRE(ecf, a=0.1, logfile=logfile) if logfile is not None else FIRE(ecf, a=0.1)
+            dyn = FIRE(ecf, a=0.1, logfile=fire_logfile)
         else:
-            dyn = FIRE(atoms, a=0.1, logfile=logfile) if logfile is not None else FIRE(atoms, a=0.1)
+            dyn = FIRE(atoms, a=0.1, logfile=fire_logfile)
 
         # First stage
         dyn.run(fmax=fmax, steps=step_init)
@@ -406,10 +411,9 @@ def ASE_relax(
             atoms = None
 
     except TimeoutError:
-        try:
-            logger.warning(f"Warning {label} timed out after {timeout} seconds.")
-        except Exception:
-            print(f"Warning {label} timed out after {timeout} seconds.", flush=True)
+        # Cancel before any I/O so a second alarm cannot interrupt cleanup.
+        signal.alarm(0)
+        _warn(f"Warning {label} timed out after {timeout} seconds.")
         atoms = None
 
     finally:

@@ -157,11 +157,124 @@ def has_non_aromatic_ring(smiles):
 
 
 def _is_charged_smiles(smile):
-    """True if SMILES encodes a formal charge (e.g. [NH2+], [O-])."""
-    return ("+" in smile) or ("-" in smile and any(c in smile for c in "[]"))
+    """True if SMILES encodes a nonzero formal charge (e.g. [NH2+], [O-]).
+
+    Uses RDKit formal charges when available. Avoids false positives from
+    stereo atoms like ``[C@]`` combined with single-bond ``-`` characters.
+    """
+    import re
+
+    try:
+        from rdkit import Chem
+
+        mol = Chem.MolFromSmiles(smile)
+        if mol is not None:
+            return any(a.GetFormalCharge() != 0 for a in mol.GetAtoms())
+    except Exception:
+        pass
+    # Fallback: charge inside brackets only, e.g. [NH2+], [O-], [Fe+3]
+    return bool(re.search(r"\[[^\]]*[+-]\d*\]", smile))
 
 
-def _default_n_extra(n_tor, charged=False):
+def _count_heavy_atoms_smiles(smile):
+    """Heavy-atom count from SMILES (H stripped). Falls back to 0 on parse failure."""
+    try:
+        from rdkit import Chem
+
+        mol = Chem.MolFromSmiles(smile)
+        if mol is None:
+            return 0
+        return int(mol.GetNumHeavyAtoms())
+    except Exception:
+        return 0
+
+
+def recommend_torsion_extras(smile, n_tor=None, n_heavy=None):
+    """
+    Decide whether / how to add torsion-grid extras for QRS pregen.
+
+    Rules of thumb (empirical from test.db):
+
+    * **Charged organics** (e.g. XAFQON): crystal geometry often lies off the
+      gas-phase MMFF minimum → use **raw** (no-MMFF) torsion extras.
+    * **Bulky + many rotors** (n_tor≥10, e.g. YOKBIK): ``mode='anti_bias'``.
+    * **Other bulky** (OBEQIX, LEVJON, …): MMFF baseline only — parent-flip can
+      help gauche RMSD but is too slow for QRS pregen.
+    * **Small/medium flexible** neutrals: extras OK if **MMFF-refined** after the
+      torsion grid (keeps diversity without broken topologies).
+
+    Returns:
+        dict with keys:
+          ``use``, ``keep_raw``, ``refine_mmff``,
+          ``mode`` (``'off'|'grid'|'anti_bias'|'parent_flip'|'mixed_chain'``),
+          ``reason``
+    """
+    if n_tor is None:
+        n_tor = len(find_rotor_from_smile(smile))
+    if n_heavy is None:
+        n_heavy = _count_heavy_atoms_smiles(smile)
+
+    charged = _is_charged_smiles(smile)
+    off = dict(use=False, keep_raw=False, refine_mmff=False, mode="off")
+
+    if n_tor == 0 and not has_non_aromatic_ring(smile):
+        return {**off, "reason": f"rigid (n_tor=0, heavy={n_heavy})"}
+
+    # Bulky organics
+    if n_heavy >= 30:
+        if n_tor >= 10:
+            # YOKBIK-like long all-trans chains: cheap ±180° extras
+            return dict(
+                use=True,
+                keep_raw=True,
+                refine_mmff=False,
+                mode="anti_bias",
+                reason=(
+                    f"bulky long-chain (heavy={n_heavy}, n_tor={n_tor}): "
+                    "anti-biased ±180° extras"
+                ),
+            )
+        # OBEQIX / LEVJON / CAYKUJ: MMFF baseline only
+        # (parent-flip helps OBEQIX RMSD but is too slow for QRS pregen)
+        return {
+            **off,
+            "reason": (
+                f"bulky (heavy={n_heavy}, n_tor={n_tor}, "
+                f"charged={charged}): MMFF baseline only"
+            ),
+        }
+
+    if charged:
+        return dict(
+            use=True,
+            keep_raw=True,
+            refine_mmff=False,
+            mode="grid",
+            reason=f"charged organic (n_tor={n_tor}, heavy={n_heavy}): raw extras",
+        )
+
+    if n_tor >= 2 or has_non_aromatic_ring(smile):
+        return dict(
+            use=True,
+            keep_raw=False,
+            refine_mmff=True,
+            mode="grid",
+            reason=(
+                f"medium flexible neutral (n_tor={n_tor}, heavy={n_heavy}): "
+                "MMFF-refined extras"
+            ),
+        )
+
+    return {
+        **off,
+        "reason": f"few rotors (n_tor={n_tor}, heavy={n_heavy}): MMFF baseline only",
+    }
+
+
+def _default_n_extra(n_tor, charged=False, mode="grid"):
+    if mode in ("anti_bias", "parent_flip", "mixed_chain"):
+        # Need room for evenly spaced parents × rotors × ±90 snaps
+        return min(96, max(48, 8 * n_tor))
     if n_tor >= 10:
         return 32
     if n_tor >= 6:
@@ -169,6 +282,336 @@ def _default_n_extra(n_tor, charged=False):
     if n_tor >= 3 or charged:
         return 24
     return 12
+
+
+def _commit_extras(mols, extras, n_extra, dedupe_tol):
+    """Append unique extras onto ``mols`` (in place), up to ``n_extra``."""
+    n_added = 0
+    for m in extras:
+        if n_added >= n_extra:
+            break
+        keep = True
+        for ref in mols:
+            try:
+                rms, _ = m.get_rmsd2(m.mol.cart_coords, ref.mol.cart_coords)
+            except Exception:
+                continue
+            if rms < dedupe_tol:
+                keep = False
+                break
+        if keep:
+            mols.append(m)
+            n_added += 1
+    return n_added
+
+
+def _append_anti_bias_extras(
+    mols,
+    m0,
+    torsionlist,
+    wps=None,
+    n_extra=32,
+    dedupe_tol=0.35,
+    seed0=99,
+    refine_mmff=False,
+):
+    """
+    Append alkyl-chain-friendly conformers for bulky many-rotor molecules.
+
+    Crystal long chains (e.g. YOKBIK) are often all-trans (±180°). Random torsion
+    grids and MMFF both undersample this; seeding ±180° then flipping one rotor
+    at a time recovers crystal-like geometries without exploding the pool.
+    """
+    import numpy as np
+    from rdkit.Geometry import Point3D
+
+    if n_extra <= 0 or not torsionlist:
+        return mols
+
+    n_tor = len(torsionlist)
+    extras = []
+    rng = np.random.default_rng(seed0)
+
+    def _try_add(m, xyz):
+        _, ok = m.get_orientations_in_wps(wps)
+        if not ok:
+            return False
+        for existing in list(mols) + extras:
+            try:
+                rms, _ = existing.get_rmsd2(xyz, existing.mol.cart_coords)
+            except Exception:
+                continue
+            if rms < dedupe_tol:
+                return False
+        extras.append(m)
+        return True
+
+    def _apply_angles(angs, xyz_src=None):
+        m = m0.copy()
+        rdmol = m.rdkit_mol(1)
+        conf = rdmol.GetConformer(0)
+        if xyz_src is None:
+            xyz_src = np.array(m0.mol.cart_coords, dtype=float)
+        for ai in range(min(len(xyz_src), rdmol.GetNumAtoms())):
+            conf.SetAtomPosition(ai, Point3D(*xyz_src[ai]))
+        xyz = m.set_torsion_angles(conf, list(angs))
+        if refine_mmff:
+            try:
+                xyz, eng = m.relax(xyz, align=False)
+                m.energy = eng
+            except Exception:
+                pass
+        m.reset_positions(xyz)
+        _try_add(m, xyz)
+
+    # All-trans seeds (both signs)
+    for base_ang in (180.0, -180.0):
+        _apply_angles([base_ang] * n_tor)
+
+    # Single-rotor flips from all-trans
+    deltas = (-120.0, -60.0, 60.0, 120.0)
+    for i in range(n_tor):
+        for d in deltas:
+            angs = [180.0] * n_tor
+            angs[i] = 180.0 + d
+            _apply_angles(angs)
+            if len(extras) >= n_extra * 3:
+                break
+        if len(extras) >= n_extra * 3:
+            break
+
+    # Sparse two-rotor flips (adjacent + random)
+    if len(extras) < n_extra * 3:
+        for _ in range(min(2 * n_tor, 40)):
+            angs = [180.0] * n_tor
+            i = int(rng.integers(0, n_tor))
+            j = (i + 1) % n_tor if rng.random() < 0.7 else int(rng.integers(0, n_tor))
+            angs[i] = 180.0 + float(rng.choice(deltas))
+            angs[j] = 180.0 + float(rng.choice(deltas))
+            _apply_angles(angs)
+            if len(extras) >= n_extra * 3:
+                break
+
+    _commit_extras(mols, extras, n_extra, dedupe_tol)
+    return mols
+
+
+def _append_parent_flip_extras(
+    mols,
+    m0,
+    torsionlist,
+    wps=None,
+    n_extra=64,
+    dedupe_tol=0.35,
+    seed0=101,
+    refine_mmff=False,
+    n_parents=None,
+    walk_steps=4,
+    walks_per_parent=4,
+):
+    """
+    Perturb MMFF parents for gauche / mixed-dihedral crystals (OBEQIX).
+
+    Absolute snaps (not relative ±180) matter: e.g. −82° → +82°. Generate every
+    parent × rotor × key level, then commit with **evenly spaced parents** so a
+    late best-MMFF parent is not dropped (OBEQIX best was index 25/38).
+    """
+    import numpy as np
+    from rdkit.Geometry import Point3D
+
+    if n_extra <= 0 or not torsionlist or not mols:
+        return mols
+
+    n_tor = len(torsionlist)
+    if n_parents is None:
+        n_parents = len(mols)
+    n_parents = min(int(n_parents), len(mols))
+
+    extras = []
+    snap_levels = (-180.0, -90.0, 0.0, 90.0, 180.0)
+    # by_rotor_lev[i][lev][pi] aligned to ``parents`` index (None if missing)
+    by_rotor_lev = {
+        i: {lev: [None] * n_parents for lev in snap_levels} for i in range(n_tor)
+    }
+    walk_pool = []
+    rng = np.random.default_rng(seed0)
+    levels = (-180.0, -150.0, -120.0, -90.0, -60.0, -30.0, 0.0,
+              30.0, 60.0, 90.0, 120.0, 150.0, 180.0)
+    parents = list(mols[:n_parents])
+
+    def _try_add(m, xyz):
+        _, ok = m.get_orientations_in_wps(wps)
+        if not ok:
+            return False
+        for existing in list(mols) + extras:
+            try:
+                rms, _ = existing.get_rmsd2(xyz, existing.mol.cart_coords)
+            except Exception:
+                continue
+            if rms < dedupe_tol:
+                return False
+        extras.append(m)
+        return True
+
+    def _build(parent, angs):
+        m = m0.copy()
+        rdmol = m.rdkit_mol(1)
+        conf = rdmol.GetConformer(0)
+        xyz_src = np.array(parent.mol.cart_coords, dtype=float)
+        for ai in range(min(len(xyz_src), rdmol.GetNumAtoms())):
+            conf.SetAtomPosition(ai, Point3D(*xyz_src[ai]))
+        xyz = m.set_torsion_angles(conf, list(angs))
+        if refine_mmff:
+            try:
+                xyz, eng = m.relax(xyz, align=False)
+                m.energy = eng
+            except Exception:
+                pass
+        m.reset_positions(xyz)
+        if _try_add(m, xyz):
+            return m
+        return None
+
+    def _parent_angs(parent):
+        try:
+            angs0 = [float(a) for a in parent.get_torsion_angles()]
+        except Exception:
+            return None
+        if len(angs0) < n_tor:
+            return None
+        return angs0[:n_tor]
+
+    # 1) Full snaps — store by parent index
+    for pi, parent in enumerate(parents):
+        angs0 = _parent_angs(parent)
+        if angs0 is None:
+            continue
+        for i in range(n_tor):
+            for lev in snap_levels:
+                angs = list(angs0)
+                angs[i] = lev
+                m = _build(parent, angs)
+                if m is not None:
+                    by_rotor_lev[i][lev][pi] = m
+
+    # 2) Short absolute multi-rotor walks
+    for parent in parents:
+        angs0 = _parent_angs(parent)
+        if angs0 is None:
+            continue
+        for _walk in range(walks_per_parent):
+            angs = list(angs0)
+            for _step in range(walk_steps):
+                ii = int(rng.integers(0, n_tor))
+                angs[ii] = float(rng.choice(levels))
+                m = _build(parent, angs)
+                if m is not None:
+                    walk_pool.append(m)
+
+    # 3) Commit: evenly spaced parents × all rotors × preferred levels
+    #    Cost per (parent, level) = n_tor; fit as many parents as budget allows.
+    prefer_lev = (90.0, -90.0, 180.0, -180.0, 0.0)
+    slots_per_parent_level = n_tor
+    # at least cover ±90 for several parents including ends
+    max_parents = max(4, n_extra // max(1, slots_per_parent_level))
+    # use two preferred levels in first pass when budget allows
+    n_lev_first = 2 if n_extra >= 2 * slots_per_parent_level * 4 else 1
+    k = max(4, n_extra // max(1, slots_per_parent_level * n_lev_first))
+    k = min(k, len(parents))
+    parent_idxs = np.unique(
+        np.linspace(0, len(parents) - 1, k).round().astype(int)
+    )
+
+    selected = []
+    seen = set()
+
+    def _push(m):
+        if m is None:
+            return
+        mid = id(m)
+        if mid in seen:
+            return
+        seen.add(mid)
+        selected.append(m)
+
+    for lev in prefer_lev[:n_lev_first]:
+        for pi in parent_idxs:
+            for i in range(n_tor):
+                _push(by_rotor_lev[i][lev][pi])
+                if len(selected) >= n_extra:
+                    break
+            if len(selected) >= n_extra:
+                break
+        if len(selected) >= n_extra:
+            break
+
+    # Fill remainder with other levels / walks
+    if len(selected) < n_extra:
+        for lev in prefer_lev[n_lev_first:]:
+            for pi in parent_idxs:
+                for i in range(n_tor):
+                    _push(by_rotor_lev[i][lev][pi])
+                    if len(selected) >= n_extra:
+                        break
+                if len(selected) >= n_extra:
+                    break
+            if len(selected) >= n_extra:
+                break
+
+    if len(selected) < n_extra:
+        for m in walk_pool:
+            _push(m)
+            if len(selected) >= n_extra:
+                break
+
+    _commit_extras(mols, selected, n_extra, dedupe_tol)
+    return mols
+
+
+def _append_mixed_chain_extras(
+    mols,
+    m0,
+    torsionlist,
+    wps=None,
+    n_extra=48,
+    dedupe_tol=0.35,
+    seed0=99,
+    refine_mmff=False,
+):
+    """
+    Combine anti-bias (YOKBIK / all-trans) with parent-flip (OBEQIX / gauche).
+
+    Allocates roughly 1/3 of the budget to anti-bias and 2/3 to parent-flip so
+    gauche crystals get more searches around MMFF parents.
+    """
+    if n_extra <= 0 or not torsionlist:
+        return mols
+    n_anti = max(8, n_extra // 4)
+    n_flip = max(32, n_extra - n_anti)
+    _append_anti_bias_extras(
+        mols,
+        m0,
+        torsionlist,
+        wps=wps,
+        n_extra=n_anti,
+        dedupe_tol=dedupe_tol,
+        seed0=seed0,
+        refine_mmff=refine_mmff,
+    )
+    _append_parent_flip_extras(
+        mols,
+        m0,
+        torsionlist,
+        wps=wps,
+        n_extra=n_flip,
+        dedupe_tol=dedupe_tol,
+        seed0=seed0 + 2,
+        refine_mmff=refine_mmff,
+        n_parents=len(mols),
+        walk_steps=4,
+        walks_per_parent=4,
+    )
+    return mols
 
 
 def _append_torsion_extras(
@@ -183,14 +626,18 @@ def _append_torsion_extras(
     max_grid=400,
     seed0=99,
     keep_raw=None,
+    refine_mmff=False,
 ):
     """
     Append crystal-like conformers that FF minimization often discards.
 
     Strategy (does not remove existing ``mols``):
       1. Coarse {-180, 0}^n torsion grid (when small)
-      2. Discrete torsion grid / parent-torsion perturbations (no MMFF)
-      3. Optional raw ETKDG embeddings for charged molecules
+      2. Discrete torsion grid / parent-torsion perturbations
+      3. Optional raw ETKDG embeddings when ``keep_raw`` (charged organics)
+
+    If ``refine_mmff`` is True, each grid candidate is MMFF-relaxed before
+    accept/reject (safer for neutrals; inappropriate for charged off-minima cases).
     """
     import itertools
 
@@ -205,7 +652,7 @@ def _append_torsion_extras(
     n_tor = len(torsionlist)
     charged = _is_charged_smiles(smile)
     if keep_raw is None:
-        keep_raw = charged or n_tor >= 3
+        keep_raw = charged and not refine_mmff
 
     extras = []
 
@@ -232,6 +679,12 @@ def _append_torsion_extras(
         for ai in range(min(len(xyz_src), rdmol.GetNumAtoms())):
             conf.SetAtomPosition(ai, Point3D(*xyz_src[ai]))
         xyz = m.set_torsion_angles(conf, list(angs))
+        if refine_mmff:
+            try:
+                xyz, eng = m.relax(xyz, align=False)
+                m.energy = eng
+            except Exception:
+                pass
         m.reset_positions(xyz)
         # Skip get_symmetry: can hang for some small acids (e.g. oxalic at -90°)
         _try_add(m, xyz)
@@ -330,9 +783,10 @@ def generate_molecules(
     N_conf=10,
     tol=0.5,
     use_uff=False,
-    torsion_extras=True,
+    torsion_extras="auto",
     n_extra=None,
     grid_step=90,
+    verbose=False,
 ):
     """
     Generate :class:`pyxtal_molecule` conformers from a SMILES string.
@@ -340,9 +794,10 @@ def generate_molecules(
     Pipeline:
 
     1. ETKDG + MMFF/UFF (baseline force-field pool)
-    2. Optional torsion-grid / raw-ETKDG extras **without** MMFF — important when
-       the crystal conformation sits off the gas-phase FF minimum (e.g. charged
-       organics). Baseline conformers are never discarded.
+    2. Optional torsion-grid / raw-ETKDG extras. Baseline conformers are never
+       discarded. When ``torsion_extras='auto'``, see
+       :func:`recommend_torsion_extras` (charged → raw extras; bulky long-chain
+       → anti-bias; bulky few-rotor → off; medium neutrals → MMFF-refined).
 
     Args:
         smile: smiles code
@@ -351,9 +806,11 @@ def generate_molecules(
         N_conf: maximum number of FF-optimized conformers
         tol: RMSD prune threshold for EmbedMultipleConfs / dedupe
         use_uff: whether to use UFF for force field optimization
-        torsion_extras: if True, append torsion-grid/raw extras after FF pool
+        torsion_extras: ``True``/``False``/``'auto'``/``'on'``/``'off'``, or a
+            policy dict from :func:`recommend_torsion_extras`
         n_extra: max extras to keep (default scales with rotatable-bond count)
         grid_step: torsion grid spacing in degrees (default 90)
+        verbose: print the torsion-extras policy decision
 
     Returns:
         a list of pyxtal molecules
@@ -432,22 +889,80 @@ def generate_molecules(
         if done:
             break
 
-    if torsion_extras and torsionlist:
-        if n_extra is None:
-            n_extra = _default_n_extra(len(torsionlist), charged)
-        _append_torsion_extras(
-            mols,
-            m0,
-            smile,
-            torsionlist,
-            wps=wps,
-            n_extra=n_extra,
-            grid_step=grid_step,
-            dedupe_tol=min(tol, 0.35),
-            max_grid=400 if len(torsionlist) >= 6 else 300,
-            seed0=99,
-            keep_raw=charged or len(torsionlist) >= 3,
+    # Resolve extras policy
+    if isinstance(torsion_extras, dict):
+        policy = torsion_extras
+    elif torsion_extras in (True, "on", "True", "true", 1):
+        policy = dict(
+            use=True,
+            keep_raw=charged,
+            refine_mmff=not charged,
+            mode="grid",
+            reason="forced on",
         )
+    elif torsion_extras in (False, "off", "False", "false", 0, None):
+        policy = dict(
+            use=False, keep_raw=False, refine_mmff=False, mode="off", reason="forced off"
+        )
+    else:
+        # 'auto' or unrecognized → recommend
+        policy = recommend_torsion_extras(smile, n_tor=len(torsionlist))
+
+    if verbose:
+        print(f"  torsion_extras policy: {policy['reason']}")
+
+    if policy.get("use") and torsionlist:
+        mode = policy.get("mode", "grid")
+        if n_extra is None:
+            n_extra = _default_n_extra(len(torsionlist), charged, mode=mode)
+        if mode == "anti_bias":
+            _append_anti_bias_extras(
+                mols,
+                m0,
+                torsionlist,
+                wps=wps,
+                n_extra=n_extra,
+                dedupe_tol=min(tol, 0.35),
+                seed0=99,
+                refine_mmff=policy.get("refine_mmff", False),
+            )
+        elif mode == "parent_flip":
+            _append_parent_flip_extras(
+                mols,
+                m0,
+                torsionlist,
+                wps=wps,
+                n_extra=n_extra,
+                dedupe_tol=min(tol, 0.35),
+                seed0=101,
+                refine_mmff=policy.get("refine_mmff", False),
+            )
+        elif mode == "mixed_chain":
+            _append_mixed_chain_extras(
+                mols,
+                m0,
+                torsionlist,
+                wps=wps,
+                n_extra=n_extra,
+                dedupe_tol=min(tol, 0.35),
+                seed0=99,
+                refine_mmff=policy.get("refine_mmff", False),
+            )
+        else:
+            _append_torsion_extras(
+                mols,
+                m0,
+                smile,
+                torsionlist,
+                wps=wps,
+                n_extra=n_extra,
+                grid_step=grid_step,
+                dedupe_tol=min(tol, 0.35),
+                max_grid=400 if len(torsionlist) >= 6 else 300,
+                seed0=99,
+                keep_raw=policy.get("keep_raw", charged),
+                refine_mmff=policy.get("refine_mmff", False),
+            )
 
     # for m in mols:
     #    print(m.energy, m.pga.sch_symbol, len(torsionlist))

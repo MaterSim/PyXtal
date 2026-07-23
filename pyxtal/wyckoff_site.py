@@ -401,17 +401,110 @@ class mol_site:
         self.radius = mol.radius
         self.type = stype
 
-    def update_molecule(self, mol):
+    def _invalidate_geom_cache(self):
+        """Drop all lazily rebuilt clash/coordinate caches after geometry changes."""
+        for key in (
+            "_coords_cache",
+            "_inter_tol_cache",
+            "_clash_representatives",
+            "_symm_scaffold",
+        ):
+            self.__dict__.pop(key, None)
+
+    def _invalidate_mol_geom_cache(self):
+        """Drop caches that depend only on conformer coordinates."""
+        self.__dict__.pop("_coords_cache", None)
+
+    def _get_symm_scaffold(self, unitcell=False):
+        """
+        Per-symmetry-op rotation and center, independent of conformer coords.
+
+        Reused across conformer trials at a fixed grid point so only
+        ``coord0 = cart_coords @ matrix.T`` is recomputed.
+        """
+        cached = getattr(self, "_symm_scaffold", None)
+        if cached is not None and cached[0] == unitcell:
+            return cached[1]
+
+        scaffold = []
+        for point_index, op2 in enumerate(self.wp.ops):
+            center_relative = op2.operate(self.position)
+            if unitcell:
+                center_relative -= np.floor(center_relative)
+            center_absolute = np.dot(center_relative, self.lattice.matrix)
+            op2_m = self.wp.get_euclidean_generator(
+                self.lattice.matrix, point_index
+            )
+            rot = op2_m.affine_matrix[:3, :3].T
+            scaffold.append((rot, center_absolute))
+
+        self._symm_scaffold = (unitcell, scaffold)
+        return scaffold
+
+    def update_molecule(self, mol, same_species=False):
+        old_radius = self.radius
         self.molecule = mol
-        self.numbers = mol.mol.atomic_numbers
-        self.symbols = mol.symbols
-        self.tols_matrix = mol.tols_matrix
+        if same_species:
+            self._invalidate_mol_geom_cache()
+        else:
+            self._invalidate_geom_cache()
+        if not same_species:
+            self.numbers = mol.mol.atomic_numbers
+            self.symbols = mol.symbols
+            self.tols_matrix = mol.tols_matrix
         self.radius = mol.radius
+        # `_create_matrix` depends on radius only for very long (>50 Å)
+        # periodic axes and only when crossing the 10 Å radius threshold.
+        radius_range_changed = (
+            (old_radius < 10) != (self.radius < 10)
+            and any(pbc and abc > 50.0 for pbc, abc in zip(
+                self.PBC,
+                (self.lattice.a, self.lattice.b, self.lattice.c),
+            ))
+        )
+        if radius_range_changed:
+            self.__dict__.pop("_staged_image_cache", None)
 
     def update_orientation(self, angles):
         # QZ: Symmetrize the angle to the compatible orientation first
         self.orientation.r = R.from_euler("zxy", angles, degrees=True)
         self.orientation.matrix = self.orientation.r.as_matrix()
+        self._invalidate_geom_cache()
+
+    def min_pbc_center_distance(self, other):
+        """Minimum Cartesian distance between two WP centers under PBC.
+
+        Compares only the generating centers (not full Wyckoff orbits).
+        Prefer :meth:`min_orbit_center_distance` when symmetry images matter.
+        """
+        delta = np.asarray(other.position, dtype=float) - np.asarray(self.position, dtype=float)
+        for i, pbc in enumerate(self.PBC):
+            if pbc:
+                delta[i] -= np.round(delta[i])
+        return float(np.linalg.norm(delta @ self.lattice.matrix))
+
+    def min_orbit_center_distance(self, other):
+        """
+        Minimum Cartesian distance between any Wyckoff-orbit images of two
+        molecular centers (including lattice PBC).
+
+        This catches packings where generators look separated but a symmetry
+        image of one site collides with the other — common in multi-component
+        crystals (e.g. P-4 salt hydrates).
+        """
+        if self.PBC != other.PBC:
+            raise ValueError("PBC values do not match between molecular sites")
+        coords1 = np.asarray(self.wp.apply_ops(self.position), dtype=float)
+        coords2 = np.asarray(other.wp.apply_ops(other.position), dtype=float)
+        return float(
+            distance_matrix(
+                coords1,
+                coords2,
+                self.lattice.matrix,
+                PBC=self.PBC,
+                single=True,
+            )
+        )
 
     def get_min_dist(self, angle=None):
         """
@@ -899,6 +992,9 @@ class mol_site:
             species: a list of atomic species for the atomic coords
         """
         if matrix is None: matrix = self.orientation.matrix
+        # Always recompute from current position/orientation/conformer.
+        # A cached scaffold/coords path previously drifted after CHARMM
+        # `update()` + `update_wyckoffs()` and changed multi-stage energies.
         coord0 = self.molecule.mol.cart_coords.dot(matrix.T)
         wp_atomic_sites = []
         wp_atomic_coords = None
@@ -911,7 +1007,6 @@ class mol_site:
             center_absolute = np.dot(center_relative, self.lattice.matrix)
 
             # Rotate the molecule (Euclidean metric)
-            # op2_m = self.wp.generators_m[point_index]
             op2_m = self.wp.get_euclidean_generator(
                 self.lattice.matrix, point_index)
             rot = op2_m.affine_matrix[:3, :3].T
@@ -1122,6 +1217,10 @@ class mol_site:
             self.position = position - np.floor(position)
             if update_mol:
                 self.orientation = Orientation(np.eye(3))
+                # Sites from QRS conformer pools may share one pyxtal_molecule.
+                # deepcopy() preserves that aliasing, so mutating .mol in place
+                # would corrupt sibling Z' sites during multi-stage CHARMM.
+                self.molecule = self.molecule.copy()
                 self.molecule.mol = mol
             else:
                 m1 = pybel.readstring("xyz", self.molecule.mol.to("xyz"))
@@ -1140,6 +1239,10 @@ class mol_site:
                         self.orientation.r = R.from_matrix(rot)
                     else:
                         raise ValueError("rotation matrix is wrong")
+            # Position / orientation / conformer changed — drop scaffold cache
+            # used by `_get_coords_and_species` (stale centers break CHARMM
+            # multi-stage re-writes after `update()` from a PDB).
+            self._invalidate_geom_cache()
         else:
             #import pickle
             #with open("wrong.pkl", "wb") as f:
@@ -1192,7 +1295,10 @@ class mol_site:
             matrix = [[1, 0, 0]]
         return np.array(matrix, dtype=float)
 
-    def get_distances(self, coord1, coord2, m2=None, center=True, ignore=False):
+    def get_distances(
+        self, coord1, coord2, m2=None, center=True, ignore=False,
+        image_matrix=None, squared=False,
+    ):
         """
         Compute the distance matrix between the central molecule (coord1) and
         neighboring molecules (coord2) under the periodic boundary condition.
@@ -1207,6 +1313,10 @@ class mol_site:
                                 it's assumed to be equal m1.
             center (bool, optional): If `True`, count self-image of the reference molecule
             ignore (bool, optional): If `True`, ignores some periodic boundary conditions.
+            image_matrix (array, optional): explicit lattice-image translations.
+                When supplied, these replace the translations from `_create_matrix`.
+            squared (bool): return squared Euclidean distances, avoiding square
+                roots when only threshold comparisons are needed.
 
         Returns:
             distance matrix: [m1*m2*pbc, m1, m2]
@@ -1217,18 +1327,60 @@ class mol_site:
         N2 = int(len(coord2) / m2) # Number of molecule 2
 
         # peridoic images
-        m = self._create_matrix(center, ignore)  # PBC matrix
-        coord2 = np.vstack([coord2 + v for v in m])
+        if image_matrix is None:
+            m = self._create_matrix(center, ignore)  # PBC matrix
+        else:
+            m = np.asarray(image_matrix, dtype=float)
+        coord2 = (coord2[None, :, :] + m[:, None, :]).reshape(-1, 3)
         N = N2 * len(m) # Number of PBC images
 
         # absolute xyz
         coord1 = coord1 @ self.lattice.matrix
         coord2 = coord2 @ self.lattice.matrix
 
-        d = cdist(coord1, coord2)
+        metric = "sqeuclidean" if squared else "euclidean"
+        d = cdist(coord1, coord2, metric=metric)
         d = d.reshape(m1, N, m2).transpose(1, 0, 2)
         coord2 = coord2.reshape([N, m2, 3])
         return d, coord2
+
+    def _get_staged_image_matrices(self, center):
+        """
+        Split periodic translations into nearest and distant stages.
+
+        The union is exactly `_create_matrix(center)`, so checking nearest
+        images first changes only runtime, never clash classification.
+        """
+        cache = getattr(self, "_staged_image_cache", None)
+        if cache is None:
+            cache = {}
+            self._staged_image_cache = cache
+        if center not in cache:
+            full = self._create_matrix(center, ignore=False)
+            nearest_mask = np.max(np.abs(full), axis=1) <= 1
+            cache[center] = (full[nearest_mask], full[~nearest_mask])
+        return cache[center]
+
+    def _get_clash_representatives(self, max_atoms=8):
+        """Return spatially distributed atom indices for a safe broad phase."""
+        cached = getattr(self, "_clash_representatives", None)
+        if cached is not None:
+            return cached
+        coords = np.asarray(self.molecule.mol.cart_coords)
+        if len(coords) <= max_atoms:
+            selected = np.arange(len(coords), dtype=int)
+        else:
+            # Greedy farthest-point sampling covers the molecular envelope.
+            selected = [int(np.argmax(np.linalg.norm(coords, axis=1)))]
+            nearest = np.linalg.norm(coords - coords[selected[0]], axis=1)
+            while len(selected) < max_atoms:
+                idx = int(np.argmax(nearest))
+                selected.append(idx)
+                distances = np.linalg.norm(coords - coords[idx], axis=1)
+                nearest = np.minimum(nearest, distances)
+            selected = np.asarray(selected, dtype=int)
+        self._clash_representatives = selected
+        return selected
 
     def get_dists_auto(self, matrix=None, ignore=False, cutoff=None):
         """
@@ -1301,31 +1453,95 @@ class mol_site:
         else:
             return self.extract_short_distances(ds, coords, cutoff, self.type, wp2.type)
 
-    def short_dist(self):
+    def short_dist(self, buffer=0.0):
         """
         Check if the atoms are too close within the WP.
+
+        Args:
+            buffer (float): additive adjustment in Angstrom to every tolerance.
+                Negative values allow more overlap; positive values are stricter.
 
         Returns:
             True or False
         """
-        tols_matrix = self.tols_matrix
+        tols_matrix = np.maximum(self.tols_matrix + float(buffer), 0.0)
+        tols_squared = tols_matrix * tols_matrix
+
+        def has_overlap(dists):
+            minimum_by_pair = np.min(dists, axis=0)
+            return (
+                np.min(minimum_by_pair) < np.max(tols_squared)
+                and (minimum_by_pair < tols_squared).any()
+            )
+
         # Check periodic images
-        d, _ = self.get_dists_auto()
-        if np.min(d) < np.max(tols_matrix):
-            tols = np.min(d, axis=0)
-            if (tols < tols_matrix).any():
+        coord1, _ = self._get_coords_and_species(first=True, unitcell=True)
+        nearest, distant = self._get_staged_image_matrices(center=False)
+        representatives = self._get_clash_representatives()
+        if len(representatives) < len(coord1):
+            d, _ = self.get_distances(
+                coord1[representatives],
+                coord1,
+                m2=len(coord1),
+                center=False,
+                image_matrix=nearest,
+                squared=True,
+            )
+            minimum_by_pair = np.min(d, axis=0)
+            representative_tols = tols_squared[representatives, :]
+            if (
+                np.min(minimum_by_pair) < np.max(representative_tols)
+                and (minimum_by_pair < representative_tols).any()
+            ):
+                return True
+        d, _ = self.get_distances(
+            coord1, coord1, center=False, image_matrix=nearest, squared=True
+        )
+        if has_overlap(d):
+            return True
+        if len(distant) > 0:
+            d, _ = self.get_distances(
+                coord1, coord1, center=False, image_matrix=distant, squared=True
+            )
+            if has_overlap(d):
                 return True
 
         if self.wp.multiplicity > 1:
-            d, _ = self.get_dists_WP()
-            if np.min(d) < np.max(tols_matrix):
-                tols = np.min(d, axis=0)  # N*N matrix
-                if (tols < tols_matrix).any():
+            m_length = len(self.symbols)
+            coords, _ = self._get_coords_and_species(unitcell=True)
+            coord1 = coords[:m_length]
+            coord2 = coords[m_length:]
+            nearest, distant = self._get_staged_image_matrices(center=True)
+            if len(representatives) < len(coord1):
+                d, _ = self.get_distances(
+                    coord1[representatives],
+                    coord2,
+                    m2=m_length,
+                    image_matrix=nearest,
+                    squared=True,
+                )
+                minimum_by_pair = np.min(d, axis=0)
+                representative_tols = tols_squared[representatives, :]
+                if (
+                    np.min(minimum_by_pair) < np.max(representative_tols)
+                    and (minimum_by_pair < representative_tols).any()
+                ):
+                    return True
+            d, _ = self.get_distances(
+                coord1, coord2, image_matrix=nearest, squared=True
+            )
+            if has_overlap(d):
+                return True
+            if len(distant) > 0:
+                d, _ = self.get_distances(
+                    coord1, coord2, image_matrix=distant, squared=True
+                )
+                if has_overlap(d):
                     return True
 
         return False
 
-    def short_dist_with_wp2(self, wp2, tm=Tol_matrix(prototype="molecular")):
+    def short_dist_with_wp2(self, wp2, tm=Tol_matrix(prototype="molecular"), buffer=0.0):
         """
         Check whether or not the molecules of two wp sites overlap. Uses
         ellipsoid overlapping approximation to check.
@@ -1333,6 +1549,8 @@ class mol_site:
         Args:
             wp2: the 2nd wp sites
             tm: a Tol_matrix object (or prototype string) for distance checking
+            buffer (float): additive adjustment in Angstrom to every tolerance.
+                Negative values allow more overlap; positive values are stricter.
 
         Returns:
             True or False
@@ -1348,23 +1566,44 @@ class mol_site:
         if len(c2) <= len(c1):
             coord1 = c1[:m_length1]
             coord2 = c2  # rest molecular coords
-            tols_matrix = self.molecule.get_tols_matrix(wp2.molecule, tm)
+            big_site, small_numbers = self, wp2.numbers
             m2 = m_length2
         else:
             coord1 = c2[:m_length2]
             coord2 = c1
-            tols_matrix = wp2.molecule.get_tols_matrix(self.molecule, tm)
+            big_site, small_numbers = wp2, self.numbers
             m2 = m_length1
 
-        # compute the distance matrix
-        d, _ = self.get_distances(
-            coord1 - np.floor(coord1), coord2 - np.floor(coord2), m2)
-        # print("short dist", len(c1), len(c2), d.min())
+        tol_cache = getattr(big_site, "_inter_tol_cache", None)
+        if tol_cache is None:
+            tol_cache = {}
+            big_site._inter_tol_cache = tol_cache
+        tol_key = (tuple(big_site.numbers), tuple(small_numbers), id(tm))
+        tols_matrix = tol_cache.get(tol_key)
+        if tols_matrix is None:
+            if len(c2) <= len(c1):
+                tols_matrix = self.molecule.get_tols_matrix(wp2.molecule, tm)
+            else:
+                tols_matrix = wp2.molecule.get_tols_matrix(self.molecule, tm)
+            tol_cache[tol_key] = tols_matrix
+        tols_matrix = np.maximum(tols_matrix + float(buffer), 0.0)
+        tols_squared = tols_matrix * tols_matrix
 
-        if np.min(d) < np.max(tols_matrix):
-            tols = np.min(d, axis=0)
-            if (tols < tols_matrix).any():
-                return False
+        # Check nearest periodic images first. If they do not overlap, evaluate
+        # the remaining translations to preserve the exact original result.
+        coord1 = coord1 - np.floor(coord1)
+        coord2 = coord2 - np.floor(coord2)
+        nearest, distant = self._get_staged_image_matrices(center=True)
+        for image_matrix in (nearest, distant):
+            if len(image_matrix) == 0:
+                continue
+            d, _ = self.get_distances(
+                coord1, coord2, m2, image_matrix=image_matrix, squared=True
+            )
+            if np.min(d) < np.max(tols_squared):
+                tols = np.min(d, axis=0)
+                if (tols < tols_squared).any():
+                    return False
         return True
 
     def get_neighbors_auto(self, factor=1.1, max_d=4.0, ignore_E=True, detail=False, etol=-5e-2):

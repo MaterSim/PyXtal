@@ -8,9 +8,15 @@
 ├── example_05_LJ_4D.py
 ├── example_06_C_2D_lammps.py
 ├── example_07_3D_ICE_lammps.py
+├── example_08_QRS_known_cell.py
+├── example_09_QRS_conf.py
+├── example_10_mlp_relax.py
 └── tutorials_notebook
     ├── 01_atomic_crystals.ipynb
     └── 02_molecular_crystals.ipynb
+    └── 03_pxrd.ipynb
+    └── 04_box.ipynb
+    └── 05-crystal-packing.ipynb
 ```
 
 # Installation
@@ -65,4 +71,31 @@ launch the LAMMPS calculator
 -5.348217915131606
 launch the GULP calculator
 -5.34821791
+```
+
+# Sample script to run example_09 and example_10
+```
+#!/bin/sh -l
+#SBATCH --partition=Apus
+#SBATCH -J 0822-Z2
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=48
+#SBATCH --time=72:00:00
+export OMP_NUM_THREADS=1
+nproc=$SLURM_CPUS_PER_TASK
+
+# Same settings as Tests-0807/CEQGEL:
+#   no ASU / no fix-translation, dl=1.2, soft-clash -0.5, default max-grid-product 1e9
+#python example_09_QRS_conf.py --code ACRDIN05 BOQQUT01 CEQGEL FLUANT JOHSOP UJIRIO02 XAFPAY02 XATMOV ZZZDKE01 \
+#python example_09_QRS_conf.py --code ACSALA ACSALA13 ADAMAN01 AFIGIH AVIBEN AXIDER AXOSOW01 BENZEN BETFOV BIPHEN BOQQUT BZPHAN01 \
+#python example_09_QRS_conf.py --code HAJJIN HAMTIZ01 JAYDUI JOHSOP JUFRIO KEKJEQ KONTIQ KONTIQ09 KUPWOJ KUPWUP LEVJON MERQIM MERQOS MERRAF MIVDEC MUVMIA \
+#python example_09_QRS_conf.py --code NACJAF NAPHTA15 NICLAN OBEQET OBEQIX OBEQOD OBEQUJ OKUPUG OXALAC02 OXALAC11 PAHYON01 PHENAZ01 PYRZIN01 QAXMEH53 QQQCIG04 QUATER10 QUPHEN \
+#python example_09_QRS_conf.py --code RESORA03 SIRMIQ01 SITJUC SUCXIZ TBZPYR TIDFES UJIRIO01 UJIRIO05 UREAXX02 UVAGUU UVAHAB UVAHEF VOBYAN WEXBOS WICZUF WIDBAO \
+#python example_09_QRS_conf.py --code XAFPAY XAFPAY01 XAFPAY03 XAFQAZ XAFQIH XAFQON XATJOT XELYUJ XULDUD XULDUD01 YIHVUI YOKBIK \
+#python example_09_QRS_conf.py --code CAYKUJ COUMAR01 CRYSEN CYANAM01 DBZCOR DOCXEA DURNAH DUTGIK ECENAD EVIDEV FIQSEG FOJTUU FOJVAC FORMAM FUNZOE GUFJOG \
+#python example_09_QRS_conf.py --code ACEMID02 MERQUY PYRENE07 \
+#  --out-dir Tests-0822 \
+#  --nproc $nproc --ngen 200 --npop 96 #--no-check-stable #--no-fix-translation --no-asu-clamp --no-check-stable #--delta-length 1.0 #--no-soft-clash #--no-order-identical-sites
+python example_10_mlp_relax.py Tests-0822 --calculator MACEOFF --max-unique 100
 ```

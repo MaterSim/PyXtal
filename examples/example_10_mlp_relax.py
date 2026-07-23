@@ -184,17 +184,23 @@ def _pmg_for_matching(pmg, max_sites=50):
     return Structure.from_sites(pmg.sites[:max_sites], validate_proximity=False)
 
 
+def _structure_max_dist(matcher, pmg1, pmg2):
+    """Return StructureMatcher max site distance, or None if unmatched."""
+    try:
+        rmsd = matcher.get_rms_dist(pmg1, pmg2)
+    except Exception:
+        return None
+    return rmsd[1] if rmsd is not None else None
+
+
 def _rms_match(matcher, pmg1, pmg2, max_rmsd=0.3):
     """True only if StructureMatcher max site distance is strictly below ``max_rmsd``.
 
     Uses ``get_rms_dist`` → ``(rms, max_dist)``. A pair with ``max_dist >= max_rmsd``
     (or no mapping) is treated as not a match — same criterion as QRS.
     """
-    try:
-        rmsd = matcher.get_rms_dist(pmg1, pmg2)
-    except Exception:
-        return False
-    return rmsd is not None and rmsd[1] < max_rmsd
+    max_dist = _structure_max_dist(matcher, pmg1, pmg2)
+    return max_dist is not None and max_dist < max_rmsd
 
 
 def _structures_likely_match(pmg1, pmg2, volume_tol=0.05, max_sites=50):
@@ -283,6 +289,135 @@ def _deduplicate_selected(
     return unique_selected, dup_map
 
 
+def _entry_is_structural_dup(ent, reps, matcher, pmg_cache, match_max_sites, max_rmsd):
+    """Return rep idx if ``ent`` matches any representative, else None."""
+    try:
+        pmg1 = _get_pmg_no_h(ent, pmg_cache)
+    except Exception:
+        return None
+    pmg1_m = _pmg_for_matching(pmg1, match_max_sites)
+    for rep in reps:
+        try:
+            pmg2 = _get_pmg_no_h(rep, pmg_cache)
+        except Exception:
+            continue
+        if not _structures_likely_match(pmg1, pmg2, max_sites=match_max_sites):
+            continue
+        if _rms_match(
+            matcher,
+            pmg1_m,
+            _pmg_for_matching(pmg2, match_max_sites),
+            max_rmsd=max_rmsd,
+        ):
+            return rep['idx']
+    return None
+
+
+def _expand_unique_from_higher_energy(
+    unique_selected,
+    all_entries,
+    selection_threshold,
+    matcher,
+    max_unique,
+    match_max_sites=50,
+    max_rmsd=0.3,
+    progress_every=25,
+    max_higher_scan=2000,
+):
+    """Scan higher-energy structures when the low-energy pool dedups to too few.
+
+    ``max_higher_scan`` caps how many above-threshold candidates are examined
+    (energy-sorted, lowest first). Use ``0`` to disable expansion entirely.
+    """
+    if max_unique is None or len(unique_selected) >= max_unique:
+        return unique_selected, {}
+
+    if selection_threshold is None:
+        return unique_selected, {}
+
+    if max_higher_scan is not None and int(max_higher_scan) <= 0:
+        print(
+            f'Only {len(unique_selected)} unique in low-energy pool; '
+            f'skipping higher-energy expansion (max_higher_scan={max_higher_scan})',
+            flush=True,
+        )
+        return unique_selected, {}
+
+    higher = sorted(
+        (
+            e for e in all_entries
+            if e.get('energy') is not None and e['energy'] > selection_threshold
+        ),
+        key=lambda x: x['energy'],
+    )
+    if not higher:
+        print(
+            f'Only {len(unique_selected)} unique in low-energy pool; '
+            f'no higher-energy structures to scan',
+            flush=True,
+        )
+        return unique_selected, {}
+
+    n_available = len(higher)
+    if max_higher_scan is not None:
+        higher = higher[: int(max_higher_scan)]
+
+    print(
+        f'Only {len(unique_selected)} unique in low-energy pool; '
+        f'scanning {len(higher)}/{n_available} higher-energy structures '
+        f'(>{selection_threshold:.6f} eV) for up to {max_unique} total unique'
+        + (
+            f' [capped by max_higher_scan={max_higher_scan}]'
+            if len(higher) < n_available
+            else ''
+        ),
+        flush=True,
+    )
+
+    kept = list(unique_selected)
+    pmg_cache = {}
+    extra_dup_map = {}
+    scan_start = time.perf_counter()
+
+    for i, ent in enumerate(higher, start=1):
+        if len(kept) >= max_unique:
+            break
+        if progress_every and i % progress_every == 0:
+            elapsed = time.perf_counter() - scan_start
+            print(
+                f'Higher-energy scan [{i}/{len(higher)}]: '
+                f'{len(kept)} unique so far, elapsed {elapsed:.1f}s',
+                flush=True,
+            )
+
+        rep_idx = _entry_is_structural_dup(
+            ent, kept, matcher, pmg_cache, match_max_sites, max_rmsd,
+        )
+        if rep_idx is not None:
+            extra_dup_map[ent['idx']] = rep_idx
+        else:
+            kept.append(ent)
+
+    kept.sort(key=lambda x: x['energy'])
+    if len(kept) > max_unique:
+        kept = kept[:max_unique]
+
+    n_added = len(kept) - len(unique_selected)
+    elapsed = time.perf_counter() - scan_start
+    print(
+        f'Higher-energy expansion: +{n_added} unique -> {len(kept)} total '
+        f'({len(higher)} scanned / {n_available} available, {elapsed:.1f}s)',
+        flush=True,
+    )
+    if len(kept) < max_unique and len(higher) < n_available:
+        print(
+            f'Note: stopped at {len(kept)}/{max_unique} unique due to '
+            f'max_higher_scan={max_higher_scan}; raise it to search further',
+            flush=True,
+        )
+    return kept, extra_dup_map
+
+
 def _configure_worker_threads():
     """Avoid CPU oversubscription when running multiple PyTorch workers."""
     os.environ.setdefault("OMP_NUM_THREADS", "1")
@@ -350,7 +485,7 @@ def worker_relax(args):
             fmax=fmax,
             max_time=relax_timeout_min,
             label=label,
-            logfile=os.devnull,
+            logfile=None,
         )
         elapsed = time.time() - start_time
         if relaxed is None:
@@ -533,12 +668,124 @@ def collect_jobs(cif_path, out_dir=None):
     raise FileNotFoundError(f"No QRS-openffall.cif found in {cif_path}")
 
 
+def _robust_energy_ylim(energies, low_pad=1.0, high_pct=99.0, high_pad=2.0):
+    """
+    Y-limits that keep the bulk of energies visible while clipping rare
+    very-high-energy outliers (e.g. failed / high-strain MLP relaxations).
+    """
+    arr = np.asarray([e for e in energies if e is not None], dtype=float)
+    arr = arr[np.isfinite(arr)]
+    if arr.size == 0:
+        return None
+    ymin = float(np.min(arr))
+    yhi = float(np.percentile(arr, high_pct))
+    if yhi <= ymin:
+        yhi = ymin + 1.0
+    return ymin - float(low_pad), yhi + float(high_pad)
+
+
 def _result_paths(out_dir, model_tag, cutoff_pct):
     base = f'{model_tag}_energy_{cutoff_pct:.1f}'
+    matched = f'{model_tag}_matched_{cutoff_pct:.1f}.cif'
     return (
         os.path.join(out_dir, f'{base}.png'),
         os.path.join(out_dir, f'{base}.csv'),
+        os.path.join(out_dir, matched),
     )
+
+
+def _matched_data_header(orig_label, calculator, rms, max_msd):
+    """Build a QRS-style matched ``data_`` header (without the ``data_`` prefix)."""
+    base = orig_label[5:] if orig_label.startswith('data_') else orig_label
+    # Drop a previous match suffix (e.g. -QRandom-0.09-0.16) if present.
+    first = base.find('-QRandom-')
+    if first != -1:
+        second = base.find('-QRandom-', first + 1)
+        if second != -1:
+            base = base[:second]
+    return f'{base}-{calculator}-{rms:.2f}-{max_msd:.2f}'
+
+
+def _format_matched_cif_block(ase_cif_text, header, energy):
+    """
+    Rewrite an ASE CIF block with a QRS-style header / energy / #END.
+
+    Header lines look like::
+
+        data_xafpay03-g7-p36-QRandom-d1.335-spg14-e-47.008-MACEOFF-0.09-0.16
+        #Energy: -210836.124246 eV/cell
+    """
+    from pyxtal.constants import logo
+
+    lines = []
+    body_started = False
+    for ln in ase_cif_text.splitlines(keepends=True):
+        if not body_started:
+            if ln.startswith('data_'):
+                body_started = True
+                lines.append(f'data_{header}\n')
+                lines.append(f'#Energy: {energy} eV/cell\n')
+                continue
+            # Drop ASE preamble before the first data_ block.
+            continue
+        if ln.strip() == '#END':
+            continue
+        lines.append(ln)
+    if not body_started:
+        lines.append(f'data_{header}\n')
+        lines.append(f'#Energy: {energy} eV/cell\n')
+        lines.append(ase_cif_text)
+    text = ''.join(lines)
+    if not text.endswith('\n'):
+        text += '\n'
+    text += '#END\n\n'
+    return logo + text
+
+
+def write_mlp_matched_cif(
+    path,
+    *,
+    entries,
+    relaxed_cifs,
+    model_energies,
+    match_rms,
+    calculator,
+    dup_map=None,
+):
+    """
+    Write all unique MLP-relaxed matches to ``path`` with QRS-style headers.
+
+    ``match_rms`` maps idx -> (rms, max_msd). Duplicate geometries (propagated
+    from a representative) are written once.
+    """
+    dup_map = dup_map or {}
+    idxs = []
+    for idx in sorted(match_rms):
+        rep = dup_map.get(idx, idx)
+        if rep != idx and rep in match_rms:
+            continue
+        if idx not in relaxed_cifs or idx not in model_energies:
+            continue
+        idxs.append(idx)
+
+    if not idxs:
+        return 0
+
+    label_by_idx = {e['idx']: e['label'] for e in entries}
+    with open(path, 'w') as fh:
+        for idx in idxs:
+            rms, max_msd = match_rms[idx]
+            header = _matched_data_header(
+                label_by_idx.get(idx, f'idx{idx}'),
+                calculator,
+                rms,
+                max_msd,
+            )
+            block = _format_matched_cif_block(
+                relaxed_cifs[idx], header, model_energies[idx]
+            )
+            fh.write(block)
+    return len(idxs)
 
 
 def _select_for_relaxation(entries, cutoff_pct, min_selected=1000):
@@ -568,7 +815,7 @@ def _select_for_relaxation(entries, cutoff_pct, min_selected=1000):
     return selected, selection_threshold, effective_pct
 
 
-def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_code=None, matched_cif=None, cutoff_pct=50.0, e_tol=1e-3, calculator='MACE', model=None, quick=False, max_unique=None, match_max_sites=50, max_rmsd=0.3, pool=None, relax_timeout_min=15.0, stall_timeout_min=20.0, force=False):
+def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_code=None, matched_cif=None, cutoff_pct=50.0, e_tol=1e-3, calculator='MACE', model=None, quick=False, max_unique=None, max_higher_scan=2000, match_max_sites=50, dedup_max_rmsd=0.3, ref_max_rmsd=0.6, pool=None, relax_timeout_min=15.0, stall_timeout_min=20.0, force=False):
     main_start = time.time()
     input_folder = None
     if os.path.isdir(cif_path):
@@ -593,7 +840,7 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
     model = resolve_model(calculator, model=model, quick=quick)
     default_model = DEFAULT_MODELS.get(calculator)
     model_tag = f'{calculator}_{model}' if model != default_model else calculator
-    out_png, out_csv = _result_paths(out_dir, model_tag, cutoff_pct)
+    out_png, out_csv, out_matched_cif = _result_paths(out_dir, model_tag, cutoff_pct)
     if not force and os.path.isfile(out_png) and os.path.isfile(out_csv):
         case = os.path.basename(out_dir.rstrip(os.sep))
         print(
@@ -603,6 +850,10 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
         return False
     print(f'Output directory: {out_dir}')
     print(f'Calculator: {calculator}, model: {model}' + (' (quick preset)' if quick else ''))
+    print(
+        f'RMSD cutoffs: dedup={dedup_max_rmsd}, ref-match={ref_max_rmsd}',
+        flush=True,
+    )
 
     blocks = parse_qrs_cif(cif_path)
     if not blocks:
@@ -633,10 +884,23 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
     matcher = StructureMatcher(ltol=0.3, stol=0.3, angle_tol=5.0)
     unique_selected, dup_map = _deduplicate_selected(
         selected, matcher, e_tol=e_tol, match_max_sites=match_max_sites,
-        max_rmsd=max_rmsd,
+        max_rmsd=dedup_max_rmsd,
     )
 
     print(f'{len(unique_selected)} unique structures after deduplication (e_tol={e_tol})')
+
+    if max_unique is not None and len(unique_selected) < max_unique:
+        unique_selected, extra_dup = _expand_unique_from_higher_energy(
+            unique_selected,
+            entries,
+            threshold,
+            matcher,
+            max_unique,
+            match_max_sites=match_max_sites,
+            max_rmsd=dedup_max_rmsd,
+            max_higher_scan=max_higher_scan,
+        )
+        dup_map.update(extra_dup)
 
     if max_unique is not None and len(unique_selected) > max_unique:
         print(f'Limiting to first {max_unique} lowest-energy unique structures (from {len(unique_selected)})')
@@ -675,11 +939,18 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
         ref_pmg = ref_xtal.to_pymatgen()
         ref_pmg.remove_species(["H"]) if hasattr(ref_pmg, 'remove_species') else None
         if matched_cif is None:
-            for entry in entries:
+            # Only scan the energy-selected pool — never the full CIF (can be 10^4–10^5).
+            scan_entries = selected
+            print(
+                f'Matching {len(scan_entries)} selected OpenFF structures to '
+                f'{ref_code} (skipping {len(entries) - len(scan_entries)} above cutoff)',
+                flush=True,
+            )
+            for entry in scan_entries:
                 atoms_orig = read(StringIO(entry['text']), format='cif')
                 pmg_orig = ase2pymatgen(atoms_orig)
                 pmg_orig.remove_species(["H"]) if hasattr(pmg_orig, 'remove_species') else None
-                if _rms_match(matcher, pmg_orig, ref_pmg, max_rmsd=max_rmsd):
+                if _rms_match(matcher, pmg_orig, ref_pmg, max_rmsd=ref_max_rmsd):
                     original_match_ids.add(entry['idx'])
             print(f'Loaded reference {ref_code} and found {len(original_match_ids)} original CIF matches')
         else:
@@ -793,15 +1064,22 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
                 print(f'Relax failed for {lbl} idx={idx}: {status}, time {elapsed_str}')
 
     # Prepare relaxed match IDs set (may be empty)
+    relaxed_match_rms = {}  # idx -> (rms, max_msd)
     if ref_pmg is not None:
         try:
             for idx, relaxed_cif in relaxed_cifs.items():
                 try:
                     atoms_rel = read(StringIO(relaxed_cif), format='cif')
                     pmg_rel = ase2pymatgen(atoms_rel)
-                    pmg_rel.remove_species(["H"]) if hasattr(pmg_rel, 'remove_species') else None
-                    if _rms_match(matcher, pmg_rel, ref_pmg, max_rmsd=max_rmsd):
+                    if hasattr(pmg_rel, 'remove_species'):
+                        pmg_rel.remove_species(["H"])
+                    try:
+                        rmsd = matcher.get_rms_dist(pmg_rel, ref_pmg)
+                    except Exception:
+                        rmsd = None
+                    if rmsd is not None and rmsd[1] < ref_max_rmsd:
                         relaxed_match_ids.add(idx)
+                        relaxed_match_rms[idx] = (float(rmsd[0]), float(rmsd[1]))
                 except Exception:
                     continue
             if relaxed_match_ids:
@@ -874,6 +1152,9 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
     ax_bot.set_ylabel(f'{calculator} Energy (eV)')
     ax_bot.grid(True, alpha=0.3)
     ax_bot.legend(loc=2)
+    bot_ylim = _robust_energy_ylim(sel_y)
+    if bot_ylim is not None:
+        ax_bot.set_ylim(*bot_ylim)
 
     fig.tight_layout()
     fig.savefig(out_png, dpi=200)
@@ -905,6 +1186,23 @@ def main(cif_path, nproc=4, step=200, fmax=0.1, out_dir=None, db_file=None, ref_
             else:
                 writer.writerow([idx, e['label'], e['energy'], '', '', 'not_selected', orig_matched, relaxed_matched])
     print('Saved CSV to', out_csv)
+
+    if relaxed_match_rms:
+        n_written = write_mlp_matched_cif(
+            out_matched_cif,
+            entries=entries,
+            relaxed_cifs=relaxed_cifs,
+            model_energies=model_energies,
+            match_rms=relaxed_match_rms,
+            calculator=calculator,
+            dup_map=dup_map,
+        )
+        print(f'Saved {n_written} matched structure(s) to {out_matched_cif}')
+    elif os.path.isfile(out_matched_cif):
+        # Avoid stale matches from a previous run with different settings.
+        os.remove(out_matched_cif)
+        print(f'Removed stale matched CIF: {out_matched_cif}')
+
     print(f'Total workflow elapsed time: {time.time() - main_start:.1f} s')
     return pool_terminated
 
@@ -981,11 +1279,29 @@ if __name__ == '__main__':
         default=4.0,
         help='Estimated peak RAM per worker in GB for SLURM memory capping (default: 4.0)',
     )
-    parser.add_argument('--pct', type=float, default=10.0, help='Energy percentile cutoff (e.g. 10 for 10%%)')
+    parser.add_argument('--pct', type=float, default=5.0, help='Energy percentile cutoff (e.g. 10 for 10%%)')
     parser.add_argument('--db', default="pyxtal/database/test.db", help='Path to test.db for reference matching')
     parser.add_argument('--matched-cif', default=None, help='Path to file listing matched CIF labels, one per line')
     parser.add_argument('--e-tol', type=float, default=1e-3, help='Energy tolerance (eV) for grouping duplicates')
-    parser.add_argument('--max-unique', type=int, default=None, help='Maximum number of unique structures to relax (lowest energy first)')
+    parser.add_argument(
+        '--max-unique',
+        type=int,
+        default=None,
+        help=(
+            'Target number of unique structures to relax (lowest energy first). '
+            'If the low-energy pool dedups to fewer, scans higher-energy '
+            'structures until this count is reached (see --max-higher-scan).'
+        ),
+    )
+    parser.add_argument(
+        '--max-higher-scan',
+        type=int,
+        default=2000,
+        help=(
+            'Max higher-energy candidates to scan when filling --max-unique '
+            '(default: 2000; 0 disables higher-energy expansion)'
+        ),
+    )
     parser.add_argument(
         '--match-max-sites',
         type=int,
@@ -993,16 +1309,31 @@ if __name__ == '__main__':
         help='Compare only the first N sites during deduplication (default: 50; 0 = use full structure)',
     )
     parser.add_argument(
-        '--max-rmsd',
+        '--dedup-max-rmsd',
         type=float,
         default=0.3,
         help=(
-            'Max site distance from StructureMatcher.get_rms_dist for a match '
-            '(default: 0.3; not a match if max_dist >= this value)'
+            'Max site distance for deduplication / higher-energy uniqueness '
+            '(default: 0.3; not a duplicate if max_dist >= this value)'
         ),
     )
-    parser.add_argument('--step', type=int, default=200, help='FIRE steps for relaxation')
-    parser.add_argument('--fmax', type=float, default=0.1, help='Fmax for FIRE relax')
+    parser.add_argument(
+        '--ref-max-rmsd',
+        type=float,
+        default=0.6,
+        help=(
+            'Max site distance for matching OpenFF/MLP structures to the '
+            'experimental reference (default: 0.6; not a match if max_dist >= this)'
+        ),
+    )
+    parser.add_argument(
+        '--max-rmsd',
+        type=float,
+        default=None,
+        help='Deprecated alias for --ref-max-rmsd',
+    )
+    parser.add_argument('--step', type=int, default=300, help='FIRE steps for relaxation')
+    parser.add_argument('--fmax', type=float, default=0.05, help='Fmax for FIRE relax')
     parser.add_argument(
         '--relax-timeout',
         type=float,
@@ -1015,7 +1346,7 @@ if __name__ == '__main__':
         default=20.0,
         help='Abort batch if no relaxation finishes within this many minutes (default: 20)',
     )
-    parser.add_argument('--calculator', default='MACE', choices=['MACE', 'MACEOFF', 'ORB-V3', 'ORBV3', 'ORB'], help='MLP calculator to use for relaxation')
+    parser.add_argument('--calculator', default='MACEOFF', choices=['MACE', 'MACEOFF', 'ORB-V3', 'ORBV3', 'ORB'], help='MLP calculator to use for relaxation')
     parser.add_argument(
         '--model',
         default=None,
@@ -1037,6 +1368,14 @@ if __name__ == '__main__':
     print(f'Using {args.nproc} parallel workers')
     if args.quick and args.model is not None:
         parser.error('Use only one of --quick or --model')
+
+    ref_max_rmsd = args.ref_max_rmsd
+    if args.max_rmsd is not None:
+        print(
+            f'Warning: --max-rmsd is deprecated; using it as --ref-max-rmsd={args.max_rmsd}',
+            flush=True,
+        )
+        ref_max_rmsd = args.max_rmsd
 
     jobs = collect_jobs(args.cif, args.out_dir)
     if not jobs:
@@ -1062,8 +1401,10 @@ if __name__ == '__main__':
         cutoff_pct=args.pct,
         e_tol=args.e_tol,
         max_unique=args.max_unique,
+        max_higher_scan=args.max_higher_scan,
         match_max_sites=args.match_max_sites,
-        max_rmsd=args.max_rmsd,
+        dedup_max_rmsd=args.dedup_max_rmsd,
+        ref_max_rmsd=ref_max_rmsd,
         calculator=args.calculator,
         quick=args.quick,
         relax_timeout_min=args.relax_timeout,

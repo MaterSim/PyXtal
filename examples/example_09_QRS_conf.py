@@ -37,6 +37,39 @@ def build_sites_from_reference(ref_xtal):
     return sites
 
 
+def pregen_component_pool(smi, wps, args):
+    """
+    Build the conformer pool for one molecular component.
+
+    Rigid molecules (no rotatable bonds) use a single fixed ``pyxtal_molecule``,
+    matching the fast path that worked for cases like MERQUY in Tests-0719.
+    """
+    if smi in single_smiles:
+        m0 = pyxtal_molecule(smi + ".smi", fix=True)
+        _, valid = m0.get_orientations_in_wps(wps)
+        if not valid:
+            return None, "single-species"
+        return [m0], "single-species"
+
+    m0 = pyxtal_molecule(smi + ".smi", fix=True)
+    if not m0.torsionlist:
+        _, valid = m0.get_orientations_in_wps(wps)
+        if not valid:
+            return None, "rigid"
+        return [m0], "rigid"
+
+    pool = generate_molecules(
+        smi,
+        wps=wps,
+        N_iter=20,
+        N_conf=200,
+        tol=0.5,
+        torsion_extras=args.torsion_extras,
+        verbose=True,
+    )
+    return pool, "flexible"
+
+
 def filter_similar_molecules(mols, rmsd_tol=0.5):
     """Remove near-duplicate pyxtal_molecule conformers using pairwise RMSD."""
     unique_mols = []
@@ -219,7 +252,110 @@ def compute_molecular_shape_metrics(mol):
         "moments": (float(i1), float(i2), float(i3)),
         "ratios": (float(r21), float(r31), float(r32)),
         "anisotropy": float(anisotropy),
+        "extents": tuple(float(x) for x in np.ptp(coords, axis=0)),
     }
+
+
+def _molecular_extents(mol):
+    """Cartesian spans (Å) along lab axes for one pyxtal_molecule."""
+    coords = np.asarray(mol.mol.cart_coords, dtype=float)
+    return np.ptp(coords, axis=0)
+
+
+def _packing_strain_ratio(mol, lattice):
+    """
+    How tightly a molecule must wrap against the fixed cell.
+
+    Anisotropic molecules (small min/max extent ratio) that exceed the
+    shortest cell edge rely on orientation/PBC and need a looser soft-clash
+    buffer. The aspect cutoff is 0.45 so rods such as LEVJON (aspect ~0.37)
+    still use plate/rod strain, not only the sorted-edge aligned ratio.
+    """
+    extents = _molecular_extents(mol)
+    cell = np.asarray(lattice.get_para()[:3], dtype=float)
+    aspect = float(np.min(extents) / max(np.max(extents), 1e-6))
+    plate_strain = float(np.max(extents) / max(np.min(cell), 1e-6))
+    ext_sorted = np.sort(extents)[::-1]
+    cell_sorted = np.sort(cell)[::-1]
+    aligned_strain = float(np.max(ext_sorted / np.maximum(cell_sorted, 1e-6)))
+    if aspect < 0.45:
+        return max(plate_strain, aligned_strain)
+    return aligned_strain
+
+
+def select_soft_clash_buffer(molecules, lattice, composition=None):
+    """
+    Pick a soft-clash buffer from molecular packing vs the fixed cell.
+
+    Unrelaxed grid packings for plate-like / rod-like molecules in short cells
+    (extent exceeding the shortest axis) often fail Tol_matrix at buffer 0 even
+    when CHARMM relaxes to a valid structure (e.g. MERQUY, LEVJON).
+    """
+    if not molecules or lattice is None:
+        return 0.0, {"mode": "default", "strain": 0.0}
+
+    if composition is None:
+        composition = [1] * len(molecules)
+
+    strains = []
+    for idx in range(len(composition)):
+        pool = _component_pool(molecules, idx)
+        if not pool:
+            continue
+        mol = pool[0]
+        strain = _packing_strain_ratio(mol, lattice)
+        shape = compute_molecular_shape_metrics(mol)["shape"]
+        numbers = np.asarray(mol.mol.atomic_numbers, dtype=int)
+        n_heavy = int(np.sum(numbers > 1))
+        strains.append((idx, strain, shape, n_heavy))
+
+    if not strains:
+        return 0.0, {"mode": "default", "strain": 0.0}
+
+    idx, strain, shape, n_heavy = max(strains, key=lambda row: row[1])
+    if strain < 1.15:
+        buffer = 0.0
+    elif strain < 1.45:
+        buffer = -0.2
+    elif strain < 1.65:
+        buffer = -0.5
+    elif strain < 1.85:
+        buffer = -0.7
+    else:
+        buffer = -1.0
+
+    # Bulky organics still soft-clash heavily on the raw grid even at modest
+    # strain (many F/heavy contacts). Enforce a looser floor.
+    if n_heavy >= 40:
+        buffer = min(buffer, -0.5)
+    elif n_heavy >= 30:
+        buffer = min(buffer, -0.2)
+
+    # Planar / rod Z'>=2 packs (e.g. CEQGEL) reject ~99.5% at buffer 0 even
+    # when strain < 1.15, turning Gen-0 into a 5–10 min serial filter. A
+    # −0.5 floor matches Tests-0810 (match in ~14s/gen) without going as
+    # loose as −1.5.
+    z_same = max(int(c) for c in composition) if composition else 1
+    if shape in ("planar", "rod") and z_same >= 2 and n_heavy >= 16:
+        buffer = min(buffer, -0.5)
+
+    return buffer, {
+        "mode": "auto",
+        "component": idx,
+        "shape": shape,
+        "strain": strain,
+        "n_heavy": n_heavy,
+    }
+
+
+def resolve_soft_clash_buffer_arg(value):
+    """Return ``None`` for auto selection, otherwise a float buffer."""
+    if value is None:
+        return None
+    text = str(value).strip().lower()
+    if text in ("auto", "none"):
+        return None
+    return float(value)
 
 
 def select_delta_angle_by_shape(
@@ -356,8 +492,19 @@ def plot_id_vs_energy(
         margin = max(abs(ymin) * 0.05, 1.0)
         ax.set_ylim(ymin - margin, ymax + margin)
     else:
-        y_max = min(ymin + 30, ymax)
-        ax.set_ylim(ymin - 0.25, y_max)
+        # Default: zoom to ~30 kcal/mol above the best energy.
+        # Expand if matches (or almost all points) would otherwise be clipped —
+        # absolute FF energies can span >>30 kcal/mol (e.g. UJIRIO02).
+        y_hi = min(ymin + 30.0, ymax)
+        if match_energies:
+            y_hi = max(y_hi, max(match_energies))
+        n_vis = sum(1 for e in energies if e <= y_hi + 1e-9)
+        if len(energies) >= 20 and n_vis < max(20, 0.05 * len(energies)):
+            y_hi = float(np.percentile(energies, 95))
+            if match_energies:
+                y_hi = max(y_hi, max(match_energies))
+            y_hi = min(y_hi, ymax)
+        ax.set_ylim(ymin - 0.25, y_hi + 0.25)
     fig.tight_layout()
 
     fig_path = os.path.join(out_dir, f"{code}.png")
@@ -395,9 +542,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--delta-length",
-        default=1.0,
+        default=1.1,
         type=float,
-        help="Length of sampling vectors for QRS (default: 1.0)",
+        help="Length grid spacing in Angstrom for fractional Wyckoff coords (default: 1.1)",
     )
     parser.add_argument(
         "--delta-angle-mode",
@@ -413,9 +560,19 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--max-grid-product",
-        default=1e9,
+        default=0,
         type=float,
-        help="Cap on QRS grid product prod(n_levels) (default: 1e9; <=0 disables)",
+        help="Cap on QRS grid product prod(n_levels) (default: 0 = disabled; >0 enables)",
+    )
+    parser.add_argument(
+        "--min-grid-per-gen",
+        default=0,
+        type=int,
+        help=(
+            "Minimum QRS grid points evaluated per generation even after "
+            "N_pop is filled (default: 0 = stop once population is full; "
+            "try 8192 for easy-filter multi-component cases like XAFQON)"
+        ),
     )
     parser.add_argument(
         "--match-ltol",
@@ -437,9 +594,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--max-rmsd",
-        default=0.5,
+        default=0.3,
         type=float,
-        help="Maximum RMSD for structure matching (default: 0.5)",
+        help="Maximum RMSD for structure matching (default: 0.3)",
     )
     parser.add_argument(
         "--min-matches",
@@ -452,11 +609,104 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--check-stable",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        default=True,
         help=(
             "After each local relaxation, deterministically perturb Wyckoff DOFs "
             "by +/- half the QRS grid spacing and re-relax to detect shallow minima "
-            "(fixed-lattice QRS only; adds extra relaxations per structure)"
+            "(default: enabled; use --no-check-stable to disable)"
+        ),
+    )
+    parser.add_argument(
+        "--soft-clash",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Reject Tol_matrix soft clashes before FF relaxation "
+            "(default: enabled; use --no-soft-clash for hard short-distance "
+            "only, as in older QRS runs like Tests-0708)"
+        ),
+    )
+    parser.add_argument(
+        "--soft-clash-buffer",
+        default="auto",
+        help=(
+            "Add this value in Angstrom to molecular Tol_matrix cutoffs "
+            "(default: auto from molecular extent vs cell; negative loosens, "
+            "positive tightens; use 'auto' or a float; ignored with "
+            "--no-soft-clash)"
+        ),
+    )
+    parser.add_argument(
+        "--close-grid-cutoff",
+        default="0",
+        help=(
+            "Skip conformer checks when Wyckoff-orbit site centers are too "
+            "close. Use a float (Angstrom), 'auto' for "
+            "alpha*0.5*(r_i+r_j) with pool min radii, or 0/off to disable "
+            "(default: 0)"
+        ),
+    )
+    parser.add_argument(
+        "--close-grid-alpha",
+        default=0.7,
+        type=float,
+        help=(
+            "Scale factor for --close-grid-cutoff auto "
+            "(default: 0.7; try 0.6-0.8)"
+        ),
+    )
+    parser.add_argument(
+        "--fix-translation",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Pin continuous origin-free axes on one general-position site "
+            "using Group.get_free_axis() (default: enabled; no-op when the "
+            "space group has no free axes)"
+        ),
+    )
+    parser.add_argument(
+        "--asu-clamp",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Restrict that site's fractional bounds to the conventional ASU "
+            "box (default: enabled; removes discrete space-group copies)"
+        ),
+    )
+    parser.add_argument(
+        "--gauge-site",
+        default=0,
+        type=int,
+        help="Molecular site index used for translational gauge / ASU (default: 0)",
+    )
+    parser.add_argument(
+        "--order-identical-sites",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "For chemically identical Z'>=2 sites with matching xyz bounds, "
+            "require strictly increasing translational grid index (j>i) to "
+            "remove label-exchange double counting (default: enabled)"
+        ),
+    )
+    parser.add_argument(
+        "--max-mol-combos-per-grid",
+        default=0,
+        type=int,
+        help=(
+            "Optional cap on conformer combinations per grid point during "
+            "filtering (default: 0 = full pool; set e.g. 32 to subsample)"
+        ),
+    )
+    parser.add_argument(
+        "--max-valid-per-grid",
+        default=0,
+        type=int,
+        help=(
+            "Optional cap on valid conformers kept per grid point "
+            "(default: 0 = keep all that pass filtering)"
         ),
     )
     parser.add_argument(
@@ -464,6 +714,16 @@ if __name__ == "__main__":
         nargs="+",
         metavar="CSD_CODE",
         help="Run only these CSD codes from test.db (default: all codes)",
+    )
+    parser.add_argument(
+        "--torsion-extras",
+        choices=["auto", "on", "off"],
+        default="auto",
+        help=(
+            "Pregen torsion extras (default auto): charged→raw grid; "
+            "bulky+many rotors→anti-bias ±180°; bulky+few rotors→off; "
+            "medium flexible→MMFF-refined; on=force grid; off=MMFF only"
+        ),
     )
     args = parser.parse_args()
 
@@ -547,45 +807,23 @@ if __name__ == "__main__":
                 molecules = None
                 break
 
-            if smi in single_smiles:
-                try:
-                    m0 = pyxtal_molecule(smi + ".smi", fix=True)
-                    _, valid = m0.get_orientations_in_wps(type_wps[type_idx])
-                except Exception as exc:
-                    print(
-                        f"Failed to build single-component molecule for component {type_idx} ({smi}) in {code}: "
-                        f"{exc}; skipping."
-                    )
-                    molecules = None
-                    break
+            try:
+                p_mols, pool_kind = pregen_component_pool(smi, type_wps[type_idx], args)
+            except Exception as exc:
+                print(
+                    f"Failed to pregenerate conformers for component {type_idx} ({smi}) in {code}: "
+                    f"{exc}; skipping."
+                )
+                molecules = None
+                break
 
-                if not valid:
-                    print(
-                        f"Single-component molecule {smi} has no valid orientation in component {type_idx}; "
-                        f"skipping {code}."
-                    )
-                    molecules = None
-                    break
-
-                p_mols = [m0]
-                print(f"Component {type_idx} ({smi}) single-species pool: 1")
-            else:
-                try:
-                    p_mols = generate_molecules(
-                        smi,
-                        wps=type_wps[type_idx],
-                        N_iter=20,
-                        N_conf=200,
-                        tol=0.5,
-                        torsion_extras=True,
-                    )
-                except Exception as exc:
-                    print(
-                        f"Failed to pregenerate conformers for component {type_idx} ({smi}) in {code}: "
-                        f"{exc}; skipping."
-                    )
-                    molecules = None
-                    break
+            if p_mols is None:
+                print(
+                    f"Component {type_idx} ({smi}) has no valid orientation in Wyckoff sites; "
+                    f"skipping {code}."
+                )
+                molecules = None
+                break
 
             if len(p_mols) == 0:
                 print(f"No valid pregenerated conformers for component {type_idx} ({smi}); skipping.")
@@ -593,7 +831,9 @@ if __name__ == "__main__":
                 break
 
             p_mols = filter_similar_molecules(p_mols, rmsd_tol=0.5)
-            print(f"Component {type_idx} ({smi}) unique conformers: {len(p_mols)}")
+            print(
+                f"Component {type_idx} ({smi}) {pool_kind} pool: {len(p_mols)} unique conformers"
+            )
             if len(p_mols) == 0:
                 print(f"All conformers filtered out for component {type_idx} ({smi}); skipping.")
                 molecules = None
@@ -623,6 +863,34 @@ if __name__ == "__main__":
             selected_deltas = select_delta_angle(molecules, composition)
         print(f"Selected delta_angle(s) for components: {selected_deltas}")
 
+        if not args.soft_clash:
+            soft_clash_buffer = 0.0
+            print("Soft-clash filter disabled (--no-soft-clash); using hard short-distance check")
+        else:
+            manual_soft_buffer = resolve_soft_clash_buffer_arg(args.soft_clash_buffer)
+            if manual_soft_buffer is None:
+                soft_clash_buffer, buffer_info = select_soft_clash_buffer(
+                    molecules,
+                    ref_xtal.lattice,
+                    composition,
+                )
+                heavy_txt = (
+                    f", n_heavy={buffer_info['n_heavy']}"
+                    if buffer_info.get("n_heavy") is not None
+                    else ""
+                )
+                print(
+                    "Selected soft_clash_buffer: "
+                    f"{soft_clash_buffer:+.1f} Angstrom "
+                    f"(component {buffer_info['component']}, "
+                    f"shape={buffer_info['shape']}, "
+                    f"packing_strain={buffer_info['strain']:.2f}"
+                    f"{heavy_txt})"
+                )
+            else:
+                soft_clash_buffer = manual_soft_buffer
+                print(f"Using manual soft_clash_buffer: {soft_clash_buffer:+.1f} Angstrom")
+
         qrs = QRS(
             smiles=row.mol_smi,
             workdir=workdir,
@@ -643,7 +911,28 @@ if __name__ == "__main__":
             delta_angle=selected_deltas,
             matcher=matcher,
             check_stable=args.check_stable,
+            soft_clash_check=args.soft_clash,
+            soft_clash_buffer=soft_clash_buffer,
+            close_grid_cutoff=args.close_grid_cutoff,
+            close_grid_alpha=args.close_grid_alpha,
+            max_mol_combos_per_grid=(
+                args.max_mol_combos_per_grid
+                if args.max_mol_combos_per_grid > 0
+                else None
+            ),
+            max_valid_per_grid=(
+                args.max_valid_per_grid
+                if args.max_valid_per_grid > 0
+                else None
+            ),
             max_grid_product=max_grid_product,
+            min_grid_points=(
+                args.min_grid_per_gen if args.min_grid_per_gen > 0 else None
+            ),
+            fix_translation=args.fix_translation,
+            asu_clamp=args.asu_clamp,
+            gauge_site_index=args.gauge_site,
+            order_identical_sites=args.order_identical_sites,
             N_min_matches=args.min_matches,
         )
         t0 = perf_counter()
