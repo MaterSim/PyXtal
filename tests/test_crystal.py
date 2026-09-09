@@ -3,12 +3,17 @@ import importlib.util
 import os
 import unittest
 
+import numpy as np
 import pymatgen.analysis.structure_matcher as sm
+from ase.neighborlist import neighbor_list
 from pymatgen.core import Structure
 
 from pyxtal import pyxtal
+from pyxtal.crystal import random_crystal
 from pyxtal.lattice import Lattice
 from pyxtal.symmetry import Hall, Wyckoff_position
+from pyxtal.tolerance import Tol_matrix
+from pyxtal.wyckoff_site import atom_site
 
 
 def resource_filename(package_name, resource_path):
@@ -146,6 +151,83 @@ class TestAtomic3D(unittest.TestCase):
                                                 discrete=True,
                                                 N_grids=100)
         assert(len(reps)==8)
+
+class TestDistanceTolerance(unittest.TestCase):
+    """Every pair of atoms must clear the `Tol_matrix` entry of *that pair*.
+
+    Regression test: `check_wp` used to be handed a single tolerance, the
+    like-like one of the species being placed, and applied it to every pair.
+    With `prototype="atomic"` the pair tolerance is `f * (r_A + r_B)`, so
+    `f * 2 * r_new` is too small whenever the species being placed is the
+    smaller of the two -- which lets the two overlap -- and too large whenever
+    it is the larger, which rejects legal structures.
+    """
+
+    @staticmethod
+    def worst_pair_ratio(struc, tm):
+        """`min(d / tol(pair))` over pairs of distinct atoms, images included.
+
+        Below 1.0 means at least one pair is closer than it was allowed to be.
+
+        An atom against its own periodic image is excluded: those are governed
+        by the cell, not by `check_wp`, and are not checked at all for an orbit
+        of multiplicity 1 (`short_distances` has no pair to look at), so a
+        lattice vector shorter than the like-like tolerance survives
+        generation. That is a separate gap from the one this class covers.
+        """
+        atoms = struc.to_ase()
+        numbers = atoms.numbers
+        elements = sorted({int(n) for n in numbers})
+        cutoff = max(tm.get_tol(a, b) for a in elements for b in elements)
+        first, second, dist = neighbor_list("ijd", atoms, cutoff)
+        distinct = first != second
+        first, second, dist = first[distinct], second[distinct], dist[distinct]
+        if len(dist) == 0:
+            return np.inf
+        tols = np.array([tm.get_tol(int(numbers[a]), int(numbers[b]))
+                         for a, b in zip(first, second)])
+        return float(np.min(dist / tols))
+
+    def test_check_wp_rejects_a_contact_below_the_pair_tolerance(self):
+        # Cs-O has to clear 2.04 A, O-O only 0.91 A. A Cs-O contact of 1.5 A
+        # sits between the two: legal under O's like-like tolerance, illegal
+        # under the pair's.
+        tm = Tol_matrix(prototype="atomic", factor=1.3)
+        assert tm.get_tol("O", "O") < 1.5 < tm.get_tol("Cs", "O")
+
+        wp = Wyckoff_position.from_group_and_letter(1, "1a")
+        cell = np.eye(3) * 10.0
+        placed = atom_site(wp, [0.0, 0.0, 0.0], "Cs")
+        candidate = atom_site(wp, [0.15, 0.0, 0.0], "O")
+
+        class _Stub:
+            tol_matrix = tm
+
+        accepted = random_crystal.check_wp(
+            _Stub(), [], [placed], cell, candidate, tm.get_tol("O", "O")
+        )
+        assert not accepted
+
+    def test_generated_structures_honour_the_pair_tolerance(self):
+        # Cs and O differ by 3.5x in covalent radius, and every site is a
+        # general position, so a wrong tolerance shows up as a real overlap.
+        # Both species orders are checked: the sites are placed one species at
+        # a time, so a tolerance taken from the species being placed makes the
+        # outcome depend on the order they are given in.
+        tm = Tol_matrix(prototype="atomic", factor=1.3)
+        for species, num_ions in ((["Cs", "O"], [1, 3]), (["O", "Cs"], [3, 1])):
+            sites = [["1a"] * n for n in num_ions]
+            for seed in range(10):
+                struc = pyxtal()
+                struc.from_random(3, 1, species, num_ions, sites=sites,
+                                  tm=tm, random_state=seed)
+                assert struc.valid
+                ratio = self.worst_pair_ratio(struc, tm)
+                assert ratio >= 1.0, (
+                    f"{species}, seed {seed}: closest contact is {ratio:.3f} "
+                    f"of the tolerance it was generated under"
+                )
+
 
 class TestAtomic2D(unittest.TestCase):
     def test_single_specie(self):
