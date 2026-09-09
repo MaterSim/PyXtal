@@ -353,6 +353,9 @@ class random_crystal:
 
         """
         numIon_added = 0
+        # The like-like tolerance. It is the right one for the checks that stay
+        # within one orbit of one species -- `short_distances` and `merge` --
+        # while `check_wp` looks the pair tolerance up per pair.
         tol = self.tol_matrix.get_tol(specie, specie)
         wyckoff_sites_tmp = []
 
@@ -431,11 +434,39 @@ class random_crystal:
         return None
 
     def check_wp(self, wyckoff_sites_tmp, wyks, cell, new_site, tol):
+        """
+        Check a candidate Wyckoff site against the sites already placed.
+
+        Every pair is checked at its own tolerance, `tol_matrix[A][B]`, rather
+        than at the tolerance of the species being placed. The two coincide
+        only for pairs of like species: with `Tol_matrix(prototype="atomic")`
+        the pair tolerance is `f * (r_A + r_B)`, so using `f * 2 * r_new` for
+        every pair permits overlaps whenever the species being placed is the
+        smaller of the two, and rejects legal structures whenever it is the
+        larger.
+
+        Args:
+            wyckoff_sites_tmp: sites already placed for the current species
+            wyks: sites already placed for the preceding species
+            cell: 3x3 matrix of lattice vectors
+            new_site: the candidate `atom_site`
+            tol: fallback tolerance, used for a pair the `Tol_matrix` has no
+                value for (an element with no tabulated radius)
+
+        Returns:
+            True if every pair clears its own tolerance
+        """
         # Check current WP against existing WP's
         if new_site is None:
             return False
 
-        return all(new_site.check_with_ws2(ws, cell, tol) for ws in wyckoff_sites_tmp + wyks)
+        for ws in wyckoff_sites_tmp + wyks:
+            pair_tol = self.tol_matrix.get_tol(new_site.specie, ws.specie)
+            if pair_tol is None:
+                pair_tol = tol
+            if not new_site.check_with_ws2(ws, cell, pair_tol):
+                return False
+        return True
 
     def _check_consistency(self, site, numIon):
         num = 0
