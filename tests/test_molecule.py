@@ -307,5 +307,25 @@ class TestMolecular(unittest.TestCase):
         struc.from_random(3, 61, ["Benzene"], [4])
         assert struc.valid
 
+    def test_special_sites_in_hexagonal_setting(self):
+        """Benzene (D6h) on the special positions of R-3 (148, hexagonal axes)."""
+        cases = [
+            (9, [["9d"]]),  # Z' = 1/2: inversion centre (-1)
+            (9, None),
+            (6, [["6c"]]),  # Z' = 1/3: three-fold axis (3)
+            (6, None),
+            (3, [["3a"]]),  # Z' = 1/6: rotoinversion axis (-3)
+            (3, None),
+        ]
+        for num_mols, site in cases:
+            with self.subTest(site=site):
+                struc = pyxtal(molecular=True)
+                struc.from_random(3, 148, ["Benzene"], [num_mols], sites=site)
+                assert struc.valid
+                if site is not None:
+                    assert [[s.wp.get_label() for s in struc.mol_sites]] == site
+                sga = SpacegroupAnalyzer(struc.to_pymatgen(), symprec=1e-2)
+                assert sga.get_space_group_number() == 148
+
 if __name__ == "__main__":
     unittest.main()

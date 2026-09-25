@@ -15,6 +15,7 @@ import os
 import re
 from copy import deepcopy
 from ast import literal_eval
+from typing import Literal
 
 import numpy as np
 from monty.serialization import loadfn
@@ -2465,8 +2466,27 @@ class Wyckoff_position:
         return self
 
     # =============================Get functions===========================
-    def get_site_symm_wo_translation(self):
-        return [SymmOp.from_rotation_and_translation(op.rotation_matrix, [0, 0, 0]) for op in self.symmetry[0]]
+    def get_site_symm_wo_translation(self, space: Literal["fractional", "euclidean"] = "fractional"):
+        """
+        Site symmetry operations of the first point, with translations removed.
+
+        Args:
+            space: "fractional" returns the rotations as stored (fractional
+                coordinates). "euclidean" returns them in Cartesian space, which
+                differs only for trigonal/hexagonal groups (``self.euclidean``),
+                where a 3-fold rotation such as (-y, x-y, z) is not orthogonal.
+                Use "euclidean" when comparing against a molecule's point group.
+
+        Returns:
+            list of pymatgen SymmOp objects
+        """
+        if space == "fractional":
+            ops = self.symmetry[0]
+        elif space == "euclidean":
+            ops = self.get_site_symm_ops()
+        else:
+            raise ValueError(f"space must be 'fractional' or 'euclidean', got {space!r}")
+        return [SymmOp.from_rotation_and_translation(op.rotation_matrix, [0, 0, 0]) for op in ops]
 
     def get_site_symmetry_object(self, idx=0):
         ops = self.get_site_symm_ops(idx)#; print(self.number, self.index, self.letter)
