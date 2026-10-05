@@ -430,6 +430,7 @@ def mutator(xtal, smiles, opt_lat, ref_pxrd=None, dr=0.125, random_state=None):
     # perturb molecules
     for i in range(1, len(x)):
         disp_mol = rng.uniform(-1.0, 1.0, len(x[i]) - 1)
+        disp_mol[0] = 0  # x[i][0] is the Wyckoff index: scaling it moves special-site molecules
         x[i][:-1] *= 1 + dr * disp_mol
         # change the orientation and torsions
         for j in range(3, len(x[i]) - 1):
@@ -756,7 +757,7 @@ def optimizer_par(
     output_mlp,
     check_stable,
     pre_opt,
-    opt_lat=None,
+    opt_lat=True,
     delta_length=1.0,
     delta_angle=15.0,
     xyz_only=False,
@@ -840,7 +841,7 @@ def optimizer_single(
     output_mlp,
     check_stable,
     pre_opt,
-    opt_lat=None,
+    opt_lat=True,
     delta_length=1.0,
     delta_angle=15.0,
     xyz_only=False,
@@ -857,9 +858,7 @@ def optimizer_single(
     """
 
     # 1. Obtain the structure model
-    # Preserve the historical automatic behavior when no explicit choice is
-    # supplied, while allowing callers to relax a provided starting lattice.
-    opt_lat = lattice is None if opt_lat is None else bool(opt_lat)
+    opt_lat = lattice is None
     if xtal is None:
         xtal = randomizer(
             smiles,
