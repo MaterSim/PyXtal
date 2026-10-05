@@ -352,8 +352,9 @@ class representation:
                 site = mol_site.from_1D_dicts(dicts)
 
                 bypass = False
-                for mol_id, molecule in enumerate(struc.molecules):
-                    if str(site.molecule) == str(molecule):
+                # do not reuse `molecule`: it holds the per-species template above
+                for mol_id, mol0 in enumerate(struc.molecules):
+                    if str(site.molecule) == str(mol0):
                         site.type = mol_id
                         struc.numMols[mol_id] += site.wp.multiplicity
                         bypass = True
